@@ -45,7 +45,9 @@ typedef size_t(*RandFunction)(void);
  */
 static RandFunction prand;
 
+#ifndef CODEMDEF
 #define CODEMDEF static inline
+#endif
 
 /* codem is a numeric string of length 10 */
 #define CODEM_LEN 10

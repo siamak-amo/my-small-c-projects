@@ -11,7 +11,7 @@
  *   compilation:
  *     to compile executable test program:
  *        cc -Wall -Wextra -o test -D LINK_TEST
- *                 -D LINK_IMPLEMENTATION test linked_list.c
+ *                 -D LINK_IMPLEMENTATION linked_list.c
  *
  *     define LINK_ONLY_MACRO and remove LINK_IMPLEMENTATION
  *     to use only macro's instead of function calls.
@@ -27,6 +27,10 @@
  */
 #ifndef LINK__H__
 #define LINK__H__
+
+#ifndef LINKDEF
+#define LINKDEF static inline
+#endif
 
 struct list_head{
   struct list_head *next;
@@ -142,18 +146,18 @@ struct list_head{
  *  @head is the head of the list
  *  @new is a pointer to your struct's links_s
  */
-static inline void link_add_end(struct list_head *head, struct list_head *new);
-static inline void link_add_head(struct list_head *head, struct list_head *new);
+LINKDEF void link_add_end(struct list_head *head, struct list_head *new);
+LINKDEF void link_add_head(struct list_head *head, struct list_head *new);
 /**
  *  @pos pointer to desired position
  *  @new is a pointer to your struct's links_s
  */
-static inline void link_add_after(struct list_head *pos, struct list_head *new);
-static inline void link_add_before(struct list_head *pos, struct list_head *new);
+LINKDEF void link_add_after(struct list_head *pos, struct list_head *new);
+LINKDEF void link_add_before(struct list_head *pos, struct list_head *new);
 /**
  *  @entry is a pointer to your struct's list_head
  */
-static inline int link_del(struct list_head *head, struct list_head *entry);
+LINKDEF int link_del(struct list_head *head, struct list_head *entry);
 # endif
 #endif
 
@@ -161,7 +165,7 @@ static inline int link_del(struct list_head *head, struct list_head *entry);
 /* function implementations */
 #ifdef LINK_IMPLEMENTATION
 
-static inline void
+LINKDEF void
 link_add_head(struct list_head *head,
               struct list_head *new)
 {
@@ -171,7 +175,7 @@ link_add_head(struct list_head *head,
   head->next = new;
 }
 
-static inline void
+LINKDEF void
 link_add_end(struct list_head *head,
              struct list_head *new)
 {
@@ -181,7 +185,7 @@ link_add_end(struct list_head *head,
   head->prev = new;
 }
 
-static inline void
+LINKDEF void
 link_add_after(struct list_head *pos,
                struct list_head *new)
 {
@@ -191,7 +195,7 @@ link_add_after(struct list_head *pos,
   pos->next = new;
 }
 
-static inline void
+LINKDEF void
 link_add_before(struct list_head *pos,
                 struct list_head *new)
 {
@@ -201,7 +205,7 @@ link_add_before(struct list_head *pos,
   pos->prev = new;
 }
 
-static inline int
+LINKDEF int
 link_del(struct list_head *head,
          struct list_head *entry)
 {
@@ -227,7 +231,7 @@ typedef struct data{
   struct list_head lnk;
 }data;
 
-static inline void
+LINKDEF void
 print_data(struct data *d)
 {
   printf("@%p -- {.p=%c .a=%d%d .l=%p}\n",
