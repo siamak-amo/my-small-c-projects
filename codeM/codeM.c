@@ -89,7 +89,7 @@ static RandFunction prand;
 #define codem_cname(code)                                  \
   ({ int __city_idx = codem_ccode_idx (code);              \
     (__city_idx < 0) ? "Not Found"                         \
-      : codem_cname_byidx (__city_idx); })  
+      : city_name[__city_idx]; })  
 
 /* validate only city code of @codem */
 #define codem_ccode_isvalid(codem)                         \
@@ -162,12 +162,6 @@ CODEMDEF void codem_rand_ccode (char *dest);
  */
 CODEMDEF int codem_ccode_idx (const char *codem);
 
-/**
- *  get name of cities
- *  return a null-terminated char pointer
- *  to the city_name at @idx
- */
-CODEMDEF const char *codem_cname_byidx (int idx);
 #endif
 
 
@@ -248,39 +242,6 @@ codem_isvalid (const char *codem)
   return codem_isvalidn (codem_n);
 }
 
-/**
- *  internal helper function
- *  used by `codem_c*_byidx` functions
- */
-static inline const char *
-city_byidx__H (int idx, char delim, const char *p)
-{
-  if (idx >= CITY_COUNT) return NULL;
-
-  while (idx != 0)
-    if (*(p++) == delim)
-      idx--;
-  
-  return p;
-}
-
-CODEMDEF const char *
-codem_cname_byidx (int idx)
-{
-  return city_byidx__H (idx, '\0', city_name);
-}
-
-/**
- *  internal function to give pointer to the
- *  city_code at @idx, city_code is space-separated
- *  and each index might have more than one code
- */
-CODEMDEF const char *
-ccode_byidx__H (int idx)
-{
-  return city_byidx__H (idx, ' ', city_code);
-}
-
 CODEMDEF void
 codem_rand_gen (char *res, int len)
 {
@@ -300,11 +261,11 @@ codem_rand_ccode (char *dest)
   int idx = city_rand_idx__H ();
   size_t rand = prand ();
 
-  const char *p = ccode_byidx__H (idx);
+  const char *p = city_code[idx];
   const char *q = p;
 
   /* make a random choice between code at idx */
-  while ('\0' != *q && ' ' != *q)
+  while ('\0' != *q)
     {
       p = q;
       q += CC_LEN;
@@ -345,15 +306,17 @@ CODEMDEF int
 codem_ccode_idx (const char *codem)
 {
   int idx = 0;
-  const char *p = city_code;
+  const char *p;
   
   while (idx < CITY_COUNT)
     {
+      p = city_code[idx];
       do{
-        if (0 == strncmp (p, codem, 3)) return idx;
+        if (0 == strncmp (p, codem, CC_LEN))
+          return idx;
         p += CC_LEN;
         
-      } while (*p != ' ');
+      } while (*p != '\0');
       
       p++;
       idx++;
@@ -508,7 +471,7 @@ test_2_3 ()
   /* check city code is valid */
   assert (idx != -1);
 
-  DEBUG ("city name: %s\n", codem_cname_byidx (idx));
+  DEBUG ("city name: %s\n", city_name[idx]);
 
   /* codem_isvalid2 must return 1 */
   assert (codem_isvalid2 (code));
