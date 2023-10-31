@@ -472,6 +472,8 @@ test_2_3 ()
   assert (idx != -1);
 
   DEBUG ("city name: %s\n", city_name[idx]);
+  /* idx must be 462 */
+  assert (idx == 462);
 
   /* codem_isvalid2 must return 1 */
   assert (codem_isvalid2 (code));
