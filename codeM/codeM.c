@@ -164,8 +164,7 @@ CODEMDEF void codem_rand_ccode (char *dest);
  *  to get the name of the city
  */
 CODEMDEF int codem_ccode_idx (const char *codem);
-
-#endif
+#endif /* end of codeM__H__ */
 
 
 
@@ -198,7 +197,8 @@ codem_normcpy (char *dest, const char *src)
 {
   size_t l = strlen (src);
 
-  if (l > CODEM_BUF_LEN-1) return -1; // error
+  if (l > CODEM_BUF_LEN-1)
+    return -1; // error
   
   memset (dest, '0', CODEM_LEN - l);
   memcpy (dest + (CODEM_LEN - l), src, l);
@@ -228,7 +228,8 @@ codem_isvalidn (const char *codem)
 
   if (d == codem[CTRL_DIGIT_IDX])
     return 1;
-  else return 0;
+  else
+    return 0;
 }
 
 CODEMDEF int
@@ -321,10 +322,10 @@ codem_ccode_idx (const char *codem)
       p++;
       idx++;
     }
+
   return -1;
 }
-
-#endif
+#endif /* end of CODEM_IMPLEMENTATION */
 
 
 
@@ -506,7 +507,7 @@ main (void)
   
   return 0;
 }
-#endif
+#endif /* CODEM_TEST */
 
 
 
@@ -640,8 +641,9 @@ main (void)
         break;
       }
     }
+
   return 0;
 }
 
-#endif
-#endif
+#endif /* CODEM_TEST */
+#endif /* CODEM_CLI */
