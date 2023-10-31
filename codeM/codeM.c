@@ -226,7 +226,7 @@ codem_isvalidn (const char *codem)
 {
   int d;
   
-  d = char2num (codem_find_ctrl_digit (codem));
+  d = num2char (codem_find_ctrl_digit (codem));
 
   if (d == codem[CTRL_DIGIT_IDX])
     return 1;
