@@ -74,6 +74,9 @@ static RandFunction prand;
 /* macro to initialize prand */
 #define codem_rand_init(randfun) prand = &(randfun)
 
+#define char2num(c) ((c) - '0')
+#define num2char(x) ((x) + '0')
+
 /**
  *  internal macro to calculate the control digit
  *  only use `codem_*_ctrl_digit` functions
@@ -81,7 +84,7 @@ static RandFunction prand;
 #define ctrl_digit__H(res, codem) do{                      \
     (res) = 0;                                             \
     for (size_t __i=0; __i<CODEM_LEN-1; __i++)             \
-      (res) += (10 - __i) * ((codem)[__i] - '0');          \
+      (res) += (10 - __i) * char2num ((codem)[__i]);       \
     (res) %= 11;                                           \
     if ((res) >= 2) (res) = 11 - (res); } while(0)
 
@@ -186,7 +189,7 @@ codem_set_ctrl_digit (char *codem)
   
   ctrl_digit__H (res, codem);
 
-  codem[CTRL_DIGIT_IDX] = res + '0';
+  codem[CTRL_DIGIT_IDX] = num2char (res);
 }
 
 
@@ -223,8 +226,7 @@ codem_isvalidn (const char *codem)
 {
   int d;
   
-  d = codem_find_ctrl_digit (codem);
-  d += '0';
+  d = char2num (codem_find_ctrl_digit (codem));
 
   if (d == codem[CTRL_DIGIT_IDX])
     return 1;
@@ -249,7 +251,7 @@ codem_rand_gen (char *res, int len)
   
   while ( 0 != len--)
     {
-      res[len] = rand%10 + '0';
+      res[len] = num2char (rand % 10);
       rand /= 10;
     }
 }
