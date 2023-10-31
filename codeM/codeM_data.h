@@ -1,21 +1,21 @@
 /**
- *   file: codeM_data.c
+ *   file: codeM_data.h
  *   created at: 25 Oct 2023
  *
- *   city code:  the first three digits of a codem (see codeM.c)
- *      represent the city that the ID issued from
+ *   extra data about the codem ID
  *
+ *   city code: the first three digits of a codem, indicate
+ *   the city of issuance; referred to as the city code.
  *
- *   city_code is space separated, for instance:
- *   if city X has codes 123, 124, 125 and Y has 666
- *   ==> `123124125 666` was inserted.
+ *   city_code is space separated, xxxyyyzzz means that
+ *   the corresponding city has xxx, yyy and zzz valid codes.
+ *   city_name is null-byte ('\0') separated.
  *
- *   city_name is null-byte (\0) separated.
+ *   these two constants should exclusively used by
+ *   introduced functions and macros in codeM.c file.
  *
- *
- *   these two constant should only used by introduced
- *   functions in codeM.c file.
- *
+ *   Resources:
+ *     https://www.yasa.co/%DA%A9%D8%AF-%D9%85%D9%84%DB%8C-%D9%88-%D8%B4%D9%87%D8%B1-%D9%85%D8%AD%D9%84-%D8%B5%D8%AF%D9%88%D8%B1-%D8%A2%D9%86-%D8%B4%D9%87%D8%B1-%D9%85%D8%AD%D9%84-%D8%AA%D9%88%D9%84%D8%AF/
  */
 #ifndef CODEM_DATA__H__
 #define CODEM_DATA__H__

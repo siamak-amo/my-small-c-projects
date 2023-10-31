@@ -1,13 +1,27 @@
+/* This file is part of my-small-c-projects
+   
+  This program is free software: you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License,
+  or (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  See the GNU General Public License for more details.
+  
+  You should have received a copy of the GNU General Public License
+  along with this program. If not, see <https://www.gnu.org/licenses/>. 
+ */
+
 /**
  *   file: codeM.c
  *   created at: 1 Oct 2023
  *
  *   common Iranian ID number (code-e-melli) single file library
- *   `codem` in the following is referred to code-e-melli
  *
- *   this library performs validating and making random codem's
- *   a test and a CLI program are included
- *
+ *   `codem` in the following is referred to code-e-melli.
+ *   this library performs validating and making random codem's.
  *
  *   compilation:
  *     to compile the CLI program:
@@ -29,19 +43,19 @@
  *           codem_rand_init (my_rand_fun);
  *           ...
  *       `
- *
  **/
-#ifndef _codeM__H__
-#define _codeM__H__
+#ifndef codeM__H__
+#define codeM__H__
 #include <string.h>
 /* city_name and city_code data */
 #include "codeM_data.h"
 
 typedef size_t(*RandFunction)(void);
 /**
- *  prand is the main pesudo random number generator
- *  function, you have to initialize it if you
- *  want to use codem_rand_* functions
+ *  prand is the main pseudo-random number
+ *  generator function used by this library.
+ *  initialization of prand is necessary for using
+ *  any of codem_rand_* functions. (use codem_rand_init)
  */
 static RandFunction prand;
 
