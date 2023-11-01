@@ -7,9 +7,8 @@
  *   city code: the first three digits of a codem, indicate
  *   the city of issuance; referred to as the city code.
  *
- *   city_code is space separated, xxxyyyzzz means that
+ *   in city_code, xxxyyyzzz means that
  *   the corresponding city has xxx, yyy and zzz valid codes.
- *   city_name is null-byte ('\0') separated.
  *
  *   these two constants should exclusively used by
  *   introduced functions and macros in codeM.c file.
