@@ -1,4 +1,9 @@
+# ignore files without extention
+*
+!*.*
+!*/
+
 bak
 build
-a.out
+**/a.out
 **/TAGS
