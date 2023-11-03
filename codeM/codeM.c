@@ -164,7 +164,7 @@ CODEMDEF void codem_rand_ccode (char *dest);
  *  to get the name of the city
  */
 CODEMDEF int codem_ccode_idx (const char *codem);
-#endif /* end of codeM__H__ */
+#endif /* codeM__H__ */
 
 
 
@@ -325,7 +325,7 @@ codem_ccode_idx (const char *codem)
 
   return -1;
 }
-#endif /* end of CODEM_IMPLEMENTATION */
+#endif /* CODEM_IMPLEMENTATION */
 
 
 
