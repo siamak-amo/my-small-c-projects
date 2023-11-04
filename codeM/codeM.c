@@ -346,7 +346,7 @@ codem_ccode_idx (const char *codem)
 #define assert_isnumber(x) assert ((x)>='0' && (x)<='9')
 
 /* assert x is a 10-digit numeric string */
-#define assert_10numeric(x) do{                               \
+#define assert_10numeric(x) do{                             \
     char *__tmp = x; size_t __count=0;                      \
     while ('\0' != *__tmp) {                                \
       assert_isnumber (*__tmp);                             \
