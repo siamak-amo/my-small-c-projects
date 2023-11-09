@@ -22,32 +22,32 @@ static int pg_size = -1;  /* memory page size */
 
 
 int
-main(void)
+main (void)
 {
 #ifdef USE_STACK
     char buf[BUF_S];
 #elif ALIGN_NO
-    char *buf = (char*)malloc(BUF_S);
+    char *buf = (char*) malloc (BUF_S);
 #else
     pg_size = getpagesize();
-    char *buf = (char*)aligned_alloc(pg_size, BUF_S);
+    char *buf = (char*) aligned_alloc (pg_size, BUF_S);
 #endif
     
-    /* fprintf(stderr, "buf_addr=%p - page_size=%d\n", buf, pg_size); */
+    /* fprintf (stderr, "buf_addr=%p - page_size=%d\n", buf, pg_size); */
 
-    for(size_t i=0; i<BUF_S-1;)
+    for (size_t i=0; i < BUF_S - 1;)
     {
         buf[i++] = 'y';
         buf[i++] = '\n';
     }
 
-    while(1)
+    while (1)
     {
-        fwrite(buf, 1, BUF_S, stdout);
+        fwrite (buf, 1, BUF_S, stdout);
     }
 
 #ifndef USE_STACK
-    free(buf);
+    free (buf);
 #endif
 
     return 0;
