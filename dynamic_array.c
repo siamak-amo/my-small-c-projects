@@ -128,6 +128,7 @@ main (void)
   da_printd (list);
   assert (list->cap == 16 && list->len == 12 &&
           "Error -- after 12 da_app calls");
+  puts ("da_app after init -- test passed");
   
   for (size_t _i=0; _i<list->len; ++_i)
     {
@@ -135,6 +136,7 @@ main (void)
       assert (p->d == (int)_i+1 &&
               "after da_app -- data is not intact");
     }
+  puts ("da_get after append -- test passed");
   mem_dump (struct data_t, d, list);
 
   da_set (24, list,  &(struct data_t){42});
@@ -142,9 +144,11 @@ main (void)
 
   assert (list->cap == 25 && list->len == 25 &&
           "Error -- after accessing index 24");
+  puts ("da_set test cap and len -- passed");
   p = da_get (24, list);
   assert (p->d == 42 &&
           "after da_set -- data is not intact");
+  puts ("da_set test data -- passed");
   mem_dump (struct data_t, d, list);
  
   da_resize (10, list);
@@ -152,6 +156,7 @@ main (void)
   
   assert (list->cap == 10 &&
           "Error -- after resize");
+  puts ("da_resize -- test passed");
   for (size_t _i=0; _i<list->len; ++_i)
     {
       p = da_get (_i, list);
@@ -159,6 +164,7 @@ main (void)
               "after da_resize -- data is not intact");
     }
   mem_dump (struct data_t, d, list);
+  puts ("da_get after resize -- test passed");
 
   da_free (list);
 
