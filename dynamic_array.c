@@ -37,11 +37,15 @@ typedef struct da_head_t DA_H;
 
 #define da_free(da) free (da->data)
 
-#define da_resize(new_s, da) do {                  \
-  (da)->data = realloc ((da)->data,                \
-                        new_s*(da)->sizeof_data);  \
-  (da)->cap = new_s;                               \
-  if ((da)->len > new_s) (da)->len = new_s; } while (0)
+/* internal macro - always use da_resize */
+#define da_realloc(da)                          \
+  (da)->data = realloc ((da)->data,             \
+             ((da)->cap) * ((da)->sizeof_data))
+
+#define da_resize(new_s, da) do {                       \
+    (da)->cap = new_s;                                  \
+    da_realloc (da);                                    \
+    if ((da)->len > new_s) (da)->len = new_s; } while (0)
 #endif
 
 #ifdef DA_IMPLEMENTATION
@@ -63,10 +67,10 @@ da_set (size_t idx, DA_H *head, void *value)
   char *p = head->data;
   if (idx >= head->cap)
     {
-      head->data = realloc (p, (idx+1) * (head->sizeof_data));
-      p = head->data;
       head->cap = idx+1;
       head->len = idx+1;
+      da_realloc (head);
+      p = head->data;
     }
   p += idx * head->sizeof_data;
   memcpy (p, value, head->sizeof_data);
@@ -78,9 +82,9 @@ da_app (DA_H *head, void *value)
   char *p = head->data;
   if (head->len >= head->cap)
     {
-      p = head->data;
       head->cap *= 2;
-      head->data = realloc (p, head->cap * head->sizeof_data);
+      da_realloc (head);
+      p = head->data;
     }
   p += head->sizeof_data * (head->len++);
   memcpy (p, value, head->sizeof_data);
