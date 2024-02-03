@@ -523,6 +523,14 @@ main (void)
 #include <stdio.h>
 #include <time.h>
 
+#ifdef CODEM_DEBUG
+/* debug macro to print codeM buffer */
+#define printd_code(code)                       \
+  printf ("[debug] using code: %-10s\n", code);
+#else
+#define printd_code(code) do{} while (0)
+#endif
+
 static inline void
 help (void)
 {
@@ -576,6 +584,7 @@ main (void)
 
         if (0 != codem_norm (tmp))
           puts ("cannot be normalized"); /* unreachable */
+        printd_code(tmp);
 
         if (codem_isvalidn (tmp))
           {
@@ -596,6 +605,7 @@ main (void)
           puts ("cannot be normalized"); /* unreachable */
         else
           {
+            printd_code(tmp);
             codem_set_ctrl_digit (tmp);
             puts (tmp);
           }
@@ -613,6 +623,7 @@ main (void)
       case 'C':
         printf ("enter code: ");
         scanf ("%10s", tmp);
+        printd_code(tmp);
         puts (codem_cname (tmp));
         break;
         
@@ -629,6 +640,7 @@ main (void)
         scanf ("%10s%n", tmp, &off);
         off--; /* ignore newline */
 
+        printd_code(tmp);
         if (off > CODEM_LEN)
           puts ("suffix is too long");
         else
