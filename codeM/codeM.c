@@ -577,7 +577,7 @@ main (void)
       switch (comm)
       {
         
-      /* validate a code ****************/
+        /* validation */
       case 'v':
         printf ("enter code: ");
         scanf ("%10s", tmp);
@@ -599,7 +599,7 @@ main (void)
         else puts ("Not Valid.");
         break;
 
-      /* make a code valid **************/
+        /* make a code valid */
       case 'V':
         printf ("enter code: ");
         scanf ("%10s", tmp);
@@ -615,7 +615,7 @@ main (void)
         puts (tmp);
         break;
 
-      /* make a random city code ********/
+        /* make a random city code */
       case 'c':
         codem_rand_ccode (tmp);
         
@@ -623,7 +623,7 @@ main (void)
                 tmp, codem_cname (tmp));
         break;
         
-      /* find city name *****************/
+        /* find city name */
       case 'C':
         printf ("enter code: ");
         scanf ("%10s", tmp);
@@ -631,13 +631,13 @@ main (void)
         puts (codem_cname (tmp));
         break;
         
-      /* make a random code *************/
+        /* make a random code */
       case 'r':
         codem_rand2 (tmp);
         puts (tmp);
         break;
 
-      /* make a random code by suffix ***/
+        /* make a random code by suffix */
       case 'R':
         int off;
         printf ("enter suffix: ");
@@ -654,14 +654,16 @@ main (void)
           }
         break;
 
-      /* print help *********************/
+        /* print help */
       case 'h':
         help ();
         break;
 
+        /* empty command */
       case '\n':
         continue;
 
+        /* invalid */
       default:
         printf ("invalid command -- %c\n", comm);
       }
