@@ -557,12 +557,12 @@ main (void)
   codem_rand_init (ssrand); 
   help ();
 
-  while ('q' != comm)
+  while (1)
     {
       if ('\0' == comm || '\n' == comm)
         printf ("> ");
 
-      if (EOF == scanf ("%c", &comm))
+      if (EOF == scanf ("%c", &comm) || 'q' == comm)
         return 0;
       
       switch (comm)
