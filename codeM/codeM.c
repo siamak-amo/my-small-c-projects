@@ -538,7 +538,7 @@ ssrand ()
 {
   unsigned long r = time (NULL);
 
-  for (size_t i=7; i>7; --i)
+  for (size_t i=7; i>0; --i)
     {
       r *= 0x666;
       r += 0x42;
