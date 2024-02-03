@@ -551,7 +551,7 @@ ssrand ()
 int
 main (void)
   {
-  char comm;
+  char comm = '\0';
   char tmp[CODEM_BUF_LEN];
 
   codem_rand_init (ssrand); 
@@ -559,8 +559,10 @@ main (void)
 
   while ('q' != comm)
     {
-      printf ("> ");
-      if (EOF == scanf (" %c", &comm))
+      if ('\0' == comm || '\n' == comm)
+        printf ("> ");
+
+      if (EOF == scanf ("%c", &comm))
         return 0;
       
       switch (comm)
