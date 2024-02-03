@@ -299,7 +299,8 @@ codem_rand2 (char *codem)
 CODEMDEF void
 codem_rands (char *codem, int offset)
 {
-  codem_rand_gen (codem + offset, 9 - offset);
+  if (offset < 9)
+    codem_rand_gen (codem + offset, 9 - offset);
   codem_set_ctrl_digit (codem);
 }
 
