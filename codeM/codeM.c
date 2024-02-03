@@ -641,6 +641,12 @@ main (void)
       case 'h':
         help ();
         break;
+
+      case '\n':
+        continue;
+
+      default:
+        printf ("invalid command -- %c\n", comm);
       }
     }
 
