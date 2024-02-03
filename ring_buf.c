@@ -1,6 +1,6 @@
 /**
  *    file: ring_buf.c
- *    created at: 7 Oct 2023
+ *    created on: 7 Oct 2023
  *
  *    implements Ring buffer (Circular buffer)
  *

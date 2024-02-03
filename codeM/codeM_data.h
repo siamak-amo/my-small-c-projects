@@ -1,6 +1,6 @@
 /**
  *   file: codeM_data.h
- *   created at: 25 Oct 2023
+ *   created on: 25 Oct 2023
  *
  *   extra data about the codem ID
  *

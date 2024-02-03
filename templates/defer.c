@@ -1,6 +1,6 @@
 /**
  *    file: defer.c
- *    created at: 4 Oct 2023
+ *    created on: 4 Oct 2023
  *
  *    implements defer in C
  *

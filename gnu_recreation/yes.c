@@ -1,6 +1,6 @@
 /**
  *  file: yes.c
- *  created at: 8 Oct 2023
+ *  created on: 8 Oct 2023
  *
  *  yes! program
  *  

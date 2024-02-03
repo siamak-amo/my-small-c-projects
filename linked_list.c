@@ -1,6 +1,6 @@
 /**
  *   file: linked_list.c
- *   created at: 17 Oct 2023
+ *   created on: 17 Oct 2023
  *
  *   implements linked list (in Linux naming format)
  *

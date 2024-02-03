@@ -1,6 +1,6 @@
 /**
  *    file: xor_encrypt.c
- *    created at: 4 Aug 2023
+ *    created on: 4 Aug 2023
  *
  *    usage:
  *      ./enc [input file] [output file] [KEY]      

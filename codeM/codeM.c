@@ -16,7 +16,7 @@
 
 /**
  *   file: codeM.c
- *   created at: 1 Oct 2023
+ *   created on: 1 Oct 2023
  *
  *   common Iranian ID number (code-e-melli) single file library
  *

@@ -1,6 +1,6 @@
 /**
  *    file: ttyART.c
- *    created at: 7 Oct 2023
+ *    created on: 7 Oct 2023
  *
  *    compilation:
  *      first provide olive.c file,

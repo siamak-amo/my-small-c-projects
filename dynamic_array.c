@@ -1,6 +1,6 @@
 /**
  *  file: dynamic_array.c
- *  created at: 20 Jan 2024
+ *  created on: 20 Jan 2024
  *
  *  implements dynamic array in C
  *
