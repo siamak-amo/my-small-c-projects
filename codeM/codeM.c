@@ -559,7 +559,7 @@ ssrand ()
 
 int
 main (void)
-  {
+{
   char comm = '\0';
   char tmp[CODEM_BUF_LEN];
 
@@ -583,9 +583,12 @@ main (void)
         scanf ("%10s", tmp);
 
         if (0 != codem_norm (tmp))
-          puts ("cannot be normalized"); /* unreachable */
-        printd_code(tmp);
+          {
+            puts ("cannot be normalized"); /* unreachable */
+            continue;
+          }
 
+        printd_code(tmp);
         if (codem_isvalidn (tmp))
           {
             if (codem_ccode_isvalid (tmp))
@@ -602,13 +605,14 @@ main (void)
         scanf ("%10s", tmp);
 
         if (0 != codem_norm (tmp))
-          puts ("cannot be normalized"); /* unreachable */
-        else
           {
-            printd_code(tmp);
-            codem_set_ctrl_digit (tmp);
-            puts (tmp);
+            puts ("cannot be normalized"); /* unreachable */
+            continue;
           }
+
+        printd_code(tmp);
+        codem_set_ctrl_digit (tmp);
+        puts (tmp);
         break;
 
       /* make a random city code ********/
