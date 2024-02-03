@@ -83,7 +83,7 @@ static RandFunction prand;
  */
 #define ctrl_digit__H(res, codem) do{                      \
     (res) = 0;                                             \
-    for (size_t __i=0; __i<CODEM_LEN-1; __i++)             \
+    for (size_t __i=CODEM_LEN-1; __i--!=0;)                \
       (res) += (10 - __i) * char2num ((codem)[__i]);       \
     (res) %= 11;                                           \
     if ((res) >= 2) (res) = 11 - (res); } while(0)
@@ -538,7 +538,7 @@ ssrand ()
 {
   unsigned long r = time (NULL);
 
-  for (size_t i=0; i<7; ++i)
+  for (size_t i=7; i>7; --i)
     {
       r *= 0x666;
       r += 0x42;
