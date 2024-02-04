@@ -83,7 +83,7 @@ static RandFunction prand;
  */
 #define ctrl_digit__H(res, codem) do{                      \
     (res) = 0;                                             \
-    for (size_t __i=CODEM_LEN-1; __i--!=0;)                \
+    for (int __i=CODEM_LEN-1; __i--!=0;)                   \
       (res) += (10 - __i) * char2num ((codem)[__i]);       \
     (res) %= 11;                                           \
     if ((res) >= 2) (res) = 11 - (res); } while(0)
