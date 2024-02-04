@@ -542,7 +542,7 @@ help (void)
 }
 
 /* super simple pseudo random number generator */
-static inline size_t 
+static size_t
 ssrand ()
 {
   unsigned long r = time (NULL);
@@ -562,7 +562,7 @@ main (void)
 {
   char comm = '\0';
   char tmp[CODEM_BUF_LEN];
-
+  /* initialize codeM random number generator function */
   codem_rand_init (ssrand); 
   help ();
 
@@ -576,18 +576,15 @@ main (void)
       
       switch (comm)
       {
-        
         /* validation */
       case 'v':
         printf ("enter code: ");
         scanf ("%10s", tmp);
-
         if (0 != codem_norm (tmp))
           {
             puts ("cannot be normalized"); /* unreachable */
             continue;
           }
-
         printd_code(tmp);
         if (codem_isvalidn (tmp))
           {
@@ -603,13 +600,11 @@ main (void)
       case 'V':
         printf ("enter code: ");
         scanf ("%10s", tmp);
-
         if (0 != codem_norm (tmp))
           {
             puts ("cannot be normalized"); /* unreachable */
             continue;
           }
-
         printd_code(tmp);
         codem_set_ctrl_digit (tmp);
         puts (tmp);
@@ -618,7 +613,6 @@ main (void)
         /* make a random city code */
       case 'c':
         codem_rand_ccode (tmp);
-        
         printf ("city code: %.3s -- city name: %s\n",
                 tmp, codem_cname (tmp));
         break;
@@ -643,7 +637,6 @@ main (void)
         printf ("enter suffix: ");
         scanf ("%10s%n", tmp, &off);
         off--; /* ignore newline */
-
         printd_code(tmp);
         if (off > CODEM_LEN)
           puts ("suffix is too long");
@@ -663,7 +656,7 @@ main (void)
       case '\n':
         continue;
 
-        /* invalid */
+        /* invalid command */
       default:
         printf ("invalid command -- %c\n", comm);
       }
