@@ -236,12 +236,12 @@ codem_norm (char *src)
 CODEMDEF int
 codem_isvalidn (const char *codem)
 {
+  if (!is_numeric (codem))
+    return 0;
+
   int d = num2char (codem_find_ctrl_digit (codem));
 
-  if (d == codem[CTRL_DIGIT_IDX])
-    return 1;
-  else
-    return 0;
+  return (d == codem[CTRL_DIGIT_IDX]);
 }
 
 CODEMDEF int
