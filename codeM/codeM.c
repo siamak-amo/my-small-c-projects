@@ -78,6 +78,18 @@ static RandFunction prand;
 #define num2char(x) ((x) + '0')
 
 /**
+ *  internal macro to check @codem buffer
+ *  is only contains numeric characters,
+ *  only use `codem_isvalid*` functions
+ *  @codem should be normalized
+ */
+#define is_numeric(codem) ({int __res = 1;                 \
+      for (int __i=CODEM_LEN-1; __i--!=0;){                \
+        __res &= ('0'<=codem[__i] && '9'>=codem[__i]);     \
+        if (!__res) break;                                 \
+      }; __res;})
+
+/**
  *  internal macro to calculate the control digit
  *  only use `codem_*_ctrl_digit` functions
  */
