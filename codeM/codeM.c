@@ -179,7 +179,6 @@ CODEMDEF int codem_ccode_idx (const char *codem);
 #endif /* codeM__H__ */
 
 
-
 /* implementation */
 #ifdef CODEM_IMPLEMENTATION
 
@@ -189,7 +188,6 @@ codem_find_ctrl_digit (const char *codem)
   int res;
 
   ctrl_digit__H (res, codem);
-  
   return res;
 }
 
@@ -199,10 +197,8 @@ codem_set_ctrl_digit (char *codem)
   int res;
   
   ctrl_digit__H (res, codem);
-
   codem[CTRL_DIGIT_IDX] = num2char (res);
 }
-
 
 CODEMDEF int
 codem_normcpy (char *dest, const char *src)
@@ -214,10 +210,8 @@ codem_normcpy (char *dest, const char *src)
   
   memset (dest, '0', CODEM_LEN - l);
   memcpy (dest + (CODEM_LEN - l), src, l);
-
-  /* make dest null terminated */
+  /* make dest null-terminated */
   dest[CODEM_LEN] = '\0';
-  
   return 0;
 }
 
@@ -239,9 +233,8 @@ codem_isvalidn (const char *codem)
   if (!is_numeric (codem))
     return 0;
 
-  int d = num2char (codem_find_ctrl_digit (codem));
-
-  return (d == codem[CTRL_DIGIT_IDX]);
+  return (codem[CTRL_DIGIT_IDX] ==
+          num2char (codem_find_ctrl_digit (codem)));
 }
 
 CODEMDEF int
@@ -260,7 +253,7 @@ codem_rand_gen (char *res, int len)
 {
   unsigned long long rand = prand ();
   
-  while ( 0 != len--)
+  while (0 != len--)
     {
       res[len] = num2char (rand % 10);
       rand /= 10;
@@ -273,7 +266,6 @@ codem_rand_ccode (char *dest)
   int code_count = CC_LEN;
   int idx = city_rand_idx__H ();
   size_t rand = prand ();
-
   const char *p = city_code[idx];
   const char *q = p;
 
@@ -287,7 +279,6 @@ codem_rand_ccode (char *dest)
       if (0 == rand % code_count)
         break;
     }
-  
   strncpy (dest, p, CC_LEN);
 }
 
@@ -329,9 +320,7 @@ codem_ccode_idx (const char *codem)
         if (0 == strncmp (p, codem, CC_LEN))
           return idx;
         p += CC_LEN;
-        
       } while (*p != '\0');
-      
       p++;
       idx++;
     }
