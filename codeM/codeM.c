@@ -523,6 +523,7 @@ main (void)
 
 #include <stdio.h>
 #include <time.h>
+#include <assert.h>
 
 #ifdef CODEM_DEBUG
 /* debug macro to print codeM buffer */
@@ -583,8 +584,8 @@ main (void)
         scanf ("%10s", tmp);
         if (0 != codem_norm (tmp))
           {
-            puts ("cannot be normalized"); /* unreachable */
-            continue;
+            puts ("cannot be normalized");
+            assert ( 0 && "unreachable code" );
           }
         printd_code(tmp);
         if (codem_isvalidn (tmp))
@@ -603,8 +604,8 @@ main (void)
         scanf ("%10s", tmp);
         if (0 != codem_norm (tmp))
           {
-            puts ("cannot be normalized"); /* unreachable */
-            continue;
+            puts ("cannot be normalized");
+            assert ( 0 && "unreachable code" );
           }
         printd_code(tmp);
         codem_set_ctrl_digit (tmp);
