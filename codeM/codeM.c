@@ -341,7 +341,7 @@ codem_ccode_idx (const char *codem)
 #ifdef CODEM_DEBUG
 #define DEBUG(fmt, ...) printf (fmt, ##__VA_ARGS__)
 #else
-#define DEBUG(fmt, ...) do{}while(0)
+#define DEBUG(fmt, ...) do{} while (0)
 #endif
 
 /* assert char x is a number '0', ..., '9' */
@@ -549,7 +549,7 @@ ssrand ()
 {
   unsigned long r = time (NULL);
 
-  for (size_t i=7; i>0; --i)
+  for (int i=7; i>0; --i)
     {
       r *= 0x666;
       r += 0x42;
