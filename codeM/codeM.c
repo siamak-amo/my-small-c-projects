@@ -708,6 +708,8 @@ exec_command (char prev_comm, char comm, char *argv)
 
       /* empty command */
     case '\n':
+    case '\r':
+    case '\\':
     case ';':
     case '#':
     case ' ':
