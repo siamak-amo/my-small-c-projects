@@ -595,13 +595,14 @@ ssrand ()
 
 
 int
-main (void)
+main (int argc, char **argv)
 {
   char comm = '\0';
   char tmp[CODEM_BUF_LEN];
   /* initialize codeM random number generator function */
-  codem_rand_init (ssrand); 
-  help ();
+  codem_rand_init (ssrand);
+  if (!(argc == 2 && strcmp (argv[1], "-s") == 0))
+    help ();
 
   while (1)
     {
