@@ -607,7 +607,7 @@ numscanf(const char *inp, char *dest)
     {
       int __tmp_num;
       sscanf (inp, "%d", &__tmp_num);
-      snprintf (dest, 10, "%d%n", __tmp_num, &n);
+      snprintf (dest, CODEM_LEN, "%d%n", __tmp_num, &n);
     }
 
   return n;
