@@ -593,6 +593,11 @@ ssrand ()
   return r;
 }
 
+/**
+ *  internal function to be used by the exec_command function
+ *  pass @inp NULL to print @message and read from stdin
+ *  otherwise scan number from @inp into @dest
+ */
 int
 numscanf(const char *restrict inp,
          const char *restrict message, char *dest)
