@@ -716,7 +716,7 @@ main (int argc, char **argv)
           prev_comm = comm;
           comm = *comm_ptr;
           comm_ptr++;
-          if (exec_command (prev_comm, comm, comm_ptr+1))
+          if (exec_command (prev_comm, comm, comm_ptr))
             return 0;
         }
     }
