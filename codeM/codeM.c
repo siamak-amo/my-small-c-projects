@@ -119,9 +119,9 @@ static RandFunction prand;
 
 /* get the name of city code @code */
 #ifndef CODEM_NO_CITY_DATA
-#define codem_cname(code)                                       \
-  ({ int __city_idx = codem_ccode_idx (code);                   \
-    (__city_idx == CC_NOT_FOUND) ? "Not Found"                  \
+#define codem_cname(code)                                  \
+  ({ int __city_idx = codem_ccode_idx (code);              \
+    (__city_idx == CC_NOT_FOUND) ? "Not Found"             \
       : city_name[__city_idx]; })
 #else
 #define codem_cname(code) "Not Implemented"
