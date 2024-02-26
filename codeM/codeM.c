@@ -593,12 +593,115 @@ ssrand ()
   return r;
 }
 
+/**
+ *  returns 1 when program should be exited otherwise 0
+ */
+int
+exec_command (char comm, char prev_comm)
+{
+  char tmp[CODEM_BUF_LEN];
+
+  switch (comm)
+    {
+      /* validation */
+    case 'v':
+      printf ("enter code: ");
+      scanf ("%10s", tmp);
+      if (0 != codem_norm (tmp))
+        {
+          puts ("cannot be normalized");
+          assert ( 0 && "unreachable code" );
+        }
+      printd_code(tmp);
+      if (codem_isvalidn (tmp))
+        {
+          if (codem_ccode_isvalid (tmp))
+            puts ("OK.");
+          else
+            puts ("city code was not found - code is valid");
+        }
+      else puts ("Not Valid.");
+      break;
+
+      /* make a code valid */
+    case 'V':
+      printf ("enter code: ");
+      scanf ("%10s", tmp);
+      if (0 != codem_norm (tmp))
+        {
+          puts ("cannot be normalized");
+          assert ( 0 && "unreachable code" );
+        }
+      printd_code(tmp);
+      codem_set_ctrl_digit (tmp);
+      puts (tmp);
+      break;
+
+      /* make a random city code */
+    case 'c':
+      codem_rand_ccode (tmp);
+      printf ("city code: %.3s -- city name: %s\n",
+              tmp, codem_cname (tmp));
+      break;
+        
+      /* find city name */
+    case 'C':
+      printf ("enter code: ");
+      scanf ("%10s", tmp);
+      printd_code(tmp);
+      puts (codem_cname (tmp));
+      break;
+        
+      /* make a random code */
+    case 'r':
+      codem_rand2 (tmp);
+      puts (tmp);
+      break;
+
+      /* make a random code by suffix */
+    case 'R':
+      int off;
+      printf ("enter suffix: ");
+      scanf ("%10s%n", tmp, &off);
+      off--; /* ignore newline */
+      printd_code(tmp);
+      if (off > CODEM_LEN)
+        puts ("suffix is too long");
+      else
+        {
+          codem_rands (tmp, off);
+          puts (tmp);
+        }
+      break;
+
+      /* print help */
+    case 'h':
+      help ();
+      break;
+
+    case 'q':
+      return 1;
+
+      /* empty command */
+    case '\n':
+    case ';':
+    case '#':
+    case ' ':
+      return 0;
+
+      /* invalid command */
+    default:
+      if (prev_comm == '\n')
+        printf ("invalid command -- %c\n", comm);
+    }
+
+  return 0;
+}
 
 int
 main (int argc, char **argv)
 {
   char comm = '\0', prev_comm = comm;
-  char tmp[CODEM_BUF_LEN];
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
   /* check silent mode to not the print help message */
@@ -616,100 +719,9 @@ main (int argc, char **argv)
           puts("");
           return 0;
         }
-      
-      switch (comm)
-      {
-        /* validation */
-      case 'v':
-        printf ("enter code: ");
-        scanf ("%10s", tmp);
-        if (0 != codem_norm (tmp))
-          {
-            puts ("cannot be normalized");
-            assert ( 0 && "unreachable code" );
-          }
-        printd_code(tmp);
-        if (codem_isvalidn (tmp))
-          {
-            if (codem_ccode_isvalid (tmp))
-              puts ("OK.");
-            else
-              puts ("city code was not found - code is valid");
-          }
-        else puts ("Not Valid.");
-        break;
 
-        /* make a code valid */
-      case 'V':
-        printf ("enter code: ");
-        scanf ("%10s", tmp);
-        if (0 != codem_norm (tmp))
-          {
-            puts ("cannot be normalized");
-            assert ( 0 && "unreachable code" );
-          }
-        printd_code(tmp);
-        codem_set_ctrl_digit (tmp);
-        puts (tmp);
-        break;
-
-        /* make a random city code */
-      case 'c':
-        codem_rand_ccode (tmp);
-        printf ("city code: %.3s -- city name: %s\n",
-                tmp, codem_cname (tmp));
-        break;
-        
-        /* find city name */
-      case 'C':
-        printf ("enter code: ");
-        scanf ("%10s", tmp);
-        printd_code(tmp);
-        puts (codem_cname (tmp));
-        break;
-        
-        /* make a random code */
-      case 'r':
-        codem_rand2 (tmp);
-        puts (tmp);
-        break;
-
-        /* make a random code by suffix */
-      case 'R':
-        int off;
-        printf ("enter suffix: ");
-        scanf ("%10s%n", tmp, &off);
-        off--; /* ignore newline */
-        printd_code(tmp);
-        if (off > CODEM_LEN)
-          puts ("suffix is too long");
-        else
-          {
-            codem_rands (tmp, off);
-            puts (tmp);
-          }
-        break;
-
-        /* print help */
-      case 'h':
-        help ();
-        break;
-
-      case 'q':
+      if (exec_command (comm, prev_comm))
         return 0;
-
-        /* empty command */
-      case '\n':
-      case ';':
-      case '#':
-      case ' ':
-        continue;
-
-        /* invalid command */
-      default:
-        if (prev_comm == '\n')
-          printf ("invalid command -- %c\n", comm);
-      }
     }
 
   return 0;
