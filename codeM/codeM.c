@@ -32,6 +32,12 @@
  *       cc -Wall -Wextra -D CODEM_IMPLEMENTATION
  *          -D CODEM_TEST -D CODEM_DEBUG -o test codeM.c
  *
+ *     other compilation options:
+ *       `-D CODEM_NO_CITY_DATA`:
+ *          to compile without data of cites (ignore codeM_data.h)
+ *       `-D CODEM_DEBUG`:
+ *          to enable printing some debug information
+ *
  *     to include in c files:
  *       `
  *         #define CODEM_IMPLEMENTATION
