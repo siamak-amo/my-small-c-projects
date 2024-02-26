@@ -704,24 +704,41 @@ main (int argc, char **argv)
   char comm = '\0', prev_comm = comm;
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
-  /* check silent mode to not the print help message */
-  if (!(argc > 1 && strcmp (argv[1], "-s") == 0))
-    help ();
 
-  while (1)
+  if (argc == 3 && strcmp (argv[1], "-c") == 0)
     {
-      if ('\0' == comm || '\n' == comm)
-        printf ("> ");
-
-      prev_comm = comm;
-      if (EOF == scanf ("%c", &comm))
+      /* run commands from argv[2] */
+      char *comm_ptr = argv[2];
+      while (*comm_ptr != '\0')
         {
-          puts("");
-          return 0;
+          prev_comm = comm;
+          comm = *comm_ptr;
+          comm_ptr++;
+          if (exec_command (prev_comm, comm))
+            return 0;
         }
+    }
+  else /* shell mode */
+    {
+      /* check silent mode to not the print help message */
+      if (!(argc > 1 && strcmp (argv[1], "-s") == 0))
+        help ();
 
-      if (exec_command (prev_comm, comm))
-        return 0;
+      while (1)
+      {
+        if ('\0' == comm || '\n' == comm)
+          printf ("> ");
+
+        prev_comm = comm;
+        if (EOF == scanf ("%c", &comm))
+          {
+            puts("");
+            return 0;
+          }
+
+        if (exec_command (prev_comm, comm))
+          return 0;
+      }
     }
 
   return 0;
