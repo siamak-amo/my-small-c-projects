@@ -572,10 +572,10 @@ static inline void
 help (void)
 {
   puts (
-  "v: validate          -  V: make valid\n"
-  "c: randon city code  -  C: find city name\n"
-  "r: random code       -  R: random with suffix\n"
-  "q: quit              -  h: help\n");
+  "v: validate            -  V: make my code valid\n"
+  "c: randon city code    -  C: find my city name\n"
+  "r: make random codem   -  R: make random codem with suffix\n"
+  "q: quit                -  h: help\n");
 }
 
 /* super simple pseudo random number generator */
