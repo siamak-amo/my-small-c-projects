@@ -595,9 +595,11 @@ ssrand ()
 
 /**
  *  returns 1 when program should be exited otherwise 0
+ *  use @argv for commands that have argument otherwise
+ *  pass it NULL to read from stdin
  */
 int
-exec_command (char prev_comm, char comm)
+exec_command (char prev_comm, char comm, char *argv)
 {
   char tmp[CODEM_BUF_LEN];
 
@@ -714,7 +716,7 @@ main (int argc, char **argv)
           prev_comm = comm;
           comm = *comm_ptr;
           comm_ptr++;
-          if (exec_command (prev_comm, comm))
+          if (exec_command (prev_comm, comm, comm_ptr+1))
             return 0;
         }
     }
@@ -736,7 +738,7 @@ main (int argc, char **argv)
             return 0;
           }
 
-        if (exec_command (prev_comm, comm))
+        if (exec_command (prev_comm, comm, NULL))
           return 0;
       }
     }
