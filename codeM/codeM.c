@@ -499,7 +499,7 @@ test_2_3 ()
   int idx = codem_ccode_idx (code);
 
   /* check city code is valid */
-  assert (idx != -1);
+  assert (idx != CC_NOT_FOUND);
 
   DEBUG ("city name: %s\n", city_name[idx]);
   /* idx must be 462 */
