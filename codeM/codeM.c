@@ -594,12 +594,14 @@ ssrand ()
 }
 
 int
-numscanf(const char *inp, char *dest)
+numscanf(const char *restrict inp,
+         const char *restrict message, char *dest)
 {
   int n;
 
   if (inp == NULL)
     {
+      printf (message);
       scanf ("%10s%n", dest, &n);
       n--; /* ignore newline */
     }
@@ -627,8 +629,7 @@ exec_command (char prev_comm, char comm, char *argv)
     {
       /* validation */
     case 'v':
-      printf ("enter code: ");
-      numscanf (argv, tmp);
+      numscanf (argv, "enter code: ", tmp);
       if (0 != codem_norm (tmp))
         {
           puts ("cannot be normalized");
@@ -647,8 +648,7 @@ exec_command (char prev_comm, char comm, char *argv)
 
       /* make a code valid */
     case 'V':
-      printf ("enter code: ");
-      numscanf (argv, tmp);
+      numscanf (argv, "enter code: ", tmp);
       if (0 != codem_norm (tmp))
         {
           puts ("cannot be normalized");
@@ -668,8 +668,7 @@ exec_command (char prev_comm, char comm, char *argv)
         
       /* find city name */
     case 'C':
-      printf ("enter code: ");
-      numscanf (argv, tmp);
+      numscanf (argv, "enter code: ", tmp);
       printd_code(tmp);
       puts (codem_cname (tmp));
       break;
@@ -682,8 +681,7 @@ exec_command (char prev_comm, char comm, char *argv)
 
       /* make a random code by suffix */
     case 'R':
-      printf ("enter suffix: ");
-      int off = numscanf (argv, tmp);
+      int off = numscanf (argv, "enter suffix: ", tmp);
       printd_code(tmp);
       if (off > CODEM_LEN)
         puts ("suffix is too long");
