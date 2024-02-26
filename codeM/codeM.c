@@ -276,6 +276,7 @@ codem_rand_gen (char *res, int len)
 CODEMDEF void
 codem_rand_ccode (char *dest)
 {
+#ifndef CODEM_NO_CITY_DATA
   int code_count = CC_LEN;
   int idx = city_rand_idx__H ();
   size_t rand = prand ();
@@ -293,6 +294,14 @@ codem_rand_ccode (char *dest)
         break;
     }
   strncpy (dest, p, CC_LEN);
+#else
+  size_t rand = prand ();
+  for (int idx = CC_LEN-1; idx >= 0; --idx)
+    {
+      dest[idx] = (rand%10) + '0';
+      rand /= 10;
+    }
+#endif
 }
 
 CODEMDEF void
@@ -323,6 +332,7 @@ codem_rands (char *codem, int offset)
 CODEMDEF int
 codem_ccode_idx (const char *codem)
 {
+#ifndef CODEM_NO_CITY_DATA
   int idx = 0;
   const char *p;
   
@@ -338,7 +348,11 @@ codem_ccode_idx (const char *codem)
       idx++;
     }
 
-  return -1;
+  return CC_NOT_FOUND;
+#else
+  (void) codem; /* prevent compiler warning */
+  return CC_NOT_IMPLEMENTED;
+#endif
 }
 #endif /* CODEM_IMPLEMENTATION */
 
