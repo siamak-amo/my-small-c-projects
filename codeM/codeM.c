@@ -47,8 +47,14 @@
 #ifndef codeM__H__
 #define codeM__H__
 #include <string.h>
-/* city_name and city_code data */
-#include "codeM_data.h"
+
+#ifndef CODEM_NO_CITY_DATA
+#include "codeM_data.h" /* city_name and city_code data */
+#else
+/* city code length */
+/* it's needed for some functions even without codeM_data.h */
+#define CC_LEN 3
+#endif
 
 typedef size_t(*RandFunction)(void);
 /**
@@ -70,6 +76,9 @@ static RandFunction prand;
 /* it's important to allocate your buffers for codem of */
 /* length 11, 10 char for codem and a 0-byte at the end */
 #define CODEM_BUF_LEN 11
+/* city code errors */
+#define CC_NOT_FOUND -1
+#define CC_NOT_IMPLEMENTED -2
 
 /* macro to initialize prand */
 #define codem_rand_init(randfun) prand = &(randfun)
