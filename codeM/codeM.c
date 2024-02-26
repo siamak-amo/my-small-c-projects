@@ -601,7 +601,8 @@ main (int argc, char **argv)
   char tmp[CODEM_BUF_LEN];
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
-  if (!(argc == 2 && strcmp (argv[1], "-s") == 0))
+  /* check silent mode to not the print help message */
+  if (!(argc > 1 && strcmp (argv[1], "-s") == 0))
     help ();
 
   while (1)
