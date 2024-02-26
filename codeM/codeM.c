@@ -129,7 +129,7 @@ static RandFunction prand;
 
 /* validate only city code of @codem */
 #define codem_ccode_isvalid(codem)                         \
-  (codem_ccode_idx (codem) >= 0)
+  (codem_ccode_idx (codem) != CC_NOT_FOUND)
 
 /* validate codem and it's city code */
 #define codem_isvalid2(codem)                              \
