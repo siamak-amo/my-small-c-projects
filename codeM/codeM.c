@@ -563,7 +563,7 @@ main (void)
 #ifdef CODEM_DEBUG
 /* debug macro to print codeM buffer */
 #define printd_code(code)                       \
-  printf ("[debug_%s_%d] %s=[%s]\n",            \
+  printf ("[debug %s:%d] %s=[%s]\n",            \
           __func__, __LINE__, #code, code);
 #else
 #define printd_code(code) do{} while (0)
