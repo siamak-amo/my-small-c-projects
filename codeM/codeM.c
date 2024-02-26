@@ -599,12 +599,15 @@ numscanf(const char *inp, char *dest)
   int n;
 
   if (inp == NULL)
-    scanf ("%10s%n", dest, &n);
+    {
+      scanf ("%10s%n", dest, &n);
+      n--; /* ignore newline */
+    }
   else
     {
       int __tmp_num;
       sscanf (inp, "%d", &__tmp_num);
-      sprintf (dest, "%.10d%n", __tmp_num, &n);
+      snprintf (dest, 10, "%d%n", __tmp_num, &n);
     }
 
   return n;
@@ -681,7 +684,6 @@ exec_command (char prev_comm, char comm, char *argv)
     case 'R':
       printf ("enter suffix: ");
       int off = numscanf (argv, tmp);
-      off--; /* ignore newline */
       printd_code(tmp);
       if (off > CODEM_LEN)
         puts ("suffix is too long");
