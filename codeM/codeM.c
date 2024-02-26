@@ -20,7 +20,7 @@
  *
  *   common Iranian ID number (code-e-melli) single file library
  *
- *   `codem` in the following is referred to code-e-melli.
+ *   `codem` in the following is referred to the term `code-e-melli`.
  *   this library performs validating and making random codem's.
  *
  *   compilation:
