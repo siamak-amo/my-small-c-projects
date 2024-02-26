@@ -691,7 +691,7 @@ exec_command (char prev_comm, char comm)
 
       /* invalid command */
     default:
-      if (prev_comm == '\n')
+      if (prev_comm == '\n' || prev_comm == '\0')
         printf ("invalid command -- %c\n", comm);
     }
 
