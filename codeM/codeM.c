@@ -597,7 +597,7 @@ ssrand ()
  *  returns 1 when program should be exited otherwise 0
  */
 int
-exec_command (char comm, char prev_comm)
+exec_command (char prev_comm, char comm)
 {
   char tmp[CODEM_BUF_LEN];
 
@@ -720,7 +720,7 @@ main (int argc, char **argv)
           return 0;
         }
 
-      if (exec_command (comm, prev_comm))
+      if (exec_command (prev_comm, comm))
         return 0;
     }
 
