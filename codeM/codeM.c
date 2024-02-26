@@ -593,6 +593,23 @@ ssrand ()
   return r;
 }
 
+int
+numscanf(const char *inp, char *dest)
+{
+  int n;
+
+  if (inp == NULL)
+    scanf ("%10s%n", dest, &n);
+  else
+    {
+      int __tmp_num;
+      sscanf (inp, "%d", &__tmp_num);
+      sprintf (dest, "%.10d%n", __tmp_num, &n);
+    }
+
+  return n;
+}
+
 /**
  *  returns 1 when program should be exited otherwise 0
  *  use @argv for commands that have argument otherwise
@@ -608,7 +625,7 @@ exec_command (char prev_comm, char comm, char *argv)
       /* validation */
     case 'v':
       printf ("enter code: ");
-      scanf ("%10s", tmp);
+      numscanf (argv, tmp);
       if (0 != codem_norm (tmp))
         {
           puts ("cannot be normalized");
@@ -628,7 +645,7 @@ exec_command (char prev_comm, char comm, char *argv)
       /* make a code valid */
     case 'V':
       printf ("enter code: ");
-      scanf ("%10s", tmp);
+      numscanf (argv, tmp);
       if (0 != codem_norm (tmp))
         {
           puts ("cannot be normalized");
@@ -649,7 +666,7 @@ exec_command (char prev_comm, char comm, char *argv)
       /* find city name */
     case 'C':
       printf ("enter code: ");
-      scanf ("%10s", tmp);
+      numscanf (argv, tmp);
       printd_code(tmp);
       puts (codem_cname (tmp));
       break;
@@ -662,9 +679,8 @@ exec_command (char prev_comm, char comm, char *argv)
 
       /* make a random code by suffix */
     case 'R':
-      int off;
       printf ("enter suffix: ");
-      scanf ("%10s%n", tmp, &off);
+      int off = numscanf (argv, tmp);
       off--; /* ignore newline */
       printd_code(tmp);
       if (off > CODEM_LEN)
