@@ -465,7 +465,7 @@ test_1_2 ()
 static void
 test_2_1 ()
 {
-  char code[CODEM_BUF_LEN];
+  char code[CODEM_BUF_LEN] = {0};
 
   codem_rand (code);
   DEBUG ("codem_rand: %s\n", code);
