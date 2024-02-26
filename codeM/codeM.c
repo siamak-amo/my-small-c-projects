@@ -575,7 +575,7 @@ help (void)
   puts (
   "v: validate            -  V: make my code valid\n"
   "c: randon city code    -  C: find my city name\n"
-  "r: make random codem   -  R: make random codem with suffix\n"
+  "r: make random codem   -  R: make random codem with prefix\n"
   "q: quit                -  h: help\n");
 }
 
@@ -685,12 +685,12 @@ exec_command (char prev_comm, char comm, char *argv)
       puts (tmp);
       break;
 
-      /* make a random code by suffix */
+      /* make a random code by prefix */
     case 'R':
-      int off = numscanf (argv, "enter suffix: ", tmp);
+      int off = numscanf (argv, "enter prefix: ", tmp);
       printd_code(tmp);
       if (off > CODEM_LEN)
-        puts ("suffix is too long");
+        puts ("prefix is too long");
       else
         {
           codem_rands (tmp, off);
