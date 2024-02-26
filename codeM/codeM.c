@@ -47,7 +47,7 @@
  *         int main(...)
  *         {
  *           char codem[CODEM_BUF_LEN];
- *           // if you need to use each of the *_rand_* functions
+ *           // if you need to use any of the *_rand_* functions
  *           codem_rand_init (my_rand_fun);
  *         }
  *       `
@@ -67,9 +67,9 @@
 typedef size_t(*RandFunction)(void);
 /**
  *  prand is the main pseudo-random number
- *  generator function used by this library.
+ *  generator function used by this library
  *  initialization of prand is necessary for using
- *  any of codem_rand_* functions. (use codem_rand_init)
+ *  any of *_rand_* functions and macros
  */
 static RandFunction prand;
 
