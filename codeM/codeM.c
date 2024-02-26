@@ -724,6 +724,30 @@ exec_command (char prev_comm, char comm, char *argv)
   return 0;
 }
 
+void
+normalize_command (char *restrict prev_comm,
+                   char *restrict comm)
+{
+  if ('\\' == *prev_comm && '\\' != *comm)
+    {
+      *prev_comm = ' ';
+      switch (*comm)
+        {
+        case 'n':
+          *comm = '\n';
+          break;
+
+        case 'r':
+          *comm = '\r';
+          break;
+
+        default:
+          *comm = '\0';
+          break;
+        }
+    }
+}
+
 int
 main (int argc, char **argv)
 {
@@ -740,6 +764,9 @@ main (int argc, char **argv)
           prev_comm = comm;
           comm = *comm_ptr;
           comm_ptr++;
+          /* interpretation of backslash escapes */
+          normalize_command (&prev_comm, &comm);
+
           if (exec_command (prev_comm, comm, comm_ptr))
             return 0;
         }
