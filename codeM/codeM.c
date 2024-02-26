@@ -618,7 +618,7 @@ numscanf(const char *inp, char *dest)
 int
 exec_command (char prev_comm, char comm, char *argv)
 {
-  char tmp[CODEM_BUF_LEN];
+  char tmp[CODEM_BUF_LEN] = {0};
 
   switch (comm)
     {
