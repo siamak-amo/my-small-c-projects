@@ -44,10 +44,12 @@
  *         #include "codeM.c"
  *
  *         size_t my_rand_fun (void) {...}
- *           ...
+ *         int main(...)
+ *         {
  *           char codem[CODEM_BUF_LEN];
+ *           // if you need to use each of the *_rand_* functions
  *           codem_rand_init (my_rand_fun);
- *           ...
+ *         }
  *       `
  **/
 #ifndef codeM__H__
