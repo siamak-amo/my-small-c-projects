@@ -785,7 +785,16 @@ main (int argc, char **argv)
       if (argc > 1 && strlen (argv[1]) > 1 && argv[1][0] == '-')
         opt = argv[1][1];
       if (!(opt == 's' || opt == 'S'))
-        help ();
+        {
+          printf ("codeM Shell Mode!\n"
+                  "Usage: %s [OPTIONS] [COMMANDS]\n"
+                  "OPTIONS:\n"
+                  "       -s:    silent mode\n"
+                  "       -S:    disable prompt when using pipe to stdin\n"
+                  "       -c:    pass COMMANDS to be executed,\n"
+                  "              use: -c \"h\" to get help\n\n", argv[0]);
+          help ();
+        }
 
       while (1)
       {
