@@ -694,6 +694,9 @@ main (int argc, char **argv)
 
         /* empty command */
       case '\n':
+      case ';':
+      case '#':
+      case ' ':
         continue;
 
         /* invalid command */
