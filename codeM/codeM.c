@@ -614,7 +614,7 @@ numscanf(const char *restrict inp,
     {
       int __tmp_num;
       sscanf (inp, "%d", &__tmp_num);
-      snprintf (dest, CODEM_LEN, "%d%n", __tmp_num, &n);
+      snprintf (dest, CODEM_BUF_LEN, "%d%n", __tmp_num, &n);
     }
 
   return n;
