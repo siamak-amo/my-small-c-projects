@@ -110,14 +110,18 @@ static RandFunction prand;
     if ((res) >= 2) (res) = 11 - (res); } while(0)
 
 /* get the name of city code @code */
-#define codem_cname(code)                                  \
-  ({ int __city_idx = codem_ccode_idx (code);              \
-    (__city_idx < 0) ? "Not Found"                         \
-      : city_name[__city_idx]; })  
+#ifndef CODEM_NO_CITY_DATA
+#define codem_cname(code)                                       \
+  ({ int __city_idx = codem_ccode_idx (code);                   \
+    (__city_idx == CC_NOT_FOUND) ? "Not Found"                  \
+      : city_name[__city_idx]; })
+#else
+#define codem_cname(code) "Not Implemented"
+#endif
 
 /* validate only city code of @codem */
 #define codem_ccode_isvalid(codem)                         \
-  (codem_ccode_idx (codem) != -1)
+  (codem_ccode_idx (codem) >= 0)
 
 /* validate codem and it's city code */
 #define codem_isvalid2(codem)                              \
