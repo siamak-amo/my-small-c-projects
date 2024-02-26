@@ -611,8 +611,11 @@ main (int argc, char **argv)
         printf ("> ");
 
       prev_comm = comm;
-      if (EOF == scanf ("%c", &comm) || 'q' == comm)
-        return 0;
+      if (EOF == scanf ("%c", &comm))
+        {
+          puts("");
+          return 0;
+        }
       
       switch (comm)
       {
@@ -691,6 +694,9 @@ main (int argc, char **argv)
       case 'h':
         help ();
         break;
+
+      case 'q':
+        return 0;
 
         /* empty command */
       case '\n':
