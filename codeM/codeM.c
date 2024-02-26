@@ -597,7 +597,7 @@ ssrand ()
 int
 main (int argc, char **argv)
 {
-  char comm = '\0';
+  char comm = '\0', prev_comm = comm;
   char tmp[CODEM_BUF_LEN];
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
@@ -610,6 +610,7 @@ main (int argc, char **argv)
       if ('\0' == comm || '\n' == comm)
         printf ("> ");
 
+      prev_comm = comm;
       if (EOF == scanf ("%c", &comm) || 'q' == comm)
         return 0;
       
@@ -697,7 +698,8 @@ main (int argc, char **argv)
 
         /* invalid command */
       default:
-        printf ("invalid command -- %c\n", comm);
+        if (prev_comm == '\n')
+          printf ("invalid command -- %c\n", comm);
       }
     }
 
