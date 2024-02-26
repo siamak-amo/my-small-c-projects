@@ -613,9 +613,9 @@ numscanf(const char *restrict inp,
     }
   else
     {
-      int __tmp_num;
-      sscanf (inp, "%d", &__tmp_num);
-      snprintf (dest, CODEM_BUF_LEN, "%d%n", __tmp_num, &n);
+      size_t __tmp_num;
+      sscanf (inp, "%lu", &__tmp_num);
+      snprintf (dest, CODEM_BUF_LEN, "%lu%n", __tmp_num, &n);
     }
 
   return n;
