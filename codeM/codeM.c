@@ -767,7 +767,14 @@ main (int argc, char **argv)
           /* interpretation of backslash escapes */
           normalize_command (&prev_comm, &comm);
 
-          if (exec_command (prev_comm, comm, comm_ptr))
+          if (comm == 'h')
+            {
+              puts("Usage: ./codeM -c \"[COMMAND]\"\n"
+                   "COMMAND: sequence of normal shell mode commands\n"
+                   "         separate commands by `;` or newline `\\n`,\n"
+                   "         commands could have one argument (Ex. R 1234).");
+            }
+          else if (exec_command (prev_comm, comm, comm_ptr))
             return 0;
         }
     }
