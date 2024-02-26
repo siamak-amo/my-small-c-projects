@@ -781,18 +781,22 @@ main (int argc, char **argv)
   else /* shell mode */
     {
       /* check silent mode to not the print help message */
-      if (!(argc > 1 && strcmp (argv[1], "-s") == 0))
+      char opt = '\0';
+      if (argc > 1 && strlen (argv[1]) > 1 && argv[1][0] == '-')
+        opt = argv[1][1];
+      if (!(opt == 's' || opt == 'S'))
         help ();
 
       while (1)
       {
-        if ('\0' == comm || '\n' == comm)
+        if (('\0' == comm || '\n' == comm) && opt != 'S')
           printf ("> ");
 
         prev_comm = comm;
         if (EOF == scanf ("%c", &comm))
           {
-            puts("");
+            if (opt != 'S')
+              puts("");
             return 0;
           }
 
