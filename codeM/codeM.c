@@ -574,6 +574,7 @@ struct Opt {
   bool silent_mode;
   bool command_mode;
   bool prompt;
+  bool EOO; /* End Of Options */
   char *commands; /* only in command_mode */
 };
 
