@@ -817,7 +817,7 @@ main (int argc, char **argv)
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
   /* parsing cmdline arguments */
-  if (pars_options (argc, argv, &opt)))
+  if (pars_options (argc, argv, &opt))
       return 1;
 
   if (opt.command_mode)
