@@ -608,12 +608,12 @@ ssrand ()
  *  otherwise scan number from @inp into @dest
  */
 int
-numscanf(const char *restrict inp,
-         const char *restrict message, char *dest)
+numscanf(const struct Opt *opt,
+         const char *message, char *dest)
 {
   int n;
 
-  if (inp == NULL)
+  if (!opt->command_mode)
     {
       printf (message);
       scanf ("%10s%n", dest, &n);
@@ -622,7 +622,7 @@ numscanf(const char *restrict inp,
   else
     {
       size_t __tmp_num;
-      sscanf (inp, "%lu", &__tmp_num);
+      sscanf (opt->commands, "%lu", &__tmp_num);
       snprintf (dest, CODEM_BUF_LEN, "%lu%n", __tmp_num, &n);
     }
 
@@ -635,7 +635,8 @@ numscanf(const char *restrict inp,
  *  pass it NULL to read from stdin
  */
 int
-exec_command (char prev_comm, char comm, char *argv)
+exec_command (char prev_comm, char comm,
+              const struct Opt *opt)
 {
   char tmp[CODEM_BUF_LEN] = {0};
 
@@ -643,7 +644,7 @@ exec_command (char prev_comm, char comm, char *argv)
     {
       /* validation */
     case 'v':
-      numscanf (argv, "enter code: ", tmp);
+      numscanf (opt, "enter code: ", tmp);
       if (0 != codem_norm (tmp))
         {
           puts ("cannot be normalized");
@@ -662,7 +663,7 @@ exec_command (char prev_comm, char comm, char *argv)
 
       /* make a code valid */
     case 'V':
-      numscanf (argv, "enter code: ", tmp);
+      numscanf (opt, "enter code: ", tmp);
       if (0 != codem_norm (tmp))
         {
           puts ("cannot be normalized");
@@ -682,7 +683,7 @@ exec_command (char prev_comm, char comm, char *argv)
         
       /* find city name */
     case 'C':
-      numscanf (argv, "enter code: ", tmp);
+      numscanf (opt, "enter code: ", tmp);
       printd_code(tmp);
       puts (codem_cname (tmp));
       break;
@@ -695,7 +696,7 @@ exec_command (char prev_comm, char comm, char *argv)
 
       /* make a random code by prefix */
     case 'R':
-      int off = numscanf (argv, "enter prefix: ", tmp);
+      int off = numscanf (opt, "enter prefix: ", tmp);
       printd_code(tmp);
       if (off > CODEM_LEN)
         puts ("prefix is too long");
@@ -791,17 +792,13 @@ main (int argc, char **argv)
                    "         separate commands by `;` or newline `\\n`,\n"
                    "         commands could have one argument (Ex. R 1234).");
             }
-          else if (exec_command (prev_comm, comm, comm_ptr))
+          else if (exec_command (prev_comm, comm, &opt))
             return 0;
         }
     }
   else /* shell mode */
     {
-      /* check silent mode to not the print help message */
-      char opt = '\0';
-      if (argc > 1 && strlen (argv[1]) > 1 && argv[1][0] == '-')
-        opt = argv[1][1];
-      if (!(opt == 's' || opt == 'S'))
+      if (!(opt.silent_mode || opt.prompt))
         {
           printf ("codeM Shell Mode!\n"
                   "Usage: %s [OPTIONS] [COMMANDS]\n"
@@ -815,18 +812,18 @@ main (int argc, char **argv)
 
       while (1)
       {
-        if (('\0' == comm || '\n' == comm) && opt != 'S')
+        if (('\0' == comm || '\n' == comm) && opt.prompt)
           printf ("> ");
 
         prev_comm = comm;
         if (EOF == scanf ("%c", &comm))
           {
-            if (opt != 'S')
+            if (!opt.prompt)
               puts("");
             return 0;
           }
 
-        if (exec_command (prev_comm, comm, NULL))
+        if (exec_command (prev_comm, comm, &opt))
           return 0;
       }
     }
