@@ -563,11 +563,11 @@ main (void)
 
 #ifdef CODEM_DEBUG
 /* debug macro to print codeM buffer */
-#define printd_code(code)                       \
+#define printd(param)                           \
   printf ("[debug %s:%d] %s=[%s]\n",            \
-          __func__, __LINE__, #code, code);
+          __func__, __LINE__, #param, param);
 #else
-#define printd_code(code) do{} while (0)
+#define printd(param) do{} while (0)
 #endif
 
 struct Opt {
@@ -653,7 +653,7 @@ exec_command (char prev_comm, char comm,
           puts ("cannot be normalized");
           assert ( 0 && "unreachable code" );
         }
-      printd_code(tmp);
+      printd(tmp);
       if (codem_isvalidn (tmp))
         {
           if (codem_ccode_isvalid (tmp))
@@ -672,7 +672,7 @@ exec_command (char prev_comm, char comm,
           puts ("cannot be normalized");
           assert ( 0 && "unreachable code" );
         }
-      printd_code(tmp);
+      printd(tmp);
       codem_set_ctrl_digit (tmp);
       puts (tmp);
       break;
@@ -687,7 +687,7 @@ exec_command (char prev_comm, char comm,
       /* find city name */
     case 'C':
       numscanf (opt, "enter code: ", tmp);
-      printd_code(tmp);
+      printd(tmp);
       puts (codem_cname (tmp));
       break;
         
@@ -700,7 +700,7 @@ exec_command (char prev_comm, char comm,
       /* make a random code by prefix */
     case 'R':
       int off = numscanf (opt, "enter prefix: ", tmp);
-      printd_code(tmp);
+      printd(tmp);
       if (off > CODEM_LEN)
         puts ("prefix is too long");
       else
