@@ -831,8 +831,10 @@ main (int argc, char **argv)
             {
               puts("Usage: ./codeM -c \"[COMMAND]\"\n"
                    "COMMAND: sequence of normal shell mode commands\n"
-                   "         separate commands by `;` or newline `\\n`,\n"
-                   "         commands could have one argument (Ex. R 1234).");
+                   "  commands could have one argument (Ex. `R 1234` ~ "
+                   "`R1234`,\n  `R1234;rc` ~ `R1234rc` ~ `R1234 r c`)\n"
+                   "  separate commands by space or `;` or "
+                   "`\\n` if you wish.");
             }
           else if (exec_command (prev_comm, comm, &opt))
             return 0;
@@ -845,10 +847,10 @@ main (int argc, char **argv)
           printf ("codeM Shell Mode!\n"
                   "Usage: %s [OPTIONS] [COMMANDS]\n"
                   "OPTIONS:\n"
-                  "       -s:    silent mode\n"
-                  "       -S:    disable prompt when using pipe to stdin\n"
-                  "       -c:    pass COMMANDS to be executed,\n"
-                  "              use: -c \"h\" to get help\n\n", argv[0]);
+                  "   -s:    silent mode\n"
+                  "   -S:    disable prompt when using pipe to stdin\n"
+                  "   -c:    pass COMMANDS to be executed,\n"
+                  "          use: -c \"h\" to get help\n\n", argv[0]);
           help ();
         }
 
