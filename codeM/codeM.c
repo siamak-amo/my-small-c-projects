@@ -784,6 +784,7 @@ pars_options (int argc, char **argv,
                   opt->silent_mode = true;
                   opt->prompt = false;
                   opt->commands = *(argv+1);
+                  opt->command_mode = true;
                 }
               break;
 
@@ -820,12 +821,11 @@ main (int argc, char **argv)
   if (opt.command_mode)
     {
       /* run commands from argv[2] */
-      char *comm_ptr = argv[2];
-      while (*comm_ptr != '\0')
+      while (*opt.commands != '\0')
         {
           prev_comm = comm;
-          comm = *comm_ptr;
-          comm_ptr++;
+          comm = *opt.commands;
+          opt.commands++;
           /* interpretation of backslash escapes */
           normalize_command (&prev_comm, &comm);
 
