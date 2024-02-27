@@ -820,7 +820,7 @@ main (int argc, char **argv)
 
   if (opt.command_mode)
     {
-      /* run commands from argv[2] */
+      /* run commands from cmdline args, available in opt->commands */
       while (*opt.commands != '\0')
         {
           prev_comm = comm;
