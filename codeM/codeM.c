@@ -799,7 +799,7 @@ main (int argc, char **argv)
     }
   else /* shell mode */
     {
-      if (!(opt.silent_mode || opt.prompt))
+      if (!opt.silent_mode && opt.prompt)
         {
           printf ("codeM Shell Mode!\n"
                   "Usage: %s [OPTIONS] [COMMANDS]\n"
