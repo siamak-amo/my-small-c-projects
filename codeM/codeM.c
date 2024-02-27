@@ -774,8 +774,7 @@ pars_options (int argc, char **argv,
             case 'c':
               if (argc == 1)
                 {
-                  fprintf (stderr,
-                           "parsing options filed -- Not enough arguments.\n");
+                  fprintf (stderr, "Not enough arguments");
                   return -1;
                 }
               else
@@ -788,8 +787,7 @@ pars_options (int argc, char **argv,
               break;
 
             default:
-              fprintf (stderr,
-                       "parsing options filed -- Invalid option %s\n", argv[0]);
+              fprintf (stderr, "Invalid option (%s)", argv[0]);
               return -2; /* invalid option */
             }
         }
@@ -813,7 +811,10 @@ main (int argc, char **argv)
   codem_rand_init (ssrand);
   /* parsing cmdline arguments */
   if (pars_options (argc, argv, &opt))
+    {
+      fprintf (stderr, " -- exiting.\n");
       return 1;
+    }
 
   if (opt.command_mode)
     {
