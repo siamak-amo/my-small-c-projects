@@ -798,8 +798,15 @@ pars_options (int argc, char **argv,
 int
 main (int argc, char **argv)
 {
-  static struct Opt opt = {0};
   char comm = '\0', prev_comm = comm;
+  static struct Opt opt = {
+    .silent_mode = false,
+    .command_mode = false,
+    .prompt = true,
+    .commands = NULL,
+    .EOO = false,
+  };
+
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
   pars_options (argc, argv, &opt);
