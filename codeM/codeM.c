@@ -557,6 +557,7 @@ main (void)
 #else
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <time.h>
 #include <assert.h>
 
@@ -568,6 +569,13 @@ main (void)
 #else
 #define printd_code(code) do{} while (0)
 #endif
+
+struct Opt {
+  bool silent_mode;
+  bool command_mode;
+  bool prompt;
+  char *commands; /* only in command_mode */
+};
 
 static inline void
 help (void)
@@ -748,14 +756,23 @@ normalize_command (char *restrict prev_comm,
     }
 }
 
+void
+pars_options (int argc, char **argv,
+              struct Opt *opt)
+{
+  // TODO
+}
+
 int
 main (int argc, char **argv)
 {
+  static struct Opt opt = {0};
   char comm = '\0', prev_comm = comm;
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
+  pars_options (argc, argv, &opt);
 
-  if (argc == 3 && strcmp (argv[1], "-c") == 0)
+  if (opt.command_mode)
     {
       /* run commands from argv[2] */
       char *comm_ptr = argv[2];
