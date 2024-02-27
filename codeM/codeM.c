@@ -862,7 +862,7 @@ main (int argc, char **argv)
         prev_comm = comm;
         if (EOF == scanf ("%c", &comm))
           {
-            if (!opt.prompt)
+            if (opt.prompt)
               puts("");
             return 0;
           }
