@@ -723,7 +723,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
       /* invalid command */
     default:
       if (prev_comm == '\n' || prev_comm == '\0')
-        printf ("invalid command -- %c\n", comm);
+        fprintf (stderr, "Invalid command -- (%c)\n", comm);
     }
 
   return 0;
@@ -788,7 +788,7 @@ pars_options (int argc, char **argv,
 
             default:
               fprintf (stderr, "Invalid option (%s)", argv[0]);
-              return -2; /* invalid option */
+              return -2;
             }
         }
     }
