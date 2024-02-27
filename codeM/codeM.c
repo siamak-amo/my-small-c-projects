@@ -605,8 +605,7 @@ ssrand ()
 
 /**
  *  internal function to be used by the exec_command function
- *  pass @inp NULL to print @message and read from stdin
- *  otherwise scan number from @inp into @dest
+ *  this function updates opt->commands if command_mode be true
  */
 int
 numscanf(struct Opt *opt, const char *message, char *dest)
@@ -633,8 +632,7 @@ numscanf(struct Opt *opt, const char *message, char *dest)
  *  pass it NULL to read from stdin
  */
 int
-exec_command (char prev_comm, char comm,
-              const struct Opt *opt)
+exec_command (char prev_comm, char comm, struct Opt *opt)
 {
   char tmp[CODEM_BUF_LEN] = {0};
 
@@ -713,7 +711,7 @@ exec_command (char prev_comm, char comm,
     case 'q':
       return 1;
 
-      /* empty command */
+      /* comment */
     case '\n':
     case '\r':
     case '\\':
