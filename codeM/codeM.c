@@ -613,17 +613,18 @@ numscanf(const struct Opt *opt,
          const char *message, char *dest)
 {
   int n;
+  size_t __tmp_num;
 
   if (!opt->command_mode)
     {
       if (opt->prompt)
         printf (message);
-      scanf ("%10s%n", dest, &n);
+      scanf ("%lu", &__tmp_num);
+      snprintf (dest, CODEM_BUF_LEN, "%lu%n", __tmp_num, &n);
       n--; /* ignore newline */
     }
   else
     {
-      size_t __tmp_num;
       sscanf (opt->commands, "%lu", &__tmp_num);
       snprintf (dest, CODEM_BUF_LEN, "%lu%n", __tmp_num, &n);
     }
