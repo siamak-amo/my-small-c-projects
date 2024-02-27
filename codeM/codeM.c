@@ -616,7 +616,8 @@ numscanf(const struct Opt *opt,
 
   if (!opt->command_mode)
     {
-      printf (message);
+      if (opt->prompt)
+        printf (message);
       scanf ("%10s%n", dest, &n);
       n--; /* ignore newline */
     }
