@@ -779,7 +779,8 @@ pars_options (int argc, char **argv,
             case 'c':
               if (argc == 1)
                 {
-                  puts ("parsing options filed -- Not enough arguments.");
+                  fprintf (stderr,
+                           "parsing options filed -- Not enough arguments.\n");
                   return -1;
                 }
               else
@@ -792,7 +793,8 @@ pars_options (int argc, char **argv,
               break;
 
             default:
-              puts ("parsing options filed -- Invalid option");
+              fprintf (stderr,
+                       "parsing options filed -- Invalid option %s\n", argv[0]);
               return -2; /* invalid option */
             }
         }
