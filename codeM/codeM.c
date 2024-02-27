@@ -758,11 +758,41 @@ normalize_command (char *restrict prev_comm,
     }
 }
 
-void
+int
 pars_options (int argc, char **argv,
               struct Opt *opt)
 {
-  // TODO
+  for (argc--, argv++; argc > 0; argc--, argv++)
+    {
+      if (!opt->EOO && argv[0][0] == '-')
+        {
+          switch(argv[0][1])
+            {
+            case 's':
+              opt->silent_mode = true;
+              break;
+
+            case 'S':
+              opt->prompt = false;
+              break;
+
+            case 'c':
+              if (argc == 1)
+                return -1; /* not enough argument */
+              else
+                {
+                  opt->silent_mode = true;
+                  opt->prompt = false;
+                  opt->commands = *(argv+1);
+                }
+              break;
+
+            default:
+              return -2; /* invalid option */
+            }
+        }
+    }
+  return 0;
 }
 
 int
