@@ -809,7 +809,13 @@ main (int argc, char **argv)
 
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
-  pars_options (argc, argv, &opt);
+  /* parsing cmd line arguments */
+  int pars_res;
+  if ((pars_res = pars_options (argc, argv, &opt)) != 0)
+    {
+      printf ("parsing options failed -- exiting %d\n", pars_res);
+      return 1;
+    }
 
   if (opt.command_mode)
     {
