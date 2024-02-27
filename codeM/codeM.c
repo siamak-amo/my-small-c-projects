@@ -778,7 +778,10 @@ pars_options (int argc, char **argv,
 
             case 'c':
               if (argc == 1)
-                return -1; /* not enough argument */
+                {
+                  puts ("parsing options filed -- Not enough arguments.");
+                  return -1;
+                }
               else
                 {
                   opt->silent_mode = true;
@@ -789,6 +792,7 @@ pars_options (int argc, char **argv,
               break;
 
             default:
+              puts ("parsing options filed -- Invalid option");
               return -2; /* invalid option */
             }
         }
@@ -810,13 +814,9 @@ main (int argc, char **argv)
 
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
-  /* parsing cmd line arguments */
-  int pars_res;
-  if ((pars_res = pars_options (argc, argv, &opt)) != 0)
-    {
-      printf ("parsing options failed -- exiting %d\n", pars_res);
+  /* parsing cmdline arguments */
+  if (pars_options (argc, argv, &opt)))
       return 1;
-    }
 
   if (opt.command_mode)
     {
