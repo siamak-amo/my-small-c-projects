@@ -609,8 +609,7 @@ ssrand ()
  *  otherwise scan number from @inp into @dest
  */
 int
-numscanf(const struct Opt *opt,
-         const char *message, char *dest)
+numscanf(struct Opt *opt, const char *message, char *dest)
 {
   int n;
 
@@ -624,6 +623,7 @@ numscanf(const struct Opt *opt,
   else
     sscanf (opt->commands, " %10[0-9]%n", dest, &n);
 
+  opt->commands += n;
   return n;
 }
 
