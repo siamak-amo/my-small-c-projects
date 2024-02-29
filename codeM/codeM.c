@@ -592,12 +592,12 @@ help (void)
 static size_t
 ssrand ()
 {
-  unsigned long r = time (NULL);
+  size_t r = time (NULL);
 
   for (int i=7; i>0; --i)
     {
-      r *= 0x666;
-      r += 0x42;
+      r += 0x666666;
+      r *= 0x424242;
     }
 
   return r;
