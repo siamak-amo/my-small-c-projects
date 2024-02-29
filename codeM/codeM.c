@@ -608,7 +608,7 @@ ssrand ()
  *  this function updates opt->commands if command_mode be true
  */
 int
-numscanf(struct Opt *opt, const char *message, char *dest)
+numscanf (struct Opt *opt, const char *message, char *dest)
 {
   int n;
 
