@@ -680,8 +680,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
       /* make a random city code */
     case 'c':
       codem_rand_ccode (tmp);
-      printf ("city code: %.3s -- city name: %s\n",
-              tmp, codem_cname (tmp));
+      printf ("%.3s\n", tmp);
       break;
         
       /* find city name */
