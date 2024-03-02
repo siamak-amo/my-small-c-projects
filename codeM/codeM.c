@@ -718,7 +718,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
 
       /* print help */
     case 'h':
-      help ();
+      help (opt);
       break;
 
     case 'q':
@@ -840,16 +840,7 @@ main (int argc, char **argv)
           /* interpretation of backslash escapes */
           normalize_command (&prev_comm, &comm);
 
-          if (comm == 'h')
-            {
-              puts("Usage: ./codeM -c \"[COMMAND]\"\n"
-                   "COMMAND: sequence of normal shell mode commands\n"
-                   "  commands could have one argument (Ex. `R 1234` ~ "
-                   "`R1234`,\n  `R1234;rc` ~ `R1234rc` ~ `R1234 r c`)\n"
-                   "  separate commands by space or `;` or "
-                   "`\\n` if you wish.");
-            }
-          else if (exec_command (prev_comm, comm, &opt))
+          if (exec_command (prev_comm, comm, &opt))
             return 0;
         }
     }
@@ -864,7 +855,7 @@ main (int argc, char **argv)
                   "   -S:    disable prompt when using pipe to stdin\n"
                   "   -c:    pass COMMANDS to be executed,\n"
                   "          use: -c \"h\" to get help\n\n", argv[0]);
-          help ();
+          help (&opt);
         }
 
       while (1)
