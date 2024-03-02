@@ -592,7 +592,7 @@ help (struct Opt *opt)
              "  commands could have one argument (Ex. `R 1234` ~ "
              "`R1234`,\n  `R1234;rc` ~ `R1234rc` ~ `R1234 r c`)\n"
              "  separate commands by space or `;` or "
-             "`\\n` if you wish.\n");
+             "`\\n` if you wish.\n\n");
   else
     fprintf (out_file,
              "v: validate            -  V: make my code valid\n"
