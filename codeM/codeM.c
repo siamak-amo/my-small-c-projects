@@ -559,6 +559,7 @@ main (void)
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
+#include <unistd.h>
 #include <assert.h>
 
 #ifdef CODEM_DEBUG
@@ -579,13 +580,25 @@ struct Opt {
 };
 
 static inline void
-help (void)
+help (struct Opt *opt)
 {
-  puts (
-  "v: validate            -  V: make my code valid\n"
-  "c: randon city code    -  C: find my city name\n"
-  "r: make random codem   -  R: make random codem with prefix\n"
-  "q: quit                -  h: help\n");
+  FILE *out_file;
+  out_file = (!isatty (fileno (stdout))) ? stderr : stdout;
+
+  if (opt->command_mode)
+    fprintf (out_file,
+             "Usage: ./codeM -c \"[COMMAND]\"\n"
+             "COMMAND: sequence of normal shell mode commands\n"
+             "  commands could have one argument (Ex. `R 1234` ~ "
+             "`R1234`,\n  `R1234;rc` ~ `R1234rc` ~ `R1234 r c`)\n"
+             "  separate commands by space or `;` or "
+             "`\\n` if you wish.\n");
+  else
+    fprintf (out_file,
+             "v: validate            -  V: make my code valid\n"
+             "c: randon city code    -  C: find my city name\n"
+             "r: make random codem   -  R: make random codem with prefix\n"
+             "q: quit                -  h: help\n\n");
 }
 
 /* super simple pseudo random number generator */
