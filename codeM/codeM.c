@@ -660,10 +660,9 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
       printd(tmp);
       if (codem_isvalidn (tmp))
         {
-          if (codem_ccode_isvalid (tmp))
-            puts ("OK.");
-          else
-            puts ("city code was not found - code is valid");
+          puts ("OK.");
+          if (!codem_ccode_isvalid (tmp))
+            puts ("city code was not found.");
         }
       else puts ("Not Valid.");
       break;
