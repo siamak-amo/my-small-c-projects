@@ -571,6 +571,9 @@ main (void)
 #define printd(param) do{} while (0)
 #endif
 
+static const char *PROMPT = "> ";
+static const char *RD_PROMPT = "enter code: ";
+
 struct Opt {
   bool silent_mode;
   bool command_mode;
@@ -618,7 +621,7 @@ ssrand ()
 
 /**
  *  internal function to be used by the exec_command function
- *  this function updates opt->commands if command_mode be true
+ *  this function updates opt->commands if command_mode is true
  */
 static int
 numscanf (const char *restrict message, char *restrict dest,
@@ -654,7 +657,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
     {
       /* validation */
     case 'v':
-      numscanf ("enter code: ", tmp, opt);
+      numscanf (RD_PROMPT, tmp, opt);
       if (0 != codem_norm (tmp))
         assert ( 0 && "Cannot be Normalized" );
       printd(tmp);
@@ -669,7 +672,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
 
       /* make a code valid */
     case 'V':
-      numscanf ("enter code: ", tmp, opt);
+      numscanf (RD_PROMPT, tmp, opt);
       if (0 != codem_norm (tmp))
         assert ( 0 && "Cannot be Normalized" );
       printd(tmp);
@@ -685,7 +688,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
         
       /* find city name */
     case 'C':
-      numscanf ("enter code: ", tmp, opt);
+      numscanf (RD_PROMPT, tmp, opt);
       printd(tmp);
       puts (codem_cname (tmp));
       break;
@@ -698,7 +701,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
 
       /* make a random code by prefix */
     case 'R':
-      int off = numscanf ("enter prefix: ", tmp, opt);
+      int off = numscanf (RD_PROMPT, tmp, opt);
       printd(tmp);
       if (off > CODEM_LEN)
         puts ("prefix is too long");
@@ -854,7 +857,7 @@ main (int argc, char **argv)
       while (1)
       {
         if (('\0' == comm || '\n' == comm) && opt.prompt)
-          printf ("> ");
+          fprintf (stdout, "%s", PROMPT);
 
         prev_comm = comm;
         if (EOF == scanf ("%c", &comm))
