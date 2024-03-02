@@ -579,7 +579,7 @@ struct Opt {
   char *commands; /* only in command_mode */
 };
 
-static inline void
+static void
 help (struct Opt *opt)
 {
   FILE *out_file;
@@ -620,7 +620,7 @@ ssrand ()
  *  internal function to be used by the exec_command function
  *  this function updates opt->commands if command_mode be true
  */
-int
+static int
 numscanf (struct Opt *opt, const char *message, char *dest)
 {
   int n;
@@ -644,7 +644,7 @@ numscanf (struct Opt *opt, const char *message, char *dest)
  *  use @argv for commands that have argument otherwise
  *  pass it NULL to read from stdin
  */
-int
+static int
 exec_command (char prev_comm, char comm, struct Opt *opt)
 {
   char tmp[CODEM_BUF_LEN] = {0};
@@ -742,7 +742,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
   return 0;
 }
 
-void
+static inline void
 normalize_command (char *restrict prev_comm,
                    char *restrict comm)
 {
@@ -766,7 +766,7 @@ normalize_command (char *restrict prev_comm,
     }
 }
 
-int
+static inline int
 pars_options (int argc, char **argv,
               struct Opt *opt)
 {
