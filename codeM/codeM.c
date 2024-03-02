@@ -588,10 +588,10 @@ help (struct Opt *opt)
   if (opt->command_mode)
     fprintf (out_file,
              "Usage: ./codeM -c \"[COMMAND]\"\n"
-             "COMMAND: sequence of normal shell mode commands\n"
-             "  commands could have one argument (Ex. `R 1234` ~ "
-             "`R1234`,\n  `R1234;rc` ~ `R1234rc` ~ `R1234 r c`)\n"
-             "  separate commands by space or `;` or "
+             "COMMAND: sequence of shell mode commands\n"
+             "commands could have one argument"
+             " (Ex. `R 1234` ~ `R1234`)\n"
+             "separate commands by space or `;` or "
              "`\\n` if you wish.\n\n");
   else
     fprintf (out_file,
