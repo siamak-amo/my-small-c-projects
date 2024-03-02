@@ -624,7 +624,7 @@ ssrand ()
  *  this function updates opt->commands if command_mode is true
  */
 static int
-numscanf (const char *restrict message, char *restrict dest,
+codem_scanf (const char *restrict message, char *restrict dest,
           struct Opt *opt)
 {
   int n;
@@ -657,7 +657,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
     {
       /* validation */
     case 'v':
-      numscanf (RD_PROMPT, tmp, opt);
+      codem_scanf (RD_PROMPT, tmp, opt);
       if (0 != codem_norm (tmp))
         assert ( 0 && "Cannot be Normalized" );
       printd(tmp);
@@ -673,7 +673,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
 
       /* make a code valid */
     case 'V':
-      numscanf (RD_PROMPT, tmp, opt);
+      codem_scanf (RD_PROMPT, tmp, opt);
       if (0 != codem_norm (tmp))
         assert ( 0 && "Cannot be Normalized" );
       printd(tmp);
@@ -689,7 +689,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
         
       /* find city name */
     case 'C':
-      numscanf (RD_PROMPT, tmp, opt);
+      codem_scanf (RD_PROMPT, tmp, opt);
       printd(tmp);
       puts (codem_cname (tmp));
       break;
@@ -702,10 +702,10 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
 
       /* make a random code by prefix */
     case 'R':
-      int off = numscanf (RD_PROMPT, tmp, opt);
+      int off = codem_scanf (RD_PROMPT, tmp, opt);
       printd(tmp);
       if (off > CODEM_LEN)
-        assert (0 && "Invalid Offset of numscanf");
+        assert (0 && "Invalid Offset of codem_scanf");
       else
         {
           codem_rands (tmp, off);
