@@ -655,10 +655,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
     case 'v':
       numscanf (opt, "enter code: ", tmp);
       if (0 != codem_norm (tmp))
-        {
-          puts ("cannot be normalized");
-          assert ( 0 && "unreachable code" );
-        }
+        assert ( 0 && "Cannot be Normalized" );
       printd(tmp);
       if (codem_isvalidn (tmp))
         {
@@ -674,10 +671,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
     case 'V':
       numscanf (opt, "enter code: ", tmp);
       if (0 != codem_norm (tmp))
-        {
-          puts ("cannot be normalized");
-          assert ( 0 && "unreachable code" );
-        }
+        assert ( 0 && "Cannot be Normalized" );
       printd(tmp);
       codem_set_ctrl_digit (tmp);
       puts (tmp);
