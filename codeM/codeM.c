@@ -667,7 +667,8 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
           if (!codem_ccode_isvalid (tmp))
             puts ("city code was not found.");
         }
-      else puts ("Not Valid.");
+      else
+        puts ("Not Valid.");
       break;
 
       /* make a code valid */
@@ -704,7 +705,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
       int off = numscanf (RD_PROMPT, tmp, opt);
       printd(tmp);
       if (off > CODEM_LEN)
-        puts ("prefix is too long");
+        assert (0 && "Invalid Offset of numscanf");
       else
         {
           codem_rands (tmp, off);
