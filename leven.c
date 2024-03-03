@@ -52,6 +52,7 @@
 
 /**
  *  functions to calculate levenshtein distance @s1 and @s2
+ *  @s1, @s1 might include some non-ascii characters
  *  @tmp:  temporary buffer
  *         use leven_alloc and leven_free macros
  */
@@ -68,6 +69,11 @@ leven_H (const char *s1, const char *s2, LARR_t* tmp);
 /* the implementation */
 #ifdef LEVEN_IMPLEMENTATION
 
+/**
+ *  internal functions
+ *  to calculate length of an arbitrary string
+ *  each ascii-char is 1 byte and non-ascii is 2 bytes
+ */
 static inline int
 leven_charlen (char c)
 {
@@ -91,6 +97,11 @@ leven_strlen (const char *s)
   return len;
 }
 
+/**
+ *  internal function
+ *  compare chars at @s1 and @s2
+ *  this function can handle existence of non-ascii characters
+ */
 static inline int
 leven_charcmp (const char *restrict s1, const char *restrict s2)
 {
@@ -111,7 +122,8 @@ leven_charcmp (const char *restrict s1, const char *restrict s2)
 }
 
 /**
- *  internal function
+ *  internal function, always use leven_xxx functions
+ *  the implementation of the levenshtein algorithm
  */
 static inline size_t
 calculate_leven__H (const char *s1, const char *s2,
