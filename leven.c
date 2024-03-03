@@ -115,7 +115,10 @@ leven_imm (const char *s1, const char *s2, size_t cl)
   size_t n = leven_strlen(s1, cl);
   LARR_t *tmp = leven_alloc(s1, cl);
 
-  return calculate_leven__H (s1, s2, n, tmp, cl);
+  size_t res = calculate_leven__H (s1, s2, n, tmp, cl);
+  leven_free(tmp);
+
+  return res;
 }
 
 LEVENDEF size_t
