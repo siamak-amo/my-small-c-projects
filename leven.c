@@ -38,11 +38,14 @@
 
 /* leven array type */
 #define LARR_t unsigned int
+#define MIN(a, b) (((a)<(b)) ? (a) : (b))
+#define MIN3(a, b, c) MIN(MIN((a), (b)), (c))
 
 #ifndef LEVENDEF
 #define LEVENDEF static inline
 #endif
 
+/* macros to allocate and free temporary LARR_t buffer */
 #define leven_free(ptr) free (ptr)
 #define leven_alloc(s, cl) malloc (strlen (s) / cl)
 
