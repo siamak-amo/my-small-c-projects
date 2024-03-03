@@ -18,7 +18,7 @@
  *   file: codeM.c
  *   created on: 1 Oct 2023
  *
- *   common Iranian ID number (code-e-melli) single file library
+ *   common Iranian ID number (code-e-melli) single-file library
  *
  *   `codem` in the following is referred to the term `code-e-melli`.
  *   this library performs validating and making random codem's.
