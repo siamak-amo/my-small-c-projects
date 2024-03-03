@@ -188,3 +188,50 @@ leven_stk (const char *s1, const char *s2)
 }
 
 #endif
+
+#ifdef LEVEN_TEST
+/* a simple test program */
+/* test distance from s1 */
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <string.h>
+
+const char *s1 = "compatible";
+
+struct test_case {
+  char *s;
+  size_t res;
+};
+typedef struct test_case tc_t;
+#define TC(a, b) &(tc_t){.s=a, .res=b}
+
+const tc_t *tests[] = {
+  TC("compatible",   0),
+  TC("compateble",   1),
+  TC("compatable",   1),
+  TC("compatble",    4),
+  TC("compatibel",   2),
+  TC("xxxxxx",       10)
+};
+
+int
+main (void)
+{
+  size_t LD = 0;
+  const tc_t *tc = *tests;
+  LARR_t *tmp = leven_alloc (s1);
+
+  for (int i=0; tests[i] != NULL; tc = tests[++i])
+    {
+      LD = leven_H (s1, tc->s, tmp);
+      printf("* LD(\"%s\", \"%s\")=%lu \t...", s1, tc->s, LD);
+      assert ((LD == tc->res) && "test failure");
+      puts(" PASS.");
+    }
+
+  leven_free(tmp);
+  return 0;
+}
+
+#endif
