@@ -47,8 +47,9 @@
 
 /* macros to allocate and free temporary LARR_t buffer */
 #define leven_free(ptr) free (ptr)
-#define leven_alloc(s, cl) malloc (strlen (s) / cl)
 #define leven_strlen(s, cl) (strlen (s) / (cl))
+#define leven_alloc(s, cl)                      \
+  malloc (leven_strlen(s, cl) * sizeof(LARR_t))
 
 /**
  *  functions to calculate levenshtein distance @s1 and @s2
