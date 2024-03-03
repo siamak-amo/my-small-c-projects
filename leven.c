@@ -85,7 +85,7 @@ calculate_leven__H (const char *s1, const char *s2,
 
   for (y = 1; y <= n; ++y)
     tmp[y] = y;
-  for (x = 1; x <= strlen (s2); ++x)
+  for (x = 1; x <= leven_strlen(s2, cl); ++x)
     {
       tmp[0] = x;
       p1 = s1;
