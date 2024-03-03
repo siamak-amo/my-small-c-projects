@@ -71,6 +71,48 @@ leven_H (const char *s1, const char *s2, LARR_t* tmp, size_t cl);
 /* the implementation */
 #ifdef LEVEN_IMPLEMENTATION
 
+static inline int
+leven_charlen (char c)
+{
+  if (c>=0 && c<=127)
+    return 1;
+  else
+    return 2;
+  // TODO: implement for utf-8 and other things
+}
+
+static inline int
+leven_strlen (const char *s)
+{
+  int len = 0, lc = 0;
+  while (*s != '\0')
+    {
+      lc = leven_charlen (*s);
+      len++;
+      s += lc;
+    }
+  return len;
+}
+
+static inline int
+leven_charcmp (const char *restrict s1, const char *restrict s2)
+{
+  int c1;
+  if ((c1 = leven_charlen (*s1)) == leven_charlen(*s2))
+    {
+      while (c1-- != 0)
+        {
+          if (*s1 != *s2)
+            return -1;
+          s1++;
+          s2++;
+        }
+      return 0; /* equal */
+    }
+  else
+    return -1;
+}
+
 /**
  *  internal function
  */
