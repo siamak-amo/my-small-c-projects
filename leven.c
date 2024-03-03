@@ -47,25 +47,22 @@
 
 /* macros to allocate and free temporary LARR_t buffer */
 #define leven_free(ptr) free (ptr)
-#define leven_strlen(s, cl) (strlen (s) / (cl))
-#define leven_alloc(s, cl)                      \
-  (LARR_t*) malloc (leven_strlen(s, cl) * sizeof(LARR_t))
+#define leven_alloc(s)                                  \
+  (LARR_t*) malloc (leven_strlen (s) * sizeof(LARR_t))
 
 /**
  *  functions to calculate levenshtein distance @s1 and @s2
- *  @cl:   character length, pass 2 for non-ascii strings
- *         or sizeof(wchar_t) for wchar strings, otherwise 1
  *  @tmp:  temporary buffer
  *         use leven_alloc and leven_free macros
  */
 LEVENDEF size_t
-leven_imm (const char *s1, const char *s2, size_t cl);
+leven_imm (const char *s1, const char *s2);
 /* use stack */
 LEVENDEF size_t
-leven_stk (const char *s1, const char *s2, size_t cl);
+leven_stk (const char *s1, const char *s2);
 /* manually handle the memory */
 LEVENDEF size_t
-leven_H (const char *s1, const char *s2, LARR_t* tmp, size_t cl);
+leven_H (const char *s1, const char *s2, LARR_t* tmp);
 #endif
 
 /* the implementation */
@@ -118,59 +115,64 @@ leven_charcmp (const char *restrict s1, const char *restrict s2)
  */
 static inline size_t
 calculate_leven__H (const char *s1, const char *s2,
-                   size_t n, LARR_t *tmp, size_t cl)
+                   size_t n, LARR_t *tmp)
 {
   const char *p1, *p2;
+  /* character length of s1 and s2 */
+  int cl1 = 0, cl2 = 0;
   /* last diagonal value in the `imaginary` matrix */
-  size_t diag, prev_diag;
+  size_t diag = 0, prev_diag = 0;
   size_t x,y;
 
   for (y = 1; y <= n; ++y)
     tmp[y] = y;
-  for (x = 1; x <= leven_strlen(s2, cl); ++x)
+  for (x = 1; x <= leven_strlen (s2); ++x)
     {
       tmp[0] = x;
       p1 = s1;
       p2 = s2;
       for (y = 1, diag = x - 1; y <= n; ++y)
         {
+          cl1 = leven_charlen (*p1);
+          cl2 = leven_charlen (*p2);
           prev_diag = tmp[y];
+
           tmp[y] = MIN3(tmp[y] + 1, tmp[y - 1] + 1,
-                        diag + ((strncmp (p1, p2, cl) == 0) ? 0 : 1));
+                        diag + ((leven_charcmp (p1, p2) == 0) ? 0 : 1));
           diag = prev_diag;
-          p1 += cl;
-          p2 += cl;
+          p1 += cl1;
+          p2 += cl2;
         }
     }
   return tmp[n];
 }
 
 LEVENDEF size_t
-leven_H (const char *s1, const char *s2, LARR_t *tmp, size_t cl)
+leven_H (const char *s1, const char *s2, LARR_t *tmp)
 {
-  return calculate_leven__H (s1, s2, leven_strlen(s1, cl), tmp, cl);
+  return calculate_leven__H (s1, s2, leven_strlen (s1), tmp);
 }
 
 LEVENDEF size_t
-leven_imm (const char *s1, const char *s2, size_t cl)
+leven_imm (const char *s1, const char *s2)
 {
-  size_t n = leven_strlen(s1, cl);
-  LARR_t *tmp = leven_alloc(s1, cl);
+  size_t n = leven_strlen (s1);
+  LARR_t *tmp = leven_alloc(s1);
 
-  size_t res = calculate_leven__H (s1, s2, n, tmp, cl);
+  size_t res = calculate_leven__H (s1, s2, n, tmp);
   leven_free(tmp);
 
   return res;
 }
 
 LEVENDEF size_t
-leven_stk (const char *s1, const char *s2, size_t cl)
+leven_stk (const char *s1, const char *s2)
 {
-  size_t n = leven_strlen(s1, cl);
+  size_t n = leven_strlen (s1);
   /* memory usage: 4(n+1) bytes */
   LARR_t tmp[n + 1];
 
-  return calculate_leven__H (s1, s2, n, tmp, cl);
+  return calculate_leven__H (s1, s2, n, tmp);
 }
 
 #endif
