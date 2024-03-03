@@ -10,7 +10,11 @@
  *     we simply use n for memory allocation, so provide
  *     the smaller string first
  *
- *  usage:
+ *  compilation:
+ *    cc -Wall -Wextra -D LEVEN_TEST -o test leven.c
+ *
+ *
+ *  include in other c files:
  *    `
  *    #define LEVEN_IMPLEMENTATION
  *    #include "leven.c"
