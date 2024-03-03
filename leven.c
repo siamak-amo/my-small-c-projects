@@ -50,7 +50,7 @@
  *  functions to calculate levenshtein distance @s1 and @s2
  *  @cl:   character length, pass 2 for non-ascii strings
  *         or sizeof(wchar_t) for wchar strings, otherwise 1
- *  @arr:  temporary buffer
+ *  @tmp:  temporary buffer
  *         use leven_alloc and leven_free macros
  */
 LEVENDEF size_t
@@ -60,14 +60,14 @@ LEVENDEF size_t
 leven_stk (const char *s1, const char *s2, size_t cl);
 /* manually handle the memory */
 LEVENDEF size_t
-leven_H (const char *s1, const char *s2, LARR_t* arr, size_t cl);
+leven_H (const char *s1, const char *s2, LARR_t* tmp, size_t cl);
 #endif
 
 /* the implementation */
 #ifdef LEVEN_IMPLEMENTATION
 
 LEVENDEF size_t
-leven_H (const char *s1, const char *s2, LARR_t *arr);
+leven_H (const char *s1, const char *s2, LARR_t *tmp);
 {
 }
 
