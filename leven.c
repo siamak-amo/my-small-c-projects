@@ -102,18 +102,25 @@ calculate_leven__H (const char *s1, const char *s2,
 }
 
 LEVENDEF size_t
-leven_H (const char *s1, const char *s2, LARR_t *tmp);
+leven_H (const char *s1, const char *s2, LARR_t *tmp, size_t lc)
 {
+  return 0;
 }
 
 LEVENDEF size_t
-leven_imm (const char *s1, const char *s2)
+leven_imm (const char *s1, const char *s2, size_t cl)
 {
+  return 0;
 }
 
 LEVENDEF size_t
-leven_stk (const char *s1, const char *s2)
+leven_stk (const char *s1, const char *s2, size_t cl)
 {
+  size_t n = strlen (s1);
+  /* memory usage: 4(n+1) bytes */
+  unsigned int tmp[n + 1];
+
+  return calculate_leven__H (s1, s2, n, tmp, cl);
 }
 
 #endif
