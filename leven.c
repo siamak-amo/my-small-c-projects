@@ -69,6 +69,38 @@ leven_H (const char *s1, const char *s2, LARR_t* tmp, size_t cl);
 /* the implementation */
 #ifdef LEVEN_IMPLEMENTATION
 
+/**
+ *  internal function
+ */
+static inline size_t
+calculate_leven__H (const char *s1, const char *s2,
+                   size_t n, LARR_t *tmp, size_t cl)
+{
+  const char *p1, *p2;
+  /* last diagonal value in the `imaginary` matrix */
+  size_t diag, prev_diag;
+  size_t x,y;
+
+  for (y = 1; y <= n; ++y)
+    tmp[y] = y;
+  for (x = 1; x <= strlen (s2); ++x)
+    {
+      tmp[0] = x;
+      p1 = s1;
+      p2 = s2;
+      for (y = 1, diag = x - 1; y <= n; ++y)
+        {
+          prev_diag = tmp[y];
+          tmp[y] = MIN3(tmp[y] + 1, tmp[y - 1] + 1,
+                        diag + ((strncmp (p1, p2, cl) == 0) ? 0 : 1));
+          diag = prev_diag;
+          p1 += cl;
+          p2 += cl;
+        }
+    }
+  return tmp[n];
+}
+
 LEVENDEF size_t
 leven_H (const char *s1, const char *s2, LARR_t *tmp);
 {
