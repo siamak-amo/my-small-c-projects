@@ -121,9 +121,9 @@ leven_imm (const char *s1, const char *s2, size_t cl)
 LEVENDEF size_t
 leven_stk (const char *s1, const char *s2, size_t cl)
 {
-  size_t n = leven_strlen (s1, cl);
+  size_t n = leven_strlen(s1, cl);
   /* memory usage: 4(n+1) bytes */
-  unsigned int tmp[n + 1];
+  LARR_t tmp[n + 1];
 
   return calculate_leven__H (s1, s2, n, tmp, cl);
 }
