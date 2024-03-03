@@ -49,7 +49,7 @@
 #define leven_free(ptr) free (ptr)
 #define leven_strlen(s, cl) (strlen (s) / (cl))
 #define leven_alloc(s, cl)                      \
-  malloc (leven_strlen(s, cl) * sizeof(LARR_t))
+  (LARR_t*) malloc (leven_strlen(s, cl) * sizeof(LARR_t))
 
 /**
  *  functions to calculate levenshtein distance @s1 and @s2
