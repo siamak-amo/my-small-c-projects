@@ -48,6 +48,7 @@
 /* macros to allocate and free temporary LARR_t buffer */
 #define leven_free(ptr) free (ptr)
 #define leven_alloc(s, cl) malloc (strlen (s) / cl)
+#define leven_strlen(s, cl) (strlen (s) / (cl))
 
 /**
  *  functions to calculate levenshtein distance @s1 and @s2
@@ -116,7 +117,7 @@ leven_imm (const char *s1, const char *s2, size_t cl)
 LEVENDEF size_t
 leven_stk (const char *s1, const char *s2, size_t cl)
 {
-  size_t n = strlen (s1);
+  size_t n = leven_strlen (s1, cl);
   /* memory usage: 4(n+1) bytes */
   unsigned int tmp[n + 1];
 
