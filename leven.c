@@ -104,15 +104,18 @@ calculate_leven__H (const char *s1, const char *s2,
 }
 
 LEVENDEF size_t
-leven_H (const char *s1, const char *s2, LARR_t *tmp, size_t lc)
+leven_H (const char *s1, const char *s2, LARR_t *tmp, size_t cl)
 {
-  return 0;
+  return calculate_leven__H (s1, s2, leven_strlen(s1, cl), tmp, cl);
 }
 
 LEVENDEF size_t
 leven_imm (const char *s1, const char *s2, size_t cl)
 {
-  return 0;
+  size_t n = leven_strlen(s1, cl);
+  LARR_t *tmp = leven_alloc(s1, cl);
+
+  return calculate_leven__H (s1, s2, n, tmp, cl);
 }
 
 LEVENDEF size_t
