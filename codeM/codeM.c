@@ -207,6 +207,13 @@ CODEMDEF void codem_rand_ccode (char *dest);
  *  to get the name of the city
  */
 CODEMDEF int codem_ccode_idx (const char *codem);
+
+/**
+ *  search the @search among city names
+ *  returns index of the best match
+ */
+CODEMDEF int
+codem_cname_search (const char *search);
 #endif /* codeM__H__ */
 
 
