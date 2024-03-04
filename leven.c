@@ -81,17 +81,17 @@ leven_H (const char *s1, const char *s2, LARR_t* tmp);
 static inline int
 leven_charlen (char c)
 {
-  if (c>=0 && c<=127)
+  if (c>=0)
     return 1;
   else
     return 2;
   // TODO: implement for utf-8 and other things
 }
 
-static inline int
+static inline size_t
 leven_strlen (const char *s)
 {
-  int len = 0, lc = 0;
+  size_t len = 0, lc = 0;
   while (*s != '\0')
     {
       lc = leven_charlen (*s);
