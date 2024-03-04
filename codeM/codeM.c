@@ -126,6 +126,7 @@ static RandFunction prand;
 #define codem_cname(code)                                  \
   ({ int __city_idx = codem_ccode_idx (code);              \
     (__city_idx == CC_NOT_FOUND) ? "Not Found"             \
+      : (__city_idx < 0) ? "Unknown Error"                 \
       : city_name[__city_idx]; })
 #else
 #define codem_cname(code) "Not Implemented"
@@ -136,6 +137,7 @@ static RandFunction prand;
 #define codem_ccode(idx)                                   \
   ({ int __idx = idx;                                      \
     (__idx == CC_NOT_FOUND) ? "Not Found"                  \
+      : (__idx < 0) ? "Unknown Error"                      \
       : city_code[idx]; })
 #else
 #define codem_ccode(idx) "Not Implemented"
