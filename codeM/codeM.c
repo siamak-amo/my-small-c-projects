@@ -645,9 +645,10 @@ main (void)
 #endif
 
 #define CNAME_MAX_BUFF 64
-#define CNAME_REGEX "%64s%n"
-#define CODEM_REGEX " %10[0-9]%n"
+#define CNAME_FORMAT "%64s"
 #define CODEM_FORMAT "%10s"
+#define CNAME_REGEX " %64[^;#]s%n"
+#define CODEM_REGEX " %10[0-9]%n"
 
 static const char *PROMPT = "> ";
 static const char *RD_PROMPT = "enter code: ";
@@ -734,7 +735,8 @@ cname_scanf (const char *restrict message, char *restrict dest,
     {
       if (opt->prompt)
         printf (message);
-      scanf (CNAME_REGEX, dest, &n);
+      scanf (CNAME_FORMAT, dest);
+      sscanf (dest, CNAME_REGEX, dest, &n);
     }
   else
     sscanf (opt->commands, CNAME_REGEX, dest, &n);
