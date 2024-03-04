@@ -673,6 +673,7 @@ help (struct Opt *opt)
              "v: validate            -  V: make my code valid\n"
              "c: randon city code    -  C: find my city name\n"
              "r: make random codem   -  R: make random codem with prefix\n"
+             "f: find my city code   -  F: search my city name\n"
              "q: quit                -  h: help\n\n");
 }
 
@@ -744,6 +745,7 @@ static int
 exec_command (char prev_comm, char comm, struct Opt *opt)
 {
   char tmp[CODEM_BUF_LEN] = {0};
+  char buf[CNAME_MAX_BUFF] = {0};
 
   switch (comm)
     {
@@ -805,9 +807,8 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
         }
       break;
 
-      /* search city name */
+      /* find city name */
     case 'f':
-      char buf[CNAME_MAX_BUFF];
       cname_scanf (CN_PROMPT, buf, opt);
       int res = codem_cname_search (buf);
 
@@ -817,6 +818,10 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
       else
         for (; *p != 0; p += CC_LEN)
           printf("%.3s\n", p);
+      break;
+
+      /* search city name */
+    case 'F':
       break;
 
       /* print help */
