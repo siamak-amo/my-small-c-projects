@@ -383,6 +383,51 @@ codem_ccode_idx (const char *codem)
   return CC_NOT_IMPLEMENTED;
 #endif
 }
+
+CODEMDEF int
+codem_cname_search (const char *search)
+{
+  size_t n = strlen (search);
+
+#ifdef CODEM_FUZZ_CITY_NAME
+  size_t min_dist = -1, min_dist_idx = CC_NOT_FOUND;
+#endif
+
+#ifndef CODEM_NO_CITY_DATA
+  const char *p;
+  for (size_t idx = 0; idx < CITY_COUNT; ++idx)
+    {
+      p = city_name[idx];
+
+#ifdef CODEM_FUZZ_CITY_NAME /* fuzz */
+      char *tmp = malloc (50);
+      strncpy (tmp, p, (n>=50)?50:n);
+      size_t LD = leven_imm (tmp, search);
+      if (LD < min_dist)
+        {
+          min_dist = LD;
+          min_dist_idx = idx;
+        }
+      free (tmp);
+#else /* normal search */
+      if (strncmp (search, p, n) == 0)
+        return idx;
+#endif
+
+    }
+
+#else
+  return CC_NOT_IMPLEMENTED;
+#endif
+
+#ifdef CODEM_FUZZ_CITY_NAME
+  if (min_dist >= n/2)
+    return CC_NOT_FOUND;
+  return min_dist_idx;
+#endif
+
+  return CC_NOT_FOUND; /* unreachable */
+}
 #endif /* CODEM_IMPLEMENTATION */
 
 
