@@ -38,8 +38,8 @@
  *       `-D CODEM_DEBUG`:
  *          to enable printing some debug information
  *       `-D CODEM_FUZZY_SEARCH_CITYNAME`:
- *          to enable fuzzy search, you must provide leven.c
- *          library, exists in the same repository
+ *          to enable fuzzy search, you need to provide
+ *          the `leven.c` file available in the same repository
  *
  *     to include in c files:
  *       `
