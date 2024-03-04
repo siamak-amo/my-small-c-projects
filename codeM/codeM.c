@@ -127,6 +127,16 @@ static RandFunction prand;
 #define codem_cname(code) "Not Implemented"
 #endif
 
+/* get the codes of city at index @idx */
+#ifndef CODEM_NO_CITY_DATA
+#define codem_ccode(idx)                                   \
+  ({ int __idx = idx;                                      \
+    (__idx == CC_NOT_FOUND) ? "Not Found"                  \
+      : city_code[idx]; })
+#else
+#define codem_ccode(idx) "Not Implemented"
+#endif
+
 /* validate only city code of @codem */
 #define codem_ccode_isvalid(codem)                         \
   (codem_ccode_idx (codem) != CC_NOT_FOUND)
