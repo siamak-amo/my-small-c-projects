@@ -61,13 +61,13 @@
  *         use leven_alloc and leven_free macros
  */
 LEVENDEF size_t
-leven_imm (const char *s1, const char *s2);
+leven_imm (const char *restrict s1, const char *restrict s2);
 /* use stack */
 LEVENDEF size_t
-leven_stk (const char *s1, const char *s2);
+leven_stk (const char *restrict s1, const char *restrict s2);
 /* manually handle the memory */
 LEVENDEF size_t
-leven_H (const char *s1, const char *s2, LARR_t* tmp);
+leven_H (const char *restrict s1, const char *restrict s2, LARR_t* tmp);
 
 /**
  *  strlen function, returns length of the @s
@@ -137,8 +137,8 @@ leven_charcmp (const char *restrict s1, const char *restrict s2)
  *  the implementation of the levenshtein algorithm
  */
 static inline size_t
-calculate_leven__H (const char *s1, const char *s2,
-                   size_t n, LARR_t *tmp)
+calculate_leven__H (const char *restrict s1,
+                    const char *restrict s2, size_t n, LARR_t *tmp)
 {
   const char *p1, *p2;
   /* character length of s1 and s2 */
@@ -171,7 +171,7 @@ calculate_leven__H (const char *s1, const char *s2,
 }
 
 LEVENDEF size_t
-leven_H (const char *s1, const char *s2, LARR_t *tmp)
+leven_H (const char *restrict s1, const char *restrict s2, LARR_t *tmp)
 {
   return calculate_leven__H (s1, s2, leven_strlen (s1), tmp);
 }
@@ -189,7 +189,7 @@ leven_imm (const char *s1, const char *s2)
 }
 
 LEVENDEF size_t
-leven_stk (const char *s1, const char *s2)
+leven_stk (const char *restrict s1, const char *restrict s2)
 {
   size_t n = leven_strlen (s1);
   /* memory usage: 4(n+1) bytes */
