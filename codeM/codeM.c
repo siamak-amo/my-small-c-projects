@@ -639,6 +639,9 @@ main (void)
 #define printd(param) do{} while (0)
 #endif
 
+#define CNAME_MAX_BUFF 64
+#define CNAME_REGEX "%64s%n"
+
 static const char *PROMPT = "> ";
 static const char *RD_PROMPT = "enter code: ";
 static const char *CN_PROMPT = "enter name: ";
@@ -723,11 +726,10 @@ cname_scanf (const char *restrict message, char *restrict dest,
     {
       if (opt->prompt)
         printf (message);
-      scanf ("%10s", dest);
-      sscanf (dest, " %64s%n", dest, &n);
+      scanf (CNAME_REGEX, dest, &n);
     }
   else
-    sscanf (opt->commands, " %64s%n", dest, &n);
+    sscanf (opt->commands, CNAME_REGEX, dest, &n);
 
   opt->commands += n;
   return n;
@@ -805,7 +807,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
 
       /* search city name */
     case 'f':
-      char buf[64];
+      char buf[CNAME_MAX_BUFF];
       cname_scanf (CN_PROMPT, buf, opt);
       int res = codem_cname_search (buf);
 
