@@ -824,6 +824,10 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
 
       /* search city name */
     case 'F':
+      cname_scanf (CN_PROMPT, name_tmp, opt);
+      res = codem_cname_search (name_tmp);
+      p = codem_cname_byidx(res);
+      puts(p);
       break;
 
       /* print help */
