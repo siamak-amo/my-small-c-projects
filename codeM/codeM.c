@@ -649,7 +649,7 @@ main (void)
 #define CNAME_FORMAT "%64s"
 #define CODEM_FORMAT "%10s"
 /* sscanf regex to read a city name (non-ascii) */
-#define CNAME_REGEX " %64[^;#]s%n"
+#define CNAME_REGEX " %64[^;#]%n"
 /* sscanf regex to read a 10-digit code */
 #define CODEM_REGEX " %10[0-9]%n"
 
