@@ -37,6 +37,9 @@
  *          to compile without data of cites (ignore codeM_data.h)
  *       `-D CODEM_DEBUG`:
  *          to enable printing some debug information
+ *       `-D CODEM_FUZZ_CITY_NAME`:
+ *          to enable fuzzy search, you must provide leven.c
+ *          library, exists in the same repository
  *
  *     to include in c files:
  *       `
