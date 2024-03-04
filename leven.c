@@ -2,7 +2,7 @@
  *  file: leven.c
  *  created on: 3 Mar 2024
  *
- *  Implements Levenshtein Distance
+ *  Implements Levenshtein Distance Algorithm
  *
  *  algorithm details: leven(s1[.n], s2[.m]):
  *    time: O(n*m)
