@@ -37,7 +37,7 @@
  *          to compile without data of cites (ignore codeM_data.h)
  *       `-D CODEM_DEBUG`:
  *          to enable printing some debug information
- *       `-D CODEM_FUZZ_CITY_NAME`:
+ *       `-D CODEM_FUZZY_SEARCH_CITYNAME`:
  *          to enable fuzzy search, you must provide leven.c
  *          library, exists in the same repository
  *
@@ -61,7 +61,7 @@
 
 #ifndef CODEM_NO_CITY_DATA
 #include "codeM_data.h" /* city_name and city_code data */
-#ifdef CODEM_FUZZ_CITY_NAME
+#ifdef CODEM_FUZZY_SEARCH_CITYNAME
 #define LEVEN_IMPLEMENTATION
 #include "leven.c" /* provide leven.c */
 #endif
@@ -396,7 +396,7 @@ codem_cname_search (const char *search)
 {
   size_t n = strlen (search);
 
-#ifdef CODEM_FUZZ_CITY_NAME
+#ifdef CODEM_FUZZY_SEARCH_CITYNAME
   size_t min_dist = -1, min_dist_idx = CC_NOT_FOUND;
 #endif
 
@@ -406,7 +406,7 @@ codem_cname_search (const char *search)
     {
       p = city_name[idx];
 
-#ifdef CODEM_FUZZ_CITY_NAME /* fuzz */
+#ifdef CODEM_FUZZY_SEARCH_CITYNAME /* fuzz */
       char *tmp = malloc (50);
       strncpy (tmp, p, (n>=50)?50:n);
       size_t LD = leven_imm (tmp, search);
@@ -427,7 +427,7 @@ codem_cname_search (const char *search)
   return CC_NOT_IMPLEMENTED;
 #endif
 
-#ifdef CODEM_FUZZ_CITY_NAME
+#ifdef CODEM_FUZZY_SEARCH_CITYNAME
   if (min_dist >= n/2)
     return CC_NOT_FOUND;
   return min_dist_idx;
