@@ -428,7 +428,7 @@ codem_cname_search (const char *search)
 #endif
 
 #ifdef CODEM_FUZZY_SEARCH_CITYNAME
-  if (min_dist >= n/2)
+  if (min_dist > leven_strlen(search) / 2)
     return CC_NOT_FOUND;
   return min_dist_idx;
 #endif
