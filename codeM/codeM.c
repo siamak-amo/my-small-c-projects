@@ -762,7 +762,8 @@ cname_scanf (const char *restrict message, char *restrict dest,
 static int
 exec_command (char prev_comm, char comm, struct Opt *opt)
 {
-  dprintf("comm (%c), prev_comm (%c)\n", NORMCHAR(comm), NORMCHAR(prev_comm));
+  dprintf("running: (%c), prev_command: (%c)\n",
+          NORMCHAR(comm), NORMCHAR(prev_comm));
   char tmp[CODEM_BUF_LEN] = {0};
   char name_tmp[CNAME_MAX_BUFF] = {0};
 
