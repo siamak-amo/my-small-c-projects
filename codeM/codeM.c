@@ -710,48 +710,40 @@ ssrand ()
 }
 
 /**
- *  internal functions codem_scanf - cname_scanf
- *  used by the exec_command function
- *  this functions update opt->commands when command_mode is true
+ *  internal function to be used by codem_scanf and cname_scanf
+ *  this function updates opt->commands when command_mode is true
  */
-static int
-codem_scanf (const char *restrict message, char *restrict dest,
-          struct Opt *opt)
+static inline int
+scan__H (const char *restrict message, char *restrict dest,
+         const char *restrict scan_format,
+         const char *restrict sscan_regex, struct Opt *opt)
 {
   int n;
-
   if (!opt->command_mode)
     {
       if (opt->prompt)
         printf (message);
-      scanf (CODEM_FORMAT, dest);
-      sscanf (dest, CODEM_REGEX, dest, &n);
+      scanf (scan_format, dest);
+      sscanf (dest, sscan_regex, dest, &n);
     }
   else
-    sscanf (opt->commands, CODEM_REGEX, dest, &n);
-
+    sscanf (opt->commands, sscan_regex, dest, &n);
   opt->commands += n;
   return n;
 }
 
 static int
-cname_scanf (const char *restrict message, char *restrict dest,
-          struct Opt *opt)
+codem_scanf (const char *restrict message,
+             char *restrict dest, struct Opt *opt)
 {
-  int n;
+  return scan__H (message, dest, CODEM_FORMAT, CODEM_REGEX, opt);
+}
 
-  if (!opt->command_mode)
-    {
-      if (opt->prompt)
-        printf (message);
-      scanf (CNAME_FORMAT, dest);
-      sscanf (dest, CNAME_REGEX, dest, &n);
-    }
-  else
-    sscanf (opt->commands, CNAME_REGEX, dest, &n);
-
-  opt->commands += n;
-  return n;
+static int
+cname_scanf (const char *restrict message,
+             char *restrict dest, struct Opt *opt)
+{
+  return scan__H (message, dest, CNAME_FORMAT, CNAME_REGEX, opt);
 }
 
 /**
