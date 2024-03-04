@@ -58,6 +58,10 @@
 
 #ifndef CODEM_NO_CITY_DATA
 #include "codeM_data.h" /* city_name and city_code data */
+#ifdef CODEM_FUZZ_CITY_NAME
+#define LEVEN_IMPLEMENTATION
+#include "leven.c" /* provide leven.c */
+#endif
 #else
 /* city code length */
 /* it's needed for some functions even without codeM_data.h */
