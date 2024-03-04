@@ -68,6 +68,13 @@ leven_stk (const char *s1, const char *s2);
 /* manually handle the memory */
 LEVENDEF size_t
 leven_H (const char *s1, const char *s2, LARR_t* tmp);
+
+/**
+ *  strlen function, returns length of the @s
+ *  counts each non-ascii char once
+ */
+LEVENDEF size_t
+leven_strlen (const char *s);
 #endif
 
 /* the implementation */
@@ -88,7 +95,7 @@ leven_charlen (char c)
   // TODO: implement for utf-8 and other things
 }
 
-static inline size_t
+LEVENDEF size_t
 leven_strlen (const char *s)
 {
   size_t len = 0, lc = 0;
