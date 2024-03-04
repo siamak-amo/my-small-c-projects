@@ -405,7 +405,6 @@ codem_cname_search (const char *search)
   for (size_t idx = 0; idx < CITY_COUNT; ++idx)
     {
       p = city_name[idx];
-
 #ifdef CODEM_FUZZY_SEARCH_CITYNAME /* fuzz */
       char *tmp = malloc (50);
       strncpy (tmp, p, (n>=50)?50:n);
@@ -628,7 +627,6 @@ main (void)
 #ifdef CODEM_TEST
 #error "cannot make CLI and test programs together"
 #else
-
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
@@ -641,7 +639,7 @@ main (void)
   printf ("[debug %s:%d] %s=[%s]\n",            \
           __func__, __LINE__, #param, param);
 #define dprintf(format, ...)                    \
-  printf ("[debug %s:%d] "format,     \
+  printf ("[debug %s:%d] "format,               \
           __func__, __LINE__, __VA_ARGS__);
 #else
 #define printd(param) do{} while (0)
@@ -706,7 +704,6 @@ ssrand ()
       r += 0x666666;
       r *= 0x424242;
     }
-
   return r;
 }
 
@@ -720,6 +717,7 @@ scan__H (const char *restrict message, char *restrict dest,
          const char *restrict sscan_regex, struct Opt *opt)
 {
   int n;
+
   if (!opt->command_mode)
     {
       if (opt->prompt)
@@ -863,7 +861,6 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
       if (prev_comm == '\n' || prev_comm == '\0')
         fprintf (stderr, "Invalid command -- (%c)\n", comm);
     }
-
   return 0;
 }
 
@@ -953,7 +950,6 @@ main (int argc, char **argv)
       fprintf (stderr, " -- exiting.\n");
       return 1;
     }
-
   if (opt.command_mode)
     {
       /* run commands from cmdline args, available in opt->commands */
@@ -964,7 +960,6 @@ main (int argc, char **argv)
           opt.commands++;
           /* interpretation of backslash escapes */
           normalize_command (&prev_comm, &comm);
-
           if (exec_command (prev_comm, comm, &opt))
             return 0;
         }
@@ -995,12 +990,10 @@ main (int argc, char **argv)
               puts("");
             return 0;
           }
-
         if (exec_command (prev_comm, comm, &opt))
           return 0;
       }
     }
-
   return 0;
 }
 
