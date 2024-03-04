@@ -641,6 +641,7 @@ main (void)
 
 static const char *PROMPT = "> ";
 static const char *RD_PROMPT = "enter code: ";
+static const char *CN_PROMPT = "enter name: ";
 
 struct Opt {
   bool silent_mode;
@@ -800,6 +801,20 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
           codem_rands (tmp, off);
           puts (tmp);
         }
+      break;
+
+      /* search city name */
+    case 'f':
+      char buf[64];
+      cname_scanf (CN_PROMPT, buf, opt);
+      int res = codem_cname_search (buf);
+
+      const char *p = codem_ccode(res);
+      if (res < 0)
+          puts (p);
+      else
+        for (; *p != 0; p += CC_LEN)
+          printf("%.3s\n", p);
       break;
 
       /* print help */
