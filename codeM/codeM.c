@@ -640,8 +640,12 @@ main (void)
 #define printd(param)                           \
   printf ("[debug %s:%d] %s=[%s]\n",            \
           __func__, __LINE__, #param, param);
+#define dprintf(format, ...)                    \
+  printf ("[debug %s:%d] "format,     \
+          __func__, __LINE__, __VA_ARGS__);
 #else
 #define printd(param) do{} while (0)
+#define dprintf(format, ...) do{} while (0)
 #endif
 
 #define CNAME_MAX_BUFF 64
@@ -652,6 +656,8 @@ main (void)
 #define CNAME_REGEX " %64[^;#]%n"
 /* sscanf regex to read a 10-digit code */
 #define CODEM_REGEX " %10[0-9]%n"
+
+#define NORMCHAR(c) ((c>0) ? c : '!') /* normalize character */
 
 static const char *PROMPT = "> ";
 static const char *RD_PROMPT = "enter code: ";
