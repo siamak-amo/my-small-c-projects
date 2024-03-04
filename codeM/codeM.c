@@ -688,8 +688,9 @@ ssrand ()
 }
 
 /**
- *  internal function to be used by the exec_command function
- *  this function updates opt->commands if command_mode is true
+ *  internal functions codem_scanf - cname_scanf
+ *  used by the exec_command function
+ *  this functions update opt->commands when command_mode is true
  */
 static int
 codem_scanf (const char *restrict message, char *restrict dest,
@@ -706,6 +707,26 @@ codem_scanf (const char *restrict message, char *restrict dest,
     }
   else
     sscanf (opt->commands, " %10[0-9]%n", dest, &n);
+
+  opt->commands += n;
+  return n;
+}
+
+static int
+cname_scanf (const char *restrict message, char *restrict dest,
+          struct Opt *opt)
+{
+  int n;
+
+  if (!opt->command_mode)
+    {
+      if (opt->prompt)
+        printf (message);
+      scanf ("%10s", dest);
+      sscanf (dest, " %64s%n", dest, &n);
+    }
+  else
+    sscanf (opt->commands, " %64s%n", dest, &n);
 
   opt->commands += n;
   return n;
