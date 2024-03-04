@@ -662,6 +662,7 @@ main (void)
 static const char *PROMPT = "> ";
 static const char *RD_PROMPT = "enter code: ";
 static const char *CN_PROMPT = "enter name: ";
+const char *__progname__;
 
 struct Opt {
   bool silent_mode;
@@ -891,9 +892,9 @@ normalize_command (char *restrict prev_comm,
 }
 
 static inline int
-pars_options (int argc, char **argv,
-              struct Opt *opt)
+pars_options (int argc, char **argv, struct Opt *opt)
 {
+  __progname__ = argv[0];
   for (argc--, argv++; argc > 0; argc--, argv++)
     {
       if (!opt->EOO && argv[0][0] == '-')
@@ -978,7 +979,7 @@ main (int argc, char **argv)
                   "   -s:    silent mode\n"
                   "   -S:    disable prompt when using pipe to stdin\n"
                   "   -c:    pass COMMANDS to be executed,\n"
-                  "          use: -c \"h\" to get help\n\n", argv[0]);
+                  "          use: -c \"h\" to get help\n\n", __progname__);
           help (&opt);
         }
 
