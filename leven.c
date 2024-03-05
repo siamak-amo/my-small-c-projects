@@ -11,7 +11,8 @@
  *     the smaller string first
  *
  *  compilation:
- *    cc -Wall -Wextra -D LEVEN_TEST -o test leven.c
+ *    cc -Wall -Wextra -D IMPLEMENTATION
+ *                     -D LEVEN_TEST -o test leven.c
  *
  *
  *  include in other c files:
