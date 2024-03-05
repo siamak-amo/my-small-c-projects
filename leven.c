@@ -54,6 +54,10 @@
 #define leven_alloc(s)                                  \
   (LARR_t*) malloc (leven_strlen (s) * sizeof(LARR_t*))
 
+/* internal macro to get length of a character */
+/* TODO: implement for encodings longer than 2 bytes */
+#define leven_charlen(c) ((c >= 0) ? 1 : 2)
+
 /**
  *  functions to calculate levenshtein distance @s1 and @s2
  *  @s1, @s1 might include some non-ascii characters
@@ -80,25 +84,14 @@ leven_strlen (const char *s);
 /* the implementation */
 #ifdef LEVEN_IMPLEMENTATION
 
-/**
- *  internal functions
- *  to calculate length of an arbitrary string
- *  each ascii-char is 1 byte and non-ascii is 2 bytes
- */
-static inline int
-leven_charlen (char c)
-{
-  if (c>=0)
-    return 1;
-  else
-    return 2;
-  // TODO: implement for utf-8 and other things
-}
-
 LEVENDEF size_t
 leven_strlen (const char *s)
 {
   size_t len = 0, lc = 0;
+
+  if (s == NULL)
+    return 0;
+
   while (*s != '\0')
     {
       lc = leven_charlen (*s);
