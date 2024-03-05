@@ -213,11 +213,11 @@ typedef struct test_case tc_t;
 
 /* strlen test cases */
 const tc_t *strlen_tests[] = {
-  TC("012345",   6),
+  TC(NULL,       0),
   TC("",         0),
-  TC("\0",       0),
+  TC("012345",   6),
   TC("©®",       2),
-  TC("©,®,01",   6)
+  TC("A©,®01",   6)
 };
 /* levenshtein distance test cases */
 const tc_t *ld_tests[] = {
