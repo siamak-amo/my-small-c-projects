@@ -6,4 +6,5 @@
 bak
 build
 **/a.out
+**/*.out
 **/TAGS
