@@ -239,7 +239,7 @@ main (void)
 
   puts ("- Testing strlen ---------------------------------------");
   tc = *strlen_tests;
-  for (int i=0; i < lenof(strlen_tests); tc = strlen_tests[++i])
+  for (size_t i=0; i < lenof(strlen_tests); tc = strlen_tests[++i])
     {
       len = leven_strlen (tc->s);
       printf ("* strlen(\"%s\")=%lu   \t...", tc->s, len);
@@ -250,7 +250,7 @@ main (void)
   puts ("");
   puts ("- Testing Levenshtein Distance -------------------------");
   tc = *ld_tests;
-  for (int i=0; i < lenof(ld_tests); tc = ld_tests[++i])
+  for (size_t i=0; i < lenof(ld_tests); tc = ld_tests[++i])
     {
       LD = leven_H (s1, tc->s, tmp);
       printf ("* LD(\"%s\", \"%s\")=%lu \t...", s1, tc->s, LD);
