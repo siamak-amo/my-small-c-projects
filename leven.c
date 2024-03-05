@@ -209,8 +209,18 @@ struct test_case {
 };
 typedef struct test_case tc_t;
 #define TC(a, b) &(tc_t){.s=a, .res=b}
+#define lenof(arr) (sizeof(arr) / sizeof(*arr))
 
-const tc_t *tests[] = {
+/* strlen test cases */
+const tc_t *strlen_tests[] = {
+  TC("012345",   6),
+  TC("",         0),
+  TC("\0",       0),
+  TC("©®",       2),
+  TC("©,®,01",   6)
+};
+/* levenshtein distance test cases */
+const tc_t *ld_tests[] = {
   TC("compatible",   0),
   TC("compateble",   1),
   TC("compatable",   1),
@@ -223,15 +233,29 @@ int
 main (void)
 {
   size_t LD = 0;
-  const tc_t *tc = *tests;
+  size_t len = 0;
+  const tc_t *tc;
   LARR_t *tmp = leven_alloc (s1);
 
-  for (int i=0; tests[i] != NULL; tc = tests[++i])
+  puts ("- Testing strlen ---------------------------------------");
+  tc = *strlen_tests;
+  for (int i=0; i < lenof(strlen_tests); tc = strlen_tests[++i])
+    {
+      len = leven_strlen (tc->s);
+      printf ("* strlen(\"%s\")=%lu   \t...", tc->s, len);
+      assert ((len == tc->res) && "test failure");
+      printf ("PASS (%lu)\n", tc->res);
+    }
+
+  puts ("");
+  puts ("- Testing Levenshtein Distance -------------------------");
+  tc = *ld_tests;
+  for (int i=0; i < lenof(ld_tests); tc = ld_tests[++i])
     {
       LD = leven_H (s1, tc->s, tmp);
-      printf("* LD(\"%s\", \"%s\")=%lu \t...", s1, tc->s, LD);
+      printf ("* LD(\"%s\", \"%s\")=%lu \t...", s1, tc->s, LD);
       assert ((LD == tc->res) && "test failure");
-      puts(" PASS.");
+      printf ("PASS (%lu)\n", tc->res);
     }
 
   leven_free(tmp);
