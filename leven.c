@@ -10,7 +10,7 @@
  *     we simply use n for memory allocation, so provide
  *     the smaller string first
  *
- *  compilation:
+ *  compile the test program:
  *    cc -Wall -Wextra -D IMPLEMENTATION
  *                     -D LEVEN_TEST -o test leven.c
  *
