@@ -244,7 +244,7 @@ main (void)
       len = leven_strlen (tc->s);
       printf ("* strlen(\"%s\")=%lu   \t...", tc->s, len);
       assert ((len == tc->res) && "test failure");
-      printf ("PASS (%lu)\n", tc->res);
+      printf ("PASS %lu\n", tc->res);
     }
 
   puts ("");
@@ -255,7 +255,7 @@ main (void)
       LD = leven_H (s1, tc->s, tmp);
       printf ("* LD(\"%s\", \"%s\")=%lu \t...", s1, tc->s, LD);
       assert ((LD == tc->res) && "test failure");
-      printf ("PASS (%lu)\n", tc->res);
+      printf ("PASS %lu\n", tc->res);
     }
 
   leven_free(tmp);
