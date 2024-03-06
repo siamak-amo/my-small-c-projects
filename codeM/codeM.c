@@ -661,6 +661,8 @@ static const char *PROMPT = "> ";
 static const char *RD_PROMPT = "enter code: ";
 static const char *CN_PROMPT = "enter name: ";
 const char *__progname__;
+/* a nonce for random number generator */
+static size_t nonce = 0;
 
 struct Opt {
   bool silent_mode;
@@ -697,7 +699,7 @@ help (struct Opt *opt)
 static size_t
 ssrand ()
 {
-  size_t r = time (NULL);
+  size_t r = time (NULL) + nonce++;
 
   for (int i=7; i>0; --i)
     {
