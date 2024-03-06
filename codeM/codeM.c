@@ -59,16 +59,13 @@
 #define codeM__H__
 #include <string.h>
 
-#ifndef CODEM_NO_CITY_DATA
-#include "codeM_data.h" /* city_name and city_code data */
+/* city_name and city_code data */
+#include "codeM_data.h"
+
 #ifdef CODEM_FUZZY_SEARCH_CITYNAME
+/* fuzzy search feature */
 #define LEVEN_IMPLEMENTATION
 #include "leven.c" /* provide leven.c */
-#endif
-#else
-/* city code length */
-/* it's needed for some functions even without codeM_data.h */
-#define CC_LEN 3
 #endif
 
 typedef size_t(*RandFunction)(void);
