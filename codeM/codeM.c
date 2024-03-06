@@ -63,8 +63,7 @@
 #include "codeM_data.h"
 
 #ifdef CODEM_FUZZY_SEARCH_CITYNAME
-/* fuzzy search feature */
-#define LEVEN_IMPLEMENTATION
+#define LEVEN_IMPLEMENTATION /* fuzzy search feature */
 #include "leven.c" /* provide leven.c */
 #endif
 
@@ -973,7 +972,7 @@ main (int argc, char **argv)
                   "Usage: %s [OPTIONS] [COMMANDS]\n"
                   "OPTIONS:\n"
                   "   -s:    silent mode\n"
-                  "   -S:    disable prompt when using pipe to stdin\n"
+                  "   -S:    disable the prompt (when using pipe)\n"
                   "   -c:    pass COMMANDS to be executed,\n"
                   "          use: -c \"h\" to get help\n\n", __progname__);
           help (&opt);
