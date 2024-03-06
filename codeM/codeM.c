@@ -760,6 +760,9 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
   char tmp[CODEM_BUF_LEN] = {0};
   char name_tmp[CNAME_MAX_BUFF] = {0};
 
+  int res, off;
+  const char *p;
+
   switch (comm)
     {
       /* validation */
@@ -809,7 +812,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
 
       /* make a random code by prefix */
     case 'R':
-      int off = codem_scanf (RD_PROMPT, tmp, opt);
+      off = codem_scanf (RD_PROMPT, tmp, opt);
       printd(tmp);
       if (off > CODEM_LEN)
         assert (0 && "Invalid Offset of codem_scanf");
@@ -823,10 +826,9 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
       /* find city name */
     case 'f':
       cname_scanf (CN_PROMPT, name_tmp, opt);
-      int res = codem_cname_search (name_tmp);
+      res = codem_cname_search (name_tmp);
       printd(name_tmp);
-
-      const char *p = codem_ccode(res);
+      p = codem_ccode(res);
       if (res < 0)
           puts (p);
       else
