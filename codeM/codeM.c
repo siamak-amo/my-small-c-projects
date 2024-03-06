@@ -394,13 +394,12 @@ codem_ccode_idx (const char *codem)
 CODEMDEF int
 codem_cname_search (const char *search)
 {
-  size_t n = strlen (search);
-
 #ifdef CODEM_FUZZY_SEARCH_CITYNAME
   size_t min_dist = -1, min_dist_idx = CC_NOT_FOUND;
 #endif
 
 #ifndef CODEM_NO_CITY_DATA
+  size_t n = strlen (search);
   const char *p;
   for (size_t idx = 0; idx < CITY_COUNT; ++idx)
     {
@@ -418,13 +417,12 @@ codem_cname_search (const char *search)
 #else /* normal search */
       if (strncmp (search, p, n) == 0)
         return idx;
-#endif
-
+#endif /* CODEM_FUZZY_SEARCH_CITYNAME */
     }
 
 #else
   return CC_NOT_IMPLEMENTED;
-#endif
+#endif /* CODEM_NO_CITY_DATA */
 
 #ifdef CODEM_FUZZY_SEARCH_CITYNAME
   if (min_dist > leven_strlen(search) / 2)
