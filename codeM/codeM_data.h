@@ -24,6 +24,7 @@
 /* length of a city code */
 #define CC_LEN 3 
 
+#ifndef CODEM_NO_CITY_DATA
 const char *city_code[CITY_COUNT] = {
   "169", "170", "149150", "171", "168", "136137138", "545", "505", "636",
   "164165", "172", "623", "506", "519", "154155", "567", "173", "159160",
@@ -561,4 +562,5 @@ const char *city_name[CITY_COUNT] = {
   "میانه"
 };
 
-#endif
+#endif /* CODEM_NO_CITY_DAT*/
+#endif /* CODEM_DATA__H__ */
