@@ -824,6 +824,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
     case 'f':
       cname_scanf (CN_PROMPT, name_tmp, opt);
       int res = codem_cname_search (name_tmp);
+      printd(name_tmp);
 
       const char *p = codem_ccode(res);
       if (res < 0)
@@ -836,6 +837,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
       /* search city name */
     case 'F':
       cname_scanf (CN_PROMPT, name_tmp, opt);
+      printd(name_tmp);
       res = codem_cname_search (name_tmp);
       p = codem_cname_byidx(res);
       puts(p);
