@@ -87,9 +87,6 @@ static RandFunction prand;
 /* it's important to allocate your buffers for codem of */
 /* length 11, 10 char for codem and a 0-byte at the end */
 #define CODEM_BUF_LEN 11
-/* city code errors */
-#define CC_NOT_FOUND -1
-#define CC_NOT_IMPLEMENTED -2
 
 /* macro to initialize prand */
 #define codem_rand_init(randfun) prand = &(randfun)

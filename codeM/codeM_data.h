@@ -23,6 +23,12 @@
 #define CITY_COUNT 476 
 /* length of a city code */
 #define CC_LEN 3 
+/* define errors */
+#define CC_NOT_FOUND -1
+#define CC_NOT_IMPLEMENTED -2
+#define CCERR_NOT_FOUND "Not Found"
+#define CCERR_NOT_IMPLEMENTED "Not Implemented"
+#define CCERR "Unknown Error"
 
 #ifndef CODEM_NO_CITY_DATA
 const char *city_code[CITY_COUNT] = {
