@@ -120,11 +120,11 @@ static RandFunction prand;
 /* get the name of city code @code */
 #ifndef CODEM_NO_CITY_DATA
 #define codem_cname_byidx(idx)                             \
-  ((idx) == CC_NOT_FOUND) ? CCERR_NOT_FOUND                \
-  : ((idx) < 0) ? CCERR : city_name[idx]
+  ({ int __idx = idx;                                      \
+  ((__idx) == CC_NOT_FOUND) ? CCERR_NOT_FOUND              \
+  : ((__idx) < 0) ? CCERR : city_name[__idx]; })
 #define codem_cname(code)                                  \
-  ({ int __city_idx = codem_ccode_idx (code);              \
-    codem_cname_byidx(__city_idx); })
+  codem_cname_byidx(codem_ccode_idx (code))
 #else
 #define codem_cname_byidx(idx) CCERR_NOT_IMPLEMENTED
 #define codem_cname(code) CCERR_NOT_IMPLEMENTED
