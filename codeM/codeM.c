@@ -76,6 +76,9 @@ typedef size_t(*RandFunction)(void);
  */
 static RandFunction prand;
 
+/* macro to initialize prand */
+#define codem_rand_init(randfun) prand = &(randfun)
+
 #ifndef CODEMDEF
 #define CODEMDEF static inline
 #endif
@@ -87,9 +90,6 @@ static RandFunction prand;
 /* it's important to allocate your buffers for codem of */
 /* length 11, 10 char for codem and a 0-byte at the end */
 #define CODEM_BUF_LEN 11
-
-/* macro to initialize prand */
-#define codem_rand_init(randfun) prand = &(randfun)
 
 #define char2num(c) ((c) - '0')
 #define num2char(x) ((x) + '0')
