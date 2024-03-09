@@ -853,8 +853,8 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
 
       /* invalid command */
     default:
-      if (prev_comm == '\n' || prev_comm == '\0' || prev_comm == ' ' ||
-          prev_comm != '#'  || prev_comm == ';'  || opt->command_mode)
+      if ((prev_comm == '\n' || prev_comm == '\0' || prev_comm == ' '
+           || prev_comm == ';'  || opt->command_mode) && prev_comm != '#')
         fprintf (stderr, "Invalid command -- (%c)\n", comm);
     }
   return 0;
