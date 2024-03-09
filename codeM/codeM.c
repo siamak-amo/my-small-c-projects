@@ -645,8 +645,8 @@ main (void)
 #define CNAME_REGEX " %64[^;#]%n"
 /* sscanf regex to read a 10-digit code */
 #define CODEM_REGEX " %10[0-9]%n"
-
-#define NORMCHAR(c) ((c>0) ? c : '!') /* normalize character */
+/* normalize character to prevent printing non-ascii characters */
+#define NORMCHAR(c) ((c>0) ? c : '!')
 
 static const char *PROMPT = "> ";
 static const char *RD_PROMPT = "enter code: ";
