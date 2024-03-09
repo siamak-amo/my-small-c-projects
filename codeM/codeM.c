@@ -947,6 +947,12 @@ main (int argc, char **argv)
       fprintf (stderr, " -- exiting.\n");
       return 1;
     }
+  /* disable the prompt when `stdin` is not a tty (using pipe) */
+  if (!isatty (fileno (stdin)))
+    {
+      opt.silent_mode = true;
+      opt.prompt = false;
+    }
   if (opt.command_mode)
     {
       /* run commands from cmdline args, available in opt->commands */
