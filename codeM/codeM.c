@@ -846,10 +846,9 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
     case '\n':
     case '\r':
     case '\\':
-    case ' ':
-      /* comments */
-    case ';':
-    case '#':
+    case ' ': /* separator */
+    case ';': /* separator */
+    case '#': /* comment */
       return 0;
 
       /* invalid command */
