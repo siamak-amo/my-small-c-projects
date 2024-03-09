@@ -101,19 +101,19 @@ static RandFunction prand;
  *  @codem should be normalized
  */
 #define is_numeric(codem) ({int __res = 1;                 \
-      for (int __i=CODEM_LEN-1; __i--!=0;){                \
-        __res &= ('0'<=codem[__i] && '9'>=codem[__i]);     \
+      for (int __idx = CODEM_LEN - 1; __idx-- != 0;){      \
+        __res &= isanumber(codem[__idx]);                  \
         if (!__res) break;                                 \
       }; __res;})
 
 /**
- *  internal macro to calculate the control digit
+ *  internal macro to calculate the control-digit of the @codem
  *  only use `codem_*_ctrl_digit` functions
  */
 #define ctrl_digit__H(res, codem) do{                      \
     (res) = 0;                                             \
-    for (int __i=CODEM_LEN-1; __i--!=0;)                   \
-      (res) += (10 - __i) * char2num ((codem)[__i]);       \
+    for (int __idx=CODEM_LEN-1; __idx--!=0;)               \
+      (res) += (10 - __idx) * char2num ((codem)[__idx]);   \
     (res) %= 11;                                           \
     if ((res) >= 2) (res) = 11 - (res); } while(0)
 
