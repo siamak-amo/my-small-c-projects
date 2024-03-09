@@ -101,9 +101,9 @@ static RandFunction prand;
  *  @codem should be normalized
  */
 #define is_numeric(codem) ({int __res = 1;                 \
-      for (int __idx = CODEM_LEN - 1; __idx-- != 0;){      \
+      for (int __idx = CODEM_LEN - 1;                      \
+           __idx-- != 0 && __res != 0; ){                  \
         __res &= isanumber(codem[__idx]);                  \
-        if (!__res) break;                                 \
       }; __res;})
 
 /**
