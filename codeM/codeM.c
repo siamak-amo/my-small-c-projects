@@ -748,11 +748,10 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
 {
   dprintf("running: (%c), prev_command: (%c)\n",
           NORMCHAR(comm), NORMCHAR(prev_comm));
-  char tmp[CODEM_BUF_LEN] = {0};
-  char name_tmp[CNAME_MAX_BUFF] = {0};
-
   int res, off;
   const char *p;
+  char tmp[CODEM_BUF_LEN] = {0};
+  char name_tmp[CNAME_MAX_BUFF] = {0};
 
   switch (comm)
     {
@@ -938,7 +937,6 @@ main (int argc, char **argv)
     .commands = NULL,
     .EOO = false,
   };
-
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
   /* parsing cmdline arguments */
@@ -980,7 +978,6 @@ main (int argc, char **argv)
                   "          use: -c \"h\" to get help\n\n", __progname__);
           help (&opt);
         }
-
       while (1)
       {
         if (('\0' == comm || '\n' == comm) && opt.prompt)
