@@ -95,18 +95,6 @@ static RandFunction prand;
 #define codem_rand_init(randfun) prand = &(randfun)
 
 /**
- *  internal macro to check @codem buffer
- *  is only contains numeric characters,
- *  only use `codem_isvalid*` functions
- *  @codem should be normalized
- */
-#define is_numeric(codem) ({int __res = 1;                 \
-      for (int __idx = CODEM_LEN - 1;                      \
-           __idx-- != 0 && __res != 0; ){                  \
-        __res &= isanumber(codem[__idx]);                  \
-      }; __res;})
-
-/**
  *  internal macro to calculate the control-digit of the @codem
  *  only use `codem_*_ctrl_digit` functions
  */
@@ -223,6 +211,20 @@ codem_cname_search (const char *search);
 
 /* implementation */
 #ifdef CODEM_IMPLEMENTATION
+
+/**
+ *  internal function to check @codem buffer
+ *  is only contains numeric characters
+ *  @codem should be normalized
+ */
+static inline int
+is_numeric(const char *codem)
+{
+  for (int idx = 0; idx < CODEM_LEN; ++idx)
+    if (!isanumber(codem[idx]))
+      return 0;
+  return 1;
+}
 
 CODEMDEF int
 codem_find_ctrl_digit (const char *codem)
