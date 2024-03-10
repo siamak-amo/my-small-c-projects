@@ -644,7 +644,7 @@ main (void)
 /* sscanf regex to read a city name (non-ascii) */
 #define CNAME_REGEX " %64[^;#]%n"
 /* sscanf regex to read a 10-digit code */
-#define CODEM_REGEX " %10[0-9a-z]%n"
+#define CODEM_REGEX " %10[^;#]%n"
 /* normalize character to prevent printing non-ascii characters */
 #define NORMCHAR(c) ((c>0) ? ((c!='\n' && c!='\r') ? c : ' ') : '!')
 
