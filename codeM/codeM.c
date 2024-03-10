@@ -18,7 +18,7 @@
  *   file: codeM.c
  *   created on: 1 Oct 2023
  *
- *   common Iranian ID number (code-e-melli) single-file library
+ *   Common Iranian ID number (code-e-melli) single-file library
  *
  *   `codem` in the following is referred to the term `code-e-melli`.
  *   this library performs validating and making random codem's.
@@ -39,7 +39,7 @@
  *          to enable printing some debug information
  *       `-D CODEM_FUZZY_SEARCH_CITYNAME`:
  *          to enable fuzzy search, you need to provide
- *          the `leven.c` file available in the same repository
+ *          the `leven.c` file (available in the same repository)
  *
  *     to include in c files:
  *       `
