@@ -646,7 +646,7 @@ main (void)
 /* sscanf regex to read a 10-digit code */
 #define CODEM_REGEX " %10[0-9a-z]%n"
 /* normalize character to prevent printing non-ascii characters */
-#define NORMCHAR(c) ((c>0) ? c : '!')
+#define NORMCHAR(c) ((c>0) ? ((c!='\n' && c!='\r') ? c : ' ') : '!')
 
 static const char *PROMPT = "> ";
 static const char *RD_PROMPT = "enter code: ";
