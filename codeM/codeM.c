@@ -213,11 +213,10 @@ codem_cname_search (const char *search);
 #ifdef CODEM_IMPLEMENTATION
 
 /**
- *  internal function to check @codem buffer
- *  is only contains numeric characters
- *  @codem should be normalized
+ *  internal function
+ *  returns 1 when @codem is numeric otherwise 0
  */
-static inline int
+int
 is_numeric(const char *codem)
 {
   for (int idx = 0; idx < CODEM_LEN; ++idx)
@@ -589,7 +588,6 @@ rand ()
 {
   return 4242424242UL;
 }
-
 
 int
 main (void)
