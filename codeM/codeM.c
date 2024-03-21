@@ -430,9 +430,9 @@ codem_cname_search (const char *search)
 
 
 
-/*--------------*/
-/* test program */
-/*--------------*/
+/*------------------*/
+/* the test program */
+/*------------------*/
 #ifdef CODEM_TEST
 #include <stdio.h>
 #include <assert.h>
@@ -611,9 +611,9 @@ main (void)
 
 
 
-/*-------------*/
-/* CLI program */
-/*-------------*/
+/*-----------------*/
+/* the CLI program */
+/*-----------------*/
 #ifdef CODEM_CLI
 #ifdef CODEM_TEST
 #error "cannot make CLI and test programs together"
