@@ -74,7 +74,7 @@ typedef size_t(*RandFunction)(void);
  *  initialization of prand is necessary for using
  *  any of *_rand_* functions and macros
  */
-static RandFunction prand;
+RandFunction prand;
 
 #ifndef CODEMDEF
 #define CODEMDEF static inline
