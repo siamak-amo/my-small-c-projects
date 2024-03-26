@@ -69,12 +69,12 @@
 
 typedef size_t(*RandFunction)(void);
 /**
- *  prand is the main pseudo-random number
+ *  codem_srand is the main pseudo-random number
  *  generator function used by this library
- *  initialization of prand is necessary for using
+ *  initialization of codem_srand is necessary for using
  *  any of *_rand_* functions and macros
  */
-RandFunction prand;
+RandFunction codem_srand;
 
 #ifndef CODEMDEF
 #define CODEMDEF static inline
@@ -91,8 +91,8 @@ RandFunction prand;
 #define char2num(c) ((c) - '0')
 #define num2char(x) ((x) + '0')
 #define isanumber(c) (('0' <= (c)) && ('9' >= (c)))
-/* macro to initialize prand */
-#define codem_rand_init(randfun) prand = &(randfun)
+/* macro to initialize codem_srand */
+#define codem_rand_init(randfun) codem_srand = &(randfun)
 
 /**
  *  internal macro to calculate the control-digit of the @codem
@@ -141,7 +141,7 @@ RandFunction prand;
  *  internal macro to make random city indexes
  *  only use `codem_rand_ccode` function
  */
-#define city_rand_idx__H() (int)((prand ()) % CITY_COUNT)
+#define city_rand_idx__H() (int)((codem_srand ()) % CITY_COUNT)
 
 /**
  *  return the correct control digit of codem
@@ -294,7 +294,7 @@ codem_isvalid (const char *codem)
 CODEMDEF void
 codem_rand_gen (char *res, int len)
 {
-  unsigned long long rand = prand ();
+  unsigned long long rand = codem_srand ();
   
   while (0 != len--)
     {
@@ -309,7 +309,7 @@ codem_rand_ccode (char *dest)
 #ifndef CODEM_NO_CITY_DATA
   int code_count = CC_LEN;
   int idx = city_rand_idx__H ();
-  size_t rand = prand ();
+  size_t rand = codem_srand ();
   const char *p = city_code[idx];
   const char *q = p;
 
@@ -325,7 +325,7 @@ codem_rand_ccode (char *dest)
     }
   strncpy (dest, p, CC_LEN);
 #else
-  size_t rand = prand ();
+  size_t rand = codem_srand ();
   for (int idx = CC_LEN-1; idx >= 0; --idx)
     {
       dest[idx] = (rand%10) + '0';
