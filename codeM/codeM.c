@@ -74,7 +74,7 @@ typedef size_t(*RandFunction)(void);
  *  initialization of codem_srand is necessary for using
  *  any of *_rand_* functions and macros
  */
-RandFunction codem_srand;
+RandFunction codem_srand = NULL;
 
 #ifndef CODEMDEF
 #define CODEMDEF static inline
