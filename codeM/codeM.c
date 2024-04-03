@@ -665,7 +665,7 @@ struct Opt {
 static struct Opt *opt;
 
 static void
-help (struct Opt *opt)
+help ()
 {
   FILE *out_file;
   out_file = (!isatty (fileno (stdout))) ? stderr : stdout;
@@ -708,7 +708,7 @@ ssrand ()
 static inline int
 scan__H (const char *restrict message, char *restrict dest,
          const char *restrict scan_format,
-         const char *restrict sscan_regex, struct Opt *opt)
+         const char *restrict sscan_regex)
 {
   int n;
 
@@ -726,17 +726,15 @@ scan__H (const char *restrict message, char *restrict dest,
 }
 
 static int
-codem_scanf (const char *restrict message,
-             char *restrict dest, struct Opt *opt)
+codem_scanf (const char *restrict message, char *restrict dest)
 {
-  return scan__H (message, dest, CODEM_FORMAT, CODEM_REGEX, opt);
+  return scan__H (message, dest, CODEM_FORMAT, CODEM_REGEX);
 }
 
 static int
-cname_scanf (const char *restrict message,
-             char *restrict dest, struct Opt *opt)
+cname_scanf (const char *restrict message, char *restrict dest)
 {
-  return scan__H (message, dest, CNAME_FORMAT, CNAME_REGEX, opt);
+  return scan__H (message, dest, CNAME_FORMAT, CNAME_REGEX);
 }
 
 /**
@@ -745,7 +743,7 @@ cname_scanf (const char *restrict message,
  *  pass it NULL to read from stdin
  */
 static int
-exec_command (char prev_comm, char comm, struct Opt *opt)
+exec_command (char prev_comm, char comm)
 {
   dprintf("running: (%c), prev_command: (%c)\n",
           NORMCHAR(comm), NORMCHAR(prev_comm));
@@ -758,7 +756,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
     {
       /* validation */
     case 'v':
-      codem_scanf (RD_PROMPT, tmp, opt);
+      codem_scanf (RD_PROMPT, tmp);
       if (0 != codem_norm (tmp))
         assert ( 0 && "Cannot be Normalized" );
       printd(tmp);
@@ -774,7 +772,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
 
       /* make a code valid */
     case 'V':
-      codem_scanf (RD_PROMPT, tmp, opt);
+      codem_scanf (RD_PROMPT, tmp);
       if (0 != codem_norm (tmp))
         assert ( 0 && "Cannot be Normalized" );
       printd(tmp);
@@ -790,7 +788,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
         
       /* find city name */
     case 'C':
-      codem_scanf (RD_PROMPT, tmp, opt);
+      codem_scanf (RD_PROMPT, tmp);
       printd(tmp);
       puts (codem_cname (tmp));
       break;
@@ -803,7 +801,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
 
       /* make a random code by prefix */
     case 'R':
-      off = codem_scanf (RD_PROMPT, tmp, opt);
+      off = codem_scanf (RD_PROMPT, tmp);
       printd(tmp);
       if (off > CODEM_LEN)
         assert (0 && "Invalid Offset of codem_scanf");
@@ -816,7 +814,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
 
       /* find city name */
     case 'f':
-      cname_scanf (CN_PROMPT, name_tmp, opt);
+      cname_scanf (CN_PROMPT, name_tmp);
       res = codem_cname_search (name_tmp);
       printd(name_tmp);
       p = codem_ccode(res);
@@ -829,7 +827,7 @@ exec_command (char prev_comm, char comm, struct Opt *opt)
 
       /* search city name */
     case 'F':
-      cname_scanf (CN_PROMPT, name_tmp, opt);
+      cname_scanf (CN_PROMPT, name_tmp);
       printd(name_tmp);
       res = codem_cname_search (name_tmp);
       p = codem_cname_byidx(res);
@@ -886,7 +884,7 @@ normalize_command (char *restrict prev_comm,
 }
 
 static inline int
-pars_options (int argc, char **argv, struct Opt *opt)
+pars_options (int argc, char **argv)
 {
   __progname__ = argv[0];
   for (argc--, argv++; argc > 0; argc--, argv++)
@@ -941,7 +939,7 @@ main (int argc, char **argv)
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
   /* parsing cmdline arguments */
-  if (pars_options (argc, argv, &opt))
+  if (pars_options (argc, argv))
     {
       fprintf (stderr, " -- exiting.\n");
       return 1;
@@ -977,21 +975,21 @@ main (int argc, char **argv)
                   "   -S:    disable the prompt (when using pipe)\n"
                   "   -c:    pass COMMANDS to be executed,\n"
                   "          use: -c \"h\" to get help\n\n", __progname__);
-          help (&opt);
+          help ();
         }
       while (1)
       {
-        if (('\0' == comm || '\n' == comm) && opt.prompt)
+        if (('\0' == comm || '\n' == comm) && opt->prompt)
           fprintf (stdout, "%s", PROMPT);
 
         prev_comm = comm;
         if (EOF == scanf ("%c", &comm))
           {
-            if (opt.prompt)
+            if (opt->prompt)
               puts("");
             return 0;
           }
-        if (exec_command (prev_comm, comm, &opt))
+        if (exec_command (prev_comm, comm))
           return 0;
       }
     }
