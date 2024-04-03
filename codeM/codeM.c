@@ -947,26 +947,26 @@ main (int argc, char **argv)
   /* disable the prompt when `stdin` is not a tty (using pipe) */
   if (!isatty (fileno (stdin)))
     {
-      opt.silent_mode = true;
-      opt.prompt = false;
+      opt->silent_mode = true;
+      opt->prompt = false;
     }
-  if (opt.command_mode)
+  if (opt->command_mode)
     {
       /* run commands from cmdline args, available in opt->commands */
-      while (*opt.commands != '\0')
+      while (*opt->commands != '\0')
         {
           prev_comm = comm;
-          comm = *opt.commands;
-          opt.commands++;
+          comm = *opt->commands;
+          opt->commands++;
           /* interpretation of backslash escapes */
           normalize_command (&prev_comm, &comm);
-          if (exec_command (prev_comm, comm, &opt))
+          if (exec_command (prev_comm, comm))
             return 0;
         }
     }
   else /* shell mode */
     {
-      if (!opt.silent_mode && opt.prompt)
+      if (!opt->silent_mode && opt->prompt)
         {
           printf ("codeM Shell Mode!\n"
                   "Usage: %s [OPTIONS] [COMMANDS]\n"
