@@ -662,6 +662,7 @@ struct Opt {
   bool EOO; /* End Of Options */
   char *commands; /* only in command_mode */
 };
+static struct Opt *opt;
 
 static void
 help (struct Opt *opt)
@@ -930,7 +931,7 @@ int
 main (int argc, char **argv)
 {
   char comm = '\0', prev_comm = comm;
-  static struct Opt opt = {
+  opt = &(struct Opt){
     .silent_mode = false,
     .command_mode = false,
     .prompt = true,
