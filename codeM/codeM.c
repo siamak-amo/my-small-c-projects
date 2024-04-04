@@ -834,9 +834,8 @@ exec_command (char prev_comm, char comm)
       puts(p);
       break;
 
-      /* print help */
     case 'h':
-      help (opt);
+      help ();
       break;
 
     case 'q':
@@ -936,6 +935,7 @@ main (int argc, char **argv)
     .commands = NULL,
     .EOO = false,
   };
+
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
   /* parsing cmdline arguments */
