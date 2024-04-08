@@ -63,8 +63,8 @@
 #include "codeM_data.h"
 
 #ifdef CODEM_FUZZY_SEARCH_CITYNAME
-#define LEVEN_IMPLEMENTATION /* fuzzy search feature */
-#include "leven.c" /* provide leven.c */
+#  define LEVEN_IMPLEMENTATION /* fuzzy search feature */
+#  include "leven.c" /* provide leven.c */
 #endif
 
 typedef size_t(*RandFunction)(void);
@@ -77,7 +77,7 @@ typedef size_t(*RandFunction)(void);
 RandFunction codem_srand = NULL;
 
 #ifndef CODEMDEF
-#define CODEMDEF static inline
+#  define CODEMDEF static inline
 #endif
 
 /* codem is a numeric string of length 10 */
@@ -107,26 +107,26 @@ RandFunction codem_srand = NULL;
 
 /* get the name of city code @code */
 #ifndef CODEM_NO_CITY_DATA
-#define codem_cname_byidx(idx)                             \
+#  define codem_cname_byidx(idx)                           \
   ({ int __idx = idx;                                      \
   ((__idx) == CC_NOT_FOUND) ? CCERR_NOT_FOUND              \
   : ((__idx) < 0) ? CCERR : city_name[__idx]; })
-#define codem_cname(code)                                  \
+#  define codem_cname(code)                                \
   codem_cname_byidx(codem_ccode_idx (code))
 #else
-#define codem_cname_byidx(idx) CCERR_NOT_IMPLEMENTED
-#define codem_cname(code) CCERR_NOT_IMPLEMENTED
+#  define codem_cname_byidx(idx) CCERR_NOT_IMPLEMENTED
+#  define codem_cname(code) CCERR_NOT_IMPLEMENTED
 #endif
 
 /* get the codes of city at index @idx */
 #ifndef CODEM_NO_CITY_DATA
-#define codem_ccode(idx)                                   \
+#  define codem_ccode(idx)                                 \
   ({ int __idx = idx;                                      \
     (__idx == CC_NOT_FOUND) ? CCERR_NOT_FOUND              \
       : (__idx < 0) ? CCERR                                \
       : city_code[idx]; })
 #else
-#define codem_ccode(idx) CCERR_NOT_IMPLEMENTED
+#  define codem_ccode(idx) CCERR_NOT_IMPLEMENTED
 #endif
 
 /* validate only city code of @codem */
@@ -438,9 +438,9 @@ codem_cname_search (const char *search)
 #include <assert.h>
 
 #ifdef CODEM_DEBUG
-#define DEBUG(fmt, ...) printf (fmt, ##__VA_ARGS__)
+#  define DEBUG(fmt, ...) printf (fmt, ##__VA_ARGS__)
 #else
-#define DEBUG(fmt, ...) do{} while (0)
+#  define DEBUG(fmt, ...) do{} while (0)
 #endif
 
 /* assert char x is a number '0', ..., '9' */
@@ -616,7 +616,7 @@ main (void)
 /*-----------------*/
 #ifdef CODEM_CLI
 #ifdef CODEM_TEST
-#error "cannot make CLI and test programs together"
+#  error "CLI and test programs cannot be made together."
 #else
 #include <stdio.h>
 #include <stdbool.h>
@@ -626,15 +626,15 @@ main (void)
 
 #ifdef CODEM_DEBUG
 /* debug macro to print codeM buffer */
-#define printd(param)                           \
+#  define printd(param)                         \
   printf ("[debug %s:%d] %s=[%s]\n",            \
           __func__, __LINE__, #param, param);
-#define dprintf(format, ...)                    \
+#  define dprintf(format, ...)                  \
   printf ("[debug %s:%d] "format,               \
           __func__, __LINE__, __VA_ARGS__);
 #else
-#define printd(param) do{} while (0)
-#define dprintf(format, ...) do{} while (0)
+#  define printd(param) do{} while (0)
+#  define dprintf(format, ...) do{} while (0)
 #endif
 
 #define CNAME_MAX_BUFF 64
