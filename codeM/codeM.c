@@ -584,7 +584,7 @@ test_2_3 ()
 /* pseudo random number generator function */
 /* which always returns const 4242424242UL */
 static inline size_t 
-rand ()
+test_rand ()
 {
   return 4242424242UL;
 }
@@ -592,7 +592,7 @@ rand ()
 int
 main (void)
 {
-  codem_rand_init (rand);
+  codem_rand_init (test_rand);
   
   /**   test type 1  **/
   puts ("/* Running test type 1 *******************/");
