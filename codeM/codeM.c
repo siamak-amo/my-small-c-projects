@@ -651,7 +651,6 @@ main (void)
 static const char *PROMPT = "> ";
 static const char *RD_PROMPT = "enter code: ";
 static const char *CN_PROMPT = "enter name: ";
-const char *__progname__;
 /* a nonce for random number generator */
 static size_t nonce = 0;
 
@@ -661,6 +660,7 @@ struct Opt {
   bool prompt;
   bool EOO; /* End Of Options */
   char *commands; /* only in command_mode */
+  const char *__progname__;
 };
 static struct Opt *opt;
 
@@ -885,7 +885,7 @@ normalize_command (char *restrict prev_comm,
 static inline int
 pars_options (int argc, char **argv)
 {
-  __progname__ = argv[0];
+  opt->__progname__ = argv[0];
   for (argc--, argv++; argc > 0; argc--, argv++)
     {
       if (!opt->EOO && argv[0][0] == '-')
@@ -974,7 +974,8 @@ main (int argc, char **argv)
                   "   -s:    silent mode\n"
                   "   -S:    disable the prompt (when using pipe)\n"
                   "   -c:    pass COMMANDS to be executed,\n"
-                  "          use: -c \"h\" to get help\n\n", __progname__);
+                  "          use: -c \"h\" to get help\n\n",
+                  opt->__progname__);
           help ();
         }
       while (1)
