@@ -806,7 +806,7 @@ exec_command (char prev_comm, char comm)
         }
       break;
 
-      /* find city name */
+      /* find city code by city name */
     case 'f':
       cname_scanf (CN_PROMPT, name_tmp);
       res = codem_cname_search (name_tmp);
