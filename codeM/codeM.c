@@ -47,7 +47,7 @@
  *         #include "codeM.c"
  *
  *         size_t my_rand_fun (void) {...}
- *         int main(...)
+ *         int main (...)
  *         {
  *           char codem[CODEM_BUF_LEN] = {0};
  *           // if you need to use any of the *_rand_* functions
@@ -217,10 +217,10 @@ codem_cname_search (const char *search);
  *  returns 1 when @codem is numeric otherwise 0
  */
 int
-is_numeric(const char *codem)
+is_numeric (const char *codem)
 {
   for (int idx = 0; idx < CODEM_LEN; ++idx)
-    if (!isanumber(codem[idx]))
+    if (! isanumber (codem[idx]))
       return 0;
   return 1;
 }
@@ -419,7 +419,7 @@ codem_cname_search (const char *search)
 #endif /* CODEM_NO_CITY_DATA */
 
 #ifdef CODEM_FUZZY_SEARCH_CITYNAME
-  if (min_dist > leven_strlen(search) / 2)
+  if (min_dist > leven_strlen (search) / 2)
     return CC_NOT_FOUND;
   return min_dist_idx;
 #endif
@@ -452,7 +452,7 @@ codem_cname_search (const char *search)
     while ('\0' != *__tmp) {                                \
       assert_isnumber (*__tmp);                             \
       __tmp++; __count++;                                   \
-    } assert (10 == __count); } while(0);
+    } assert (10 == __count); } while (0);
 
 #define FUN_TEST(fun, comment)                              \
   printf (" * "#fun" -- %s", comment);                      \
@@ -739,8 +739,8 @@ cname_scanf (const char *restrict message, char *restrict dest)
 static int
 exec_command (char prev_comm, char comm)
 {
-  dprintf("running: (%c), prev_command: (%c)\n",
-          NORMCHAR(comm), NORMCHAR(prev_comm));
+  dprintf ("running: (%c), prev_command: (%c)\n",
+          NORMCHAR (comm), NORMCHAR (prev_comm));
   int res, off;
   const char *p;
   char tmp[CODEM_BUF_LEN] = {0};
@@ -753,7 +753,7 @@ exec_command (char prev_comm, char comm)
       codem_scanf (RD_PROMPT, tmp);
       if (0 != codem_norm (tmp))
         assert ( 0 && "Cannot be Normalized" );
-      printd(tmp);
+      printd (tmp);
       if (codem_isvalidn (tmp))
         {
           puts ("OK.");
@@ -769,7 +769,7 @@ exec_command (char prev_comm, char comm)
       codem_scanf (RD_PROMPT, tmp);
       if (0 != codem_norm (tmp))
         assert ( 0 && "Cannot be Normalized" );
-      printd(tmp);
+      printd (tmp);
       codem_set_ctrl_digit (tmp);
       puts (tmp);
       break;
@@ -783,7 +783,7 @@ exec_command (char prev_comm, char comm)
       /* find city name */
     case 'C':
       codem_scanf (RD_PROMPT, tmp);
-      printd(tmp);
+      printd (tmp);
       puts (codem_cname (tmp));
       break;
         
@@ -796,7 +796,7 @@ exec_command (char prev_comm, char comm)
       /* make a random code by prefix */
     case 'R':
       off = codem_scanf (RD_PROMPT, tmp);
-      printd(tmp);
+      printd (tmp);
       if (off > CODEM_LEN)
         assert (0 && "Invalid Offset of codem_scanf");
       else
@@ -810,22 +810,22 @@ exec_command (char prev_comm, char comm)
     case 'f':
       cname_scanf (CN_PROMPT, name_tmp);
       res = codem_cname_search (name_tmp);
-      printd(name_tmp);
-      p = codem_ccode(res);
+      printd (name_tmp);
+      p = codem_ccode (res);
       if (res < 0)
           puts (p);
       else
         for (; *p != 0; p += CC_LEN)
-          printf("%.3s\n", p);
+          printf ("%.3s\n", p);
       break;
 
       /* search city name */
     case 'F':
       cname_scanf (CN_PROMPT, name_tmp);
-      printd(name_tmp);
+      printd (name_tmp);
       res = codem_cname_search (name_tmp);
-      p = codem_cname_byidx(res);
-      puts(p);
+      p = codem_cname_byidx (res);
+      puts (p);
       break;
 
     case 'h':
@@ -884,7 +884,7 @@ pars_options (int argc, char **argv)
     {
       if (!opt->EOO && argv[0][0] == '-')
         {
-          switch(argv[0][1])
+          switch (argv[0][1])
             {
             case 's':
               opt->silent_mode = true;
@@ -981,7 +981,7 @@ main (int argc, char **argv)
         if (EOF == scanf ("%c", &comm))
           {
             if (opt->prompt)
-              puts("");
+              puts ("");
             return 0;
           }
         if (exec_command (prev_comm, comm))
