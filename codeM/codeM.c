@@ -41,17 +41,21 @@
  *          to enable fuzzy search, you need to provide
  *          the `leven.c` file (available in the same repository)
  *
- *     to include in c files:
+ *     to include in other files:
  *       `
  *         #define CODEM_IMPLEMENTATION
  *         #include "codeM.c"
  *
  *         size_t my_rand_fun (void) {...}
- *         int main (...)
+ *
+ *         int
+ *         main (...)
  *         {
- *           char codem[CODEM_BUF_LEN] = {0};
  *           // if you need to use any of the *_rand_* functions
  *           codem_rand_init (my_rand_fun);
+ *
+ *           char codem[CODEM_BUF_LEN] = {0};
+ *           ...
  *         }
  *       `
  **/
