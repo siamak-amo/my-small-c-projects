@@ -638,13 +638,7 @@ main (void)
 #endif
 
 #define CNAME_MAX_BUFF 64
-/* scanf formats */
-#define CNAME_FORMAT "%64s"
-#define CODEM_FORMAT "%10s"
-/* sscanf regex to read a city name (non-ascii) */
-#define CNAME_REGEX " %64[^;#]%n"
-/* sscanf regex to read a 10-digit code */
-#define CODEM_REGEX " %10[^;#]%n"
+
 /* normalize character to prevent printing non-ascii characters */
 #define NORMCHAR(c) ((c>0) ? ((c!='\n' && c!='\r') ? c : ' ') : '!')
 
@@ -728,13 +722,13 @@ scan__H (const char *restrict message, char *restrict dest,
 static int
 codem_scanf (const char *restrict message, char *restrict dest)
 {
-  return scan__H (message, dest, CODEM_FORMAT, CODEM_REGEX);
+  return scan__H (message, dest, "%10s", " %10[^;#]%n");
 }
 
 static int
 cname_scanf (const char *restrict message, char *restrict dest)
 {
-  return scan__H (message, dest, CNAME_FORMAT, CNAME_REGEX);
+  return scan__H (message, dest, "%64s", " %64[^;#]%n");
 }
 
 /**
