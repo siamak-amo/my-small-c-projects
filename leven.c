@@ -11,7 +11,7 @@
  *     the smaller string first
  *
  *  compile the test program:
- *    cc -Wall -Wextra -D IMPLEMENTATION
+ *    cc -Wall -Wextra -D LEVEN_IMPLEMENTATION
  *                     -D LEVEN_TEST -o test leven.c
  *
  *
