@@ -2,20 +2,21 @@
  *  file: leven.c
  *  created on: 3 Mar 2024
  *
- *  Implements Levenshtein Distance Algorithm
+ *  Levenshtein Distance Algorithm Implementation
  *
- *  algorithm details: leven(s1[.n], s2[.m]):
- *    time: O(n*m)
- *    memory: O(Min(n,m))
- *     we simply use n for memory allocation, so provide
- *     the smaller string first
+ *  implementation details:
+ *    leven(s1[.n], s2[.m]):
+ *      time: O(n*m)
+ *      memory: O(Min(n,m))
+ *  this implementation simply uses n for memory allocations,
+ *  so provide the smaller string first
  *
  *  compile the test program:
  *    cc -Wall -Wextra -D LEVEN_IMPLEMENTATION
  *                     -D LEVEN_TEST -o test leven.c
  *
  *
- *  include in other c files:
+ *  to include in other files:
  *    `
  *    #define LEVEN_IMPLEMENTATION
  *    #include "leven.c"
