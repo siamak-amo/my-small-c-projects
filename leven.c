@@ -9,7 +9,7 @@
  *      time: O(n*m)
  *      memory: O(Min(n,m))
  *  this implementation simply uses n for memory allocations,
- *  so provide the smaller string first
+ *  so provide the smaller string first or use SMALLERx macros
  *
  *  compile the test program:
  *    cc -Wall -Wextra -D LEVEN_IMPLEMENTATION
@@ -59,6 +59,18 @@
 /* internal macro to get length of a character */
 /* TODO: implement for encodings longer than 2 bytes */
 #define leven_charlen(c) ((c >= 0) ? 1 : 2)
+
+/* smaller string first wrapper macros */
+/* use these macros for the leven imm, stk and H function */
+#define SMALLER(fun, s1, s2, ...)               \
+  SMALLERF (fun, strlen, s1, s2, __VA_ARGS__)
+#define SMALLER2(fun, s1, s2, ...)              \
+  SMALLERF (fun, leven_strlen, s1, s2, __VA_ARGS__)
+
+#define SMALLERF(fun, meter, s1, s2, ...)       \
+  ({ int __sm = (meter (s1) < meter (s2));      \
+    (__sm) ? fun (s1, s2, ##__VA_ARGS__)        \
+      : fun (s2, s1, ##__VA_ARGS__);})
 
 /**
  *  functions to calculate levenshtein distance @s1 and @s2
