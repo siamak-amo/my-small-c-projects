@@ -20,8 +20,8 @@
  *
  *   Common Iranian ID number (code-e-melli) single-file library
  *
- *   `codem` in the following is referred to the term `code-e-melli`.
- *   this library performs validating and making random codem's.
+ *   `codem` in the following is referred to the term `code-e-melli`
+ *   this library performs validating and making random codem's
  *
  *   compilation:
  *     to compile the CLI program:
@@ -674,8 +674,8 @@ help ()
              "COMMAND: sequence of shell mode commands\n"
              "commands could have one argument"
              " (Ex. `R 1234` ~ `R1234`)\n"
-             "separate commands by space or `;` or "
-             "`\\n` if you wish.\n\n");
+             "optionally separate commands by space"
+             " or `;` or `\\n`.\n\n");
   else
     fprintf (out_file,
              "v: validate            -  V: make my code valid\n"
