@@ -665,8 +665,7 @@ static struct Opt *opt;
 static void
 help ()
 {
-  FILE *out_file;
-  out_file = (!isatty (fileno (stdout))) ? stderr : stdout;
+  FILE *out_file = (!isatty (fileno (stdout))) ? stderr : stdout;
 
   if (opt->command_mode)
     fprintf (out_file,
@@ -719,6 +718,7 @@ scan__H (const char *restrict message, char *restrict dest,
     }
   else
     sscanf (opt->commands, sscan_regex, dest, &n);
+
   opt->commands += n;
   return n;
 }
