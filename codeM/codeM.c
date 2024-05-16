@@ -737,8 +737,6 @@ cname_scanf (const char *message, char dest[64])
 
 /**
  *  returns 1 when program should be exited otherwise 0
- *  use @argv for commands that have argument otherwise
- *  pass it NULL to read from stdin
  */
 static int
 exec_command (char prev_comm, char comm)
