@@ -677,11 +677,11 @@ help ()
              " or `;` or `\\n`.\n\n");
   else
     fprintf (out_file,
-             "v: validate            -  V: make my code valid\n"
-             "c: randon city code    -  C: find my city name\n"
-             "r: make random codem   -  R: make random codem with prefix\n"
-             "f: find my city code   -  F: search my city name\n"
-             "q: quit                -  h: help\n\n");
+             "v: validate                 -  V: fix the input\n"
+             "c: make randon city code    -  C: find city name by code\n"
+             "r: make random codem        -  R: random with prefix\n"
+             "f: find city code by name   -  F: search city name\n"
+             "q: quit                     -  h: help\n\n");
 }
 
 /* super simple pseudo random number generator */
