@@ -724,13 +724,13 @@ scan__H (const char *restrict message, char *restrict dest,
 }
 
 static int
-codem_scanf (const char *restrict message, char *restrict dest)
+codem_scanf (const char *message, char dest[10])
 {
   return scan__H (message, dest, "%10s", " %10[^;#]%n");
 }
 
 static int
-cname_scanf (const char *restrict message, char *restrict dest)
+cname_scanf (const char *message, char dest[64])
 {
   return scan__H (message, dest, "%64s", " %64[^;#]%n");
 }
