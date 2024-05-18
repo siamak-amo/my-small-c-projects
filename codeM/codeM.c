@@ -642,7 +642,7 @@ main (void)
 #  define dprintf(format, ...) do{} while (0)
 #endif
 
-#define CNAME_MAX_BUFF 64
+#define CNAME_MAX_BUFF 65
 
 /* normalize character to prevent printing non-ascii characters */
 #define NORMCHAR(c) ((c>0) ? ((c!='\n' && c!='\r') ? c : ' ') : '!')
@@ -725,13 +725,13 @@ scan__H (const char *restrict message, char *restrict dest,
 }
 
 static int
-codem_scanf (const char *message, char dest[10])
+codem_scanf (const char *message, char dest[CODEM_BUF_LEN])
 {
   return scan__H (message, dest, "%10s", " %10[^;#]%n");
 }
 
 static int
-cname_scanf (const char *message, char dest[64])
+cname_scanf (const char *message, char dest[CNAME_MAX_BUFF])
 {
   return scan__H (message, dest, "%64s", " %64[^;#]%n");
 }
