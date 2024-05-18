@@ -647,6 +647,9 @@ main (void)
 
 /* normalize character to prevent printing non-ascii characters */
 #define NORMCHAR(c) ((c>0) ? ((c!='\n' && c!='\r') ? c : ' ') : '!')
+/* to string macros (this will not evaluate the input) */
+#define __TOSTR__(x) #x
+#define STR(x) __TOSTR__(x)
 
 static const char *PROMPT = "> ";
 static const char *RD_PROMPT = "enter code: ";
