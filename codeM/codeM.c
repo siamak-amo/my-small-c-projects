@@ -731,13 +731,17 @@ scan__H (const char *restrict message, char *restrict dest,
 static int
 codem_scanf (const char *message, char dest[CODEM_BUF_LEN])
 {
-  return scan__H (message, dest, "%10s", " %10[^;#]%n");
+  return scan__H (message, dest,
+                  "%"STR(CODEM_LEN)"s",           // "%10s"
+                  " %"STR(CODEM_LEN)"[^;#]%n");   // " %10[^;#]%n"
 }
 
 static int
 cname_scanf (const char *message, char dest[CNAME_BUF_LEN])
 {
-  return scan__H (message, dest, "%64s", " %64[^;#]%n");
+  return scan__H (message, dest,
+                  "%"STR(CNAME_MAX_LEN)"s",
+                  " %"STR(CNAME_MAX_LEN)"[^;#]%n");
 }
 
 /**
