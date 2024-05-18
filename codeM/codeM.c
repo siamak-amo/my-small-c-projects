@@ -643,6 +643,7 @@ main (void)
 #endif
 
 #define CNAME_BUF_LEN 65
+#define CNAME_MAX_LEN 64 /* BUF_LEN must be MAX_LEN + 1 */
 
 /* normalize character to prevent printing non-ascii characters */
 #define NORMCHAR(c) ((c>0) ? ((c!='\n' && c!='\r') ? c : ' ') : '!')
