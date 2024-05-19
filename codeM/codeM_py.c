@@ -59,6 +59,8 @@ static size_t ssrand (void);
 PYCODEMDEF py_rand2(PyObject *self, PyObject *args);
 PYCODEMDEF py_rand(PyObject *self, PyObject *args);
 PYCODEMDEF py_rand_suffix (PyObject *self, PyObject *args);
+PYCODEMDEF py_validate (PyObject *self, PyObject *args);
+PYCODEMDEF py_mkvalid (PyObject *self, PyObject *args);
 
 static struct PyMethodDef funs[] = {
   {
@@ -73,6 +75,14 @@ static struct PyMethodDef funs[] = {
     "rand_suffix", py_rand_suffix,
     METH_VARARGS,
     "random codem with suffix"
+  },{
+    "validate", py_validate,
+    METH_VARARGS,
+    "validate the input, ignore city code"
+  },{
+    "mkvalid", py_mkvalid,
+    METH_VARARGS,
+    "make the input valid"
   },
   {NULL, NULL, 0, NULL}
 };
@@ -135,6 +145,44 @@ py_rand_suffix (PyObject *self, PyObject *args)
   char *result_ptr = py_mkbuf_H (result, CODEM_LEN, suffix);
 
   codem_rands (result_ptr, offset);
+
+  return result;
+}
+
+PYCODEMDEF
+py_validate (PyObject *self, PyObject *args)
+{
+  UNUSED (self);
+
+  const char *code;
+  size_t len;
+
+  if (!PyArg_ParseTuple(args, "s#", &code, &len))
+    Py_RETURN_NONE;
+
+  if (len != CODEM_LEN)
+    Py_RETURN_FALSE;
+
+  return (codem_isvalidn (code)) ? Py_NewRef(Py_True)
+    : Py_NewRef(Py_False);
+}
+
+PYCODEMDEF
+py_mkvalid (PyObject *self, PyObject *args)
+{
+  UNUSED (self);
+
+  const char *code;
+  size_t len;
+
+  if (!PyArg_ParseTuple(args, "s#", &code, &len))
+    Py_RETURN_NONE;
+
+  PyObject *result;
+  char *result_ptr = py_mkbuf_H (result, CODEM_LEN, code);
+
+  codem_norm (result_ptr);
+  codem_set_ctrl_digit (result_ptr);
 
   return result;
 }
