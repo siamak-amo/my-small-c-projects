@@ -63,6 +63,7 @@ PYCODEMDEF py_validate (PyObject *self, PyObject *args);
 PYCODEMDEF py_mkvalid (PyObject *self, PyObject *args);
 PYCODEMDEF py_rand_ccode (PyObject *self, PyObject *args);
 PYCODEMDEF py_cname_by_code (PyObject *self, PyObject *args);
+PYCODEMDEF py_ccode_by_cname (PyObject *self, PyObject *args);
 
 static struct PyMethodDef funs[] = {
   {
@@ -93,6 +94,10 @@ static struct PyMethodDef funs[] = {
     "cname_by_ccode", py_cname_by_code,
     METH_VARARGS,
     "get city name by city code"
+  },{
+    "ccode_by_cname", py_ccode_by_cname,
+    METH_VARARGS,
+    "get city code by city name"
   },
   {NULL, NULL, 0, NULL}
 };
@@ -227,6 +232,38 @@ py_cname_by_code (PyObject *self, PyObject *args)
   const char *p = codem_cname (code);
 
   return PyByteArray_FromStringAndSize (p, strlen (p));
+}
+
+PYCODEMDEF
+py_ccode_by_cname (PyObject *self, PyObject *args)
+{
+  UNUSED (self);
+
+  const char *name;
+  size_t len;
+
+  if (!PyArg_ParseTuple(args, "s#", &name, &len))
+    Py_RETURN_NONE;
+
+  int res = codem_cname_search (name);
+  if (res < 0)
+    Py_RETURN_NONE;
+
+  const char *res_codes = codem_ccode (res);
+  Py_ssize_t res_len = strlen (res_codes) / CC_LEN; 
+  PyObject *result = PyList_New (res_len);
+
+  if (result == NULL)
+    Py_RETURN_NONE;
+
+  for (; *res_codes != '\0'; res_codes += CC_LEN)
+    {
+      if (0 != PyList_SetItem (result, --res_len,
+           PyByteArray_FromStringAndSize (res_codes, CC_LEN)))
+        Py_RETURN_NONE;
+    }
+
+  return result;
 }
 
 static size_t
