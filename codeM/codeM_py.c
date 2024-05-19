@@ -64,6 +64,7 @@ PYCODEMDEF py_mkvalid (PyObject *self, PyObject *args);
 PYCODEMDEF py_rand_ccode (PyObject *self, PyObject *args);
 PYCODEMDEF py_cname_by_code (PyObject *self, PyObject *args);
 PYCODEMDEF py_ccode_by_cname (PyObject *self, PyObject *args);
+PYCODEMDEF py_search_cname (PyObject *self, PyObject *args);
 
 static struct PyMethodDef funs[] = {
   {
@@ -96,6 +97,10 @@ static struct PyMethodDef funs[] = {
     "get city name by city code"
   },{
     "ccode_by_cname", py_ccode_by_cname,
+    METH_VARARGS,
+    "get city code by city name"
+  },{
+    "search_cname", py_search_cname,
     METH_VARARGS,
     "get city code by city name"
   },
@@ -264,6 +269,28 @@ py_ccode_by_cname (PyObject *self, PyObject *args)
     }
 
   return result;
+}
+
+PYCODEMDEF
+py_search_cname (PyObject *self, PyObject *args)
+{
+  UNUSED (self);
+
+  const char *name;
+  size_t len;
+
+  if (!PyArg_ParseTuple(args, "s#", &name, &len))
+    Py_RETURN_NONE;
+
+  int res = codem_cname_search (name);
+  if (res < 0)
+    Py_RETURN_NONE;
+
+  const char *cname_ptr = codem_cname_byidx (res);
+  if (cname_ptr == NULL)
+    Py_RETURN_NONE;
+
+  return PyByteArray_FromStringAndSize (cname_ptr, strlen (cname_ptr));
 }
 
 static size_t
