@@ -61,6 +61,8 @@ PYCODEMDEF py_rand(PyObject *self, PyObject *args);
 PYCODEMDEF py_rand_suffix (PyObject *self, PyObject *args);
 PYCODEMDEF py_validate (PyObject *self, PyObject *args);
 PYCODEMDEF py_mkvalid (PyObject *self, PyObject *args);
+PYCODEMDEF py_rand_ccode (PyObject *self, PyObject *args);
+PYCODEMDEF py_cname_by_code (PyObject *self, PyObject *args);
 
 static struct PyMethodDef funs[] = {
   {
@@ -76,6 +78,10 @@ static struct PyMethodDef funs[] = {
     METH_VARARGS,
     "random codem with suffix"
   },{
+    "rand_ccode", py_rand_ccode,
+    METH_VARARGS,
+    "make random city code"
+  },{
     "validate", py_validate,
     METH_VARARGS,
     "validate the input, ignore city code"
@@ -83,6 +89,10 @@ static struct PyMethodDef funs[] = {
     "mkvalid", py_mkvalid,
     METH_VARARGS,
     "make the input valid"
+  },{
+    "cname_by_ccode", py_cname_by_code,
+    METH_VARARGS,
+    "get city name by city code"
   },
   {NULL, NULL, 0, NULL}
 };
@@ -185,6 +195,38 @@ py_mkvalid (PyObject *self, PyObject *args)
   codem_set_ctrl_digit (result_ptr);
 
   return result;
+}
+
+PYCODEMDEF
+py_rand_ccode (PyObject *self, PyObject *args)
+{
+  UNUSED (self);
+  UNUSED (args);
+
+  PyObject *result;
+  char *result_ptr = py_mkbuf_H (result, CC_LEN, NULL);
+
+  codem_rand_ccode (result_ptr);
+  return result;
+}
+
+PYCODEMDEF
+py_cname_by_code (PyObject *self, PyObject *args)
+{
+  UNUSED (self);
+
+  const char *code;
+  size_t len;
+
+  if (!PyArg_ParseTuple(args, "s#", &code, &len))
+    Py_RETURN_NONE;
+
+  if (len != CC_LEN)
+    Py_RETURN_NONE;
+
+  const char *p = codem_cname (code);
+
+  return PyByteArray_FromStringAndSize (p, strlen (p));
 }
 
 static size_t
