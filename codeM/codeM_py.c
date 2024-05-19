@@ -256,8 +256,8 @@ py_ccode_by_cname (PyObject *self, PyObject *args)
 
   const char *res_codes = codem_ccode (res);
   Py_ssize_t res_len = strlen (res_codes) / CC_LEN; 
-  PyObject *result = PyList_New (res_len);
 
+  PyObject *result = PyList_New (res_len);
   if (result == NULL)
     Py_RETURN_NONE;
 
@@ -286,11 +286,11 @@ py_search_cname (PyObject *self, PyObject *args)
   if (res < 0)
     Py_RETURN_NONE;
 
-  const char *cname_ptr = codem_cname_byidx (res);
-  if (cname_ptr == NULL)
+  const char *tmp = codem_cname_byidx (res);
+  if (tmp == NULL)
     Py_RETURN_NONE;
 
-  return PyByteArray_FromStringAndSize (cname_ptr, strlen (cname_ptr));
+  return PyByteArray_FromStringAndSize (tmp, strlen (tmp));
 }
 
 static size_t
