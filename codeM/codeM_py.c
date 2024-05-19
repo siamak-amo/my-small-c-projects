@@ -265,7 +265,10 @@ py_ccode_by_cname (PyObject *self, PyObject *args)
     {
       if (0 != PyList_SetItem (result, --res_len,
            PyByteArray_FromStringAndSize (res_codes, CC_LEN)))
-        Py_RETURN_NONE;
+        {
+          Py_DECREF (result);
+          Py_RETURN_NONE;
+        }
     }
 
   return result;
