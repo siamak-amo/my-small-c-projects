@@ -673,6 +673,18 @@ struct Opt {
 static struct Opt *opt;
 
 static void
+usage ()
+{
+  printf ("Usage: %s [OPTIONS] [COMMANDS]\n"
+          "OPTIONS:\n"
+          "   -s:    silent mode\n"
+          "   -S:    disable the prompt (when using pipe)\n"
+          "   -c:    pass COMMANDS to be executed,\n"
+          "          use: -c \"h\" to get help\n\n",
+          opt->__progname__);
+}
+
+static void
 help ()
 {
   FILE *out_file = (!isatty (fileno (stdout))) ? stderr : stdout;
@@ -950,11 +962,15 @@ main (int argc, char **argv)
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
   /* parsing cmdline arguments */
-  if (pars_options (argc, argv))
+  int pars_c = pars_options (argc, argv);
+  if (pars_c < 0)
     {
       fprintf (stderr, " -- exiting.\n");
       return 1;
     }
+  if (pars_c == 1)
+    return 0;
+
   /* disable the prompt when `stdin` is not a tty (using pipe) */
   if (!isatty (fileno (stdin)))
     {
@@ -979,14 +995,8 @@ main (int argc, char **argv)
     {
       if (!opt->silent_mode && opt->prompt)
         {
-          printf ("codeM Shell Mode!\n"
-                  "Usage: %s [OPTIONS] [COMMANDS]\n"
-                  "OPTIONS:\n"
-                  "   -s:    silent mode\n"
-                  "   -S:    disable the prompt (when using pipe)\n"
-                  "   -c:    pass COMMANDS to be executed,\n"
-                  "          use: -c \"h\" to get help\n\n",
-                  opt->__progname__);
+          puts ("codeM Shell Mode!");
+          usage ();
           help ();
         }
       while (1)
