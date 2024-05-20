@@ -24,8 +24,8 @@
  *  compilation:
  *    cc -Wall -Wextra -shared -fPIC codeM_py.c -o codeM.so
  *       -I /path/to/Python.h
- *    you can find path of Python.h by running
- *    `sysconfig.get_paths()` in any python shell,
+ *    you can find the path of `Python.h` by running
+ *    `sysconfig.get_paths()` in a python shell,
  *    normally it's located in `/usr/include/python3.xx`
  *
  *  usage in python environments:
@@ -54,8 +54,7 @@ static size_t noise = 0;
 
 /* internal function definitions */
 static size_t ssrand (void);
-/* external python methods */
-//PYCODEMDEF brnd(PyObject *self, PyObject *args);
+/* external PyMethod definitions */
 PYCODEMDEF py_rand2(PyObject *self, PyObject *args);
 PYCODEMDEF py_rand(PyObject *self, PyObject *args);
 PYCODEMDEF py_rand_suffix (PyObject *self, PyObject *args);
