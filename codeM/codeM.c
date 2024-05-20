@@ -861,7 +861,7 @@ exec_command (char prev_comm, char comm)
       printd (tmp);
       res = codem_ccode_idx (tmp);
       if (res < 0)
-        puts ("Not Found.");
+        puts (CCERR_NOT_FOUND);
       else
         {
           p = codem_ccode (res);
