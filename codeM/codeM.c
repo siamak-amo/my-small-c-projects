@@ -701,9 +701,10 @@ help ()
   else
     fprintf (out_file,
              "v: validate                 -  V: fix the input\n"
-             "c: make randon city code    -  C: find city name by code\n"
+             "c: make randon city code    -  C: make random city name\n"
              "r: make random codem        -  R: random with prefix\n"
-             "f: find city code by name   -  F: search city name\n"
+             "f: find city code by name   -  F: find city name by code\n"
+             "s: search city name\n"
              "q: quit                     -  h: help\n\n");
 }
 
