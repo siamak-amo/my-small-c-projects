@@ -69,13 +69,13 @@ PYCODEMDEF py_search_cname (PyObject *self, PyObject *args);
 
 static struct PyMethodDef funs[] = {
   {
-    "rand2", py_rand2,
+    "mkrand", py_rand2,
     METH_VARARGS,
     "create random codem"
   },{
     "rand", py_rand,
     METH_VARARGS,
-    "like rand2, but city code might be invalid"
+    "like mkrand, but city code might be invalid"
   },{
     "rand_suffix", py_rand_suffix,
     METH_VARARGS,
