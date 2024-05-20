@@ -87,7 +87,7 @@ static struct PyMethodDef funs[] = {
   },{
     "validate", py_validate,
     METH_VARARGS,
-    "validate the input, ignore city code"
+    "validate the input (not the city code)"
   },{
     "mkvalid", py_mkvalid,
     METH_VARARGS,
@@ -99,7 +99,7 @@ static struct PyMethodDef funs[] = {
   },{
     "cname_by_codem", py_cname_by_codem,
     METH_VARARGS,
-    "get city name of a codem"
+    "get city name of a codem (ignores the input length)"
   },{
     "ccode_by_cname", py_ccode_by_cname,
     METH_VARARGS,
@@ -107,7 +107,7 @@ static struct PyMethodDef funs[] = {
   },{
     "search_cname", py_search_cname,
     METH_VARARGS,
-    "get city code by city name"
+    "search the city name"
   },
   {NULL, NULL, 0, NULL}
 };
