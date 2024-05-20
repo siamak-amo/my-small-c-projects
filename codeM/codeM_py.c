@@ -62,6 +62,7 @@ PYCODEMDEF py_rand_suffix (PyObject *self, PyObject *args);
 PYCODEMDEF py_validate (PyObject *self, PyObject *args);
 PYCODEMDEF py_mkvalid (PyObject *self, PyObject *args);
 PYCODEMDEF py_rand_ccode (PyObject *self, PyObject *args);
+PYCODEMDEF py_cname_by_codem (PyObject *self, PyObject *args);
 PYCODEMDEF py_cname_by_code (PyObject *self, PyObject *args);
 PYCODEMDEF py_ccode_by_cname (PyObject *self, PyObject *args);
 PYCODEMDEF py_search_cname (PyObject *self, PyObject *args);
@@ -95,6 +96,10 @@ static struct PyMethodDef funs[] = {
     "cname_by_ccode", py_cname_by_code,
     METH_VARARGS,
     "get city name by city code"
+  },{
+    "cname_by_codem", py_cname_by_codem,
+    METH_VARARGS,
+    "get city name of a codem"
   },{
     "ccode_by_cname", py_ccode_by_cname,
     METH_VARARGS,
@@ -218,6 +223,25 @@ py_rand_ccode (PyObject *self, PyObject *args)
 
   codem_rand_ccode (result_ptr);
   return result;
+}
+
+PYCODEMDEF
+py_cname_by_codem (PyObject *self, PyObject *args)
+{
+  UNUSED (self);
+
+  const char *code;
+  size_t len;
+
+  if (!PyArg_ParseTuple(args, "s#", &code, &len))
+    Py_RETURN_NONE;
+
+  int idx = codem_ccode_idx (code);
+  if (idx < 0)
+    Py_RETURN_NONE;
+
+  const char *p = codem_get_cname (idx);
+  return PyByteArray_FromStringAndSize (p, strlen (p));
 }
 
 PYCODEMDEF
