@@ -31,18 +31,17 @@
  *    import codeM
  *    help(codeM)
  **/
+#include <time.h>
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-#include <time.h>
-
 #define CODEM_IMPLEMENTATION
 #define CODEM_FUZZY_SEARCH_CITYNAME
 #include "codeM.c"
 
 /* internal macros */
 #define UNUSED(arg) (void)(arg)
-#define py_mkbuf_H(res, len, inp) PyByteArray_AS_STRING (( \
-         res = PyByteArray_FromStringAndSize(inp, len)))
+#define py_mkbuf_H(res, len, inp) \
+  PyByteArray_AS_STRING ((res = PyByteArray_FromStringAndSize(inp, len)))
 
 #ifndef PYCODEMDEF
 #  define PYCODEMDEF static PyObject *
