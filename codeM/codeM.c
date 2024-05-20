@@ -704,7 +704,7 @@ help ()
              "c: make randon city code    -  C: make random city name\n"
              "r: make random codem        -  R: random with prefix\n"
              "f: find city code by name   -  F: find city name by code\n"
-             "s: search city name\n"
+             "s: search city code         -  S: search city name\n"
              "q: quit                     -  h: help\n\n");
 }
 
