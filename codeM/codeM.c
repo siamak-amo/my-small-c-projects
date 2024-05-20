@@ -112,11 +112,14 @@ RandFunction codem_srand = NULL;
 
 /* get the name of city code @code */
 #ifndef CODEM_NO_CITY_DATA
+// get by index
 #  define codem_get_cname(idx) city_name[idx]
+// get by index with error handling
 #  define codem_cname_byidx(idx)                           \
   ({ int __idx = idx;                                      \
   ((__idx) == CC_NOT_FOUND) ? CCERR_NOT_FOUND              \
     : ((__idx) < 0) ? CCERR : codem_get_cname (__idx); })
+// get by code
 #  define codem_cname(code)                                \
   codem_cname_byidx(codem_ccode_idx (code))
 #else
