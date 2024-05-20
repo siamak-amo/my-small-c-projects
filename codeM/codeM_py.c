@@ -258,8 +258,11 @@ py_cname_by_code (PyObject *self, PyObject *args)
   if (len != CC_LEN)
     Py_RETURN_NONE;
 
-  const char *p = codem_cname (code);
+  int idx = codem_ccode_idx (code);
+  if (idx < 0)
+    Py_RETURN_NONE;
 
+  const char *p = codem_get_cname (idx);
   return PyByteArray_FromStringAndSize (p, strlen (p));
 }
 
