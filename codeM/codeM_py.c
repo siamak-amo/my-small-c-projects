@@ -20,7 +20,6 @@
  *
  *  Implement Python C API extension for the codeM.c library
  *
- *
  *  compilation:
  *    cc -Wall -Wextra -shared -fPIC codeM_py.c -o codeM.so
  *       -I /path/to/Python.h
@@ -98,7 +97,7 @@ static struct PyMethodDef funs[] = {
   },{
     "cname_by_codem", py_cname_by_codem,
     METH_VARARGS,
-    "get city name of a codem (ignores the input length)"
+    "get city name of a codem"
   },{
     "ccode_by_cname", py_ccode_by_cname,
     METH_VARARGS,
