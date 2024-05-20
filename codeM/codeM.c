@@ -680,7 +680,8 @@ usage ()
           "   -s:    silent mode\n"
           "   -S:    disable the prompt (when using pipe)\n"
           "   -c:    pass COMMANDS to be executed,\n"
-          "          use: -c \"h\" to get help\n\n",
+          "            use: -c \"h\" to get help\n"
+          "   -h:    help\n\n",
           opt->__progname__);
 }
 
@@ -905,6 +906,11 @@ normalize_command (char *restrict prev_comm,
     }
 }
 
+/**
+ *  parse options returns:
+ *    `1` to exit normally
+ *    negative on failure and `0` on success
+ **/
 static inline int
 pars_options (int argc, char **argv)
 {
@@ -937,6 +943,10 @@ pars_options (int argc, char **argv)
                   opt->command_mode = true;
                 }
               break;
+
+            case 'h':
+              usage ();
+              return 1; // return normally
 
             default:
               fprintf (stderr, "Invalid option (%s)", argv[0]);
