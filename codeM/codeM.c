@@ -809,14 +809,13 @@ exec_command (char prev_comm, char comm)
       codem_rand_ccode (tmp);
       printf ("%.3s\n", tmp);
       break;
-        
-      /* find city name */
+
+      /* make a random city name */
     case 'C':
-      codem_scanf (RD_PROMPT, tmp);
-      printd (tmp);
+      codem_rand_ccode (tmp);
       puts (codem_cname (tmp));
       break;
-        
+
       /* make a random code */
     case 'r':
       codem_rand2 (tmp);
@@ -836,6 +835,13 @@ exec_command (char prev_comm, char comm)
         }
       break;
 
+      /* find city name by code */
+    case 'F':
+      codem_scanf (RD_PROMPT, tmp);
+      printd (tmp);
+      puts (codem_cname (tmp));
+      break;
+
       /* find city code by city name */
     case 'f':
       cname_scanf (CN_PROMPT, name_tmp);
@@ -850,7 +856,7 @@ exec_command (char prev_comm, char comm)
       break;
 
       /* search city name */
-    case 'F':
+    case 's':
       cname_scanf (CN_PROMPT, name_tmp);
       printd (name_tmp);
       res = codem_cname_search (name_tmp);
