@@ -855,8 +855,23 @@ exec_command (char prev_comm, char comm)
           printf ("%.3s\n", p);
       break;
 
-      /* search city name */
+      /* search city code */
     case 's':
+      codem_scanf (CN_PROMPT, tmp);
+      printd (tmp);
+      res = codem_ccode_idx (tmp);
+      if (res < 0)
+        puts ("Not Found.");
+      else
+        {
+          p = codem_ccode (res);
+          for (; *p != 0; p += CC_LEN)
+            printf ("%.3s\n", p);
+        }
+      break;
+
+      /* search city name */
+    case 'S':
       cname_scanf (CN_PROMPT, name_tmp);
       printd (name_tmp);
       res = codem_cname_search (name_tmp);
