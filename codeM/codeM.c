@@ -403,8 +403,10 @@ codem_ccode_idx (const char *codem)
 }
 
 /**
- *  internal function
- *  CODEM_NO_CITY_DATA should not be defined
+ *  internal functions
+ *  `__cname_fuzzy_search` and `__cname_normal_search`
+ *  based on CODEM_NO_CITY_DATA and CODEM_FUZZY_SEARCH_CITYNAME
+ *  to be used by the `codem_cname_search` function
  **/
 #ifndef CODEM_NO_CITY_DATA
 #  define MAX_TMP 64 /* max tmp buffer size */
