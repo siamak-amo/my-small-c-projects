@@ -408,7 +408,9 @@ codem_ccode_idx (const char *codem)
 #ifndef CODEM_NO_CITY_DATA
 #  define MAX_TMP 64 /* max tmp buffer size */
 #  define SAFE_LEN(x) MIN(x, MAX_TMP)
+
 #  ifdef CODEM_FUZZY_SEARCH_CITYNAME
+/* fuzzy search */
 static inline int
 __cname_fuzze_search (const char *search)
 {
@@ -437,11 +439,13 @@ __cname_fuzze_search (const char *search)
   return min_dist_idx;
 }
 #  else /* ! CODEM_FUZZY_SEARCH_CITYNAME */
+/* normal search */
 static inline int
 __cname_normal_search (const char *search)
 {
-  size_t n = strlen (search);
   const char *p;
+  size_t n = strlen (search);
+
   for (size_t idx = 0; idx < CITY_COUNT; ++idx)
     {
       p = city_name[idx];
