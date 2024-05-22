@@ -103,6 +103,7 @@ RandFunction codem_srand = NULL;
 #define char2num(c) ((c) - '0')
 #define num2char(x) ((x) + '0')
 #define isanumber(c) (('0' <= (c)) && ('9' >= (c)))
+#define UNUSED(x) (void)(x)
 /* macro to initialize codem_srand */
 #define codem_rand_init(randfun) codem_srand = &(randfun)
 
@@ -461,7 +462,7 @@ CODEMDEF int
 codem_cname_search (const char *search)
 {
 #ifdef CODEM_NO_CITY_DATA
-  (void) search;
+  UNUSED (search);
   return CC_NOT_IMPLEMENTED;
 #else
 #  ifdef CODEM_FUZZY_SEARCH_CITYNAME
