@@ -698,6 +698,9 @@ main (void)
 static const char *PROMPT = "> ";
 static const char *RD_PROMPT = "enter code: ";
 static const char *CN_PROMPT = "enter name: ";
+static char tmp[CODEM_BUF_LEN]; /* codem temporary buffer */
+static char name_tmp[CNAME_BUF_LEN]; /* cname temporary buffer */
+
 /* a noise for random number generator */
 static size_t noise = 0;
 
@@ -812,8 +815,6 @@ exec_command (char prev_comm, char comm)
           NORMCHAR (comm), NORMCHAR (prev_comm));
   int res, off;
   const char *p;
-  char tmp[CODEM_BUF_LEN] = {0};
-  char name_tmp[CNAME_BUF_LEN] = {0};
 
   switch (comm)
     {
