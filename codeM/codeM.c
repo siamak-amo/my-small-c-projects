@@ -406,18 +406,23 @@ codem_ccode_idx (const char *codem)
  *  CODEM_NO_CITY_DATA should not be defined
  **/
 #ifndef CODEM_NO_CITY_DATA
+#  define MAX_TMP 64 /* max tmp buffer size */
+#  define SAFE_LEN(x) MIN(x, MAX_TMP)
 #  ifdef CODEM_FUZZY_SEARCH_CITYNAME
 static inline int
 __cname_fuzze_search (const char *search)
 {
-  size_t min_dist = -1, min_dist_idx = CC_NOT_FOUND;
-  size_t n = strlen (search);
   const char *p;
+  char *tmp = malloc (MAX_TMP);
+  size_t n = SAFE_LEN(strlen (search));
+  size_t min_dist = -1; // size_t MAX value
+  size_t min_dist_idx = CC_NOT_FOUND; // -1
+
   for (size_t idx = 0; idx < CITY_COUNT; ++idx)
     {
       p = city_name[idx];
-      char *tmp = malloc (50);
-      strncpy (tmp, p, (n>=50)?50:n);
+      strncpy (tmp, p, n);
+
       size_t LD = leven_imm (tmp, search);
       if (LD < min_dist)
         {
@@ -426,6 +431,7 @@ __cname_fuzze_search (const char *search)
         }
       free (tmp);
     }
+  free (tmp);
   if (min_dist > leven_strlen (search) / 2)
     return CC_NOT_FOUND;
   return min_dist_idx;
