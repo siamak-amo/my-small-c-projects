@@ -18,7 +18,7 @@
  *  file: codeM_py.c
  *  created on: 19 May 2024
  *
- *  Implement Python C API extension for the codeM.c library
+ *  Python C API extension for the codeM.c library
  *
  *  compilation:
  *    cc -Wall -Wextra -shared -fPIC codeM_py.c -o codeM.so
