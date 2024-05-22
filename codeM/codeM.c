@@ -92,7 +92,7 @@ RandFunction codem_srand = NULL;
 #define CTRL_DIGIT_IDX 9
 /**
  *  it's important to allocate your buffers for codem of
- *  length 11, 10 character for codem and a 0-byte at the end
+ *  length 11, 10 characters for codem and a 0-byte at the end
  *  the functions within this library that are directly
  *  related to the codem (not explicitly mentioned), operate
  *  under the assumption that their codem buffer, has been
@@ -722,8 +722,8 @@ ssrand ()
 
   for (int i=7; i>0; --i)
     {
-      r += 0x666666;
-      r *= 0x424242;
+      r *= 0x42424242;
+      r += 0x66666666;
     }
   return r;
 }
