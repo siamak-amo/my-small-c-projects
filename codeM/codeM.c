@@ -413,7 +413,7 @@ codem_ccode_idx (const char *codem)
 #  ifdef CODEM_FUZZY_SEARCH_CITYNAME
 /* fuzzy search */
 static inline int
-__cname_fuzze_search (const char *search)
+__cname_fuzzy_search (const char *search)
 {
   const char *p;
   char *tmp = malloc (MAX_TMP);
@@ -466,7 +466,7 @@ codem_cname_search (const char *search)
   return CC_NOT_IMPLEMENTED;
 #else
 #  ifdef CODEM_FUZZY_SEARCH_CITYNAME
-  return __cname_fuzze_search (search);
+  return __cname_fuzzy_search (search);
 #  else
   return __cname_normal_search (search);
 #  endif
