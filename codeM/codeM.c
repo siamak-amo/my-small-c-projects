@@ -401,20 +401,21 @@ codem_ccode_idx (const char *codem)
 #endif
 }
 
-CODEMDEF int
-codem_cname_search (const char *search)
-{
-#ifdef CODEM_FUZZY_SEARCH_CITYNAME
-  size_t min_dist = -1, min_dist_idx = CC_NOT_FOUND;
-#endif
-
+/**
+ *  internal function
+ *  CODEM_NO_CITY_DATA should not be defined
+ **/
 #ifndef CODEM_NO_CITY_DATA
+#  ifdef CODEM_FUZZY_SEARCH_CITYNAME
+static inline int
+__cname_fuzze_search (const char *search)
+{
+  size_t min_dist = -1, min_dist_idx = CC_NOT_FOUND;
   size_t n = strlen (search);
   const char *p;
   for (size_t idx = 0; idx < CITY_COUNT; ++idx)
     {
       p = city_name[idx];
-#ifdef CODEM_FUZZY_SEARCH_CITYNAME /* fuzz */
       char *tmp = malloc (50);
       strncpy (tmp, p, (n>=50)?50:n);
       size_t LD = leven_imm (tmp, search);
@@ -424,24 +425,43 @@ codem_cname_search (const char *search)
           min_dist_idx = idx;
         }
       free (tmp);
-#else /* normal search */
-      if (strncmp (search, p, n) == 0)
-        return idx;
-#endif /* CODEM_FUZZY_SEARCH_CITYNAME */
     }
-
-#else
-  return CC_NOT_IMPLEMENTED;
-#endif /* CODEM_NO_CITY_DATA */
-
-#ifdef CODEM_FUZZY_SEARCH_CITYNAME
   if (min_dist > leven_strlen (search) / 2)
     return CC_NOT_FOUND;
   return min_dist_idx;
-#endif
-
-  return CC_NOT_FOUND; /* unreachable */
 }
+#  else /* ! CODEM_FUZZY_SEARCH_CITYNAME */
+static inline int
+__cname_normal_search (const char *search)
+{
+  size_t n = strlen (search);
+  const char *p;
+  for (size_t idx = 0; idx < CITY_COUNT; ++idx)
+    {
+      p = city_name[idx];
+      if (strncmp (search, p, n) == 0)
+        return idx;
+    }
+  return CC_NOT_FOUND;
+}
+#  endif /* CODEM_FUZZY_SEARCH_CITYNAM */
+#endif /* CODEM_NO_CITY_DATA */
+
+CODEMDEF int
+codem_cname_search (const char *search)
+{
+#ifdef CODEM_NO_CITY_DATA
+  (void) search;
+  return CC_NOT_IMPLEMENTED;
+#else
+#  ifdef CODEM_FUZZY_SEARCH_CITYNAME
+  return __cname_fuzze_search (search);
+#  else
+  return __cname_normal_search (search);
+#  endif
+#endif
+}
+
 #endif /* CODEM_IMPLEMENTATION */
 
 
