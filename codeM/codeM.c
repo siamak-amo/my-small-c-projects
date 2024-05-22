@@ -429,8 +429,8 @@ __cname_fuzze_search (const char *search)
           min_dist = LD;
           min_dist_idx = idx;
         }
-      free (tmp);
     }
+
   free (tmp);
   if (min_dist > leven_strlen (search) / 2)
     return CC_NOT_FOUND;
