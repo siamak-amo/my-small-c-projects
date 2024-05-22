@@ -90,8 +90,14 @@ RandFunction codem_srand = NULL;
 #define CODEM_LEN 10
 /* control digit of codem is the last digit of it */
 #define CTRL_DIGIT_IDX 9
-/* it's important to allocate your buffers for codem of */
-/* length 11, 10 char for codem and a 0-byte at the end */
+/**
+ *  it's important to allocate your buffers for codem of
+ *  length 11, 10 character for codem and a 0-byte at the end
+ *  the functions within this library that are directly
+ *  related to the codem (not explicitly mentioned), operate
+ *  under the assumption that their codem buffer, has been
+ *  allocated with a length of at least this size
+ **/
 #define CODEM_BUF_LEN 11
 
 #define char2num(c) ((c) - '0')
