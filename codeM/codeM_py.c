@@ -119,7 +119,7 @@ static struct PyMethodDef funs[] = {
     METH_VARARGS,
     "set the random number generator function\n"
     "pass it None to use the default function\n"
-    "the input function must return a number"
+    "expected signature:  def rand()->int: ..."
   },
   {NULL, NULL, 0, NULL}
 };
