@@ -349,7 +349,17 @@ py_set_srand (PyObject *self, PyObject *arg)
       Py_RETURN_FALSE;
     }
   else
-    Py_RETURN_TRUE;
+    {
+      /**
+       *  we are keeping a reference to `srand_fun` locally
+       *  it's important to increase it's reference count,
+       *  specially when using lambda functions as input
+       *  otherwise calling `srand_fun` will cause SEGFAULT
+       *  to unset `srand_fun`, first release it by `py_decref`
+       */
+      Py_INCREF (srand_fun);
+      Py_RETURN_TRUE;
+    }
 }
 
 /**
