@@ -311,7 +311,7 @@ codem_isvalid (const char *codem)
 CODEMDEF void
 codem_rand_gen (char *res, int len)
 {
-  unsigned long long rand = codem_srand ();
+  size_t rand = codem_srand ();
   
   while (0 != len--)
     {
@@ -758,9 +758,10 @@ ssrand ()
 
   for (int i=7; i>0; --i)
     {
-      r *= 0x42424242;
-      r += 0x66666666;
+      r += 0x666666;
+      r *= 0x424242;
     }
+
   return r;
 }
 
