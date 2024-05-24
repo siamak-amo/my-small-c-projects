@@ -345,7 +345,7 @@ default_srand ()
 }
 
 static size_t
-srand ()
+ssrand ()
 {
   if (NULL != srand_fun)
     return user_srand ();
@@ -357,7 +357,7 @@ PyMODINIT_FUNC
 PyInit_codeM()
 {
   /* internal codeM initialization */
-  codem_rand_init (srand);
+  codem_rand_init (ssrand);
 
   return PyModule_Create(&codeM_def);
 }
