@@ -329,6 +329,47 @@ py_search_cname (PyObject *self, PyObject *args)
   return PyByteArray_FromStringAndSize (tmp, strlen (tmp));
 }
 
+/**
+ *  @return:
+ *    on error                          -> None
+ *    on setting a valid function       -> True
+ *    on setting to default             -> False
+ **/
+PYCODEMDEF
+py_set_srand (PyObject *self, PyObject *arg)
+{
+  UNUSED (self);
+
+  if (!PyArg_ParseTuple(arg, "O", &srand_fun))
+    Py_RETURN_NONE;
+
+  if (!PyFunction_Check (srand_fun))
+    {
+      srand_fun = NULL;
+      Py_RETURN_FALSE;
+    }
+  else
+    Py_RETURN_TRUE;
+}
+
+/**
+ *  @return:
+ *    on error:  max size_t value
+ *    otherwise: srand_fun()
+ **/
+static inline size_t
+user_srand ()
+{
+  PyObject* rando = PyObject_CallNoArgs (srand_fun);
+  if (NULL == rando)
+    return -1;
+
+  if (!PyLong_Check (rando))
+    return -1;
+
+  return PyLong_AsSize_t (rando);
+}
+
 static size_t
 default_srand ()
 {
