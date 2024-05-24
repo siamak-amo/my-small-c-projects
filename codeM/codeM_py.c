@@ -63,6 +63,7 @@ PYCODEMDEF py_cname_by_codem (PyObject *self, PyObject *args);
 PYCODEMDEF py_cname_by_code (PyObject *self, PyObject *args);
 PYCODEMDEF py_ccode_by_cname (PyObject *self, PyObject *args);
 PYCODEMDEF py_search_cname (PyObject *self, PyObject *args);
+PYCODEMDEF py_set_srand (PyObject *self, PyObject *arg);
 
 static struct PyMethodDef funs[] = {
   {
@@ -105,6 +106,12 @@ static struct PyMethodDef funs[] = {
     "search_cname", py_search_cname,
     METH_VARARGS,
     "search the city name"
+  },{
+    "set_srand", py_set_srand,
+    METH_VARARGS,
+    "set the random number generator function\n"
+    "pass it None to use the default function\n"
+    "the input function must return a number"
   },
   {NULL, NULL, 0, NULL}
 };
