@@ -50,6 +50,9 @@
 /* noise for random number generator function */
 static size_t noise = 0;
 
+/* to change the default random number generator function */
+static PyObject *srand_fun = NULL;
+
 /* internal function definitions */
 static size_t default_srand (void);
 /* external PyMethod definitions */
@@ -341,11 +344,20 @@ default_srand ()
   return r;
 }
 
+static size_t
+srand ()
+{
+  if (NULL != srand_fun)
+    return user_srand ();
+  else
+    return default_srand ();
+}
+
 PyMODINIT_FUNC
 PyInit_codeM()
 {
   /* internal codeM initialization */
-  codem_rand_init (default_srand);
+  codem_rand_init (srand);
 
   return PyModule_Create(&codeM_def);
 }
