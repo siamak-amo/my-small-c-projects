@@ -39,7 +39,6 @@
 #include "codeM.c"
 
 /* internal macros */
-#define UNUSED(arg) (void)(arg)
 #define py_mkbuf_H(res, len, inp) \
   PyByteArray_AS_STRING ((res = PyByteArray_FromStringAndSize(inp, len)))
 
