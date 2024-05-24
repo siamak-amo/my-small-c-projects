@@ -758,8 +758,8 @@ ssrand ()
 
   for (int i=7; i>0; --i)
     {
-      r += 0x666666;
-      r *= 0x424242;
+      r *= 0x42;
+      r += 0x666;
     }
 
   return r;
