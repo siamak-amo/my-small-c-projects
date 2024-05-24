@@ -41,6 +41,12 @@
 /* internal macros */
 #define py_mkbuf_H(res, len, inp) \
   PyByteArray_AS_STRING ((res = PyByteArray_FromStringAndSize(inp, len)))
+/* to run Py_DECREF and set to NULL for ptr */
+#define py_decref(ptr) do {                     \
+    if (NULL != (ptr)) {                        \
+      Py_DECREF (ptr);                          \
+      ptr = NULL;                               \
+    }} while (0)
 
 #ifndef PYCODEMDEF
 #  define PYCODEMDEF static PyObject *
@@ -341,11 +347,14 @@ py_set_srand (PyObject *self, PyObject *arg)
   UNUSED (self);
 
   if (!PyArg_ParseTuple(arg, "O", &srand_fun))
-    Py_RETURN_NONE;
+    {
+      py_decref (srand_fun);
+      Py_RETURN_NONE;
+    }
 
   if (!PyFunction_Check (srand_fun))
     {
-      srand_fun = NULL;
+      py_decref (srand_fun);
       Py_RETURN_FALSE;
     }
   else
