@@ -738,11 +738,10 @@ help ()
              "COMMAND: sequence of shell mode commands\n"
              "commands could have one argument"
              " (Ex. `R 1234` ~ `R1234`)\n"
-             "optionally separate commands by space"
-             " or `;` or `\\n`.\n\n");
+             "optionally separate commands by space or `;`.\n\n");
   else
     fprintf (out_file,
-             "v: validate                 -  V: fix the input\n"
+             "v: validate                 -  V: make the input valid\n"
              "c: make randon city code    -  C: make random city name\n"
              "r: make random codem        -  R: random with prefix\n"
              "f: find city code by name   -  F: find city name by code\n"
