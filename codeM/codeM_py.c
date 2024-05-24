@@ -51,7 +51,7 @@
 static size_t noise = 0;
 
 /* internal function definitions */
-static size_t ssrand (void);
+static size_t default_srand (void);
 /* external PyMethod definitions */
 PYCODEMDEF py_rand2(PyObject *self, PyObject *args);
 PYCODEMDEF py_rand(PyObject *self, PyObject *args);
@@ -321,7 +321,7 @@ py_search_cname (PyObject *self, PyObject *args)
 }
 
 static size_t
-ssrand ()
+default_srand ()
 {
   size_t r = time (NULL) + noise++;
 
@@ -338,7 +338,7 @@ PyMODINIT_FUNC
 PyInit_codeM()
 {
   /* internal codeM initialization */
-  codem_rand_init (ssrand);
+  codem_rand_init (default_srand);
 
   return PyModule_Create(&codeM_def);
 }
