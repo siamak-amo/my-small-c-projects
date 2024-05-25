@@ -390,7 +390,8 @@ user_srand ()
   if (!PyLong_Check (rando))
     return -1;
 
-  return PyLong_AsSize_t (rando);
+  /* use `Mask`ed functions to ignore python `int` overflow */
+  return PyLong_AsUnsignedLongMask (rando);
 }
 
 static size_t
