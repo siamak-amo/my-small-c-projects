@@ -397,6 +397,7 @@ PYCODEMDEF
 py_set_srand (PyObject *self, PyObject *arg)
 {
   UNUSED (self);
+  py_ref_debug (srand_fun);
 
   /**
    *  we must call Py_DECREF before runnign the
