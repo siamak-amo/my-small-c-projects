@@ -59,7 +59,7 @@
 
 /* internal macros */
 #define py_mkbuf_H(res, len, inp) \
-  PyByteArray_AS_STRING ((res = PyByteArray_FromStringAndSize(inp, len)))
+  PyByteArray_AS_STRING ((res = PyByteArray_FromStringAndSize (inp, len)))
 
 #ifdef PY_CODEM_DEBUG
 /* it always evaluates @param */
@@ -70,7 +70,7 @@
   } while (0)
 #  define py_ref_debug(obj) if (NULL != obj) {                  \
     printf ("[debug %s:%d]  Py_REFCNT (%s) --> %ld\n",          \
-            __func__, __LINE__, #obj, Py_REFCNT(obj)); }
+            __func__, __LINE__, #obj, Py_REFCNT (obj)); }
 #else
 #  define py_debug(param, val) param
 #  define py_ref_debug(obj)
@@ -93,8 +93,8 @@ static PyObject *srand_fun = NULL;
 /* internal function definitions */
 static size_t default_srand (void);
 /* external PyMethod definitions */
-PYCODEMDEF py_rand2(PyObject *self, PyObject *args);
-PYCODEMDEF py_rand(PyObject *self, PyObject *args);
+PYCODEMDEF py_rand2 (PyObject *self, PyObject *args);
+PYCODEMDEF py_rand (PyObject *self, PyObject *args);
 PYCODEMDEF py_rand_suffix (PyObject *self, PyObject *args);
 PYCODEMDEF py_validate (PyObject *self, PyObject *args);
 PYCODEMDEF py_mkvalid (PyObject *self, PyObject *args);
@@ -205,7 +205,7 @@ py_rand_suffix (PyObject *self, PyObject *args)
   const char *suffix;
   size_t offset;
 
-  if (!PyArg_ParseTuple(args, "s#", &suffix, &offset))
+  if (!PyArg_ParseTuple (args, "s#", &suffix, &offset))
     Py_RETURN_NONE;
   if (offset > CODEM_LEN)
     offset = CODEM_LEN;
@@ -231,14 +231,14 @@ py_validate (PyObject *self, PyObject *args)
   const char *code;
   size_t len;
 
-  if (!PyArg_ParseTuple(args, "s#", &code, &len))
+  if (!PyArg_ParseTuple (args, "s#", &code, &len))
     Py_RETURN_NONE;
 
   if (len != CODEM_LEN)
     Py_RETURN_FALSE;
 
-  return (codem_isvalidn (code)) ? Py_NewRef(Py_True)
-    : Py_NewRef(Py_False);
+  return (codem_isvalidn (code)) ? Py_NewRef (Py_True)
+    : Py_NewRef (Py_False);
 }
 
 /**
@@ -254,7 +254,7 @@ py_mkvalid (PyObject *self, PyObject *args)
   const char *code;
   size_t len;
 
-  if (!PyArg_ParseTuple(args, "s#", &code, &len))
+  if (!PyArg_ParseTuple (args, "s#", &code, &len))
     Py_RETURN_NONE;
 
   PyObject *result;
@@ -294,7 +294,7 @@ py_cname_by_codem (PyObject *self, PyObject *args)
   const char *code;
   size_t len;
 
-  if (!PyArg_ParseTuple(args, "s#", &code, &len))
+  if (!PyArg_ParseTuple (args, "s#", &code, &len))
     Py_RETURN_NONE;
 
   int idx = codem_ccode_idx (code);
@@ -314,7 +314,7 @@ py_cname_by_code (PyObject *self, PyObject *args)
   const char *code;
   size_t len;
 
-  if (!PyArg_ParseTuple(args, "s#", &code, &len))
+  if (!PyArg_ParseTuple (args, "s#", &code, &len))
     Py_RETURN_NONE;
 
   if (len != CC_LEN)
@@ -342,7 +342,7 @@ py_ccode_by_cname (PyObject *self, PyObject *args)
   const char *name;
   size_t len;
 
-  if (!PyArg_ParseTuple(args, "s#", &name, &len))
+  if (!PyArg_ParseTuple (args, "s#", &name, &len))
     Py_RETURN_NONE;
 
   int res = codem_cname_search (name);
@@ -378,7 +378,7 @@ py_search_cname (PyObject *self, PyObject *args)
   const char *name;
   size_t len;
 
-  if (!PyArg_ParseTuple(args, "s#", &name, &len))
+  if (!PyArg_ParseTuple (args, "s#", &name, &len))
     Py_RETURN_NONE;
 
   int res = codem_cname_search (name);
@@ -416,7 +416,7 @@ py_set_srand (PyObject *self, PyObject *arg)
       srand_fun = NULL;
     }
   
-  if (!PyArg_ParseTuple(arg, "O", &srand_fun))
+  if (!PyArg_ParseTuple (arg, "O", &srand_fun))
     Py_RETURN_NONE;
   
   if (!PyFunction_Check (srand_fun))
@@ -479,10 +479,10 @@ ssrand ()
 }
 
 PyMODINIT_FUNC
-PyInit_codeM()
+PyInit_codeM ()
 {
   /* internal codeM initialization */
   codem_rand_init (ssrand);
   /* internal python C API initialization */
-  return PyModule_Create(&codeM_def);
+  return PyModule_Create (&codeM_def);
 }
