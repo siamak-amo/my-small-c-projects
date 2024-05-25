@@ -26,6 +26,10 @@
  *    you can find the path of `Python.h` by running
  *    `sysconfig.get_paths()` in a python shell,
  *    normally it's located in `/usr/include/python3.xx`
+ *  options:
+ *    define `-D PY_CODEM_DEBUG` to print some debug
+ *    information about reference count of globally
+ *    handled python objects
  *
  *  Example:
  *    ```
