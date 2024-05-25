@@ -56,7 +56,6 @@
 /* internal macros */
 #define py_mkbuf_H(res, len, inp) \
   PyByteArray_AS_STRING ((res = PyByteArray_FromStringAndSize(inp, len)))
-/* to run Py_DECREF and set to NULL for ptr */
 #define py_decref(ptr) do {                     \
     if (NULL != (ptr))                          \
       Py_DECREF (ptr);                          \
