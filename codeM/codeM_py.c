@@ -199,6 +199,11 @@ py_rand_suffix (PyObject *self, PyObject *args)
   return result;
 }
 
+/**
+ *  @return:
+ *    on error   -> None
+ *    otherwise  -> True for valid and False for invalid
+ */
 PYCODEMDEF
 py_validate (PyObject *self, PyObject *args)
 {
@@ -217,6 +222,11 @@ py_validate (PyObject *self, PyObject *args)
     : Py_NewRef(Py_False);
 }
 
+/**
+ *  @return:
+ *    on error    -> None
+ *    otherwise   -> bytearray of a valid codeM
+ **/
 PYCODEMDEF
 py_mkvalid (PyObject *self, PyObject *args)
 {
@@ -237,6 +247,7 @@ py_mkvalid (PyObject *self, PyObject *args)
   return result;
 }
 
+// @return:  bytearray of a valid codeM
 PYCODEMDEF
 py_rand_ccode (PyObject *self, PyObject *args)
 {
@@ -250,6 +261,12 @@ py_rand_ccode (PyObject *self, PyObject *args)
   return result;
 }
 
+/**
+ *  @return:
+ *    on error / on failure    -> None
+ *    on success               -> bytearray of name of a city
+ *                                [UTF8 - None-ASCII]
+ **/
 PYCODEMDEF
 py_cname_by_codem (PyObject *self, PyObject *args)
 {
@@ -269,6 +286,7 @@ py_cname_by_codem (PyObject *self, PyObject *args)
   return PyByteArray_FromStringAndSize (p, strlen (p));
 }
 
+// @return:  the same as py_cname_by_codem
 PYCODEMDEF
 py_cname_by_code (PyObject *self, PyObject *args)
 {
@@ -291,6 +309,12 @@ py_cname_by_code (PyObject *self, PyObject *args)
   return PyByteArray_FromStringAndSize (p, strlen (p));
 }
 
+/**
+ *  @return:
+ *    on error / on failure   -> None
+ *    otherwise               -> bytearray of length 3
+ *                               [ASCII numbers]
+ **/
 PYCODEMDEF
 py_ccode_by_cname (PyObject *self, PyObject *args)
 {
@@ -326,6 +350,7 @@ py_ccode_by_cname (PyObject *self, PyObject *args)
   return result;
 }
 
+// @return:  same as py_cname_by_code
 PYCODEMDEF
 py_search_cname (PyObject *self, PyObject *args)
 {
@@ -391,8 +416,8 @@ py_set_srand (PyObject *self, PyObject *arg)
 
 /**
  *  @return:
- *    on error:  max size_t value
- *    otherwise: srand_fun()
+ *    on error    -> max size_t value
+ *    otherwise   -> srand_fun()
  **/
 static inline size_t
 user_srand ()
