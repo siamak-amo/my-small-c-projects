@@ -433,7 +433,7 @@ user_srand ()
   return PyLong_AsUnsignedLongMask (rando);
 }
 
-static size_t
+static inline size_t
 default_srand ()
 {
   size_t r = time (NULL) + noise++;
