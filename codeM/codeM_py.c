@@ -384,21 +384,23 @@ py_set_srand (PyObject *self, PyObject *arg)
 {
   UNUSED (self);
 
+  /**
+   *  we must call Py_DECREF before runnign the
+   *  `PyArg_ParseTuple` function, as it may override
+   *  the `srand_fun` to NULL (on error) so we will lose
+   *  the pointer to an allocated object causing memory leak
+   **/
+  if (NULL != srand_fun)
+    {
+      Py_DECREF (srand_fun);
+      srand_fun = NULL;
+    }
+  
   if (!PyArg_ParseTuple(arg, "O", &srand_fun))
-    {
-      /* error, unset the srand_fun */
-      py_decref (srand_fun);
-      srand_fun = NULL;
-      Py_RETURN_NONE;
-    }
-
+    Py_RETURN_NONE;
+  
   if (!PyFunction_Check (srand_fun))
-    {
-      /* unset the srand_fun */
-      py_decref (srand_fun);
-      srand_fun = NULL;
       Py_RETURN_FALSE;
-    }
   else
     {
       /**
