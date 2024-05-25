@@ -407,7 +407,7 @@ py_set_srand (PyObject *self, PyObject *arg)
        *  it's important to increase it's reference count,
        *  specially when the @arg is a lambda function
        *  otherwise calling `srand_fun` will cause SEGFAULT
-       *  to unset `srand_fun`, first release it by `py_decref`
+       *  to unset the `srand_fun`, first release it by `py_decref`
        **/
       Py_INCREF (srand_fun);
       Py_RETURN_TRUE;
@@ -461,6 +461,6 @@ PyInit_codeM()
 {
   /* internal codeM initialization */
   codem_rand_init (ssrand);
-
+  /* internal python C API initialization */
   return PyModule_Create(&codeM_def);
 }
