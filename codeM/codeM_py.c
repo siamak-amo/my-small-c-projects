@@ -31,7 +31,7 @@
  *    information about reference count of globally
  *    handled python objects
  *
- *  Example:
+ *  Usage Example:
  *    ```
  *      import codeM
  *      # help(codeM)
@@ -63,19 +63,20 @@
 
 #ifdef PY_CODEM_DEBUG
 /* it always evaluates @param */
-#  define py_debug(param, val) do {                     \
-    param;                                              \
-    printf ("[debug %s:%d]  %s --> %ld\n",              \
-            __func__, __LINE__, #param, val);           \
+#  define py_debug(param, val) do {                             \
+    param;                                                      \
+    printf ("[debug %s:%d]  %s --> %ld\n",                      \
+            __func__, __LINE__, #param, val);                   \
   } while (0)
-#  define py_ref_debug(obj) if (NULL != obj) {          \
-    printf ("[debug %s:%d]  Py_REFCNT (%s) --> %ld\n",   \
+#  define py_ref_debug(obj) if (NULL != obj) {                  \
+    printf ("[debug %s:%d]  Py_REFCNT (%s) --> %ld\n",          \
             __func__, __LINE__, #obj, Py_REFCNT(obj)); }
 #else
 #  define py_debug(param, val) param
 #  define py_ref_debug(obj)
 #endif
 
+/* wrappers for Py_xxxREF functions */
 #define py_INCREF(obj) py_debug (Py_INCREF (obj), Py_REFCNT (obj))
 #define py_DECREF(obj) py_debug (Py_DECREF (obj), Py_REFCNT (obj))
 
