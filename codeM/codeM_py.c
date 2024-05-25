@@ -27,9 +27,24 @@
  *    `sysconfig.get_paths()` in a python shell,
  *    normally it's located in `/usr/include/python3.xx`
  *
- *  usage in python environments:
- *    import codeM
- *    help(codeM)
+ *  Example:
+ *    ```
+ *      import codeM
+ *      # help(codeM)
+ *
+ *      print( codeM.mkrand().decode() )
+ *      print( codeM.mkvalid('6665554443').decode() )
+ *
+ *      # change the default random number generator
+ *      def rnd(dt)->int:
+ *          return int( dt*0x42 + 0x666 )
+ *
+ *      if codeM.set_srand(lambda: rnd(666)) != True:
+ *          print("Error!")
+ *
+ *      # set to default
+ *      codeM.set_srand(None)
+ *    ```
  **/
 #include <time.h>
 #define PY_SSIZE_T_CLEAN
