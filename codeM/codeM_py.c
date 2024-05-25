@@ -43,7 +43,7 @@
  *    def rnd(dt)->int:
  *        return int( dt*0x42 + 0x666 )
  *
- *    if codeM.set_srand(lambda: rnd(666)) != True:
+ *    if codeM.set_srand(lambda: rnd(666)) == None:
  *        print("Error!")
  *
  *    # set to default
