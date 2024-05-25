@@ -451,7 +451,7 @@ user_srand ()
   if (!PyLong_Check (rando))
     return -1;
 
-  /* use `Mask`ed functions to ignore python `int` overflow */
+  /* use `Mask`ed functions to ignore python overflow exception */
   return PyLong_AsUnsignedLongMask (rando);
 }
 
