@@ -57,6 +57,24 @@
 #define py_mkbuf_H(res, len, inp) \
   PyByteArray_AS_STRING ((res = PyByteArray_FromStringAndSize(inp, len)))
 
+#ifdef PY_CODEM_DEBUG
+/* it always evaluates @param */
+#  define py_debug(param, val) do {                     \
+    param;                                              \
+    printf ("[debug %s:%d]  %s --> %ld\n",              \
+            __func__, __LINE__, #param, val);           \
+  } while (0)
+#  define py_ref_debug(obj) if (NULL != obj) {          \
+    printf ("[debug %s:%d]  Py_REFCNT (%s) --> %ld\n",   \
+            __func__, __LINE__, #obj, Py_REFCNT(obj)); }
+#else
+#  define py_debug(param, val) param
+#  define py_ref_debug(obj)
+#endif
+
+#define py_INCREF(obj) py_debug (Py_INCREF (obj), Py_REFCNT (obj))
+#define py_DECREF(obj) py_debug (Py_DECREF (obj), Py_REFCNT (obj))
+
 #ifndef PYCODEMDEF
 #  define PYCODEMDEF static PyObject *
 #endif
@@ -388,7 +406,7 @@ py_set_srand (PyObject *self, PyObject *arg)
    **/
   if (NULL != srand_fun)
     {
-      Py_DECREF (srand_fun);
+      py_DECREF (srand_fun);
       srand_fun = NULL;
     }
   
@@ -407,7 +425,7 @@ py_set_srand (PyObject *self, PyObject *arg)
        *  otherwise calling `srand_fun` will cause SEGFAULT
        *  to unset the `srand_fun`, first release it by `py_decref`
        **/
-      Py_INCREF (srand_fun);
+      py_INCREF (srand_fun);
       Py_RETURN_TRUE;
     }
 }
