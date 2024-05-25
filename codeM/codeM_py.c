@@ -33,21 +33,21 @@
  *
  *  Usage Example:
  *    ```
- *      import codeM
- *      # help(codeM)
+ *    import codeM
+ *    # help(codeM)
  *
- *      print( codeM.mkrand().decode() )
- *      print( codeM.mkvalid('6665554443').decode() )
+ *    print( codeM.mkrand().decode() )
+ *    print( codeM.mkvalid('6665554443').decode() )
  *
- *      # change the default random number generator
- *      def rnd(dt)->int:
- *          return int( dt*0x42 + 0x666 )
+ *    # change the default random number generator
+ *    def rnd(dt)->int:
+ *        return int( dt*0x42 + 0x666 )
  *
- *      if codeM.set_srand(lambda: rnd(666)) != True:
- *          print("Error!")
+ *    if codeM.set_srand(lambda: rnd(666)) != True:
+ *        print("Error!")
  *
- *      # set to default
- *      codeM.set_srand(None)
+ *    # set to default
+ *    codeM.set_srand(None)
  *    ```
  **/
 #include <time.h>
