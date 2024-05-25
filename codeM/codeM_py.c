@@ -43,10 +43,9 @@
   PyByteArray_AS_STRING ((res = PyByteArray_FromStringAndSize(inp, len)))
 /* to run Py_DECREF and set to NULL for ptr */
 #define py_decref(ptr) do {                     \
-    if (NULL != (ptr)) {                        \
+    if (NULL != (ptr))                          \
       Py_DECREF (ptr);                          \
-      ptr = NULL;                               \
-    }} while (0)
+  } while (0)
 
 #ifndef PYCODEMDEF
 #  define PYCODEMDEF static PyObject *
@@ -350,6 +349,7 @@ py_set_srand (PyObject *self, PyObject *arg)
     {
       /* error, unset the srand_fun */
       py_decref (srand_fun);
+      srand_fun = NULL;
       Py_RETURN_NONE;
     }
 
@@ -357,6 +357,7 @@ py_set_srand (PyObject *self, PyObject *arg)
     {
       /* unset the srand_fun */
       py_decref (srand_fun);
+      srand_fun = NULL;
       Py_RETURN_FALSE;
     }
   else
