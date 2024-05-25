@@ -348,24 +348,27 @@ py_set_srand (PyObject *self, PyObject *arg)
 
   if (!PyArg_ParseTuple(arg, "O", &srand_fun))
     {
+      /* error, unset the srand_fun */
       py_decref (srand_fun);
       Py_RETURN_NONE;
     }
 
   if (!PyFunction_Check (srand_fun))
     {
+      /* unset the srand_fun */
       py_decref (srand_fun);
       Py_RETURN_FALSE;
     }
   else
     {
       /**
-       *  we are keeping a reference to `srand_fun` locally
+       *  setting the srand_fun
+       *  we are keeping a reference of `srand_fun` object locally
        *  it's important to increase it's reference count,
-       *  specially when using lambda functions as input
+       *  specially when the @arg is a lambda function
        *  otherwise calling `srand_fun` will cause SEGFAULT
        *  to unset `srand_fun`, first release it by `py_decref`
-       */
+       **/
       Py_INCREF (srand_fun);
       Py_RETURN_TRUE;
     }
