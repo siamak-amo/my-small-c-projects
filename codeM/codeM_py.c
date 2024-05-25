@@ -403,8 +403,8 @@ py_set_srand (PyObject *self, PyObject *arg)
     {
       /**
        *  setting the srand_fun
-       *  we are keeping a reference of `srand_fun` object locally
-       *  it's important to increase it's reference count,
+       *  we keep a reference of the `srand_fun` object locally
+       *  it's important to increase it's reference count
        *  specially when the @arg is a lambda function
        *  otherwise calling `srand_fun` will cause SEGFAULT
        *  to unset the `srand_fun`, first release it by `py_decref`
