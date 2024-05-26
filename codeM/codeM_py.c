@@ -71,7 +71,7 @@
             __func__, __LINE__, #obj, Py_REFCNT(obj), #fun);            \
   }} while (0)
 #  define py_ref_debug(obj) if (NULL != obj) {                  \
-    printf ("[debug %s:%d]  Py_REFCNT (%s) --> %ld\n",          \
+    printf ("[debug %s:%d] %s->refcnt = %ld\n",                 \
             __func__, __LINE__, #obj, Py_REFCNT (obj)); }
 #else
 #  define py_debug(fun, obj) fun (obj)
