@@ -62,17 +62,19 @@
   PyByteArray_AS_STRING ((res = PyByteArray_FromStringAndSize (inp, len)))
 
 #ifdef PY_CODEM_DEBUG
-/* it always evaluates @param */
-#  define py_debug(param, val) do {                             \
-    param;                                                      \
-    printf ("[debug %s:%d]  %s --> %ld\n",                      \
-            __func__, __LINE__, #param, val);                   \
-  } while (0)
+#  define py_debug(fun, obj) do {                                       \
+  if (NULL == obj) {                                                    \
+    printf ("[debug %s:%d] %s is NULL!\n", __func__, __LINE__, #obj);   \
+  } else {                                                              \
+    fun (obj);                                                          \
+    printf ("[debug %s:%d] %s->refcnt = %ld, after running %s\n",       \
+            __func__, __LINE__, #obj, Py_REFCNT(obj), #fun);            \
+  }} while (0)
 #  define py_ref_debug(obj) if (NULL != obj) {                  \
     printf ("[debug %s:%d]  Py_REFCNT (%s) --> %ld\n",          \
             __func__, __LINE__, #obj, Py_REFCNT (obj)); }
 #else
-#  define py_debug(param, val) param
+#  define py_debug(fun, obj) fun (obj)
 #  define py_ref_debug(obj)
 #endif
 
