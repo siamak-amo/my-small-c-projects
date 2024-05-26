@@ -62,7 +62,7 @@
   PyByteArray_AS_STRING ((res = PyByteArray_FromStringAndSize (inp, len)))
 
 #ifdef PY_CODEM_DEBUG
-#  define py_debug(fun, obj) do {                                       \
+#  define pyd_fun(fun, obj) do {                                        \
   if (NULL == obj) {                                                    \
     printf ("[debug %s:%d] %s is NULL!\n", __func__, __LINE__, #obj);   \
   } else {                                                              \
@@ -70,17 +70,17 @@
     printf ("[debug %s:%d] %s->ob_refcnt = %ld, after running %s\n",    \
             __func__, __LINE__, #obj, Py_REFCNT(obj), #fun);            \
   }} while (0)
-#  define py_ref_debug(obj) if (NULL != obj) {                  \
+#  define pyd_refcnt(obj) if (NULL != obj) {                    \
     printf ("[debug %s:%d] %s->ob_refcnt = %ld\n",              \
             __func__, __LINE__, #obj, Py_REFCNT (obj)); }
 #else
-#  define py_debug(fun, obj) fun (obj)
-#  define py_ref_debug(obj)
+#  define pyd_fun(fun, obj) fun (obj)
+#  define pyd_refcnt(obj)
 #endif
 
 /* wrappers for Py_xxxREF functions */
-#define py_INCREF(obj) py_debug (Py_INCREF, obj)
-#define py_DECREF(obj) py_debug (Py_DECREF, obj)
+#define py_INCREF(obj) pyd_fun (Py_INCREF, obj)
+#define py_DECREF(obj) pyd_fun (Py_DECREF, obj)
 
 #ifndef PYCODEMDEF
 #  define PYCODEMDEF static PyObject *
@@ -404,7 +404,7 @@ PYCODEMDEF
 py_set_srand (PyObject *self, PyObject *arg)
 {
   UNUSED (self);
-  py_ref_debug (srand_fun);
+  pyd_refcnt (srand_fun);
 
   /**
    *  we must call Py_DECREF before runnign the
