@@ -79,8 +79,8 @@
 #endif
 
 /* wrappers for Py_xxxREF functions */
-#define py_INCREF(obj) py_debug (Py_INCREF (obj), Py_REFCNT (obj))
-#define py_DECREF(obj) py_debug (Py_DECREF (obj), Py_REFCNT (obj))
+#define py_INCREF(obj) py_debug (Py_INCREF, obj)
+#define py_DECREF(obj) py_debug (Py_DECREF, obj)
 
 #ifndef PYCODEMDEF
 #  define PYCODEMDEF static PyObject *
