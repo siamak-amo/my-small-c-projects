@@ -67,11 +67,11 @@
     printf ("[debug %s:%d] %s is NULL!\n", __func__, __LINE__, #obj);   \
   } else {                                                              \
     fun (obj);                                                          \
-    printf ("[debug %s:%d] %s->refcnt = %ld, after running %s\n",       \
+    printf ("[debug %s:%d] %s->ob_refcnt = %ld, after running %s\n",    \
             __func__, __LINE__, #obj, Py_REFCNT(obj), #fun);            \
   }} while (0)
 #  define py_ref_debug(obj) if (NULL != obj) {                  \
-    printf ("[debug %s:%d] %s->refcnt = %ld\n",                 \
+    printf ("[debug %s:%d] %s->ob_refcnt = %ld\n",              \
             __func__, __LINE__, #obj, Py_REFCNT (obj)); }
 #else
 #  define py_debug(fun, obj) fun (obj)
