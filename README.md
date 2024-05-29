@@ -1,3 +1,1 @@
-# My Small C Projects (MSCP)
-
----
+# My Small C Projects
