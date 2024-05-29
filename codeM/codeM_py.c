@@ -300,6 +300,7 @@ py_cname_by_codem (PyObject *self, PyObject *args)
   if (!PyArg_ParseTuple (args, "s#", &code, &len))
     Py_RETURN_NONE;
 
+  /* codem's internal, should be used by codem_get_cname */
   int idx = codem_ccode_idx (code);
   if (idx < 0)
     Py_RETURN_NONE;
@@ -323,6 +324,7 @@ py_cname_by_code (PyObject *self, PyObject *args)
   if (len != CC_LEN)
     Py_RETURN_NONE;
 
+  /* codem's internal, should be used by codem_get_cname */
   int idx = codem_ccode_idx (code);
   if (idx < 0)
     Py_RETURN_NONE;
@@ -334,6 +336,7 @@ py_cname_by_code (PyObject *self, PyObject *args)
 /**
  *  @return:
  *    on error      -> None
+ *    on failure    -> empty list
  *    otherwise     -> list of byte arrays of length 3
  *                     [ASCII numbers]
  **/
@@ -367,6 +370,7 @@ py_ccode_by_cname (PyObject *self, PyObject *args)
            PyByteArray_FromStringAndSize (res_codes, CC_LEN)))
         {
           py_DECREF (result);
+          /* unexpected internal python error */
           PyErr_SetString (PyExc_MemoryError, "Append to list error");
           return NULL;
         }
@@ -391,6 +395,7 @@ py_search_cname (PyObject *self, PyObject *args)
   if (res < 0)
     Py_RETURN_NONE;
 
+  /* namy of the city in UTF8 format */
   const char *tmp = codem_cname_byidx (res);
   if (tmp == NULL)
     Py_RETURN_NONE;
