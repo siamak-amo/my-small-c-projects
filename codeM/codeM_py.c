@@ -333,9 +333,9 @@ py_cname_by_code (PyObject *self, PyObject *args)
 
 /**
  *  @return:
- *    on error / on failure   -> None
- *    otherwise               -> bytearray of length 3
- *                               [ASCII numbers]
+ *    on error      -> None
+ *    otherwise     -> list of byte arrays of length 3
+ *                     [ASCII numbers]
  **/
 PYCODEMDEF
 py_ccode_by_cname (PyObject *self, PyObject *args)
@@ -350,7 +350,7 @@ py_ccode_by_cname (PyObject *self, PyObject *args)
 
   int res = codem_cname_search (name);
   if (res < 0)
-    Py_RETURN_NONE;
+    return PyList_New (0); /* not found */
 
   const char *res_codes = codem_ccode (res);
   Py_ssize_t res_len = strlen (res_codes) / CC_LEN; 
