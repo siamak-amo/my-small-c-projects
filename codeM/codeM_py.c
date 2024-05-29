@@ -361,9 +361,9 @@ py_ccode_by_cname (PyObject *self, PyObject *args)
   if (result == NULL)
     Py_RETURN_NONE; // error
 
-  for (Py_ssize_t i = 0; i < res_len; res_codes += CC_LEN)
+  for (Py_ssize_t i = 0; i < res_len; res_codes += CC_LEN, i++)
     {
-      if (0 != PyList_SetItem (result, i++,
+      if (0 != PyList_SetItem (result, i,
            PyByteArray_FromStringAndSize (res_codes, CC_LEN)))
         {
           Py_DECREF (result);
