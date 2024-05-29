@@ -352,12 +352,14 @@ py_ccode_by_cname (PyObject *self, PyObject *args)
   if (res < 0)
     return PyList_New (0); /* not found */
 
+  /* array of codes, each of length CC_LEN */
   const char *res_codes = codem_ccode (res);
-  Py_ssize_t res_len = strlen (res_codes) / CC_LEN; 
 
+  Py_ssize_t res_len = strlen (res_codes) / CC_LEN; /* nonzero */
   PyObject *result = PyList_New (res_len);
+
   if (result == NULL)
-    Py_RETURN_NONE;
+    Py_RETURN_NONE; // error
 
   for (Py_ssize_t i = 0; i < res_len; res_codes += CC_LEN)
     {
