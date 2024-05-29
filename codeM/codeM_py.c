@@ -22,11 +22,10 @@
  *
  *  compilation:
  *    cc -Wall -Wextra -shared -fPIC codeM_py.c -o codeM.so
- *       -I /path/to/Python.h
- *    you can find the path of `Python.h` by running
- *    `sysconfig.get_paths()` in a python shell,
- *    normally it's located in `/usr/include/python3.xx`
- *  options:
+ *      $(pkg-config --cflags python-3.xx)
+ *    replace xx with your python version
+ *
+ *  compilation options:
  *    define `-D PY_CODEM_DEBUG` to print some debug
  *    information about reference count of globally
  *    handled python objects
