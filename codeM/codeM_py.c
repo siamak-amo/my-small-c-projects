@@ -238,8 +238,10 @@ py_validate (PyObject *self, PyObject *args)
   if (len != CODEM_LEN)
     Py_RETURN_FALSE;
 
-  return (codem_isvalidn (code)) ? Py_NewRef (Py_True)
-    : Py_NewRef (Py_False);
+  if (codem_isvalidn (code))
+    Py_RETURN_TRUE;
+  else
+    Py_RETURN_FALSE;
 }
 
 /**
