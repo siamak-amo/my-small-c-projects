@@ -574,5 +574,8 @@ const char *city_name[CITY_COUNT] = {
   "میانه"
 };
 
+#else
+const char *city_code = NULL;
+const char *city_name = NULL;
 #endif /* CODEM_NO_CITY_DAT*/
 #endif /* CODEM_DATA__H__ */
