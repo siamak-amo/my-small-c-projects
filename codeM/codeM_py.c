@@ -133,11 +133,13 @@ static struct PyMethodDef funs[] = {
   },{
     "validate", py_validate,
     METH_VARARGS,
-    "validate the input (not the city code)"
+    "validate the input\n"
+    "this wont check the city code part of the input"
   },{
     "validate2", py_validate2,
     METH_VARARGS,
-    "validate the input after normalizing"
+    "validate the input after normalizing\n"
+    "this wont check the city code part of the input"
   },{
     "mkvalid", py_mkvalid,
     METH_VARARGS,
