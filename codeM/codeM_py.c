@@ -264,16 +264,18 @@ py_validate2 (PyObject *self, PyObject *args)
  UNUSED (self);
 
   const char *code;
+  char tmp[CODEM_BUF_LEN];
   size_t len;
 
   if (!PyArg_ParseTuple (args, "s#", &code, &len))
     Py_RETURN_NONE;
 
-  PyObject *result;
-  char *result_ptr = py_mkstrbuf_H (result, CODEM_LEN, code);
-  codem_norm (result_ptr);
+  /* copy to a temprary buffer with write permission */
+  memcpy (tmp, code, CODEM_BUF_LEN);
+  /* normalizing */
+  codem_norm (tmp);
 
-  if (codem_isvalidn (result_ptr))
+  if (codem_isvalidn (tmp))
     Py_RETURN_TRUE;
   else
     Py_RETURN_FALSE;
