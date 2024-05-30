@@ -2,20 +2,26 @@
  *   file: codeM_data.h
  *   created on: 25 Oct 2023
  *
- *   extra data about the codem ID
+ *   The codem ID number's extra data
  *
- *   city code: the first three digits of a codem, indicate
- *   the city of issuance; referred to as the city code.
+ *   Definitions:
+ *    city code:
+ *      refers to the first three digits of a codem ID number,
+ *      which indicates the city of issuance
+ *    city name:
+ *      refers to the name of the city of issuance,
+ *      a city may have multiple city codes (one-to-many relation)
  *
- *   in city_code, xxxyyyzzz means that
- *   the corresponding city has xxx, yyy and zzz valid codes.
+ *   the value `xxxyyyzzz` in the `city_code` indicated that,
+ *   the corresponding city has xxx, yyy and zzz city codes
  *
- *   these two constants should exclusively used by
- *   introduced functions and macros in codeM.c file.
+ *   only use introduced macros and functions in the codeM.c library
+ *   no functionality has implemented in this file
  *
- *   Resources:
- *     https://www.yasa.co/%DA%A9%D8%AF-%D9%85%D9%84%DB%8C-%D9%88-%D8%B4%D9%87%D8%B1-%D9%85%D8%AD%D9%84-%D8%B5%D8%AF%D9%88%D8%B1-%D8%A2%D9%86-%D8%B4%D9%87%D8%B1-%D9%85%D8%AD%D9%84-%D8%AA%D9%88%D9%84%D8%AF/
- */
+ *   References:
+ *     - [names and codes] https://www.yasa.co/%DA%A9%D8%AF-%D9%85%D9%84%DB%8C-%D9%88-%D8%B4%D9%87%D8%B1-%D9%85%D8%AD%D9%84-%D8%B5%D8%AF%D9%88%D8%B1-%D8%A2%D9%86-%D8%B4%D9%87%D8%B1-%D9%85%D8%AD%D9%84-%D8%AA%D9%88%D9%84%D8%AF
+ *
+ **/
 #ifndef CODEM_DATA__H__
 #define CODEM_DATA__H__
 
