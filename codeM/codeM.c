@@ -26,12 +26,15 @@
  *
  *   compilation:
  *     to compile the CLI program:
- *       cc -Wall -Wextra -D CODEM_IMPLEMENTATION
- *                        -D CODEM_CLI -o codeM codeM.c
+ *       cc -Wall -Wextra -Werror \
+ *          -D CODEM_IMPLEMENTATION \
+ *          -D CODEM_CLI -o codeM codeM.c
  *
  *     to compile the test program:
- *       cc -Wall -Wextra -D CODEM_IMPLEMENTATION
- *          -D CODEM_TEST -D CODEM_DEBUG -o test codeM.c
+ *       cc -Wall -Wextra -Werror \
+ *          -D CODEM_IMPLEMENTATION \
+ *          -D CODEM_TEST \
+ *          -D CODEM_DEBUG -o test codeM.c
  *
  *     other compilation options:
  *       `-D CODEM_NO_CITY_DATA`:

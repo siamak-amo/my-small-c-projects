@@ -21,8 +21,9 @@
  *  Python C API extension for the codeM.c library
  *
  *  compilation:
- *    cc -Wall -Wextra -shared -fPIC codeM_py.c -o codeM.so
- *      $(pkg-config --cflags python-3.xx)
+ *    cc -Wall -Wextra -Werror \
+ *       -shared -fPIC codeM_py.c -o codeM.so \
+ *       $(pkg-config --cflags python-3.xx)
  *    replace xx with your python version
  *
  *  compilation options:
