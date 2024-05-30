@@ -57,7 +57,7 @@
 #include "codeM.c"
 
 /* internal macros */
-#define py_mkbuf_H(res, len, inp) \
+#define py_mkstrbuf_H(res, len, inp) \
   PyByteArray_AS_STRING ((res = PyByteArray_FromStringAndSize (inp, len)))
 
 #ifdef PY_CODEM_DEBUG
@@ -177,7 +177,7 @@ py_rand2 (PyObject *self, PyObject *args)
   UNUSED (args);
 
   PyObject *result;
-  char *result_ptr = py_mkbuf_H (result, CODEM_LEN, NULL);
+  char *result_ptr = py_mkstrbuf_H (result, CODEM_LEN, NULL);
 
   codem_rand2 (result_ptr);
 
@@ -191,7 +191,7 @@ py_rand (PyObject *self, PyObject *args)
   UNUSED (args);
 
   PyObject *result;
-  char *result_ptr = py_mkbuf_H (result, CODEM_LEN, NULL);
+  char *result_ptr = py_mkstrbuf_H (result, CODEM_LEN, NULL);
 
   codem_rand (result_ptr);
 
@@ -212,7 +212,7 @@ py_rand_suffix (PyObject *self, PyObject *args)
     offset = CODEM_LEN;
 
   PyObject *result;
-  char *result_ptr = py_mkbuf_H (result, CODEM_LEN, suffix);
+  char *result_ptr = py_mkstrbuf_H (result, CODEM_LEN, suffix);
 
   codem_rands (result_ptr, offset);
 
@@ -261,7 +261,7 @@ py_mkvalid (PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 
   PyObject *result;
-  char *result_ptr = py_mkbuf_H (result, CODEM_LEN, code);
+  char *result_ptr = py_mkstrbuf_H (result, CODEM_LEN, code);
 
   codem_norm (result_ptr);
   codem_set_ctrl_digit (result_ptr);
@@ -277,7 +277,7 @@ py_rand_ccode (PyObject *self, PyObject *args)
   UNUSED (args);
 
   PyObject *result;
-  char *result_ptr = py_mkbuf_H (result, CC_LEN, NULL);
+  char *result_ptr = py_mkstrbuf_H (result, CC_LEN, NULL);
 
   codem_rand_ccode (result_ptr);
   return result;
