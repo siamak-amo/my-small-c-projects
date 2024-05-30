@@ -257,6 +257,7 @@ py_validate (PyObject *self, PyObject *args)
     Py_RETURN_FALSE;
 }
 
+// @return:  same as py_validate
 PYCODEMDEF
 py_validate2 (PyObject *self, PyObject *args)
 {
