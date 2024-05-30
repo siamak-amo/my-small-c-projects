@@ -53,14 +53,14 @@
  *         size_t my_rand_fun (void) {...}
  *
  *         int
- *         main (...)
+ *         main (void)
  *         {
  *           char codem[CODEM_BUF_LEN] = {0};
  *
  *           // if you need to use any of the *_rand_* functions
  *           codem_rand_init (my_rand_fun);
  *
- *           ...
+ *           return 0;
  *         }
  *       `
  **/
