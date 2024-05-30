@@ -261,7 +261,7 @@ py_validate (PyObject *self, PyObject *args)
 PYCODEMDEF
 py_validate2 (PyObject *self, PyObject *args)
 {
- UNUSED (self);
+  UNUSED (self);
 
   const char *code;
   char tmp[CODEM_BUF_LEN];
