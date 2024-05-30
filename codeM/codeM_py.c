@@ -58,6 +58,14 @@
 #include "codeM.c"
 
 /* internal macros */
+/**
+ *  Allocate string buffer in the @res from the source @inp[.@len]
+ *  @res:  the result PyObject pointer
+ *  @inp:  should be `const char *`
+ *         pass it NULL to initialize an empty buffer of length @len
+ *  if you are not returning the @res, you must release it after use
+ *  by the `py_DECREF` macro (free after use)
+ **/
 #define py_mkstrbuf_H(res, len, inp) \
   PyByteArray_AS_STRING ((res = PyByteArray_FromStringAndSize (inp, len)))
 
