@@ -98,6 +98,7 @@ static size_t default_srand (void);
 PYCODEMDEF py_rand2 (PyObject *self, PyObject *args);
 PYCODEMDEF py_rand (PyObject *self, PyObject *args);
 PYCODEMDEF py_rand_suffix (PyObject *self, PyObject *args);
+PYCODEMDEF py_isvalid (PyObject *self, PyObject *args);
 PYCODEMDEF py_validate (PyObject *self, PyObject *args);
 PYCODEMDEF py_validate2 (PyObject *self, PyObject *args);
 PYCODEMDEF py_mkvalid (PyObject *self, PyObject *args);
@@ -125,6 +126,10 @@ static struct PyMethodDef funs[] = {
     "rand_ccode", py_rand_ccode,
     METH_VARARGS,
     "make random city code"
+  },{
+    "isvalid", py_isvalid,
+    METH_VARARGS,
+    "validate the input"
   },{
     "validate", py_validate,
     METH_VARARGS,
@@ -266,6 +271,31 @@ py_validate2 (PyObject *self, PyObject *args)
   codem_norm (result_ptr);
 
   if (codem_isvalidn (result_ptr))
+    Py_RETURN_TRUE;
+  else
+    Py_RETURN_FALSE;
+}
+
+// @return:  same as py_validate
+PYCODEMDEF
+py_isvalid (PyObject *self, PyObject *args)
+{
+  UNUSED (self);
+
+  const char *code;
+  size_t len;
+
+  if (!PyArg_ParseTuple (args, "s#", &code, &len))
+    Py_RETURN_NONE;
+
+  if (len != CODEM_LEN)
+    Py_RETURN_FALSE;
+
+  int idx = codem_ccode_idx (code);
+  if (idx < 0)
+    Py_RETURN_FALSE;
+
+  if (codem_isvalidn (code))
     Py_RETURN_TRUE;
   else
     Py_RETURN_FALSE;
