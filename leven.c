@@ -299,17 +299,18 @@ main (void)
   TEST_LOOP (charlen_tests, tc)
     {
       len = leven_charlen (*tc->s);
-      printf ("* charlen(\"%s\")=%lu   \t...", tc->s, len);
+      printf ("* charlen(\"%s\") = %lu... ", tc->s, len);
       assert ((len == tc->res) && "test failure");
       printf ("PASS %lu\n", tc->res);
 
     }
 
+  puts ("");
   puts ("- Testing strlen ---------------------------------------");
   TEST_LOOP (strlen_tests, tc)
     {
       len = leven_strlen (tc->s);
-      printf ("* strlen(\"%s\")=%lu   \t...", tc->s, len);
+      printf ("* strlen(\"%s\") = %lu... ", tc->s, len);
       assert ((len == tc->res) && "test failure");
       printf ("PASS %lu\n", tc->res);
     }
@@ -319,7 +320,7 @@ main (void)
   TEST_LOOP (ld_tests, tc)
     {
       LD = leven_H (s1, tc->s, tmp);
-      printf ("* LD(\"%s\", \"%s\")=%lu \t...", s1, tc->s, LD);
+      printf ("* LD(\"%s\", \"%s\") = %lu... ", s1, tc->s, LD);
       assert ((LD == tc->res) && "test failure");
       printf ("PASS %lu\n", tc->res);
     }
