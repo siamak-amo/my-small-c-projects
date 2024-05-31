@@ -66,9 +66,9 @@
 
 /* smaller string first wrapper macros */
 /* use these macros for the leven imm, stk and H function */
-#define SMALLER(fun, s1, s2, ...)               \
+#define LEVEN_SMALLER(fun, s1, s2, ...)         \
   SMALLERF (fun, strlen, s1, s2, __VA_ARGS__)
-#define SMALLER2(fun, s1, s2, ...)              \
+#define LEVEN_SMALLER2(fun, s1, s2, ...)        \
   SMALLERF (fun, leven_strlen, s1, s2, __VA_ARGS__)
 
 #define SMALLERF(fun, meter, s1, s2, ...)       \
