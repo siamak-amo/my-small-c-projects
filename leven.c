@@ -253,8 +253,15 @@ struct test_case {
   size_t res;
 };
 typedef struct test_case tc_t;
-#define T_CASE(a, b) &(tc_t){.s=a, .res=b}
+
+/* macro to make test case */
+#define T_CASE(test_str, answer) &(tc_t){.s=test_str, .res=answer}
+/* length of array macro */
 #define lenof(arr) (sizeof(arr) / sizeof(*(arr)))
+/* macro to make for loop over tc_t array */
+#define TEST_LOOP(test_cases, tc_ptr)            \
+  for (size_t __i=0; __i < lenof (test_cases) && \
+         (tc_ptr=test_cases[__i]); __i++)
 
 /* charlen test cases */
 const tc_t *charlen_tests[] = {
@@ -283,10 +290,6 @@ const tc_t *ld_tests[] = {
   T_CASE ("xxxxxx",       10)
 };
 
-#define TEST_LOOP(test_cases, tc_ptr)            \
-  for (size_t __i=0; __i < lenof (test_cases) && \
-         (tc_ptr=test_cases[__i]); __i++)
-
 #define TEST_H(ret, exp) do {                                   \
   if (ret == exp) {                                             \
     fprintf (stdout, "    \t PASS\n");                          \
@@ -294,6 +297,7 @@ const tc_t *ld_tests[] = {
     fprintf (stdout, "    \t FAILED expected %lu\n", exp);      \
     assert ((ret == exp) && "test failure");                    \
   }} while (0)
+
 
 int
 main (void)
