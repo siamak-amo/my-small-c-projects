@@ -262,8 +262,7 @@ const tc_t *charlen_tests[] = {
   TC(" ",  1),
   TC("И",  2),
   TC("€",  3),
-  TC("𐍈",  4),
-  TC("\0", 0)
+  TC("𐍈",  4)
 };
 /* strlen test cases */
 const tc_t *strlen_tests[] = {
