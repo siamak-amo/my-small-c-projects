@@ -287,6 +287,10 @@ const tc_t *ld_tests[] = {
   for (size_t __i=0; __i < lenof (test_cases) && \
          (tc_ptr=test_cases[__i]); __i++)
 
+#define TEST_H(ret, exp) if (ret == exp)                \
+    fprintf (stdout, "    \t PASS\n");                  \
+  else fprintf (stdout, " *FAILED* expected %lu\n", exp);
+
 int
 main (void)
 {
@@ -299,28 +303,24 @@ main (void)
   TEST_LOOP (charlen_tests, tc)
     {
       len = leven_charlen (*tc->s);
-      printf ("* charlen(\"%s\") = %lu... ", tc->s, len);
-      assert ((len == tc->res) && "test failure");
-      printf ("PASS %lu\n", tc->res);
-
+      printf ("* charlen(\"%s\") = %lu   ", tc->s, len);
+      TEST_H (len, tc->res);
     }
 
   puts ("\n- Testing strlen ---------------------------------------");
   TEST_LOOP (strlen_tests, tc)
     {
       len = leven_strlen (tc->s);
-      printf ("* strlen(\"%s\") = %lu... ", tc->s, len);
-      assert ((len == tc->res) && "test failure");
-      printf ("PASS %lu\n", tc->res);
+      printf ("* strlen(\"%s\") = %lu    ", tc->s, len);
+      TEST_H (len, tc->res);
     }
 
   puts ("\n- Testing Levenshtein Distance -------------------------");
   TEST_LOOP (ld_tests, tc)
     {
       LD = leven_H (s1, tc->s, tmp);
-      printf ("* LD(\"%s\", \"%s\") = %lu... ", s1, tc->s, LD);
-      assert ((LD == tc->res) && "test failure");
-      printf ("PASS %lu\n", tc->res);
+      printf ("* LD(\"%s\", \"%s\") = %lu   ", s1, tc->s, LD);
+      TEST_H (LD, tc->res);
     }
 
   leven_free(tmp);
