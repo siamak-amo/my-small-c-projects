@@ -261,7 +261,7 @@ typedef struct test_case tc_t;
   for (size_t __i=0; __i < lenof (test_cases) &&        \
          (tc_ptr=test_cases[__i]); __i++)
 
-/* charlen test cases */
+/* UTF-8 character length (in bytes) test cases */
 const tc_t *charlen_tests[] = {
   T_CASE ("A",  1),
   T_CASE (" ",  1),
@@ -269,7 +269,7 @@ const tc_t *charlen_tests[] = {
   T_CASE ("€",  3),
   T_CASE ("𐍈",  4)
 };
-/* strlen test cases */
+/* UTF-8 string length (in characters) test cases */
 const tc_t *strlen_tests[] = {
   T_CASE (NULL,       0),
   T_CASE ("",         0),
