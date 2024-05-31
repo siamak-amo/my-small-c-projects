@@ -1101,7 +1101,7 @@ main (int argc, char **argv)
       break;
 
     case EXITING:
-    case default:
+    default:
       return 0;
     }
   return 0;
