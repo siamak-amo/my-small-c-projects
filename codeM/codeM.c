@@ -701,6 +701,7 @@ main (void)
 #define __TOSTR__(x) #x
 #define STR(x) __TOSTR__(x)
 
+static const char *PRINTLN = "%s\n"; /* println format */
 static const char *PROMPT = "> ";
 static const char *RD_PROMPT = "enter code: ";
 static const char *CN_PROMPT = "enter name: ";
@@ -835,12 +836,12 @@ exec_command (char prev_comm, char comm)
       printd (tmp);
       if (codem_isvalidn (tmp))
         {
-          fprintf (stdin, "OK.");
+          fprintf (stdout, PRINTLN, "OK.");
           if (!codem_ccode_isvalid (tmp))
-            fprintf (stdin, "city code was not found.");
+            fprintf (stdout, PRINTLN, "city code was not found.");
         }
       else
-        fprintf (stdin, "Not Valid.");
+        fprintf (stdout, PRINTLN, "Not Valid.");
       break;
 
       /* make a code valid */
@@ -850,7 +851,7 @@ exec_command (char prev_comm, char comm)
         assert ( 0 && "Cannot be Normalized" );
       printd (tmp);
       codem_set_ctrl_digit (tmp);
-      fprintf (stdin, tmp);
+      fprintf (stdout, PRINTLN, tmp);
       break;
 
       /* make a random city code */
@@ -862,13 +863,13 @@ exec_command (char prev_comm, char comm)
       /* make a random city name */
     case 'C':
       codem_rand_ccode (tmp);
-      fprintf (stdin, codem_cname (tmp));
+      fprintf (stdout, PRINTLN, codem_cname (tmp));
       break;
 
       /* make a random code */
     case 'r':
       codem_rand2 (tmp);
-      fprintf (stdin, tmp);
+      fprintf (stdout, PRINTLN, tmp);
       break;
 
       /* make a random code by prefix */
@@ -880,7 +881,7 @@ exec_command (char prev_comm, char comm)
       else
         {
           codem_rands (tmp, off);
-          fprintf (stdin, tmp);
+          fprintf (stdout, PRINTLN, tmp);
         }
       break;
 
@@ -888,7 +889,7 @@ exec_command (char prev_comm, char comm)
     case 'F':
       codem_scanf (RD_PROMPT, tmp);
       printd (tmp);
-      fprintf (stdin, codem_cname (tmp));
+      fprintf (stdout, PRINTLN, codem_cname (tmp));
       break;
 
       /* find city code by city name */
@@ -898,7 +899,7 @@ exec_command (char prev_comm, char comm)
       printd (name_tmp);
       p = codem_ccode (res);
       if (res < 0)
-          fprintf (stdin, p);
+          fprintf (stdout, PRINTLN, p);
       else
         for (; *p != 0; p += CC_LEN)
           printf ("%.3s\n", p);
@@ -910,7 +911,7 @@ exec_command (char prev_comm, char comm)
       printd (tmp);
       res = codem_ccode_idx (tmp);
       if (res < 0)
-        fprintf (stdin, CCERR_NOT_FOUND);
+        fprintf (stdout, PRINTLN, CCERR_NOT_FOUND);
       else
         {
           p = codem_ccode (res);
@@ -925,7 +926,7 @@ exec_command (char prev_comm, char comm)
       printd (name_tmp);
       res = codem_cname_search (name_tmp);
       p = codem_cname_byidx (res);
-      fprintf (stdin, p);
+      fprintf (stdout, PRINTLN, p);
       break;
 
     case 'h':
