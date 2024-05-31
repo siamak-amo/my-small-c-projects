@@ -287,9 +287,13 @@ const tc_t *ld_tests[] = {
   for (size_t __i=0; __i < lenof (test_cases) && \
          (tc_ptr=test_cases[__i]); __i++)
 
-#define TEST_H(ret, exp) if (ret == exp)                \
-    fprintf (stdout, "    \t PASS\n");                  \
-  else fprintf (stdout, " *FAILED* expected %lu\n", exp);
+#define TEST_H(ret, exp) do {                                   \
+  if (ret == exp) {                                             \
+    fprintf (stdout, "    \t PASS\n");                          \
+  } else {                                                      \
+    fprintf (stdout, "    \t FAILED expected %lu\n", exp);      \
+    assert ((ret == exp) && "test failure");                    \
+  }} while (0)
 
 int
 main (void)
