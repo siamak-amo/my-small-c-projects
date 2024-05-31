@@ -1016,7 +1016,8 @@ pars_options (int argc, char **argv)
 
             case 'h':
               usage ();
-              return 1; // return normally
+              opt->state = EXITING; // exit normally
+              break;
 
             default:
               fprintf (stderr, "Invalid option (%s)", argv[0]);
@@ -1042,15 +1043,11 @@ main (int argc, char **argv)
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
   /* parsing cmdline arguments */
-  int pars_c = pars_options (argc, argv);
-  if (pars_c < 0)
+  if (pars_options (argc, argv) < 0)
     {
       fprintf (stderr, " -- exiting.\n");
       return 1;
     }
-  if (pars_c == 1)
-    return 0;
-
   /* disable the prompt when `stdin` is not a tty (using pipe) */
   if (!isatty (fileno (stdin)))
     {
@@ -1100,6 +1097,9 @@ main (int argc, char **argv)
           return 0;
       }
     }
+  else if (opt->state == EXITING)
+    return 0;
+
   return 0;
 }
 
