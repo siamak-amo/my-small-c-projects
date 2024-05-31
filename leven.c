@@ -283,7 +283,7 @@ const tc_t *ld_tests[] = {
   TC("xxxxxx",       10)
 };
 
-#define TEST_LOOP(test_cases, tc_ptr) \
+#define TEST_LOOP(test_cases, tc_ptr)            \
   for (size_t __i=0; __i < lenof (test_cases) && \
          (tc_ptr=test_cases[__i]); __i++)
 
