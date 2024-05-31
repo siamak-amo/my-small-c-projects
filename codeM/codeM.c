@@ -1081,9 +1081,9 @@ main (int argc, char **argv)
         }
       while (1)
       {
-        if (('\0' == comm || '\n' == comm) && opt->prompt)
-          fprintf (stdout, "%s", PROMPT);
-
+        if ((opt->prompt) && ('\0' == comm || '\n' == comm))
+            fprintf (stdout, PROMPT);
+        /* read new command until EOF */
         prev_comm = comm;
         if (EOF == scanf ("%c", &comm))
           {
