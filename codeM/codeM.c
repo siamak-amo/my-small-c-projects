@@ -817,10 +817,7 @@ cname_scanf (const char *message, char dest[CNAME_BUF_LEN])
                   " %"STR(CNAME_MAX_LEN)"[^;#]%n");
 }
 
-/**
- *  returns 1 when program should be exited otherwise 0
- */
-static int
+static void
 exec_command (char prev_comm, char comm)
 {
   dprintf ("running: (%c), prev_command: (%c)\n",
@@ -936,7 +933,7 @@ exec_command (char prev_comm, char comm)
       break;
 
     case 'q':
-      return 1;
+      opt->state = EXITING;
 
     case '\n':
     case '\r':
@@ -944,7 +941,7 @@ exec_command (char prev_comm, char comm)
     case ' ': /* separator */
     case ';': /* separator */
     case '#': /* comment */
-      return 0;
+      break;
 
       /* invalid command */
     default:
@@ -953,7 +950,6 @@ exec_command (char prev_comm, char comm)
            prev_comm == ' ' || prev_comm == ';'  || opt->state == CMD_MODE))
         fprintf (stderr, "Invalid command -- (%c)\n", comm);
     }
-  return 0;
 }
 
 static inline void
