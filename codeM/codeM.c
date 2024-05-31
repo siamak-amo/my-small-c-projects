@@ -823,7 +823,7 @@ static void
 exec_command (char prev_comm, char comm)
 {
   dprintf ("running: (%c), prev_command: (%c)\n",
-          NORMCHAR (comm), NORMCHAR (prev_comm));
+           NORMCHAR (comm), NORMCHAR (prev_comm));
   int res, off;
   const char *p;
 
@@ -969,8 +969,9 @@ exec_command (char prev_comm, char comm)
 
       /* invalid command */
     default:
-      if (prev_comm == '\n' || prev_comm == '\0' ||
-           prev_comm == ' ' || prev_comm == ';'  || opt->state == CMD_MODE)
+      if (opt->state == CMD_MODE || // always print invalid command in command mode
+          (prev_comm == '\n' || prev_comm == '\0' ||
+           prev_comm == ' '  || prev_comm == ';'))
         fprintf (stderr, "Invalid command -- (%c)\n", comm);
     }
 }
@@ -1000,8 +1001,8 @@ normalize_command (char *restrict prev_comm,
 }
 
 /**
- *  parse options returns:
- *    `1` to exit normally
+ *  pare cmdline options
+ *  @return:
  *    negative on failure and `0` on success
  **/
 static inline int
