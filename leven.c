@@ -9,7 +9,7 @@
  *      time: O(n*m)
  *      memory: O(Min(n,m))
  *  this implementation simply uses n for memory allocations,
- *  so provide the smaller string first or use SMALLERx macros
+ *  so provide the smaller string first or use LEVEN_SMALLERx macros
  *
  *  compile the test program:
  *    cc -Wall -Wextra -D LEVEN_IMPLEMENTATION
