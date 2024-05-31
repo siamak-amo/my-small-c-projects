@@ -1054,6 +1054,8 @@ main (int argc, char **argv)
       opt->silent_mode = true;
       opt->prompt = false;
     }
+
+  /* continue to command mode or shell mode */
   if (opt->state == CMD_MODE)
     {
       /* run commands from cmdline args, available in opt->commands */
@@ -1071,7 +1073,7 @@ main (int argc, char **argv)
             return 0;
         }
     }
-  else /* shell mode */
+  else if (opt->state == SHELL_MODE)
     {
       if (!opt->silent_mode && opt->prompt)
         {
@@ -1088,10 +1090,10 @@ main (int argc, char **argv)
         if (EOF == scanf ("%c", &comm))
           {
             if (opt->prompt)
-              puts ("");
+              fprintf (stdout, "\n");
             return 0;
           }
-
+        /* execute the current command */
         exec_command (prev_comm, comm);
         if (opt->state == EXITING)
           return 0;
