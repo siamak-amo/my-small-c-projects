@@ -1056,8 +1056,9 @@ main (int argc, char **argv)
     }
 
   /* continue to command mode or shell mode */
-  if (opt->state == CMD_MODE)
+  switch (opt->state)
     {
+    case CMD_MODE:
       /* run commands from cmdline args, available in opt->commands */
       while (*opt->commands != '\0')
         {
@@ -1071,9 +1072,9 @@ main (int argc, char **argv)
           if (opt->state == EXITING)
             return 0;
         }
-    }
-  else if (opt->state == SHELL_MODE)
-    {
+      break;
+
+    case SHELL_MODE:
       if (!opt->silent_mode && opt->prompt)
         {
           puts ("codeM Shell Mode!");
@@ -1081,26 +1082,28 @@ main (int argc, char **argv)
           help ();
         }
       while (1)
-      {
-        if ((opt->prompt) && ('\0' == comm || '\n' == comm))
+        {
+          if ((opt->prompt) && ('\0' == comm || '\n' == comm))
             fprintf (stdout, PROMPT);
-        /* read new command until EOF */
-        prev_comm = comm;
-        if (EOF == scanf ("%c", &comm))
-          {
-            if (opt->prompt)
-              fprintf (stdout, "\n");
+          /* read new command until EOF */
+          prev_comm = comm;
+          if (EOF == scanf ("%c", &comm))
+            {
+              if (opt->prompt)
+                fprintf (stdout, "\n");
+              return 0;
+            }
+          /* execute the current command */
+          exec_command (prev_comm, comm);
+          if (opt->state == EXITING)
             return 0;
-          }
-        /* execute the current command */
-        exec_command (prev_comm, comm);
-        if (opt->state == EXITING)
-          return 0;
-      }
-    }
-  else if (opt->state == EXITING)
-    return 0;
+        }
+      break;
 
+    case EXITING:
+    case default:
+      return 0;
+    }
   return 0;
 }
 
