@@ -710,9 +710,15 @@ static char name_tmp[CNAME_BUF_LEN]; /* cname temporary buffer */
 /* a noise for random number generator */
 static size_t noise = 0;
 
+enum state_t {
+  SHELL_MODE = 0,
+  CMD_MODE,
+  EXITING
+};
+
 struct Opt {
+  enum state_t state;
   bool silent_mode;
-  bool command_mode;
   bool prompt;
   bool EOO; /* End Of Options */
   char *commands; /* only in command_mode */
@@ -738,7 +744,7 @@ help ()
 {
   FILE *out_file = (!isatty (fileno (stdout))) ? stderr : stdout;
 
-  if (opt->command_mode)
+  if (opt->state == CMD_MODE)
     fprintf (out_file,
              "Usage: ./codeM -c \"[COMMAND]\"\n"
              "COMMAND: sequence of shell mode commands\n"
@@ -781,7 +787,7 @@ scan__H (const char *restrict message, char *restrict dest,
 {
   int n;
 
-  if (!opt->command_mode)
+  if (opt->state != CMD_MODE)
     {
       if (opt->prompt)
         printf (message);
@@ -944,7 +950,7 @@ exec_command (char prev_comm, char comm)
     default:
       if (prev_comm != '#' && // when the line is not commented
           (prev_comm == '\n' || prev_comm == '\0' ||
-           prev_comm == ' ' || prev_comm == ';'  || opt->command_mode))
+           prev_comm == ' ' || prev_comm == ';'  || opt->state == CMD_MODE))
         fprintf (stderr, "Invalid command -- (%c)\n", comm);
     }
   return 0;
@@ -1008,7 +1014,7 @@ pars_options (int argc, char **argv)
                   opt->silent_mode = true;
                   opt->prompt = false;
                   opt->commands = *(argv+1);
-                  opt->command_mode = true;
+                  opt->state = CMD_MODE;
                 }
               break;
 
@@ -1031,7 +1037,7 @@ main (int argc, char **argv)
   char comm = '\0', prev_comm = comm;
   opt = &(struct Opt){
     .silent_mode = false,
-    .command_mode = false,
+    .state = SHELL_MODE,
     .prompt = true,
     .commands = NULL,
     .EOO = false,
@@ -1055,7 +1061,7 @@ main (int argc, char **argv)
       opt->silent_mode = true;
       opt->prompt = false;
     }
-  if (opt->command_mode)
+  if (opt->state == CMD_MODE)
     {
       /* run commands from cmdline args, available in opt->commands */
       while (*opt->commands != '\0')
