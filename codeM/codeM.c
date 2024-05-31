@@ -721,7 +721,7 @@ struct Opt {
   bool silent_mode;
   bool prompt;
   bool EOO; /* End Of Options */
-  char *commands; /* only in command_mode */
+  char *commands; /* only in command mode */
   const char *__progname__;
 };
 static struct Opt *opt;
@@ -778,7 +778,7 @@ ssrand ()
 
 /**
  *  internal function to be used by codem_scanf and cname_scanf
- *  this function updates opt->commands when command_mode is true
+ *  this function updates opt->commands on CMD_MODE
  */
 static inline int
 scan__H (const char *restrict message, char *restrict dest,
