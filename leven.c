@@ -147,7 +147,7 @@ leven_strlen (const char *s)
 
   while (*s != '\0')
     {
-      lc = leven_charlen (*s);
+      lc = leven_chrlen (*s);
       len++;
       s += lc;
     }
