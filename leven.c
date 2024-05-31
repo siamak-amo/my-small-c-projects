@@ -8,13 +8,13 @@
  *    leven(s1[.n], s2[.m]):
  *      time: O(n*m)
  *      memory: O(Min(n,m))
- *  this implementation simply uses n for memory allocations,
+ *  this implementation simply uses n for all memory allocations,
  *  so provide the smaller string first or use LEVEN_SMALLERx macros
  *
  *  compile the test program:
- *    cc -Wall -Wextra -D LEVEN_IMPLEMENTATION
- *                     -D LEVEN_TEST -o test leven.c
- *
+ *    cc -Wall -Wextra -Werror \
+ *       -D LEVEN_IMPLEMENTATION \
+ *       -D LEVEN_TEST -o test leven.c
  *
  *  to include in other files:
  *    `
