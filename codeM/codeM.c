@@ -1066,9 +1066,8 @@ main (int argc, char **argv)
           opt->commands++;
           /* interpretation of backslash escapes */
           normalize_command (&prev_comm, &comm);
-          /* execute the command */
+          /* execute the current command */
           exec_command (prev_comm, comm);
-          /* check shall exit or not */
           if (opt->state == EXITING)
             return 0;
         }
