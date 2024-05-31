@@ -253,34 +253,34 @@ struct test_case {
   size_t res;
 };
 typedef struct test_case tc_t;
-#define TC(a, b) &(tc_t){.s=a, .res=b}
+#define T_CASE(a, b) &(tc_t){.s=a, .res=b}
 #define lenof(arr) (sizeof(arr) / sizeof(*(arr)))
 
 /* charlen test cases */
 const tc_t *charlen_tests[] = {
-  TC("A",  1),
-  TC(" ",  1),
-  TC("И",  2),
-  TC("€",  3),
-  TC("𐍈",  4)
+  T_CASE ("A",  1),
+  T_CASE (" ",  1),
+  T_CASE ("И",  2),
+  T_CASE ("€",  3),
+  T_CASE ("𐍈",  4)
 };
 /* strlen test cases */
 const tc_t *strlen_tests[] = {
-  TC(NULL,       0),
-  TC("",         0),
-  TC("012345",   6),
-  TC("€𐍈И",      3),
-  TC("©®",       2),
-  TC("A©,®01",   6)
+  T_CASE (NULL,       0),
+  T_CASE ("",         0),
+  T_CASE ("012345",   6),
+  T_CASE ("€𐍈И",      3),
+  T_CASE ("©®",       2),
+  T_CASE ("A©,®01",   6)
 };
 /* levenshtein distance test cases */
 const tc_t *ld_tests[] = {
-  TC("compatible",   0),
-  TC("compateble",   1),
-  TC("compatable",   1),
-  TC("compatble",    4),
-  TC("compatibel",   2),
-  TC("xxxxxx",       10)
+  T_CASE ("compatible",   0),
+  T_CASE ("compateble",   1),
+  T_CASE ("compatable",   1),
+  T_CASE ("compatble",    4),
+  T_CASE ("compatibel",   2),
+  T_CASE ("xxxxxx",       10)
 };
 
 #define TEST_LOOP(test_cases, tc_ptr)            \
