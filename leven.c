@@ -297,7 +297,7 @@ main (void)
     {
       len = leven_charlen (*tc->s);
       printf ("* charlen(\"%s\")=%lu   \t...", tc->s, len);
-      //assert ((len == tc->res) && "test failure");
+      assert ((len == tc->res) && "test failure");
       printf ("PASS %lu\n", tc->res);
 
     }
