@@ -717,7 +717,7 @@ enum state_t {
   EXITING
 };
 
-struct Opt {
+struct Conf {
   enum state_t state;
   bool silent_mode;
   bool prompt;
@@ -726,19 +726,19 @@ struct Opt {
   char *commands; /* only in command mode */
   const char *__progname__;
 };
-static struct Opt *opt;
+static struct Conf *cfg;
 
 static void
 usage ()
 {
-  printf ("Usage: %s [OPTIONS] [COMMANDS]\n"
-          "OPTIONS:\n"
+  printf ("Usage: %s [CFGIONS] [COMMANDS]\n"
+          "CFGIONS:\n"
           "   -s:    silent mode\n"
           "   -S:    disable the prompt (when using pipe)\n"
           "   -c:    pass COMMANDS to be executed,\n"
           "            use: -c \"h\" to get help\n"
           "   -h:    help\n\n",
-          opt->__progname__);
+          cfg->__progname__);
 }
 
 static void
@@ -746,13 +746,13 @@ help ()
 {
   FILE *out_file = (!isatty (fileno (stdout))) ? stderr : stdout;
 
-  if (opt->state == CMD_MODE)
+  if (cfg->state == CMD_MODE)
     fprintf (out_file,
              "Usage: ./codeM -c \"[COMMAND]\"\n"
              "COMMAND: sequence of shell mode commands\n"
              "commands could have one argument"
              " (Ex. `R 1234` ~ `R1234`)\n"
-             "optionally separate commands by space or `;`.\n\n");
+             "cfgionally separate commands by space or `;`.\n\n");
   else
     fprintf (out_file,
              "v: validate                 -  V: make the input valid\n"
@@ -780,7 +780,7 @@ ssrand ()
 
 /**
  *  internal function to be used by codem_scanf and cname_scanf
- *  this function updates opt->commands on CMD_MODE
+ *  this function updates cfg->commands on CMD_MODE
  */
 static inline int
 scan__H (const char *restrict message, char *restrict dest,
@@ -789,17 +789,17 @@ scan__H (const char *restrict message, char *restrict dest,
 {
   int n;
 
-  if (opt->state != CMD_MODE)
+  if (cfg->state != CMD_MODE)
     {
-      if (opt->prompt)
+      if (cfg->prompt)
         printf (message);
       scanf (scan_format, dest);
       sscanf (dest, sscan_regex, dest, &n);
     }
   else
-    sscanf (opt->commands, sscan_regex, dest, &n);
+    sscanf (cfg->commands, sscan_regex, dest, &n);
 
-  opt->commands += n;
+  cfg->commands += n;
   return n;
 }
 
@@ -827,7 +827,7 @@ exec_command (char prev_comm, char comm)
   int res, off;
   const char *p;
 
-  if (opt->commented)
+  if (cfg->commented)
     {
       switch (comm)
         {
@@ -837,7 +837,7 @@ exec_command (char prev_comm, char comm)
         case '\\':
         case ' ':
         case ';':
-          opt->commented = false;
+          cfg->commented = false;
           break;
 
         default:
@@ -953,7 +953,7 @@ exec_command (char prev_comm, char comm)
       break;
 
     case 'q':
-      opt->state = EXITING;
+      cfg->state = EXITING;
       break;
 
     case '\n':
@@ -964,12 +964,12 @@ exec_command (char prev_comm, char comm)
       break;
 
     case '#': /* comment */
-      opt->commented = true;
+      cfg->commented = true;
       break;
 
       /* invalid command */
     default:
-      if (opt->state == CMD_MODE || // always print invalid command in command mode
+      if (cfg->state == CMD_MODE || // always print invalid command in command mode
           (prev_comm == '\n' || prev_comm == '\0' ||
            prev_comm == ' '  || prev_comm == ';'))
         fprintf (stderr, "Invalid command -- (%c)\n", comm);
@@ -1001,26 +1001,26 @@ normalize_command (char *restrict prev_comm,
 }
 
 /**
- *  pare cmdline options
+ *  pare cmdline cfgions
  *  @return:
  *    negative on failure and `0` on success
  **/
 static inline int
-parse_options (int argc, char **argv)
+parse_cfgions (int argc, char **argv)
 {
-  opt->__progname__ = argv[0];
+  cfg->__progname__ = argv[0];
   for (argc--, argv++; argc > 0; argc--, argv++)
     {
-      if (!opt->EOO && argv[0][0] == '-')
+      if (!cfg->EOO && argv[0][0] == '-')
         {
           switch (argv[0][1])
             {
             case 's':
-              opt->silent_mode = true;
+              cfg->silent_mode = true;
               break;
 
             case 'S':
-              opt->prompt = false;
+              cfg->prompt = false;
               break;
 
             case 'c':
@@ -1031,20 +1031,20 @@ parse_options (int argc, char **argv)
                 }
               else
                 {
-                  opt->silent_mode = true;
-                  opt->prompt = false;
-                  opt->commands = *(argv+1);
-                  opt->state = CMD_MODE;
+                  cfg->silent_mode = true;
+                  cfg->prompt = false;
+                  cfg->commands = *(argv+1);
+                  cfg->state = CMD_MODE;
                 }
               break;
 
             case 'h':
               usage ();
-              opt->state = EXITING; // exit normally
+              cfg->state = EXITING; // exit normally
               break;
 
             default:
-              fprintf (stderr, "Invalid option (%s)", argv[0]);
+              fprintf (stderr, "Invalid cfgion (%s)", argv[0]);
               return -2;
             }
         }
@@ -1056,7 +1056,7 @@ int
 main (int argc, char **argv)
 {
   char comm = '\0', prev_comm = comm;
-  opt = &(struct Opt){
+  cfg = &(struct Conf){
     .silent_mode = false,
     .state = SHELL_MODE,
     .prompt = true,
@@ -1068,7 +1068,7 @@ main (int argc, char **argv)
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
   /* parsing cmdline arguments */
-  if (parse_options (argc, argv) < 0)
+  if (parse_cfgions (argc, argv) < 0)
     {
       fprintf (stderr, " -- exiting.\n");
       return 1;
@@ -1076,30 +1076,30 @@ main (int argc, char **argv)
   /* disable the prompt when `stdin` is not a tty (using pipe) */
   if (!isatty (fileno (stdin)))
     {
-      opt->silent_mode = true;
-      opt->prompt = false;
+      cfg->silent_mode = true;
+      cfg->prompt = false;
     }
 
   /* continue to command mode or shell mode */
-  switch (opt->state)
+  switch (cfg->state)
     {
     case CMD_MODE:
-      while (*opt->commands != '\0')
+      while (*cfg->commands != '\0')
         {
           prev_comm = comm;
-          comm = *opt->commands;
-          opt->commands++;
+          comm = *cfg->commands;
+          cfg->commands++;
           /* interpretation of backslash escapes */
           normalize_command (&prev_comm, &comm);
           /* execute the current command */
           exec_command (prev_comm, comm);
-          if (opt->state == EXITING)
+          if (cfg->state == EXITING)
             return 0;
         }
       break;
 
     case SHELL_MODE:
-      if (!opt->silent_mode && opt->prompt)
+      if (!cfg->silent_mode && cfg->prompt)
         {
           fprintf (stdout, "codeM Shell Mode!");
           usage ();
@@ -1107,19 +1107,19 @@ main (int argc, char **argv)
         }
       while (1)
         {
-          if ((opt->prompt) && ('\0' == comm || '\n' == comm))
+          if ((cfg->prompt) && ('\0' == comm || '\n' == comm))
             fprintf (stdout, PROMPT);
           /* read new command until EOF */
           prev_comm = comm;
           if (EOF == scanf ("%c", &comm))
             {
-              if (opt->prompt)
+              if (cfg->prompt)
                 fprintf (stdout, "\n");
               return 0;
             }
           /* execute the current command */
           exec_command (prev_comm, comm);
-          if (opt->state == EXITING)
+          if (cfg->state == EXITING)
             return 0;
         }
       break;
