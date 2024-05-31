@@ -56,10 +56,6 @@
 #define leven_alloc(s)                                  \
   (LARR_t*) malloc (leven_strlen (s) * sizeof(LARR_t*))
 
-/* internal macro to get length of a character */
-/* TODO: implement for encodings longer than 2 bytes */
-#define leven_charlen(c) ((c >= 0) ? 1 : 2)
-
 /* smaller string first wrapper macros */
 /* use these macros for the leven imm, stk and H function */
 #define SMALLER(fun, s1, s2, ...)               \
@@ -88,6 +84,17 @@ LEVENDEF size_t
 leven_H (const char *restrict s1, const char *restrict s2, LARR_t* tmp);
 
 /**
+ *  charlen function,
+ *  @return:
+ *    on success -> length of a UTF-8 character {1,2,3,4}
+ *    on error   -> 0
+ *  @chr:
+ *    the first byte of a UTF-8 character
+ **/
+LEVENDEF int
+leven_charlen (const char chr);
+
+/**
  *  strlen function, returns length of the @s
  *  counts each non-ascii char once
  */
@@ -97,6 +104,30 @@ leven_strlen (const char *s);
 
 /* the implementation */
 #ifdef LEVEN_IMPLEMENTATION
+
+LEVENDEF int
+leven_charlen (const char chr)
+{
+  unsigned char c = chr;
+
+  c >>= 3;
+  if (c == 0x1E)
+    return 4;
+
+  c >>= 1;
+  if (c == 0x0E)
+    return 3;
+
+  c >>= 1;
+  if (c == 0x06)
+    return 2;
+
+  c >>= 2;
+  if (c == 0)
+    return 1; /* ASCII character */
+
+  return 0; /* error, invalid UTF-8 character */
+}
 
 LEVENDEF size_t
 leven_strlen (const char *s)
