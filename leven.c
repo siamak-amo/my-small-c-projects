@@ -305,8 +305,7 @@ main (void)
 
     }
 
-  puts ("");
-  puts ("- Testing strlen ---------------------------------------");
+  puts ("\n- Testing strlen ---------------------------------------");
   TEST_LOOP (strlen_tests, tc)
     {
       len = leven_strlen (tc->s);
@@ -315,8 +314,7 @@ main (void)
       printf ("PASS %lu\n", tc->res);
     }
 
-  puts ("");
-  puts ("- Testing Levenshtein Distance -------------------------");
+  puts ("\n- Testing Levenshtein Distance -------------------------");
   TEST_LOOP (ld_tests, tc)
     {
       LD = leven_H (s1, tc->s, tmp);
