@@ -966,9 +966,8 @@ exec_command (char prev_comm, char comm)
 
       /* invalid command */
     default:
-      if (prev_comm != '#' && // when the line is not commented
-          (prev_comm == '\n' || prev_comm == '\0' ||
-           prev_comm == ' ' || prev_comm == ';'  || opt->state == CMD_MODE))
+      if (prev_comm == '\n' || prev_comm == '\0' ||
+           prev_comm == ' ' || prev_comm == ';'  || opt->state == CMD_MODE)
         fprintf (stderr, "Invalid command -- (%c)\n", comm);
     }
 }
