@@ -246,8 +246,6 @@ leven_stk (const char *restrict s1, const char *restrict s2)
 #include <assert.h>
 #include <string.h>
 
-const char *s1 = "compatible";
-
 struct test_case {
   char *s;
   size_t res;
@@ -302,32 +300,31 @@ const tc_t *ld_tests[] = {
 int
 main (void)
 {
-  size_t LD = 0;
-  size_t len = 0;
   const tc_t *tc;
+  const char *s1 = "compatible";
   LARR_t *tmp = leven_alloc (s1);
 
   puts ("- Testing charlen --------------------------------------");
   TEST_LOOP (charlen_tests, tc)
     {
-      len = leven_charlen (*tc->s);
       printf ("* charlen(\"%s\") = %lu   ", tc->s, len);
-      TEST_H (len, tc->res);
+      size_t char_l = leven_charlen (*tc->s);
+      TEST_H (char_l, tc->res);
     }
 
   puts ("\n- Testing strlen ---------------------------------------");
   TEST_LOOP (strlen_tests, tc)
     {
-      len = leven_strlen (tc->s);
       printf ("* strlen(\"%s\") = %lu    ", tc->s, len);
-      TEST_H (len, tc->res);
+      size_t str_l = leven_strlen (tc->s);
+      TEST_H (str_l, tc->res);
     }
 
   puts ("\n- Testing Levenshtein Distance -------------------------");
   TEST_LOOP (ld_tests, tc)
     {
-      LD = leven_H (s1, tc->s, tmp);
       printf ("* LD(\"%s\", \"%s\") = %lu   ", s1, tc->s, LD);
+      size_t LD = leven_H (s1, tc->s, tmp);
       TEST_H (LD, tc->res);
     }
 
