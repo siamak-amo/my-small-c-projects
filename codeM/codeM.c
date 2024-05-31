@@ -1067,7 +1067,10 @@ main (int argc, char **argv)
           opt->commands++;
           /* interpretation of backslash escapes */
           normalize_command (&prev_comm, &comm);
-          if (exec_command (prev_comm, comm))
+          /* execute the command */
+          exec_command (prev_comm, comm);
+          /* check shall exit or not */
+          if (opt->state == EXITING)
             return 0;
         }
     }
@@ -1091,7 +1094,9 @@ main (int argc, char **argv)
               puts ("");
             return 0;
           }
-        if (exec_command (prev_comm, comm))
+
+        exec_command (prev_comm, comm);
+        if (opt->state == EXITING)
           return 0;
       }
     }
