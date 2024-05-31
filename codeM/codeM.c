@@ -828,20 +828,22 @@ exec_command (char prev_comm, char comm)
   const char *p;
 
   if (opt->commented)
-    switch (comm)
-      {
-      case '\n':
-      case '\r':
-      case '\\':
-      case ' ':
-      case ';':
-        /* end of commented section */
-        opt->commented = false;
-        break;
+    {
+      switch (comm)
+        {
+          /* end of commented section */
+        case '\n':
+        case '\r':
+        case '\\':
+        case ' ':
+        case ';':
+          opt->commented = false;
+          break;
 
-      default:
-        return;
-      }
+        default:
+          return;
+        }
+    }
 
   switch (comm)
     {
