@@ -257,8 +257,8 @@ typedef struct test_case tc_t;
 /* length of array macro */
 #define lenof(arr) (sizeof(arr) / sizeof(*(arr)))
 /* macro to make for loop over tc_t array */
-#define TEST_LOOP(test_cases, tc_ptr)            \
-  for (size_t __i=0; __i < lenof (test_cases) && \
+#define TEST_LOOP(test_cases, tc_ptr)                   \
+  for (size_t __i=0; __i < lenof (test_cases) &&        \
          (tc_ptr=test_cases[__i]); __i++)
 
 /* charlen test cases */
@@ -289,18 +289,19 @@ const tc_t *ld_tests[] = {
 };
 
 #define TEST_H(ret, exp) do {                                   \
-  if (ret == exp) {                                             \
-    fprintf (stdout, "\t PASS\n");                          \
-  } else {                                                      \
-    fprintf (stdout, "\t FAILED expected %lu\n", exp);      \
-    assert ((ret == exp) && "test failure");                    \
-  }} while (0)
+    if (ret == exp) {                                           \
+      fprintf (stdout, "\t PASS\n");                            \
+    } else {                                                    \
+      fprintf (stdout, "\t FAILED expected %lu\n", exp);        \
+      assert ((ret == exp) && "test failure");                  \
+    }} while (0)
 
 
 int
 main (void)
 {
   const tc_t *tc;
+  /* to test leven distance from s1 */
   const char *s1 = "compatible";
   LARR_t *tmp = leven_alloc (s1);
 
