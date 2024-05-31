@@ -254,7 +254,7 @@ struct test_case {
 };
 typedef struct test_case tc_t;
 #define TC(a, b) &(tc_t){.s=a, .res=b}
-#define lenof(arr) (sizeof(arr) / sizeof(*arr))
+#define lenof(arr) (sizeof(arr) / sizeof(*(arr)))
 
 /* charlen test cases */
 const tc_t *charlen_tests[] = {
