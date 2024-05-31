@@ -833,8 +833,9 @@ exec_command (char prev_comm, char comm)
       case '\n':
       case '\r':
       case '\\':
-      case ' ': /* separator */
-      case ';': /* separator */
+      case ' ':
+      case ';':
+        /* end of commented section */
         opt->commented = false;
         break;
 
