@@ -982,7 +982,7 @@ normalize_command (char *restrict prev_comm,
  *    negative on failure and `0` on success
  **/
 static inline int
-pars_options (int argc, char **argv)
+parse_options (int argc, char **argv)
 {
   opt->__progname__ = argv[0];
   for (argc--, argv++; argc > 0; argc--, argv++)
@@ -1043,7 +1043,7 @@ main (int argc, char **argv)
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
   /* parsing cmdline arguments */
-  if (pars_options (argc, argv) < 0)
+  if (parse_options (argc, argv) < 0)
     {
       fprintf (stderr, " -- exiting.\n");
       return 1;
