@@ -296,8 +296,7 @@ main (void)
   LARR_t *tmp = leven_alloc (s1);
 
   puts ("- Testing strlen ---------------------------------------");
-  tc = *charlen_tests;
-  for (size_t i=0; i < lenof(charlen_tests); tc = charlen_tests[++i])
+  TEST_LOOP (charlen_tests, tc)
     {
       len = leven_charlen (*tc->s);
       printf ("* charlen(\"%s\")=%lu   \t...", tc->s, len);
@@ -307,8 +306,7 @@ main (void)
     }
 
   puts ("- Testing strlen ---------------------------------------");
-  tc = *strlen_tests;
-  for (size_t i=0; i < lenof(strlen_tests); tc = strlen_tests[++i])
+  TEST_LOOP (strlen_tests, tc)
     {
       len = leven_strlen (tc->s);
       printf ("* strlen(\"%s\")=%lu   \t...", tc->s, len);
@@ -318,8 +316,7 @@ main (void)
 
   puts ("");
   puts ("- Testing Levenshtein Distance -------------------------");
-  tc = *ld_tests;
-  for (size_t i=0; i < lenof(ld_tests); tc = ld_tests[++i])
+  TEST_LOOP (ld_tests, tc)
     {
       LD = leven_H (s1, tc->s, tmp);
       printf ("* LD(\"%s\", \"%s\")=%lu \t...", s1, tc->s, LD);
