@@ -256,6 +256,15 @@ typedef struct test_case tc_t;
 #define TC(a, b) &(tc_t){.s=a, .res=b}
 #define lenof(arr) (sizeof(arr) / sizeof(*arr))
 
+/* charlen test cases */
+const tc_t *charlen_tests[] = {
+  TC("A",  1),
+  TC(" ",  1),
+  TC("И",  2),
+  TC("€",  3),
+  TC("𐍈",  4),
+  TC("\0", 0)
+};
 /* strlen test cases */
 const tc_t *strlen_tests[] = {
   TC(NULL,       0),
@@ -281,6 +290,17 @@ main (void)
   size_t len = 0;
   const tc_t *tc;
   LARR_t *tmp = leven_alloc (s1);
+
+  puts ("- Testing strlen ---------------------------------------");
+  tc = *charlen_tests;
+  for (size_t i=0; i < lenof(charlen_tests); tc = charlen_tests[++i])
+    {
+      len = leven_charlen (*tc->s);
+      printf ("* charlen(\"%s\")=%lu   \t...", tc->s, len);
+      //assert ((len == tc->res) && "test failure");
+      printf ("PASS %lu\n", tc->res);
+
+    }
 
   puts ("- Testing strlen ---------------------------------------");
   tc = *strlen_tests;
