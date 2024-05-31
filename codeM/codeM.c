@@ -839,11 +839,11 @@ exec_command (char prev_comm, char comm)
         break;
 
       default:
-        break;
+        return;
       }
-  else
-    switch (comm)
-      {
+
+  switch (comm)
+    {
       /* validation */
     case 'v':
       codem_scanf (RD_PROMPT, tmp);
