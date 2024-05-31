@@ -722,6 +722,7 @@ struct Opt {
   bool silent_mode;
   bool prompt;
   bool EOO; /* End Of Options */
+  bool commented; /* section is commented */
   char *commands; /* only in command mode */
   const char *__progname__;
 };
@@ -826,8 +827,23 @@ exec_command (char prev_comm, char comm)
   int res, off;
   const char *p;
 
-  switch (comm)
-    {
+  if (opt->commented)
+    switch (comm)
+      {
+      case '\n':
+      case '\r':
+      case '\\':
+      case ' ': /* separator */
+      case ';': /* separator */
+        opt->commented = false;
+        break;
+
+      default:
+        break;
+      }
+  else
+    switch (comm)
+      {
       /* validation */
     case 'v':
       codem_scanf (RD_PROMPT, tmp);
@@ -935,13 +951,17 @@ exec_command (char prev_comm, char comm)
 
     case 'q':
       opt->state = EXITING;
+      break;
 
     case '\n':
     case '\r':
     case '\\':
     case ' ': /* separator */
     case ';': /* separator */
+      break;
+
     case '#': /* comment */
+      opt->commented = true;
       break;
 
       /* invalid command */
@@ -1039,6 +1059,7 @@ main (int argc, char **argv)
     .prompt = true,
     .commands = NULL,
     .EOO = false,
+    .commented = false,
   };
 
   /* initialize codeM random number generator function */
