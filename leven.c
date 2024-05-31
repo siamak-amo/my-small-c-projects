@@ -303,7 +303,7 @@ main (void)
   const tc_t *tc;
   LARR_t *tmp = leven_alloc (s1);
 
-  puts ("- Testing strlen ---------------------------------------");
+  puts ("- Testing charlen --------------------------------------");
   TEST_LOOP (charlen_tests, tc)
     {
       len = leven_charlen (*tc->s);
