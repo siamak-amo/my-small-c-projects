@@ -56,6 +56,14 @@
 #define leven_alloc(s)                                  \
   (LARR_t*) malloc (leven_strlen (s) * sizeof(LARR_t*))
 
+
+/* leven_charlen function, equivalent macro */
+#define leven_chrlen(chr)                       \
+  ((((chr) & 0xF8) == 0xF0) ? 4 :               \
+   (((chr) & 0xF0) == 0xE0) ? 3 :               \
+   (((chr) & 0xE0) == 0xC0) ? 2 :               \
+   (((chr) & 0x80) == 0x00) ? 1 : 0)
+
 /* smaller string first wrapper macros */
 /* use these macros for the leven imm, stk and H function */
 #define SMALLER(fun, s1, s2, ...)               \
