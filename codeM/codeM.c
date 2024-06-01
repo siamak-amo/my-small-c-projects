@@ -1097,7 +1097,6 @@ parse_cfgions (int argc, char **argv)
               size_t cmd_len = strlen (cfg->commands);
               cfg->commands = realloc (cfg->commands, cmd_len + strlen (*argv));
               strcpy (cfg->commands + cmd_len, *argv);
-              printf("[len %lu, cmd %s]\n", cmd_len, cfg->commands);
             }
         }
     }
@@ -1152,7 +1151,7 @@ main (int argc, char **argv)
     case SHELL_MODE:
       if (!cfg->silent_mode && cfg->prompt)
         {
-          fprintf (stdout, "codeM Shell Mode!");
+          fprintf (stdout, "codeM Shell Mode!\n");
           usage ();
           help ();
         }
