@@ -1095,7 +1095,7 @@ parse_cfgions (int argc, char **argv)
           if (strlen (*argv) != 0)
             {
               size_t cmd_len = strlen (cfg->commands);
-              cfg->commands = realloc (cfg->commands, cmd_len + strlen (*argv));
+              cfg->commands = realloc (cfg->commands, cmd_len + strlen (*argv) + 1);
               strcpy (cfg->commands + cmd_len, *argv);
             }
         }
