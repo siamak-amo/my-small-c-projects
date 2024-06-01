@@ -813,12 +813,18 @@ scan__H (const char *restrict message, char *restrict dest,
         return -1;
       if (0 > sscanf (dest, sscan_regex, dest, &n))
         return -1;
+      if (0 >= n)
+        return -1;
     }
   else
     {
       /* command mode */
       if (0 <= sscanf (cfg->commands, sscan_regex, dest, &n))
-        cfg->commands += n;
+        {
+          if (0 >= n)
+            return 0;
+          cfg->commands += n;
+        }
       else
         n = 0;
     }
