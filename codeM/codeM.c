@@ -1069,7 +1069,7 @@ parse_cfgions (int argc, char **argv)
               break;
 
             default:
-              fprintf (stderr, "Invalid cfgion (%s)", argv[0]);
+              fprintf (stderr, "Invalid option (%s)", argv[0]);
               return -2;
             }
         }
