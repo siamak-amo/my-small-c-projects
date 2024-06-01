@@ -1080,9 +1080,20 @@ parse_cfgions (int argc, char **argv)
 
             case '-':
               cfg->EOO = true;
-              const char *__p = cfg->commands;
-              cfg->commands = malloc (strlen (__p));
-              strcpy (cfg->commands, __p);
+              if (NULL != cfg->commands)
+                {
+                  const char *__p = cfg->commands + 1;
+                  cfg->commands = malloc (strlen (__p));
+                  strcpy (cfg->commands, __p);
+                }
+              else
+                {
+                  cfg->commands = malloc (1);
+                  *cfg->commands = '\0';
+                  cfg->silent_mode = true;
+                  cfg->prompt = false;
+                  cfg->state = CMD_MODE;
+                }
               break;
 
             default:
