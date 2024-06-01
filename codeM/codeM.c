@@ -789,7 +789,7 @@ scan__H (const char *restrict message, char *restrict dest,
 {
   int n;
 
-  if (cfg->state != CMD_MODE)
+  if (cfg->state == SHELL_MODE)
     {
       if (cfg->prompt)
         printf (message);
