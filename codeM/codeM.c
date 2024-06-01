@@ -725,6 +725,7 @@ struct Conf {
   bool commented; /* section is commented */
   char *commands; /* only in command mode */
   const char *__progname__;
+  FILE *out; /* used by fprintf functions */
 };
 static struct Conf *cfg;
 
@@ -1077,6 +1078,7 @@ main (int argc, char **argv)
     .commands = NULL,
     .EOO = false,
     .commented = false,
+    .out = (!isatty (fileno (stdout))) ? stderr : stdout
   };
 
   /* initialize codeM random number generator function */
