@@ -877,7 +877,7 @@ exec_command (char prev_comm, char comm)
     {
       /* validation */
     case 'v':
-      if (0 > codem_scanf (RD_PROMPT, tmp))
+      if (0 >= codem_scanf (RD_PROMPT, tmp))
         break;
       if (0 != codem_norm (tmp))
         assert ( 0 && "Cannot be Normalized" );
@@ -894,7 +894,7 @@ exec_command (char prev_comm, char comm)
 
       /* make a code valid */
     case 'V':
-      if (0 > codem_scanf (RD_PROMPT, tmp))
+      if (0 >= codem_scanf (RD_PROMPT, tmp))
         break;
       if (0 != codem_norm (tmp))
         assert ( 0 && "Cannot be Normalized" );
@@ -938,7 +938,7 @@ exec_command (char prev_comm, char comm)
 
       /* find city name by code */
     case 'F':
-      if (0 > codem_scanf (RD_PROMPT, tmp))
+      if (0 >= codem_scanf (RD_PROMPT, tmp))
         break;
       printd (tmp);
       fprintf (stdout, PRINTLN, codem_cname (tmp));
@@ -960,7 +960,7 @@ exec_command (char prev_comm, char comm)
 
       /* search city code */
     case 's':
-      if (0 > codem_scanf (CN_PROMPT, tmp))
+      if (0 >= codem_scanf (CN_PROMPT, tmp))
         break;
       printd (tmp);
       res = codem_ccode_idx (tmp);
