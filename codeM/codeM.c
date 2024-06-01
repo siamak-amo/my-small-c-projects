@@ -1120,7 +1120,7 @@ main (int argc, char **argv)
   switch (cfg->state)
     {
     case CMD_MODE:
-      while (*cfg->commands != '\0')
+      while (cfg->state == CMD_MODE && *cfg->commands != '\0')
         {
           prev_comm = comm;
           comm = *cfg->commands;
@@ -1129,8 +1129,6 @@ main (int argc, char **argv)
           normalize_command (&prev_comm, &comm);
           /* execute the current command */
           exec_command (prev_comm, comm);
-          if (cfg->state == EXITING)
-            return 0;
         }
       break;
 
@@ -1141,7 +1139,7 @@ main (int argc, char **argv)
           usage ();
           help ();
         }
-      while (1)
+      while (cfg->state == SHELL_MODE)
         {
           if ((cfg->prompt) && ('\0' == comm || '\n' == comm))
             fprintf (stdout, PROMPT);
@@ -1155,8 +1153,6 @@ main (int argc, char **argv)
             }
           /* execute the current command */
           exec_command (prev_comm, comm);
-          if (cfg->state == EXITING)
-            return 0;
         }
       break;
 
