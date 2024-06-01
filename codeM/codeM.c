@@ -1054,18 +1054,13 @@ parse_cfgions (int argc, char **argv)
               break;
 
             case 'c':
+              cfg->silent_mode = true;
+              cfg->prompt = false;
               if (argc == 1)
-                {
-                  fprintf (stderr, "Not enough arguments");
-                  return -1;
-                }
+                cfg->commands = "h";
               else
-                {
-                  cfg->silent_mode = true;
-                  cfg->prompt = false;
-                  cfg->commands = *(argv+1);
-                  cfg->state = CMD_MODE;
-                }
+                cfg->commands = *(argv+1);
+              cfg->state = CMD_MODE;
               break;
 
             case 'h':
