@@ -793,13 +793,20 @@ scan__H (const char *restrict message, char *restrict dest,
     {
       if (cfg->prompt)
         printf (message);
-      scanf (scan_format, dest);
-      sscanf (dest, sscan_regex, dest, &n);
+      if (0 > scanf (scan_format, dest))
+        return -1;
+      if (0 > sscanf (dest, sscan_regex, dest, &n))
+        return -1;
     }
   else
-    sscanf (cfg->commands, sscan_regex, dest, &n);
+    {
+      /* command mode */
+      if (0 <= sscanf (cfg->commands, sscan_regex, dest, &n))
+        cfg->commands += n;
+      else
+        n = 0;
+    }
 
-  cfg->commands += n;
   return n;
 }
 
