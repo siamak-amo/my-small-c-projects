@@ -971,6 +971,7 @@ exec_command (char prev_comm, char comm)
           (prev_comm == '\n' || prev_comm == '\0' ||
            prev_comm == ' '  || prev_comm == ';'))
         fprintf (stderr, "Invalid command -- (%c)\n", comm);
+      break;
     }
 }
 
