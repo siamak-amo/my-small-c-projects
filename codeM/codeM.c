@@ -834,7 +834,6 @@ exec_command (char prev_comm, char comm)
           /* end of commented section */
         case '\n':
         case '\r':
-        case '\\':
         case ' ':
         case ';':
           cfg->commented = false;
@@ -958,7 +957,6 @@ exec_command (char prev_comm, char comm)
 
     case '\n':
     case '\r':
-    case '\\':
     case ' ': /* separator */
     case ';': /* separator */
       break;
