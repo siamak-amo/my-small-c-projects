@@ -742,26 +742,37 @@ usage ()
           cfg->__progname__);
 }
 
+static inline void
+__help_cmd ()
+{
+  fprintf (cfg->out,
+           "Usage: ./codeM -c \"[COMMAND]\"\n"
+           "COMMAND: sequence of shell mode commands\n"
+           "commands could have one argument"
+           " (Ex. `R 1234` ~ `R1234`)\n"
+           "optionally separate commands by space, `;` or newline\n"
+           "use \"H\" command to see more about commands\n\n");
+}
+
+static inline void
+__help_shell ()
+{
+  fprintf (cfg->out,
+           "v: validate                 -  V: make the input valid\n"
+           "c: make randon city code    -  C: make random city name\n"
+           "r: make random codem        -  R: random with prefix\n"
+           "f: find city code by name   -  F: find city name by code\n"
+           "s: search city code         -  S: search city name\n"
+           "q: quit                     -  h: help\n\n");
+}
+
 static void
 help ()
 {
-  FILE *out_file = (!isatty (fileno (stdout))) ? stderr : stdout;
-
   if (cfg->state == CMD_MODE)
-    fprintf (out_file,
-             "Usage: ./codeM -c \"[COMMAND]\"\n"
-             "COMMAND: sequence of shell mode commands\n"
-             "commands could have one argument"
-             " (Ex. `R 1234` ~ `R1234`)\n"
-             "cfgionally separate commands by space or `;`.\n\n");
+    __help_cmd ();
   else
-    fprintf (out_file,
-             "v: validate                 -  V: make the input valid\n"
-             "c: make randon city code    -  C: make random city name\n"
-             "r: make random codem        -  R: random with prefix\n"
-             "f: find city code by name   -  F: find city name by code\n"
-             "s: search city code         -  S: search city name\n"
-             "q: quit                     -  h: help\n\n");
+    __help_shell ();
 }
 
 /* super simple pseudo random number generator */
