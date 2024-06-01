@@ -855,7 +855,8 @@ exec_command (char prev_comm, char comm)
     {
       /* validation */
     case 'v':
-      codem_scanf (RD_PROMPT, tmp);
+      if (0 > codem_scanf (RD_PROMPT, tmp))
+        break;
       if (0 != codem_norm (tmp))
         assert ( 0 && "Cannot be Normalized" );
       printd (tmp);
@@ -871,7 +872,8 @@ exec_command (char prev_comm, char comm)
 
       /* make a code valid */
     case 'V':
-      codem_scanf (RD_PROMPT, tmp);
+      if (0 > codem_scanf (RD_PROMPT, tmp))
+        break;
       if (0 != codem_norm (tmp))
         assert ( 0 && "Cannot be Normalized" );
       printd (tmp);
@@ -901,7 +903,9 @@ exec_command (char prev_comm, char comm)
     case 'R':
       off = codem_scanf (RD_PROMPT, tmp);
       printd (tmp);
-      if (off > CODEM_LEN)
+      if (off < 0)
+        break;
+      else if (off > CODEM_LEN)
         assert (0 && "Invalid Offset of codem_scanf");
       else
         {
@@ -912,14 +916,16 @@ exec_command (char prev_comm, char comm)
 
       /* find city name by code */
     case 'F':
-      codem_scanf (RD_PROMPT, tmp);
+      if (0 > codem_scanf (RD_PROMPT, tmp))
+        break;
       printd (tmp);
       fprintf (stdout, PRINTLN, codem_cname (tmp));
       break;
 
       /* find city code by city name */
     case 'f':
-      cname_scanf (CN_PROMPT, name_tmp);
+      if (0 > cname_scanf (CN_PROMPT, name_tmp))
+        break;
       res = codem_cname_search (name_tmp);
       printd (name_tmp);
       p = codem_ccode (res);
@@ -932,7 +938,8 @@ exec_command (char prev_comm, char comm)
 
       /* search city code */
     case 's':
-      codem_scanf (CN_PROMPT, tmp);
+      if (0 > codem_scanf (CN_PROMPT, tmp))
+        break;
       printd (tmp);
       res = codem_ccode_idx (tmp);
       if (res < 0)
@@ -947,7 +954,8 @@ exec_command (char prev_comm, char comm)
 
       /* search city name */
     case 'S':
-      cname_scanf (CN_PROMPT, name_tmp);
+      if (0 > cname_scanf (CN_PROMPT, name_tmp))
+        break;
       printd (name_tmp);
       res = codem_cname_search (name_tmp);
       p = codem_cname_byidx (res);
