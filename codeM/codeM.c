@@ -978,6 +978,10 @@ exec_command (char prev_comm, char comm)
       help ();
       break;
 
+    case 'H':
+      __help_shell ();
+      break;
+
     case 'q':
       cfg->state = EXITING;
       break;
