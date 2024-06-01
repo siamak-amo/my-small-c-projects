@@ -1078,9 +1078,26 @@ parse_cfgions (int argc, char **argv)
               cfg->state = EXITING; // exit normally
               break;
 
+            case '-':
+              cfg->EOO = true;
+              const char *__p = cfg->commands;
+              cfg->commands = malloc (strlen (__p));
+              strcpy (cfg->commands, __p);
+              break;
+
             default:
               fprintf (stderr, "Invalid option (%s)", argv[0]);
               return -2;
+            }
+        }
+      else if (cfg->EOO)
+        {
+          if (strlen (*argv) != 0)
+            {
+              size_t cmd_len = strlen (cfg->commands);
+              cfg->commands = realloc (cfg->commands, cmd_len + strlen (*argv));
+              strcpy (cfg->commands + cmd_len, *argv);
+              printf("[len %lu, cmd %s]\n", cmd_len, cfg->commands);
             }
         }
     }
