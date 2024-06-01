@@ -1082,8 +1082,8 @@ parse_cfgions (int argc, char **argv)
               cfg->EOO = true;
               if (NULL != cfg->commands)
                 {
-                  const char *__p = cfg->commands + 1;
-                  cfg->commands = malloc (strlen (__p));
+                  const char *__p = cfg->commands ;
+                  cfg->commands = malloc (strlen (__p) + 1);
                   strcpy (cfg->commands, __p);
                 }
               else
