@@ -1255,7 +1255,8 @@ main (int argc, char **argv)
             {
               if (cfg->prompt)
                 fprintf (stdout, "\n");
-              return 0;
+              cfg->state = EXITING;
+              continue;
             }
           /* interpretation of backslash escapes */
           normalize_command (&prev_comm, &comm);
