@@ -992,6 +992,10 @@ exec_command (char prev_comm, char comm)
       __help_shell ();
       break;
 
+    case 'u':
+      usage ();
+      break;
+
     case 'q':
       cfg->state = EXITING;
       break;
