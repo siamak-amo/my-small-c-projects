@@ -998,6 +998,7 @@ exec_command (char prev_comm, char comm)
 
     case '\n':
     case '\r':
+    case '\\': /* handled by the normalize_command function */
     case ' ': /* separator */
     case ';': /* separator */
       break;
