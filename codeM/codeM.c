@@ -969,21 +969,33 @@ exec_command (char prev_comm, char comm)
       else
         {
           codem_rands (tmp, off);
-          fprintf (stdout, PRINTLN, tmp);
+          last_out = tmp;
+          fprintf (stdout, PRINTLN, last_out);
         }
       break;
 
       /* find city name by code */
     case 'F':
-      if (0 >= codem_scanf (RD_PROMPT, tmp))
+      if (PIPE == prev_comm)
+        {
+          if (0 > lastout_scanf (tmp, CODEM_LEN))
+            break;
+        }
+      else if (0 > codem_scanf (RD_PROMPT, tmp))
         break;
       printd (tmp);
-      fprintf (stdout, PRINTLN, codem_cname (tmp));
+      last_out = codem_cname (tmp);
+      fprintf (stdout, PRINTLN, last_out);
       break;
 
       /* find city code by city name */
     case 'f':
-      if (0 > cname_scanf (CN_PROMPT, name_tmp))
+      if (PIPE == prev_comm)
+        {
+          if (0 > lastout_scanf (name_tmp, CNAME_MAX_LEN))
+            break;
+        }
+      else if (0 > cname_scanf (CN_PROMPT, name_tmp))
         break;
       res = codem_cname_search (name_tmp);
       printd (name_tmp);
