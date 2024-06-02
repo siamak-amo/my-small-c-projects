@@ -1034,7 +1034,7 @@ normalize_command (char *restrict prev_comm,
           break;
 
         default:
-          *comm = '\0';
+          *comm = ' ';
           break;
         }
     }
