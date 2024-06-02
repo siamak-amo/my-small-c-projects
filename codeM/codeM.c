@@ -1166,6 +1166,8 @@ main (int argc, char **argv)
                 fprintf (stdout, "\n");
               return 0;
             }
+          /* interpretation of backslash escapes */
+          normalize_command (&prev_comm, &comm);
           /* execute the current command */
           exec_command (prev_comm, comm);
         }
