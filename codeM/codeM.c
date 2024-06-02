@@ -1054,6 +1054,25 @@ exec_command (char prev_comm, char comm)
       fprintf (stdout, PRINTLN, last_out);
       break;
 
+    case 'e':
+      if (PIPE == prev_comm)
+        fprintf (stdout, PRINTLN, last_out);
+      else
+        fprintf (stderr, "only use this command with pipe\n");
+      break;
+
+    case 'E':
+      if (PIPE == prev_comm)
+        {
+          fprintf (stderr, "do not use this command with pipe\n");
+          break;
+        }
+      else if (0 > cname_scanf ("enter value: ", name_tmp))
+        break;
+      printd (tmp);
+      last_out = name_tmp;
+      break;
+
     case 'h':
       help ();
       break;
