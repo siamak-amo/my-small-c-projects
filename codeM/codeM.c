@@ -1093,19 +1093,19 @@ exec_command (char prev_comm, char comm)
  *  normalize command
  *  this function sets both of comm and prev_comm to space
  *  character, when prev_comm is `\`
+ *  also handles space characters after pipe command (passes the pipe)
  **/
 static inline void
 normalize_command (char *restrict prev_comm,
                    char *restrict comm)
 {
-  if ('\\' == *prev_comm)
+  if ('\\' == *prev_comm) /* escape */
     {
       *prev_comm = ' ';
       *comm = ' ';
     }
-  if (' ' == *comm && '|' == *prev_comm)
+  if (' ' == *comm && '|' == *prev_comm) /* pipe */
     {
-      /* pass `|` trough space */
       *comm = '|';
       *prev_comm = ' ';
     }
