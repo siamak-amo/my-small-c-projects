@@ -1024,20 +1024,7 @@ normalize_command (char *restrict prev_comm,
   if ('\\' == *prev_comm && '\\' != *comm)
     {
       *prev_comm = ' ';
-      switch (*comm)
-        {
-        case 'n':
-          *comm = '\n';
-          break;
-
-        case 'r':
-          *comm = '\r';
-          break;
-
-        default:
-          *comm = ' ';
-          break;
-        }
+      *comm = ' ';
     }
 }
 
