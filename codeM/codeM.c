@@ -696,7 +696,7 @@ main (void)
 #define CNAME_MAX_LEN 64 /* BUF_LEN must be MAX_LEN + 1 */
 
 /* normalize character to prevent printing non-ascii characters */
-#define NORMCHAR(c) ((c>0) ? ((c!='\n' && c!='\r') ? c : ' ') : '!')
+#define NORMCHAR(c) (((c) >= 0x20 && (c) <= 0x7E) ? (c) : '!')
 /* to string macros (this will not evaluate the input) */
 #define __TOSTR__(x) #x
 #define STR(x) __TOSTR__(x)
