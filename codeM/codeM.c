@@ -726,6 +726,7 @@ struct Conf {
   bool EOO; /* End Of Options */
   bool commented; /* section is commented */
   char *commands; /* only in command mode */
+  char *commandsH; /* points to head of the .commands */
   const char *__progname__;
   FILE *out; /* used by fprintf functions */
 };
@@ -1262,7 +1263,18 @@ main (int argc, char **argv)
 
     case EXITING:
     default:
-      return 0;
+      break;
+    }
+
+  /**
+   *  cfg->commandsH != NULL indicates that,
+   *  the cfg->commands has been allocated using
+   *  malloc, otherwise it's a pointer to some argv
+   *  and should not be freed
+   **/
+  if (NULL != cfg->commandsH)
+    {
+      free (cfg->commandsH);
     }
   return 0;
 }
