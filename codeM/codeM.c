@@ -765,7 +765,8 @@ __help_shell ()
            "r: make random codem        -  R: random with prefix\n"
            "f: find city code by name   -  F: find city name by code\n"
            "s: search city code         -  S: search city name\n"
-           "q: quit                     -  h: help\n\n");
+           "q: quit                     -  h: help\n"
+           "to give the previous output to the next command use `|`\n\n");
 }
 
 static void
