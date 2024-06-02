@@ -1156,8 +1156,12 @@ main (int argc, char **argv)
         }
       while (cfg->state == SHELL_MODE)
         {
-          if ((cfg->prompt) && ('\0' == comm || '\n' == comm))
-            fprintf (stdout, PROMPT);
+          /* print the prompt */
+          if (cfg->prompt)
+            {
+              if ('\0' == comm || '\n' == comm)
+                fprintf (stdout, PROMPT);
+            }
           /* read new command until EOF */
           prev_comm = comm;
           if (EOF == scanf ("%c", &comm))
