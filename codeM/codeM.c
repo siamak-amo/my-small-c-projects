@@ -1156,6 +1156,7 @@ parse_cfgions (int argc, char **argv)
                 {
                   const char *__p = cfg->commands ;
                   cfg->commands = malloc (strlen (__p) + 1);
+                  cfg->commandsH = cfg->commands;
                   strcpy (cfg->commands, __p);
                 }
               else
@@ -1179,6 +1180,7 @@ parse_cfgions (int argc, char **argv)
             {
               size_t cmd_len = strlen (cfg->commands);
               cfg->commands = realloc (cfg->commands, cmd_len + strlen (*argv) + 1);
+              cfg->commandsH = cfg->commands;
               strcpy (cfg->commands + cmd_len, *argv);
             }
         }
@@ -1195,6 +1197,7 @@ main (int argc, char **argv)
     .state = SHELL_MODE,
     .prompt = true,
     .commands = NULL,
+    .commandsH = NULL,
     .EOO = false,
     .commented = false,
     .out = (!isatty (fileno (stdout))) ? stderr : stdout
