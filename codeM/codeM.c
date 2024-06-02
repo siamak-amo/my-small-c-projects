@@ -862,8 +862,10 @@ lastout_scanf (char *dest, size_t len)
     }
   else
     {
-      const char *p = stpncpy (dest, last_out, len);
-      return (int)(p - dest);
+      size_t last_len = strlen (last_out);
+      len = MIN (len, last_len);
+      memcpy (dest, last_out, len);
+      return (int)len;
     }
 }
 
