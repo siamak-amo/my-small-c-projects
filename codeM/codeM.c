@@ -897,7 +897,7 @@ exec_command (char prev_comm, char comm)
     case 'v':
       if (PIPE == prev_comm)
         {
-          if (0 > lastout_scanf (tmp, CODEM_LEN))
+          if (0 >= lastout_scanf (tmp, CODEM_LEN))
             break;
         }
       else if (0 > codem_scanf (RD_PROMPT, tmp))
@@ -919,7 +919,7 @@ exec_command (char prev_comm, char comm)
     case 'V':
       if (PIPE == prev_comm)
         {
-          if (0 > lastout_scanf (tmp, CODEM_LEN))
+          if (0 >= lastout_scanf (tmp, CODEM_LEN))
             break;
         }
       else if (0 > codem_scanf (RD_PROMPT, tmp))
@@ -979,7 +979,7 @@ exec_command (char prev_comm, char comm)
     case 'F':
       if (PIPE == prev_comm)
         {
-          if (0 > lastout_scanf (tmp, CODEM_LEN))
+          if (0 >= lastout_scanf (tmp, CODEM_LEN))
             break;
         }
       else if (0 > codem_scanf (RD_PROMPT, tmp))
@@ -993,7 +993,7 @@ exec_command (char prev_comm, char comm)
     case 'f':
       if (PIPE == prev_comm)
         {
-          if (0 > lastout_scanf (name_tmp, CNAME_MAX_LEN))
+          if (0 >= lastout_scanf (name_tmp, CNAME_MAX_LEN))
             break;
         }
       else if (0 > cname_scanf (CN_PROMPT, name_tmp))
@@ -1016,7 +1016,7 @@ exec_command (char prev_comm, char comm)
     case 's':
       if (PIPE == prev_comm)
         {
-          if (0 > lastout_scanf (name_tmp, CNAME_MAX_LEN))
+          if (0 >= lastout_scanf (name_tmp, CNAME_MAX_LEN))
             break;
         }
       else if (0 > codem_scanf (CN_PROMPT, tmp))
@@ -1039,7 +1039,7 @@ exec_command (char prev_comm, char comm)
     case 'S':
       if (PIPE == prev_comm)
         {
-          if (0 > lastout_scanf (name_tmp, CNAME_MAX_LEN))
+          if (0 >= lastout_scanf (name_tmp, CNAME_MAX_LEN))
             break;
         }
       else if (0 > cname_scanf (CN_PROMPT, name_tmp))
