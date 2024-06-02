@@ -894,53 +894,73 @@ exec_command (char prev_comm, char comm)
     {
       /* validation */
     case 'v':
-      if (0 >= codem_scanf (RD_PROMPT, tmp))
+      if (PIPE == prev_comm)
+        {
+          if (0 > lastout_scanf (tmp, CODEM_LEN))
+            break;
+        }
+      else if (0 > codem_scanf (RD_PROMPT, tmp))
         break;
       if (0 != codem_norm (tmp))
         assert ( 0 && "Cannot be Normalized" );
       printd (tmp);
       if (codem_isvalidn (tmp))
         {
-          fprintf (stdout, PRINTLN, "OK.");
+          fprintf (stdout, PRINTLN, (last_out = "OK."));
           if (!codem_ccode_isvalid (tmp))
             fprintf (stdout, PRINTLN, "city code was not found.");
         }
       else
-        fprintf (stdout, PRINTLN, "Not Valid.");
+        fprintf (stdout, PRINTLN, (last_out = "Not Valid."));
       break;
 
       /* make a code valid */
     case 'V':
-      if (0 >= codem_scanf (RD_PROMPT, tmp))
+      if (PIPE == prev_comm)
+        {
+          if (0 > lastout_scanf (tmp, CODEM_LEN))
+            break;
+        }
+      else if (0 > codem_scanf (RD_PROMPT, tmp))
         break;
       if (0 != codem_norm (tmp))
         assert ( 0 && "Cannot be Normalized" );
       printd (tmp);
       codem_set_ctrl_digit (tmp);
-      fprintf (stdout, PRINTLN, tmp);
+      last_out = tmp;
+      fprintf (stdout, PRINTLN, last_out);
       break;
 
       /* make a random city code */
     case 'c':
       codem_rand_ccode (tmp);
-      printf ("%.3s\n", tmp);
+      last_out = tmp;
+      printf ("%.3s\n", last_out);
       break;
 
       /* make a random city name */
     case 'C':
       codem_rand_ccode (tmp);
-      fprintf (stdout, PRINTLN, codem_cname (tmp));
+      last_out = codem_cname (tmp);
+      fprintf (stdout, PRINTLN, last_out);
       break;
 
       /* make a random code */
     case 'r':
       codem_rand2 (tmp);
-      fprintf (stdout, PRINTLN, tmp);
+      last_out = tmp;
+      fprintf (stdout, PRINTLN, last_out);
       break;
 
       /* make a random code by prefix */
     case 'R':
-      off = codem_scanf (RD_PROMPT, tmp);
+      if (PIPE == prev_comm)
+        {
+          if (0 > (off = lastout_scanf (tmp, CODEM_LEN)))
+            break;
+        }
+      else
+        off = codem_scanf (RD_PROMPT, tmp);
       printd (tmp);
       if (off < 0)
         break;
