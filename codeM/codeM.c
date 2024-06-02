@@ -703,10 +703,12 @@ main (void)
 
 static const char *PRINTLN = "%s\n"; /* println format */
 static const char *PROMPT = "> ";
+static const char PIPE = '|';
 static const char *RD_PROMPT = "enter code: ";
 static const char *CN_PROMPT = "enter name: ";
 static char tmp[CODEM_BUF_LEN]; /* codem temporary buffer */
 static char name_tmp[CNAME_BUF_LEN]; /* cname temporary buffer */
+static const char *last_out; /* the last thing which was printed */
 
 /* a noise for random number generator */
 static size_t noise = 0;
@@ -1005,6 +1007,7 @@ exec_command (char prev_comm, char comm)
     case '\\': /* handled by the normalize_command function */
     case ' ': /* separator */
     case ';': /* separator */
+    case '|': /* use the output of the previous command */
       break;
 
     case '#': /* comment */
@@ -1034,6 +1037,12 @@ normalize_command (char *restrict prev_comm,
     {
       *prev_comm = ' ';
       *comm = ' ';
+    }
+  if (' ' == *comm && '|' == *prev_comm)
+    {
+      /* pass `|` trough space */
+      *comm = '|';
+      *prev_comm = ' ';
     }
 }
 
