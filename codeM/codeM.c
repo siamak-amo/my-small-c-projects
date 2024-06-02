@@ -1021,11 +1021,16 @@ exec_command (char prev_comm, char comm)
     }
 }
 
+/**
+ *  normalize command
+ *  this function sets both of comm and prev_comm to space
+ *  character, when prev_comm is `\`
+ **/
 static inline void
 normalize_command (char *restrict prev_comm,
                    char *restrict comm)
 {
-  if ('\\' == *prev_comm && '\\' != *comm)
+  if ('\\' == *prev_comm)
     {
       *prev_comm = ' ';
       *comm = ' ';
