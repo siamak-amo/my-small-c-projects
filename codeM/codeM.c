@@ -732,8 +732,8 @@ static struct Conf *cfg;
 static void
 usage ()
 {
-  printf ("Usage: %s [CFGIONS] [COMMANDS]\n"
-          "CFGIONS:\n"
+  printf ("Usage: %s [OPTIONS] [COMMANDS]\n"
+          "OPTIONS:\n"
           "   -s:    silent mode\n"
           "   -S:    disable the prompt (when using pipe)\n"
           "   -c:    pass COMMANDS to be executed,\n"
