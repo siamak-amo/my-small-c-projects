@@ -1003,13 +1003,22 @@ exec_command (char prev_comm, char comm)
       if (res < 0)
           fprintf (stdout, PRINTLN, p);
       else
-        for (; *p != 0; p += CC_LEN)
-          printf ("%.3s\n", p);
+        {
+          for (; *p != 0; p += CC_LEN)
+            printf ("%.3s\n", p);
+          /* set the last_out to the last code */
+          last_out = p - CC_LEN;
+        }
       break;
 
       /* search city code */
     case 's':
-      if (0 >= codem_scanf (CN_PROMPT, tmp))
+      if (PIPE == prev_comm)
+        {
+          if (0 > lastout_scanf (name_tmp, CNAME_MAX_LEN))
+            break;
+        }
+      else if (0 > codem_scanf (CN_PROMPT, tmp))
         break;
       printd (tmp);
       res = codem_ccode_idx (tmp);
@@ -1020,17 +1029,25 @@ exec_command (char prev_comm, char comm)
           p = codem_ccode (res);
           for (; *p != 0; p += CC_LEN)
             printf ("%.3s\n", p);
+          /* set the last_out to the last code */
+          last_out = p - CC_LEN;
         }
       break;
 
       /* search city name */
     case 'S':
-      if (0 > cname_scanf (CN_PROMPT, name_tmp))
+      if (PIPE == prev_comm)
+        {
+          if (0 > lastout_scanf (name_tmp, CNAME_MAX_LEN))
+            break;
+        }
+      else if (0 > cname_scanf (CN_PROMPT, name_tmp))
         break;
       printd (name_tmp);
       res = codem_cname_search (name_tmp);
       p = codem_cname_byidx (res);
-      fprintf (stdout, PRINTLN, p);
+      last_out = p;
+      fprintf (stdout, PRINTLN, last_out);
       break;
 
     case 'h':
