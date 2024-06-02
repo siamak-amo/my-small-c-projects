@@ -850,6 +850,21 @@ cname_scanf (const char *message, char dest[CNAME_BUF_LEN])
                   " %"STR(CNAME_MAX_LEN)"[^;#]%n");
 }
 
+static int
+lastout_scanf (char *dest, size_t len)
+{
+  if (NULL == last_out)
+    {
+      *dest = '\0';
+      return 0;
+    }
+  else
+    {
+      const char *p = stpncpy (dest, last_out, len);
+      return (int)(p - dest);
+    }
+}
+
 static void
 exec_command (char prev_comm, char comm)
 {
