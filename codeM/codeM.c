@@ -1149,10 +1149,23 @@ exec_command (char prev_comm, char comm)
 
       /* invalid command */
     default:
-      if (cfg->state == CMD_MODE || // always print invalid command in command mode
-          (prev_comm == '\n' || prev_comm == '\0' ||
-           prev_comm == ' '  || prev_comm == ';'))
-        fprintf (stderr, "Invalid command -- (%c)\n", comm);
+      switch (prev_comm)
+        {
+        case '\n':
+        case '\0':
+        case ' ':
+        case ';':
+        case '|':
+        InvalidCommand:
+          fprintf (stderr, "Invalid command -- (%c)\n", comm);
+          break;
+
+        default:
+          if (cfg->state == CMD_MODE)
+            goto InvalidCommand;
+          else
+            break;
+        }
       break;
     }
 }
