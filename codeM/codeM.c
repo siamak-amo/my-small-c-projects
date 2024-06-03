@@ -166,6 +166,9 @@ RandFunction codem_srand = NULL;
  */
 #define city_rand_idx__H() (int)((codem_srand ()) % CITY_COUNT)
 
+
+/* function definitions */
+
 /**
  *  return the correct control digit of codem
  *  ignore the current one
@@ -192,9 +195,9 @@ CODEMDEF void codem_memnum (char *src);
 /**
  *  normalize @src and write the result on @dest
  *  normalized codem has exactly 10 digits
- *  it right shifts the @src until it become 10 digits
- *  also, using memnumcpy function, makes the @dest numeric
- *  @return: -1 when not possible
+ *  @dest will be made by adding enough '0' to the left of
+ *  @src and making it numeric using the memnumcpy function
+ *  @return:  -1 on failure, 0 on success
  */
 CODEMDEF int
 codem_normcpy (char *restrict dest, const char *restrict src);
