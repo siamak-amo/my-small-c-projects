@@ -176,6 +176,20 @@ CODEMDEF int codem_find_ctrl_digit (const char *codem);
 CODEMDEF void codem_set_ctrl_digit (char *codem);
 
 /**
+ *  codem memcpy, only copies numeric characters
+ *  and replaces other characters with '0'
+ *  @return:  @dest
+ */
+CODEMDEF void *
+codem_memnumcpy (char *restrict dest, const char *restrict src);
+
+/**
+ *  makes the @src buffer numeric
+ *  length of @src is not important
+ */
+CODEMDEF void codem_memnum (char *src);
+
+/**
  *  normalize @src and write the result on @dest
  *  normalized codem has exactly 10 digits
  *  return -1 when not possible
