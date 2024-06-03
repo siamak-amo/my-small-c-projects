@@ -184,13 +184,12 @@ CODEMDEF void codem_set_ctrl_digit (char *codem);
  *  @return:  @dest
  */
 CODEMDEF void *
-codem_memnumcpy (char *restrict dest, const char *restrict src);
+codem_memnumcpy (char *restrict dest, const char *restrict src, size_t n);
 
 /**
  *  makes the @src buffer numeric
- *  length of @src is not important
  */
-CODEMDEF void codem_memnum (char *src);
+CODEMDEF void codem_memnum (char *src, size_t n);
 
 /**
  *  normalize @src and write the result on @dest
