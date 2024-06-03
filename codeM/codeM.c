@@ -318,7 +318,7 @@ codem_normcpy (char *restrict dest, const char *restrict src)
     return -1; // error
   
   memset (dest, '0', CODEM_LEN - l);
-  memcpy (dest + (CODEM_LEN - l), src, l);
+  codem_memnumcpy (dest + (CODEM_LEN - l), src);
   /* make dest null-terminated */
   dest[CODEM_LEN] = '\0';
   return 0;
