@@ -194,7 +194,8 @@ CODEMDEF void codem_memnum (char *src);
  *  normalized codem has exactly 10 digits
  *  return -1 when not possible
  */
-CODEMDEF int codem_normcpy (char *dest, const char *src);
+CODEMDEF int
+codem_normcpy (char *restrict dest, const char *restrict src);
 
 /* make @src normalized */
 CODEMDEF int codem_norm (char *src);
@@ -309,7 +310,7 @@ codem_memnum (char *src)
 }
 
 CODEMDEF int
-codem_normcpy (char *dest, const char *src)
+codem_normcpy (char *restrict dest, const char *restrict src)
 {
   size_t l = strlen (src);
 
