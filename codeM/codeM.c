@@ -286,30 +286,27 @@ codem_set_ctrl_digit (char *codem)
 }
 
 CODEMDEF void *
-codem_memnumcpy (char *restrict dest, const char *restrict src)
+codem_memnumcpy (char *restrict dest,
+                 const char *restrict src, size_t n)
 {
-  while ('\0' != *src)
+  for (size_t i = 0; i < n; ++i)
     {
       if (isanumber (*src))
-        *dest = *src;
+        dest[i] = src[i];
       else
-        *dest = '0';
-
-      src++;
-      dest++;
+        dest[i] = '0';
     }
 
   return dest;
 }
 
 CODEMDEF void
-codem_memnum (char *src)
+codem_memnum (char *src, size_t n)
 {
-  while ('\0' != *src)
+  for (size_t i = 0; i < n; ++i)
     {
-      if (!isanumber (*src))
-        *src = '0';
-      src++;
+      if (!isanumber (src[i]))
+        src[i] = '0';
     }
 }
 
