@@ -719,7 +719,7 @@ main (void)
 /*-----------------*/
 #ifdef CODEM_CLI
 #ifdef CODEM_TEST
-#  error "CLI and test programs cannot be made together."
+#  error "cannot make the test and the CLI programs together"
 #else
 #include <stdio.h>
 #include <stdbool.h>
@@ -957,7 +957,7 @@ exec_command (char prev_comm, char comm)
       else if (0 > codem_scanf (RD_PROMPT, tmp))
         break;
       if (0 != codem_norm (tmp))
-        assert ( 0 && "Cannot be Normalized" );
+        assert (0 && "Could not normalize");
       printd (tmp);
       if (codem_isvalidn (tmp))
         {
@@ -979,7 +979,7 @@ exec_command (char prev_comm, char comm)
       else if (0 > codem_scanf (RD_PROMPT, tmp))
         break;
       if (0 != codem_norm (tmp))
-        assert ( 0 && "Cannot be Normalized" );
+        assert (0 && "Could not normalize");
       printd (tmp);
       codem_set_ctrl_digit (tmp);
       last_out = tmp;
@@ -1020,7 +1020,7 @@ exec_command (char prev_comm, char comm)
       if (off < 0)
         break;
       else if (off > CODEM_LEN)
-        assert (0 && "Invalid Offset of codem_scanf");
+        assert (0 && "Invalid offset of codem_scanf");
       else
         {
           codem_rands (tmp, off);
