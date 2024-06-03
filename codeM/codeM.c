@@ -963,12 +963,12 @@ exec_command (char prev_comm, char comm)
       printd (tmp);
       if (codem_isvalidn (tmp))
         {
-          fprintf (stdout, PRINTLN, (last_out = "OK."));
+          fprintln (stdout, "%s", (last_out = "OK."));
           if (!codem_ccode_isvalid (tmp))
-            fprintf (stdout, PRINTLN, "city code was not found.");
+            fprintln (stdout, "city code was not found.");
         }
       else
-        fprintf (stdout, PRINTLN, (last_out = "Not Valid."));
+        fprintln (stdout, "%s", (last_out = "Not Valid."));
       break;
 
       /* make a code valid */
@@ -985,7 +985,7 @@ exec_command (char prev_comm, char comm)
       printd (tmp);
       codem_set_ctrl_digit (tmp);
       last_out = tmp;
-      fprintf (stdout, PRINTLN, last_out);
+      fprintln (stdout, "%s", last_out);
       break;
 
       /* make a random city code */
@@ -999,14 +999,14 @@ exec_command (char prev_comm, char comm)
     case 'C':
       codem_rand_ccode (tmp);
       last_out = codem_cname (tmp);
-      fprintf (stdout, PRINTLN, last_out);
+      fprintln (stdout, "%s", last_out);
       break;
 
       /* make a random code */
     case 'r':
       codem_rand2 (tmp);
       last_out = tmp;
-      fprintf (stdout, PRINTLN, last_out);
+      fprintln (stdout, "%s", last_out);
       break;
 
       /* make a random code by prefix */
@@ -1027,7 +1027,7 @@ exec_command (char prev_comm, char comm)
         {
           codem_rands (tmp, off);
           last_out = tmp;
-          fprintf (stdout, PRINTLN, last_out);
+          fprintln (stdout, "%s", last_out);
         }
       break;
 
@@ -1042,7 +1042,7 @@ exec_command (char prev_comm, char comm)
         break;
       printd (tmp);
       last_out = codem_cname (tmp);
-      fprintf (stdout, PRINTLN, last_out);
+      fprintln (stdout, "%s", last_out);
       break;
 
       /* find city code by city name */
@@ -1058,7 +1058,7 @@ exec_command (char prev_comm, char comm)
       printd (name_tmp);
       p = codem_ccode (res);
       if (res < 0)
-          fprintf (stdout, PRINTLN, p);
+          fprintln (stdout, "%s", p);
       else
         {
           for (; *p != 0; p += CC_LEN)
@@ -1080,7 +1080,7 @@ exec_command (char prev_comm, char comm)
       printd (tmp);
       res = codem_ccode_idx (tmp);
       if (res < 0)
-        fprintf (stdout, PRINTLN, CCERR_NOT_FOUND);
+        fprintln (stdout, "%s", CCERR_NOT_FOUND);
       else
         {
           p = codem_ccode (res);
@@ -1104,20 +1104,20 @@ exec_command (char prev_comm, char comm)
       res = codem_cname_search (name_tmp);
       p = codem_cname_byidx (res);
       last_out = p;
-      fprintf (stdout, PRINTLN, last_out);
+      fprintln (stdout, "%s", last_out);
       break;
 
     case 'e':
       if (PIPE == prev_comm)
-        fprintf (stdout, PRINTLN, last_out);
+        fprintln (stdout, "%s", last_out);
       else
-        fprintf (stderr, "only use this command with pipe\n");
+        fprintln (stderr, "only use this command with pipe");
       break;
 
     case 'E':
       if (PIPE == prev_comm)
         {
-          fprintf (stderr, "do not use this command with pipe\n");
+          fprintln (stderr, "do not use this command with pipe");
           break;
         }
       else if (0 > cname_scanf ("enter value: ", name_tmp))
@@ -1164,7 +1164,7 @@ exec_command (char prev_comm, char comm)
         case ';':
         case '|':
         InvalidCommand:
-          fprintf (stderr, "Invalid command -- (%c)\n", comm);
+          fprintln (stderr, "Invalid command -- (%c)", comm);
           break;
 
         default:
