@@ -748,8 +748,10 @@ main (void)
 /* to string macros (this will not evaluate the input) */
 #define __TOSTR__(x) #x
 #define STR(x) __TOSTR__(x)
+/* fprintf on newline */
+#define fprintln(file, format, ...)            \
+  fprintf (file, format"\n", ##__VA_ARGS__)
 
-static const char *PRINTLN = "%s\n"; /* println format */
 static const char *PROMPT = "> ";
 static const char PIPE = '|';
 static const char *RD_PROMPT = "enter code: ";
