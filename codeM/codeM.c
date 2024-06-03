@@ -266,6 +266,34 @@ codem_set_ctrl_digit (char *codem)
   codem[CTRL_DIGIT_IDX] = num2char (res);
 }
 
+CODEMDEF void *
+codem_memnumcpy (char *restrict dest, const char *restrict src)
+{
+  while ('\0' != *src)
+    {
+      if (isanumber (*src))
+        *dest = *src;
+      else
+        *dest = '0';
+
+      src++;
+      dest++;
+    }
+
+  return dest;
+}
+
+CODEMDEF void
+codem_memnum (char *src)
+{
+  while ('\0' != *src)
+    {
+      if (!isanumber (*src))
+        *src = '0';
+      src++;
+    }
+}
+
 CODEMDEF int
 codem_normcpy (char *dest, const char *src)
 {
