@@ -192,7 +192,9 @@ CODEMDEF void codem_memnum (char *src);
 /**
  *  normalize @src and write the result on @dest
  *  normalized codem has exactly 10 digits
- *  return -1 when not possible
+ *  it right shifts the @src until it become 10 digits
+ *  also, using memnumcpy function, makes the @dest numeric
+ *  @return: -1 when not possible
  */
 CODEMDEF int
 codem_normcpy (char *restrict dest, const char *restrict src);
@@ -203,7 +205,7 @@ CODEMDEF int codem_norm (char *src);
 /**
  *  validate the control digit of @codem
  *  after making it normalized,
- *  return 0 on normalization and validation failure
+ *  @return: 0 on normalization and validation failure
  */
 CODEMDEF int codem_isvalid (const char *codem);
 
@@ -232,7 +234,7 @@ CODEMDEF void codem_rands (char *codem, int offset);
 CODEMDEF void codem_rand_ccode (char *dest);
 
 /**
- *  return the index of @codem[0:3] in city_code
+ *  @return: the index of @codem[0:3] in city_code
  *  only use the `codem_cname_byidx` function
  *  to get the name of the city
  */
