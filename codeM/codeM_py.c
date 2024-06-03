@@ -235,7 +235,7 @@ py_rand_suffix (PyObject *self, PyObject *args)
   PyObject *result;
   char *result_ptr = py_mkstrbuf_H (result, CODEM_LEN, suffix);
 
-  codem_memnum (result_ptr);
+  codem_memnum (result_ptr, CODEM_LEN);
   codem_rands (result_ptr, offset);
 
   return result;
