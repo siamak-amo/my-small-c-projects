@@ -267,7 +267,7 @@ CODEMDEF int
 codem_isnumeric (const char *codem)
 {
   for (int idx = 0; idx < CODEM_LEN; ++idx)
-    if (!Isdigit (codem[idx]))
+    if (!isdigit (codem[idx]))
       return 0;
   return 1;
 }
@@ -296,7 +296,7 @@ codem_memnumcpy (char *restrict dest,
 {
   for (size_t i = 0; i < n; ++i)
     {
-      if (Isdigit (*src))
+      if (isdigit (*src))
         dest[i] = src[i];
       else
         dest[i] = '0';
@@ -310,7 +310,7 @@ codem_memnum (char *src, size_t n)
 {
   for (size_t i = 0; i < n; ++i)
     {
-      if (!Isdigit (src[i]))
+      if (!isdigit (src[i]))
         src[i] = '0';
     }
 }
