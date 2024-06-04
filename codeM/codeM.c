@@ -892,7 +892,7 @@ codem_scanf (const char *message, char dest[CODEM_BUF_LEN])
   int res = scan__H (message, dest,
                   "%"STR(CODEM_LEN)"s",           // "%10s"
                   " %"STR(CODEM_LEN)"[^;#]%n");   // " %10[^;#]%n"
-  codem_memnum (dest);
+  codem_memnum (dest, CODEM_LEN);
   return res;
 }
 
