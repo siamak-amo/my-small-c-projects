@@ -108,7 +108,9 @@ RandFunction codem_srand = NULL;
 
 #define char2num(c) ((c) - '0')
 #define num2char(x) ((x) + '0')
-#define Isdigit(c) (('0' <= (c)) && ('9' >= (c)))
+#ifndef isdigit /* isdigit is also available in ctype.h */
+#  define isdigit(c) (('0' <= (c)) && ('9' >= (c)))
+#endif
 #define UNUSED(x) (void)(x)
 /* macro to initialize codem_srand */
 #define codem_rand_init(randfun) codem_srand = &(randfun)
