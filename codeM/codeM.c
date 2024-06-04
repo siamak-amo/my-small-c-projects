@@ -192,6 +192,13 @@ codem_memnumcpy (char *restrict dest, const char *restrict src, size_t n);
 CODEMDEF void codem_memnum (char *src, size_t n);
 
 /**
+ *  is numeric function
+ *  @return:  1 when @codem is numeric otherwise 0
+ */
+CODEMDEF int
+codem_isnumeric (const char *codem);
+
+/**
  *  normalize @src and write the result on @dest
  *  normalized codem has exactly 10 digits
  *  @dest will be made by adding enough '0' to the left of
@@ -254,15 +261,11 @@ codem_cname_search (const char *search);
 /* implementation */
 #ifdef CODEM_IMPLEMENTATION
 
-/**
- *  internal function
- *  returns 1 when @codem is numeric otherwise 0
- */
-int
-is_numeric (const char *codem)
+CODEMDEF int
+codem_isnumeric (const char *codem)
 {
   for (int idx = 0; idx < CODEM_LEN; ++idx)
-    if (! isanumber (codem[idx]))
+    if (!isanumber (codem[idx]))
       return 0;
   return 1;
 }
