@@ -343,7 +343,7 @@ codem_norm (char *src)
 CODEMDEF int
 codem_isvalidn (const char *codem)
 {
-  if (!is_numeric (codem))
+  if (!codem_isnumeric (codem))
     return 0;
 
   return (codem[CTRL_DIGIT_IDX] ==
