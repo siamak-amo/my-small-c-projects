@@ -2,13 +2,13 @@
  *   file: codeM_data.h
  *   created on: 25 Oct 2023
  *
- *   The codem ID number's extra data
+ *   codem ID number's Additional Information
  *
  *   Definitions:
- *    city code:
+ *    city_code:
  *      refers to the first three digits of a codem ID number,
  *      which indicates the city of issuance
- *    city name:
+ *    city_name:
  *      refers to the name of the city of issuance,
  *      a city may have multiple city codes (one-to-many relation)
  *
