@@ -108,7 +108,7 @@ RandFunction codem_srand = NULL;
 
 #define char2num(c) ((c) - '0')
 #define num2char(x) ((x) + '0')
-#define isanumber(c) (('0' <= (c)) && ('9' >= (c)))
+#define Isdigit(c) (('0' <= (c)) && ('9' >= (c)))
 #define UNUSED(x) (void)(x)
 /* macro to initialize codem_srand */
 #define codem_rand_init(randfun) codem_srand = &(randfun)
@@ -265,7 +265,7 @@ CODEMDEF int
 codem_isnumeric (const char *codem)
 {
   for (int idx = 0; idx < CODEM_LEN; ++idx)
-    if (!isanumber (codem[idx]))
+    if (!Isdigit (codem[idx]))
       return 0;
   return 1;
 }
@@ -294,7 +294,7 @@ codem_memnumcpy (char *restrict dest,
 {
   for (size_t i = 0; i < n; ++i)
     {
-      if (isanumber (*src))
+      if (Isdigit (*src))
         dest[i] = src[i];
       else
         dest[i] = '0';
@@ -308,7 +308,7 @@ codem_memnum (char *src, size_t n)
 {
   for (size_t i = 0; i < n; ++i)
     {
-      if (!isanumber (src[i]))
+      if (!Isdigit (src[i]))
         src[i] = '0';
     }
 }
