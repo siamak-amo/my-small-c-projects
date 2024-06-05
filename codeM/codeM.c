@@ -1281,6 +1281,7 @@ int
 main (int argc, char **argv)
 {
   char comm = '\0', prev_comm = comm;
+
   cfg = &(struct Conf){
     .silent_mode = false,
     .state = SHELL_MODE,
@@ -1294,6 +1295,7 @@ main (int argc, char **argv)
 
   /* initialize codeM random number generator function */
   codem_rand_init (ssrand);
+
   /* parsing cmdline arguments */
   if (parse_cfgions (argc, argv) < 0)
     {
