@@ -452,7 +452,7 @@ codem_ccode_idx (const char *codem)
 
   return CC_NOT_FOUND;
 #else
-  (void) codem; /* prevent compiler warning */
+  UNUSED (codem);
   return CC_NOT_IMPLEMENTED;
 #endif
 }
