@@ -155,6 +155,9 @@ leven_strlen (const char *s)
   while (*s != '\0')
     {
       lc = leven_chrlen (*s);
+      /* consider invalid character is one byte */
+      if (0 == lc)
+        lc = 1;
       len++;
       s += lc;
     }
