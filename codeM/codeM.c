@@ -788,14 +788,17 @@ static struct Conf *cfg;
 static void
 usage ()
 {
-  printf ("Usage: %s [OPTIONS] [COMMANDS]\n"
+  printf ("Usage: %s [OPTIONS] [COMMANDS] [ScriptFile.cm]\n"
+          "SCRIPT FILE:\n"
+          "  a text file, with codeM shell commands\n"
+          "  add this shebang: `#!%s`\n"
           "OPTIONS:\n"
           "   -s:    silent mode\n"
           "   -S:    disable the prompt (when using pipe)\n"
           "   -c:    pass COMMANDS to be executed,\n"
           "            use: -c \"h\" to get help\n"
           "   -h:    help\n\n",
-          cfg->__progname__);
+          cfg->__progname__, cfg->__progname__);
 }
 
 static inline void
