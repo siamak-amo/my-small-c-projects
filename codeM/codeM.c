@@ -767,6 +767,7 @@ static size_t noise = 0;
 enum state_t {
   SHELL_MODE = 0,
   CMD_MODE,
+  SCRIPT_MODE,
   EXITING
 };
 
@@ -780,6 +781,7 @@ struct Conf {
   char *commandsH; /* points to head of the .commands */
   const char *__progname__;
   FILE *out; /* used by fprintf functions */
+  FILE *script; /* script.cm used in script mode */
 };
 static struct Conf *cfg;
 
