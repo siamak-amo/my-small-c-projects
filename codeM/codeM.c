@@ -1221,12 +1221,12 @@ normalize_command (char *restrict prev_comm,
 }
 
 /**
- *  pare cmdline cfgions
+ *  pare cmdline options
  *  @return:
  *    negative on failure and `0` on success
  **/
 static inline int
-parse_cfgions (int argc, char **argv)
+parse_options (int argc, char **argv)
 {
   cfg->__progname__ = argv[0];
   for (argc--, argv++; argc > 0; argc--, argv++)
@@ -1334,7 +1334,7 @@ main (int argc, char **argv)
   codem_rand_init (ssrand);
 
   /* parsing cmdline arguments */
-  if (parse_cfgions (argc, argv) < 0)
+  if (parse_options (argc, argv) < 0)
     {
       fprintf (stderr, " -- exiting.\n");
       return 1;
@@ -1425,6 +1425,7 @@ main (int argc, char **argv)
     {
       free (cfg->commandsH);
     }
+  /* close the script file if it's open */
   if (NULL != cfg->script)
     {
       fclose (cfg->script);
