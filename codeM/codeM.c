@@ -1385,6 +1385,23 @@ main (int argc, char **argv)
         }
       break;
 
+    case SCRIPT_MODE:
+      while (cfg->state == SCRIPT_MODE)
+        {
+          /* read new command until EOF */
+          prev_comm = comm;
+          if (EOF == fscanf (cfg->script, "%c", &comm))
+            {
+              cfg->state = EXITING;
+              continue;
+            }
+          /* interpretation of backslash escapes */
+          normalize_command (&prev_comm, &comm);
+          /* execute the current command */
+          exec_command (prev_comm, comm);
+        }
+      break;
+
     case EXITING:
     default:
       break;
