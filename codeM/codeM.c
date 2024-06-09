@@ -1225,6 +1225,23 @@ parse_cfgions (int argc, char **argv)
             }
           return 0;
         }
+      /* script filename */
+      if (argv[0][0] != '-')
+        {
+          if (strlen (*argv) > 3)
+            {
+              cfg->state = SCRIPT_MODE;
+              cfg->prompt = false;
+              cfg->silent_mode = true;
+              cfg->script = fopen (*argv, "r");
+              if (NULL == cfg->script)
+                {
+                  fprintf (stderr, "Could not open file (%s)", argv[0]);
+                  return -2;
+                }
+            }
+        }
+      /* normal option */
       if (argv[0][0] == '-')
         {
           switch (argv[0][1])
