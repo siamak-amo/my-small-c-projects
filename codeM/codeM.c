@@ -949,9 +949,14 @@ exec_command (char prev_comm, char comm)
           /* end of commented section */
         case '\n':
         case '\r':
-        case ' ':
         case ';':
+        UnComment:
           cfg->commented = false;
+          break;
+
+        case ' ':
+          if (SCRIPT_MODE != cfg->state)
+            goto UnComment;
           break;
 
         default:
