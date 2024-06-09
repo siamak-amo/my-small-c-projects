@@ -1212,7 +1212,18 @@ parse_cfgions (int argc, char **argv)
   cfg->__progname__ = argv[0];
   for (argc--, argv++; argc > 0; argc--, argv++)
     {
-      if (!cfg->EOO && argv[0][0] == '-')
+      if (cfg->EOO)
+        {
+          if (strlen (*argv) != 0)
+            {
+              size_t cmd_len = strlen (cfg->commands);
+              cfg->commands = realloc (cfg->commands, cmd_len + strlen (*argv) + 1);
+              cfg->commandsH = cfg->commands;
+              strcpy (cfg->commands + cmd_len, *argv);
+            }
+          return 0;
+        }
+      if (argv[0][0] == '-')
         {
           switch (argv[0][1])
             {
@@ -1261,16 +1272,6 @@ parse_cfgions (int argc, char **argv)
             default:
               fprintf (stderr, "Invalid option (%s)", argv[0]);
               return -2;
-            }
-        }
-      else if (cfg->EOO)
-        {
-          if (strlen (*argv) != 0)
-            {
-              size_t cmd_len = strlen (cfg->commands);
-              cfg->commands = realloc (cfg->commands, cmd_len + strlen (*argv) + 1);
-              cfg->commandsH = cfg->commands;
-              strcpy (cfg->commands + cmd_len, *argv);
             }
         }
     }
