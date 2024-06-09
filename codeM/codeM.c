@@ -1425,6 +1425,10 @@ main (int argc, char **argv)
     {
       free (cfg->commandsH);
     }
+  if (NULL != cfg->script)
+    {
+      fclose (cfg->script);
+    }
   return 0;
 }
 
