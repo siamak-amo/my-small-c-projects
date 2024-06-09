@@ -874,6 +874,15 @@ scan__H (const char *restrict message, char *restrict dest,
       if (0 >= n)
         return -1;
     }
+  else if (cfg->state == SCRIPT_MODE)
+    {
+      if (0 > fscanf (cfg->script, scan_format, dest))
+        return -1;
+      if (0 > sscanf (dest, sscan_regex, dest, &n))
+        return -1;
+      if (0 >= n)
+        return -1;
+    }
   else
     {
       /* command mode */
