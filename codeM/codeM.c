@@ -1153,8 +1153,9 @@ exec_command (char prev_comm, char comm)
       if (cfg->state == SHELL_MODE)
         {
           char *path = NULL;
-          cfg->commented = true; /* prevet filename execution */
           size_t rw = 0;
+          /* preventing file path from being executed by the shell */
+          cfg->commented = true;
           rw = getline (&path, &rw, stdin);
           if (NULL == path || rw < 1)
             break;
