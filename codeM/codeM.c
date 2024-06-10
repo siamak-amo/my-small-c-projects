@@ -1189,17 +1189,15 @@ exec_command (char prev_comm, char comm)
           else
             {
               cfg->state = SCRIPT_MODE;
-              cfg->prompt = false;
-              cfg->silent_mode = true;
-              cfg->ret2shell = true;
+              GOTO_SILENT_MODE (cfg);
+              RET2SHELL (cfg);
             }
         }
       else if (cfg->state == SCRIPT_MODE)
         {
           cfg->state = SHELL_MODE;
-          cfg->prompt = true;
-          cfg->silent_mode = false;
-          cfg->ret2shell = true;
+          ENDOF_SILENT_MODE (cfg);
+          RET2SHELL (cfg);
         }
       else
         {
@@ -1308,9 +1306,7 @@ parse_options (int argc, char **argv)
         {
           if (strlen (*argv) > 3)
             {
-              cfg->state = SCRIPT_MODE;
-              cfg->prompt = false;
-              cfg->silent_mode = true;
+              GOTO_SCRIPT_MODE (cfg);
               cfg->script = fopen (*argv, "r");
               if (NULL == cfg->script)
                 {
@@ -1403,10 +1399,7 @@ main (int argc, char **argv)
     }
   /* disable the prompt when `stdin` is not a tty (using pipe) */
   if (!isatty (fileno (stdin)))
-    {
-      cfg->silent_mode = true;
-      cfg->prompt = false;
-    }
+    GOTO_SILENT_MODE (cfg);
 
   /* continue to command mode or shell mode */
   while (EXITING != cfg->state)
@@ -1482,11 +1475,7 @@ main (int argc, char **argv)
           cfg->script = NULL;
         }
       if (cfg->ret2shell)
-        {
-          cfg->prompt = true;
-          cfg->silent_mode = false;
-          cfg->state = SHELL_MODE;
-        }
+        GOTO_SHELL_MODE (cfg);
 
       break;
 
