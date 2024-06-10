@@ -908,6 +908,7 @@ codem_scanf (const char *message, char dest[CODEM_BUF_LEN])
   int res = scan__H (message, dest,
                   "%"STR(CODEM_LEN)"s",              // "%10s"
                   " %"STR(CODEM_LEN)"[^;#]%n");      // " %10[^;#]%n"
+  /* make the dest numeric */
   codem_memnum (dest, CODEM_LEN);
   return res;
 }
@@ -916,7 +917,7 @@ static int
 cname_scanf (const char *message, char dest[CNAME_BUF_LEN])
 {
   return scan__H (message, dest,
-                  " %"STR(CNAME_MAX_LEN)"[^\r\n]",   // " %64[^\n\r]"
+                  " %"STR(CNAME_MAX_LEN)"[^\r\n]",   // " %64[^\n\r]" (allow space)
                   " %"STR(CNAME_MAX_LEN)"[^;#]%n");  // " %64[^;#]%n"
 }
 
