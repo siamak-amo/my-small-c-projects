@@ -786,6 +786,25 @@ struct Conf {
 };
 static struct Conf *cfg;
 
+/* state manipulating macros */
+#define ENDOF_SILENT_MODE(cfg) do {    \
+    cfg->prompt = true;                \
+    cfg->silent_mode = false;          \
+  } while (0)
+#define GOTO_SILENT_MODE(cfg) do {     \
+    cfg->prompt = false;               \
+    cfg->silent_mode = true;           \
+  } while (0)
+#define GOTO_SCRIPT_MODE(cfg) do {     \
+    GOTO_SILENT_MODE (cfg);            \
+    cfg->state = SCRIPT_MODE;          \
+  } while (0)
+#define GOTO_SHELL_MODE(cfg) do {      \
+    ENDOF_SILENT_MODE (cfg);           \
+    cfg->state = SHELL_MODE;           \
+  } while (0)
+#define RET2SHELL(cfg) cfg->ret2shell = true
+
 static void
 usage ()
 {
