@@ -1149,6 +1149,36 @@ exec_command (char prev_comm, char comm)
       last_out = name_tmp;
       break;
 
+    case '!':
+      if (cfg->state == SHELL_MODE)
+        {
+          char *path = NULL;
+          cfg->commented = true; /* prevet filename execution */
+          size_t rw = 0;
+          rw = getline (&path, &rw, stdin);
+          if (NULL == path || rw < 1)
+            break;
+          path[rw - 1] = '\0'; /* remove newline */
+          assert (cfg->script == NULL && "open script file");
+          cfg->script = fopen (path, "r");
+          if (NULL == cfg->script)
+            {
+              fprintln (stderr, "Could not open file (%s)", path);
+              break;
+            }
+          else
+            {
+              cfg->state = SCRIPT_MODE;
+              cfg->prompt = false;
+              cfg->silent_mode = true;
+              cfg->ret2shell = true;
+              fprintf (stdout, "Running %s...\n", path);
+            }
+        }
+      else
+        fprintln (stderr, "only use this command in shell mode\n");
+      break;
+
     case 'h':
       help ();
       break;
