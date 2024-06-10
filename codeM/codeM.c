@@ -864,7 +864,7 @@ scan__H (const char *restrict message, char *restrict dest,
          const char *restrict scan_format,
          const char *restrict sscan_regex)
 {
-  int n;
+  int n = 0;
 
   if (cfg->state == SHELL_MODE)
     {
@@ -886,7 +886,7 @@ scan__H (const char *restrict message, char *restrict dest,
       if (0 >= n)
         return -1;
     }
-  else
+  else if (cfg->state == CMD_MODE)
     {
       /* command mode */
       if (0 <= sscanf (cfg->commands, sscan_regex, dest, &n))
