@@ -1337,7 +1337,11 @@ parse_options (int argc, char **argv)
               if (argc == 1)
                 cfg->commands = "h";
               else
-                cfg->commands = *(argv+1);
+                {
+                  cfg->commands = *(argv+1);
+                  argc--;
+                  argv++;
+                }
               cfg->state = CMD_MODE;
               break;
 
