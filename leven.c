@@ -24,10 +24,10 @@
  *    // immediate call
  *    size_t d = leven_imm (s1, s2);
  *
- *    // use stack for buffer - for small s1
+ *    // for small s1, use stack
  *    size_t d = leven_stk (s1, s2);
  *
- *    // when distance of s1 ans s is needed
+ *    // when distance of s1 and s is needed
  *    // for fixed s1 and some s in a list
  *    LARR_t *_tmp = leven_alloc (s1);
  *    for (s in list)
