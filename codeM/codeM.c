@@ -732,7 +732,7 @@ main (void)
 /* debug macro to print codeM buffer */
 #  define printd(param)                         \
   printf ("[debug %s:%d] %s=[%s]\n",            \
-          __func__, __LINE__, #param, param);
+          __func__, __LINE__, __TOSTR__(param), param);
 #  define dprintf(format, ...)                  \
   printf ("[debug %s:%d] "format,               \
           __func__, __LINE__, __VA_ARGS__);
