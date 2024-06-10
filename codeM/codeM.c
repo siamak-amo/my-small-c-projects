@@ -799,6 +799,10 @@ static struct Conf *cfg;
     GOTO_SILENT_MODE (cfg);            \
     cfg->state = SCRIPT_MODE;          \
   } while (0)
+#define GOTO_CMD_MODE(cfg) do {        \
+    GOTO_SILENT_MODE (cfg);            \
+    cfg->state = CMD_MODE;             \
+  } while (0)
 #define GOTO_SHELL_MODE(cfg) do {      \
     ENDOF_SILENT_MODE (cfg);           \
     cfg->state = SHELL_MODE;           \
@@ -1357,9 +1361,7 @@ parse_options (int argc, char **argv)
                 {
                   cfg->commands = malloc (1);
                   *cfg->commands = '\0';
-                  cfg->silent_mode = true;
-                  cfg->prompt = false;
-                  cfg->state = CMD_MODE;
+                  GOTO_CMD_MODE (cfg);
                 }
               break;
 
