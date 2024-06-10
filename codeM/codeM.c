@@ -775,6 +775,7 @@ struct Conf {
   enum state_t state;
   bool silent_mode;
   bool prompt;
+  bool ret2shell; /* return to shell in script mode */
   bool EOO; /* End Of Options */
   bool commented; /* section is commented */
   char *commands; /* only in command mode */
@@ -823,6 +824,7 @@ __help_shell ()
            "f: find city code by name   -  F: find city name by code\n"
            "s: search city code         -  S: search city name\n"
            "q: quit                     -  h: help\n"
+           "!: to run a script file and return to the shell"
            "to give the previous output to the next command use `|` (like shell)\n"
            "use e, E commands to echo and set the last output value respectively\n\n");
 }
@@ -1328,6 +1330,7 @@ main (int argc, char **argv)
     .commandsH = NULL,
     .EOO = false,
     .commented = false,
+    .ret2shell = false,
     .out = (!isatty (fileno (stdout))) ? stderr : stdout
   };
 
@@ -1364,7 +1367,7 @@ main (int argc, char **argv)
       break;
 
     case SHELL_MODE:
-      if (!cfg->silent_mode && cfg->prompt)
+      if (!cfg->silent_mode && cfg->prompt && !cfg->ret2shell)
         {
           fprintf (stdout, "codeM Shell Mode!\n");
           usage ();
@@ -1414,6 +1417,13 @@ main (int argc, char **argv)
           fclose (cfg->script);
           cfg->script = NULL;
         }
+      if (cfg->ret2shell)
+        {
+          cfg->prompt = true;
+          cfg->silent_mode = false;
+          cfg->state = SHELL_MODE;
+        }
+
       break;
 
     case EXITING:
