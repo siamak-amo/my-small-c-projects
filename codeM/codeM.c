@@ -1193,15 +1193,13 @@ exec_command (char prev_comm, char comm)
             }
           else
             {
-              cfg->state = SCRIPT_MODE;
-              GOTO_SILENT_MODE (cfg);
+              GOTO_SCRIPT_MODE (cfg);
               RET2SHELL (cfg);
             }
         }
       else if (cfg->state == SCRIPT_MODE)
         {
-          cfg->state = SHELL_MODE;
-          ENDOF_SILENT_MODE (cfg);
+          GOTO_SHELL_MODE (cfg);
           RET2SHELL (cfg);
         }
       else
