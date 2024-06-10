@@ -803,6 +803,7 @@ static struct Conf *cfg;
     ENDOF_SILENT_MODE (cfg);           \
     cfg->state = SHELL_MODE;           \
   } while (0)
+#define GOTO_EXITING(cfg) cfg->state = EXITING
 #define RET2SHELL(cfg) cfg->ret2shell = true
 
 static void
