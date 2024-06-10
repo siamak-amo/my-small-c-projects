@@ -857,7 +857,7 @@ ssrand ()
  *
  *  @return:
  *    on success  -> number of bytes read
- *    on failure  -> -1 in shell mode and 0 on command mode
+ *    on failure  -> -1 on shell mode and 0 on command mode
  */
 static inline int
 scan__H (const char *restrict message, char *restrict dest,
