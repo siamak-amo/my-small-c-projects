@@ -1219,7 +1219,7 @@ exec_command (char prev_comm, char comm)
       break;
 
     case 'q':
-      cfg->state = EXITING;
+      GOTO_EXITING (cfg);
       break;
 
     case '\n':
@@ -1341,7 +1341,7 @@ parse_options (int argc, char **argv)
 
             case 'h':
               usage ();
-              cfg->state = EXITING; // exit normally
+              GOTO_EXITING (cfg);
               break;
 
             case '-':
@@ -1413,7 +1413,7 @@ main (int argc, char **argv)
           comm = *cfg->commands;
           if ('\0' == comm)
             {
-              cfg->state = EXITING;
+              GOTO_EXITING (cfg);
               break;
             }
           cfg->commands++;
@@ -1445,7 +1445,7 @@ main (int argc, char **argv)
             {
               if (cfg->prompt)
                 fprintf (stdout, "\n");
-              cfg->state = EXITING;
+              GOTO_EXITING (cfg);
               continue;
             }
           /* interpretation of backslash escapes */
@@ -1462,7 +1462,7 @@ main (int argc, char **argv)
           prev_comm = comm;
           if (EOF == fscanf (cfg->script, "%c", &comm))
             {
-              cfg->state = EXITING;
+              GOTO_EXITING (cfg);
               continue;
             }
           /* interpretation of backslash escapes */
