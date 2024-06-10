@@ -1423,7 +1423,7 @@ main (int argc, char **argv)
           /* print the prompt */
           if (cfg->prompt)
             {
-              if ('\0' == comm || '\n' == comm)
+              if ('\0' == comm || '\n' == comm || '!' == comm)
                 fprintf (stdout, PROMPT);
             }
           /* read new command until EOF */
