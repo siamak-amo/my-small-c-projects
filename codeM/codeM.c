@@ -1172,7 +1172,6 @@ exec_command (char prev_comm, char comm)
               cfg->prompt = false;
               cfg->silent_mode = true;
               cfg->ret2shell = true;
-              fprintf (stdout, "Running %s...\n", path);
             }
         }
       else
