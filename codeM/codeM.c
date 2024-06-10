@@ -1175,8 +1175,17 @@ exec_command (char prev_comm, char comm)
               cfg->ret2shell = true;
             }
         }
+      else if (cfg->state == SCRIPT_MODE)
+        {
+          cfg->state = SHELL_MODE;
+          cfg->prompt = true;
+          cfg->silent_mode = false;
+          cfg->ret2shell = true;
+        }
       else
-        fprintln (stderr, "only use this command in shell mode\n");
+        {
+          fprintln (stderr, "only use `!` command in shell mode or script mode");
+        }
       break;
 
     case 'h':
