@@ -51,8 +51,10 @@
  *    ```
  **/
 #include <time.h>
+
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+
 #define CODEM_IMPLEMENTATION
 #define CODEM_FUZZY_SEARCH_CITYNAME
 #include "codeM.c"
