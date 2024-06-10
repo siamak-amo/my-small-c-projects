@@ -916,7 +916,7 @@ static int
 cname_scanf (const char *message, char dest[CNAME_BUF_LEN])
 {
   return scan__H (message, dest,
-                  "%"STR(CNAME_MAX_LEN)"s",
+                  " %"STR(CNAME_MAX_LEN)"[^\r\n]",
                   " %"STR(CNAME_MAX_LEN)"[^;#]%n");
 }
 
