@@ -1409,6 +1409,11 @@ main (int argc, char **argv)
           /* execute the current command */
           exec_command (prev_comm, comm);
         }
+      if (cfg->script)
+        {
+          fclose (cfg->script);
+          cfg->script = NULL;
+        }
       break;
 
     case EXITING:
@@ -1426,12 +1431,7 @@ main (int argc, char **argv)
     {
       free (cfg->commandsH);
     }
-  /* close the script file if it's open */
-  if (NULL != cfg->script)
-    {
-      fclose (cfg->script);
-    }
-  return 0;
+   return 0;
 }
 
 #endif /* CODEM_TEST */
