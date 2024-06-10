@@ -980,13 +980,7 @@ exec_command (char prev_comm, char comm)
         case '\n':
         case '\r':
         case ';':
-        UnComment:
           cfg->commented = false;
-          break;
-
-        case ' ':
-          if (SCRIPT_MODE != cfg->state)
-            goto UnComment;
           break;
 
         default:
