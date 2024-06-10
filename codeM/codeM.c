@@ -1381,6 +1381,7 @@ main (int argc, char **argv)
     }
 
   /* continue to command mode or shell mode */
+  while (EXITING != cfg->state)
   switch (cfg->state)
     {
     case CMD_MODE:
