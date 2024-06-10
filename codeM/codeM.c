@@ -1384,10 +1384,15 @@ main (int argc, char **argv)
   switch (cfg->state)
     {
     case CMD_MODE:
-      while (cfg->state == CMD_MODE && *cfg->commands != '\0')
+      while (cfg->state == CMD_MODE)
         {
           prev_comm = comm;
           comm = *cfg->commands;
+          if ('\0' == comm)
+            {
+              cfg->state = EXITING;
+              break;
+            }
           cfg->commands++;
           /* interpretation of backslash escapes */
           normalize_command (&prev_comm, &comm);
