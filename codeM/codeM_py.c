@@ -22,7 +22,7 @@
  *
  *  compilation:
  *    replace xx with your python version
- *    cc -Wall -Wextra -Werror \
+ *    cc -ggdb -Wall -Wextra -Werror \
  *       -shared -fPIC codeM_py.c -o codeM.so \
  *       $(pkg-config --cflags python-3.xx)
  *

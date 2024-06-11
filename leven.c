@@ -12,7 +12,7 @@
  *  so provide the smaller string first or use LEVEN_SMALLERx macros
  *
  *  compile the test program:
- *    cc -Wall -Wextra -Werror \
+ *    cc -ggdb -Wall -Wextra -Werror \
  *       -D LEVEN_IMPLEMENTATION \
  *       -D LEVEN_TEST -o test leven.c
  *
