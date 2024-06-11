@@ -47,7 +47,7 @@
  *          to enable fuzzy search, you need to provide
  *          the `leven.c` file (available in the same repository)
  *
- *     to include in other files:
+ *     to include in c files:
  *       ```c
  *       #define CODEM_IMPLEMENTATION
  *       #define CODEM_FUZZY_SEARCH_CITYNAME

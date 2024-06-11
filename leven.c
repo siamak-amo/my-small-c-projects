@@ -16,7 +16,7 @@
  *       -D LEVEN_IMPLEMENTATION \
  *       -D LEVEN_TEST -o test leven.c
  *
- *  to include in other files:
+ *  to include in c files:
  *    `
  *    #define LEVEN_IMPLEMENTATION
  *    #include "leven.c"
