@@ -49,8 +49,6 @@
  *
  *     to include in other files:
  *       `
- *         #include <stdio.h>
- *
  *         #define CODEM_IMPLEMENTATION
  *         #define CODEM_FUZZY_SEARCH_CITYNAME
  *         #include "codeM.c"
