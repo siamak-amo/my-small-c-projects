@@ -19,6 +19,7 @@
  *   created on: 1 Oct 2023
  *
  *   Common Iranian ID number (code-e-melli) single-file library
+ *   A shell (CLI) and a test program are included
  *
  *   the term `codem` in the following refers to `code-e-melli`
  *   this library performs validating and making random codem's
