@@ -48,28 +48,28 @@
  *          the `leven.c` file (available in the same repository)
  *
  *     to include in other files:
- *       `
- *         #define CODEM_IMPLEMENTATION
- *         #define CODEM_FUZZY_SEARCH_CITYNAME
- *         #include "codeM.c"
+ *       ```c
+ *       #define CODEM_IMPLEMENTATION
+ *       #define CODEM_FUZZY_SEARCH_CITYNAME
+ *       #include "codeM.c"
  *
- *         size_t my_rand_fun (void) {...}
+ *       size_t my_rand_fun (void) {...}
  *
- *         int
- *         main (void)
- *         {
- *           char codem[CODEM_BUF_LEN] = {0};
+ *       int
+ *       main (void)
+ *       {
+ *         char codem[CODEM_BUF_LEN] = {0};
  *
- *           // if you need to use any of the *_rand_* functions
- *           codem_rand_init (my_rand_fun);
+ *         // if you need to use any of the *_rand_* functions
+ *         codem_rand_init (my_rand_fun);
  *
- *           // your usage starts here
- *           // see examples in the included programs
- *           ...
+ *         // your usage starts here
+ *         // see examples in the included programs
+ *         ...
  *
- *           return 0;
- *         }
- *       `
+ *         return 0;
+ *       }
+ *       ```
  **/
 #ifndef codeM__H__
 #define codeM__H__
