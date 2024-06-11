@@ -32,7 +32,7 @@
  *    handled python objects
  *
  *  Usage Example:
- *    ```
+ *    ```python
  *    import codeM
  *    # help(codeM)
  *
@@ -72,6 +72,7 @@
   PyByteArray_AS_STRING ((res = PyByteArray_FromStringAndSize (inp, len)))
 
 #ifdef PY_CODEM_DEBUG
+/* debug macro, to run fun(obj) and print refcnt of @obj */
 #  define pyd_fun(fun, obj) do {                                        \
   if (NULL == obj) {                                                    \
     printf ("[debug %s:%d] %s is NULL!\n", __func__, __LINE__, #obj);   \
@@ -80,6 +81,7 @@
     printf ("[debug %s:%d] %s->ob_refcnt = %ld, after running %s\n",    \
             __func__, __LINE__, #obj, Py_REFCNT(obj), #fun);            \
   }} while (0)
+/* debug macro, to print refcnt of @obj */
 #  define pyd_refcnt(obj) if (NULL != obj) {                    \
     printf ("[debug %s:%d] %s->ob_refcnt = %ld\n",              \
             __func__, __LINE__, #obj, Py_REFCNT (obj)); }
