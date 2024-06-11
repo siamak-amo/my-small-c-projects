@@ -65,6 +65,10 @@
  *           // if you need to use any of the *_rand_* functions
  *           codem_rand_init (my_rand_fun);
  *
+ *           // your usage starts here
+ *           // see examples in the included programs
+ *           ...
+ *
  *           return 0;
  *         }
  *       `
