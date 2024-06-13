@@ -1200,6 +1200,8 @@ exec_command (char prev_comm, char comm)
 
           path[rw - 1] = '\0'; /* remove newline */
           assert (cfg->script == NULL && "open script file");
+
+          /* open the script file for read */
           cfg->script = fopen (path, "r");
           if (NULL == cfg->script)
             {
