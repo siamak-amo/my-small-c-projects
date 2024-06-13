@@ -946,10 +946,7 @@ __script_getpath_and_open (int *mode)
 
   /* opening the script file */
   if (NULL != cfg->script)
-    {
-      fclose (cfg->script);
-      cfg->script = NULL;
-    }
+    fclose (cfg->script);
   cfg->script = fopen (path, "r");
   if (NULL == cfg->script)
     return -2;
