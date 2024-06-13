@@ -1046,6 +1046,7 @@ lastout_scanf (char *dest, size_t len)
       size_t last_len = strlen (last_out);
       len = MIN (len, last_len);
       memcpy (dest, last_out, len);
+      dest[len] = '\0';
       return (int)len;
     }
 }
