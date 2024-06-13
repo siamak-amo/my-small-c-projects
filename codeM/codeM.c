@@ -1198,12 +1198,12 @@ exec_command (char prev_comm, char comm)
               RET2SHELL (cfg);
             }
           assert (NULL != path);
+
           if (rw < 1)
             break;
-
           path[rw - 1] = '\0'; /* remove newline */
-          assert (cfg->script == NULL && "open script file");
 
+          assert (cfg->script == NULL && "open script file");
           /* open the script file for read */
           cfg->script = fopen (path, "r");
           if (NULL == cfg->script)
