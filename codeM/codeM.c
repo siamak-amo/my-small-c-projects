@@ -23,7 +23,9 @@
  *
  *   the term `codem` in the following refers to `code-e-melli`
  *   this library performs validating and making random codem's
+ *
  *   to use this library in python, see `codeM_py.c`
+ *   also see `example.cm`, an example of the CLI program's script
  *
  *   compilation:
  *     to compile the CLI program:
@@ -63,7 +65,7 @@
  *         // if you need to use any of the *_rand_* functions
  *         codem_rand_init (my_rand_fun);
  *
- *         // your usage starts here
+ *         // do something here
  *         // see examples in the included programs
  *         ...
  *
