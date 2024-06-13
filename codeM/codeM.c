@@ -815,6 +815,7 @@ static struct Conf *cfg;
   } while (0)
 #define GOTO_EXITING(cfg) cfg->state = EXITING
 #define RET2SHELL(cfg) cfg->ret2shell = true
+#define NotRET2SHELL(cfg) cfg->ret2shell = false;
 
 static void
 usage ()
@@ -1208,7 +1209,7 @@ exec_command (char prev_comm, char comm)
           if (NULL == cfg->script)
             {
               fprintln (stderr, "Could not open file (%s)", path);
-              cfg->ret2shell = false;
+              NotRET2SHELL (cfg);
               break;
             }
           else
