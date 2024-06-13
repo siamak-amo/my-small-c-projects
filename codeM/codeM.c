@@ -769,11 +769,15 @@ static char tmp[CODEM_BUF_LEN]; /* codem temporary buffer */
 static char name_tmp[CNAME_BUF_LEN]; /* cname temporary buffer */
 static const char *last_out; /* the last thing which was printed */
 
-/* script file and path */
+/* script file path mode and error */
 #define SC_FOPEN_FAILED -2
 #define SC_INVALID_PATH -1
 #define SC_PATH_NORMAL 0
 #define SC_PATH_RET 1 /* when you run with `!!` */
+/* script file errors */
+#define SCERR_FOPEN_FAILED "Could not open the script file"
+#define SCERR_INVALID_PATH "Invalid script file path"
+#define SCERR_UNKNOWN "Unknown error"
 
 /* a noise for random number generator */
 static size_t noise = 0;
