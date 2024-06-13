@@ -855,7 +855,7 @@ __help_shell ()
            "f: find city code by name   -  F: find city name by code\n"
            "s: search city code         -  S: search city name\n"
            "q: quit                     -  h: help\n"
-           "!: to run a script file and return to the shell, and !! to run and exit"
+           "!: to run a script file and return to the shell, and !! to run and exit\n"
            "to give the previous output to the next command use `|` (like shell)\n"
            "use e, E commands to echo and set the last output value respectively\n\n");
 }
