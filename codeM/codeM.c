@@ -757,7 +757,12 @@ main (void)
 /* to string macros (this will not evaluate the input) */
 #define __TOSTR__(x) #x
 #define STR(x) __TOSTR__(x)
-/* fprintf on newline */
+/**
+ *  newline fprintf
+ *  do use any expression in @format
+ *  @format must be a C standard string ("xxx")
+ *  for expression: `fprintln (stdout, "%s", expression);`
+ **/
 #define fprintln(file, format, ...)            \
   fprintf (file, format"\n", ##__VA_ARGS__)
 
