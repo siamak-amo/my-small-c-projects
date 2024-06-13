@@ -778,6 +778,11 @@ static const char *last_out; /* the last thing which was printed */
 #define SCERR_FOPEN_FAILED "Could not open the script file"
 #define SCERR_INVALID_PATH "Invalid script file path"
 #define SCERR_UNKNOWN "Unknown error"
+/* get string of error by error code */
+#define script_strerr(code)                             \
+  (code == SC_INVALID_PATH) ? SCERR_INVALID_PATH        \
+  : (code == SC_FOPEN_FAILED) ? SCERR_FOPEN_FAILED      \
+  : SCERR_UNKNOWN
 
 /* a noise for random number generator */
 static size_t noise = 0;
@@ -896,26 +901,6 @@ ssrand ()
   return r;
 }
 
-static int
-errorof__script_getpath_and_open (int ret)
-{
-  switch (ret)
-    {
-    case SC_INVALID_PATH:
-      fprintln (stderr, "Invalid file path");
-      break;
-
-    case SC_FOPEN_FAILED:
-      fprintln (stderr, "Could not open script file");
-      break;
-
-    default:
-      break;
-    }
-
-  return ret;
-}
-
 /**
  *  gets script file path from stdin and open it up
  *  sets the @mode to 1 when user enters `!xxx` and otherwise 0
@@ -924,8 +909,6 @@ errorof__script_getpath_and_open (int ret)
  *     0  -> success
  *    -1  -> invalid file path
  *    -2  -> opening the file failure
- *  use the `errorof__script_getpath_and_open` function to
- *  print the error message of this function
  **/
 static int
 __script_getpath_and_open (int *mode)
