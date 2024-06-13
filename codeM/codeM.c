@@ -1240,53 +1240,48 @@ exec_command (char prev_comm, char comm)
       break;
 
     case '!':
+      int filename_mode = -1;
+      /* preventing file path from being executed by the shell */
+      cfg->commented = true;
       if (cfg->state == SHELL_MODE)
         {
-          char *path = NULL;
-          char *line = NULL;
-          size_t rw = 0;
-          /* preventing file path from being executed by the shell */
-          cfg->commented = true;
-          /* read a line */
-          rw = getline (&line, &rw, stdin);
-          if (NULL == line)
-            break;
-          if ('!' == *line)
+          int res = __script_getpath_and_open (&filename_mode);
+          if (0 == res)
             {
-              path = line + 1; /* remove ! at the beginning */
-              rw--;
-              cfg->ret2shell = false;
-            }
-          else
-            {
-              path = line;
-              RET2SHELL (cfg);
-            }
-          assert (NULL != path);
+              if (1 == filename_mode)
+                RET2SHELL (cfg);
+              else if (0 == filename_mode)
+                NotRET2SHELL (cfg);
 
-          if (rw < 1)
-            break;
-          path[rw - 1] = '\0'; /* remove newline */
-
-          assert (cfg->script == NULL && "open script file");
-          /* open the script file for read */
-          cfg->script = fopen (path, "r");
-          if (NULL == cfg->script)
-            {
-              fprintln (stderr, "Could not open file (%s)", path);
-              NotRET2SHELL (cfg);
-              break;
-            }
-          else
-            {
               GOTO_SCRIPT_MODE (cfg);
             }
-          Free2Null (line);
+          else
+            errorof__script_getpath_and_open (res);
         }
       else if (cfg->state == SCRIPT_MODE)
         {
-          GOTO_SHELL_MODE (cfg);
-          RET2SHELL (cfg);
+          int res = __script_getpath_and_open (&filename_mode);
+          if (0 == filename_mode) /* only return to shell */
+            {
+              /**
+               *  if a script file, ends with `!`, it always going to
+               *  return to the shell, even if the user has run the script
+               *  file from the shell (at first) by `!!` (run and exit),
+               *  currently there is no proper way to handle this problem
+               **/
+              RET2SHELL (cfg);
+              GOTO_SHELL_MODE (cfg);
+            }
+          else if (1 == filename_mode) /* run another script */
+            {
+              if (0 == res)
+                break; /* just continue */
+              else
+                {
+                  errorof__script_getpath_and_open (res);
+                  GOTO_EXITING (cfg);
+                }
+            }
         }
       else
         {
