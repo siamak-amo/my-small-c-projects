@@ -767,6 +767,12 @@ static char tmp[CODEM_BUF_LEN]; /* codem temporary buffer */
 static char name_tmp[CNAME_BUF_LEN]; /* cname temporary buffer */
 static const char *last_out; /* the last thing which was printed */
 
+/* script file and path */
+#define SC_FOPEN_FAILED -2
+#define SC_INVALID_PATH -1
+#define SC_PATH_NORMAL 0
+#define SC_PATH_RET 1 /* when you run with `!!` */
+
 /* a noise for random number generator */
 static size_t noise = 0;
 
@@ -889,11 +895,11 @@ errorof__script_getpath_and_open (int ret)
 {
   switch (ret)
     {
-    case -1:
+    case SC_INVALID_PATH:
       fprintln (stderr, "Invalid file path");
       break;
 
-    case -2:
+    case SC_FOPEN_FAILED:
       fprintln (stderr, "Could not open script file");
       break;
 
@@ -925,23 +931,23 @@ __script_getpath_and_open (int *mode)
   /* read a line */
   rw = getline (&line, &rw, stdin);
   if (NULL == line)
-    return -1;
+    return SC_INVALID_PATH;
 
   if ('!' == *line)
     {
       path = line + 1; /* remove ! at the beginning */
       rw--;
-      *mode = 1;
+      *mode = SC_PATH_RET;
     }
   else
     {
       path = line;
-      *mode = 0;
+      *mode = SC_PATH_NORMAL;
     }
   assert (NULL != path);
 
   if (rw < 1)
-    return -1;
+    return SC_INVALID_PATH;
   path[rw - 1] = '\0'; /* remove newline */
 
   /* opening the script file */
@@ -949,7 +955,7 @@ __script_getpath_and_open (int *mode)
     fclose (cfg->script);
   cfg->script = fopen (path, "r");
   if (NULL == cfg->script)
-    return -2;
+    return SC_FOPEN_FAILED;
   else
     return 0;
 
@@ -1254,11 +1260,11 @@ exec_command (char prev_comm, char comm)
       if (cfg->state == SHELL_MODE)
         {
           int res = __script_getpath_and_open (&filename_mode);
-          if (0 == res)
+          if (!!res)
             {
-              if (1 == filename_mode)
+              if (SC_PATH_RET == filename_mode)
                 RET2SHELL (cfg);
-              else if (0 == filename_mode)
+              else if (SC_PATH_NORMAL == filename_mode)
                 NotRET2SHELL (cfg);
 
               GOTO_SCRIPT_MODE (cfg);
@@ -1269,7 +1275,7 @@ exec_command (char prev_comm, char comm)
       else if (cfg->state == SCRIPT_MODE)
         {
           int res = __script_getpath_and_open (&filename_mode);
-          if (0 == filename_mode) /* only return to shell */
+          if (SC_PATH_NORMAL == filename_mode) /* only return to shell */
             {
               /**
                *  if a script file, ends with `!`, it always going to
@@ -1280,9 +1286,9 @@ exec_command (char prev_comm, char comm)
               RET2SHELL (cfg);
               GOTO_SHELL_MODE (cfg);
             }
-          else if (1 == filename_mode) /* run another script */
+          else if (SC_PATH_RET == filename_mode) /* run another script */
             {
-              if (0 == res)
+              if (!!res)
                 break; /* just continue */
               else
                 {
