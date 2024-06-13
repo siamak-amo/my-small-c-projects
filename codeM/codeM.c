@@ -1260,7 +1260,7 @@ exec_command (char prev_comm, char comm)
               GOTO_SCRIPT_MODE (cfg);
             }
           else
-            errorof__script_getpath_and_open (res);
+            fprintln (stderr, "%s", script_strerr (res));
         }
       else if (cfg->state == SCRIPT_MODE)
         {
@@ -1282,7 +1282,7 @@ exec_command (char prev_comm, char comm)
                 break; /* just continue */
               else
                 {
-                  errorof__script_getpath_and_open (res);
+                  fprintln (stderr, "%s", script_strerr (res));
                   GOTO_EXITING (cfg);
                 }
             }
