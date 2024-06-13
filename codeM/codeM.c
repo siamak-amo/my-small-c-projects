@@ -750,6 +750,8 @@ main (void)
 
 /* normalize character to prevent printing non-ascii characters */
 #define NORMCHAR(c) (((c) >= 0x20 && (c) <= 0x7E) ? (c) : '!')
+/* free and set to null */
+#define Free2Null(ptr) if (NULL != ptr){free (ptr); ptr = NULL;}
 /* to string macros (this will not evaluate the input) */
 #define __TOSTR__(x) #x
 #define STR(x) __TOSTR__(x)
@@ -1213,8 +1215,7 @@ exec_command (char prev_comm, char comm)
             {
               GOTO_SCRIPT_MODE (cfg);
             }
-          free (line);
-          line = NULL;
+          Free2Null (line);
         }
       else if (cfg->state == SCRIPT_MODE)
         {
