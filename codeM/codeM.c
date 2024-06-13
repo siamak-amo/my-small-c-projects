@@ -884,6 +884,71 @@ ssrand ()
   return r;
 }
 
+static int
+errorof__script_getpath_and_open (int ret)
+{
+  switch (ret)
+    {
+    case -1:
+      fprintln (stderr, "Invalid file path");
+      break;
+
+    case -2:
+      fprintln (stderr, "Could not open script file");
+      break;
+
+    default:
+      break;
+    }
+
+  return ret;
+}
+
+static int
+__script_getpath_and_open (int *mode)
+{
+  char *line = NULL;
+  char *path = NULL;
+  size_t rw = 0;
+
+  /* read a line */
+  rw = getline (&line, &rw, stdin);
+  if (NULL == line)
+    return -1;
+
+  if ('!' == *line)
+    {
+      path = line + 1; /* remove ! at the beginning */
+      rw--;
+      *mode = 1;
+    }
+  else
+    {
+      path = line;
+      *mode = 0;
+    }
+  assert (NULL != path);
+
+  if (rw < 1)
+    return -1;
+  path[rw - 1] = '\0'; /* remove newline */
+
+  /* opening the script file */
+  if (NULL != cfg->script)
+    {
+      fclose (cfg->script);
+      cfg->script = NULL;
+    }
+  cfg->script = fopen (path, "r");
+  if (NULL == cfg->script)
+    return -2;
+  else
+    return 0;
+
+  free (line);
+  return 1; /* unreachable */
+}
+
 /**
  *  internal function to be used by codem_scanf and cname_scanf
  *  this function updates cfg->commands on CMD_MODE
