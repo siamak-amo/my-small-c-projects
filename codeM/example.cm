@@ -1,0 +1,35 @@
+#!./codeM
+
+## basic examples ##
+
+# make two random codes
+r
+r
+
+# make a random city code
+c
+
+# make a random code with `1234` prefix
+R 1234
+
+
+## pipe examples ##
+
+E Hello World !!!
+# print hello world
+|e
+
+# make a random city name
+C
+
+# pipe it to `f` to get the code
+| f
+
+# make a random code with the previous city code
+| R
+
+# equivalently, use `C | f | R`
+
+## return to shell ##
+# comment the following line to disable it
+# !
