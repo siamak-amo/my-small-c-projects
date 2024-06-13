@@ -852,7 +852,7 @@ __help_shell ()
            "f: find city code by name   -  F: find city name by code\n"
            "s: search city code         -  S: search city name\n"
            "q: quit                     -  h: help\n"
-           "!: to run a script file and return to the shell"
+           "!: to run a script file and return to the shell, and !! to run and exit"
            "to give the previous output to the next command use `|` (like shell)\n"
            "use e, E commands to echo and set the last output value respectively\n\n");
 }
@@ -1183,18 +1183,33 @@ exec_command (char prev_comm, char comm)
           rw = getline (&line, &rw, stdin);
           if (NULL == line)
             break;
+          if ('!' == *line)
+            {
+              path = line + 1; /* remove ! at the beginning */
+              rw--;
+              cfg->ret2shell = false;
+            }
+          else
+            {
+              path = line;
+              RET2SHELL (cfg);
+            }
+          assert (NULL != path);
+          if (rw < 1)
+            break;
+
           path[rw - 1] = '\0'; /* remove newline */
           assert (cfg->script == NULL && "open script file");
           cfg->script = fopen (path, "r");
           if (NULL == cfg->script)
             {
               fprintln (stderr, "Could not open file (%s)", path);
+              cfg->ret2shell = false;
               break;
             }
           else
             {
               GOTO_SCRIPT_MODE (cfg);
-              RET2SHELL (cfg);
             }
           free (line);
           line = NULL;
