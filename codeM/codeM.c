@@ -1175,11 +1175,13 @@ exec_command (char prev_comm, char comm)
       if (cfg->state == SHELL_MODE)
         {
           char *path = NULL;
+          char *line = NULL;
           size_t rw = 0;
           /* preventing file path from being executed by the shell */
           cfg->commented = true;
-          rw = getline (&path, &rw, stdin);
-          if (NULL == path || rw < 1)
+          /* read a line */
+          rw = getline (&line, &rw, stdin);
+          if (NULL == line)
             break;
           path[rw - 1] = '\0'; /* remove newline */
           assert (cfg->script == NULL && "open script file");
@@ -1194,6 +1196,8 @@ exec_command (char prev_comm, char comm)
               GOTO_SCRIPT_MODE (cfg);
               RET2SHELL (cfg);
             }
+          free (line);
+          line = NULL;
         }
       else if (cfg->state == SCRIPT_MODE)
         {
