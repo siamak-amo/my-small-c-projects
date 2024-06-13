@@ -904,6 +904,17 @@ errorof__script_getpath_and_open (int ret)
   return ret;
 }
 
+/**
+ *  gets script file path from stdin and open it up
+ *  sets the @mode to 1 when user enters `!xxx` and otherwise 0
+ *  this function updates the cfg->script file
+ *  @return:
+ *     0  -> success
+ *    -1  -> invalid file path
+ *    -2  -> opening the file failure
+ *  use the `errorof__script_getpath_and_open` function to
+ *  print the error message of this function
+ **/
 static int
 __script_getpath_and_open (int *mode)
 {
