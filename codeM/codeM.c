@@ -1250,7 +1250,7 @@ exec_command (char prev_comm, char comm)
       if (cfg->state == SHELL_MODE)
         {
           int res = __script_getpath_and_open (&filename_mode);
-          if (!!res)
+          if (!res)
             {
               if (SC_PATH_RET == filename_mode)
                 RET2SHELL (cfg);
@@ -1278,7 +1278,7 @@ exec_command (char prev_comm, char comm)
             }
           else if (SC_PATH_RET == filename_mode) /* run another script */
             {
-              if (!!res)
+              if (!res)
                 break; /* just continue */
               else
                 {
