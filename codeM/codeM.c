@@ -1579,7 +1579,7 @@ main (int argc, char **argv)
           /* print the prompt */
           if (cfg->prompt)
             {
-              if ('\0' == comm || '\n' == comm || '!' == comm)
+              if ('\0' == comm || '\n' == comm)
                 fprintf (stdout, PROMPT);
             }
           /* read new command until EOF */
