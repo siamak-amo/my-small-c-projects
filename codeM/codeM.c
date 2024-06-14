@@ -1022,6 +1022,7 @@ exec_command (char prev_comm, char comm)
            NORMCHAR (comm), NORMCHAR (prev_comm));
   int res, off;
   const char *p;
+  char *file_path = NULL;
 
   if (cfg->commented)
     {
@@ -1259,6 +1260,30 @@ exec_command (char prev_comm, char comm)
         case SCRIPT_MODE:
           {
             /* get the path -> execute it, with no other assumption */
+            size_t cap;
+            size_t len = getline (&file_path, &cap, cfg->script);
+            if (len < 1)
+              {
+                fprintln (stderr, SCERR_INVALID_PATH);
+                break;
+              }
+            file_path[--len] = '\0'; /* remove the new line at the end */
+            if (!fopen_scirpt_file__H (file_path))
+              {
+                /* just continue the execution */
+                cfg->commented = false;
+                break;
+              }
+            else
+              {
+                /**
+                 *  the previous script file has been closed
+                 *  so there is no option but to exit
+                 */
+                fprintln (stderr, "%s (%s)", SCERR_FOPEN_FAILED, file_path);
+                GOTO_EXITING (cfg);
+                break;
+              }
           }
           break;
 
