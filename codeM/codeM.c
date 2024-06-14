@@ -846,6 +846,13 @@ static struct Conf *cfg;
 #define RET2SHELL(cfg) cfg->ret2shell = true
 #define NotRET2SHELL(cfg) cfg->ret2shell = false;
 
+static inline void
+__stdin_flush ()
+{
+  int c;
+  while ((c = getchar()) != '\n' && c != EOF);
+}
+
 static void
 usage ()
 {
