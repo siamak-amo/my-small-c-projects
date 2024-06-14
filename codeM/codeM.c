@@ -732,6 +732,15 @@ main (void)
 #include <unistd.h>
 #include <assert.h>
 
+#if defined (_GNU_SOURCE) || defined (__linux__)
+#  define HAS_READLINE
+#  include <readline/readline.h>
+#  include <readline/history.h>
+#elif defined (__APPLE__)
+#  define HAS_READLINE
+#  include <editline/readline.h>
+#endif
+
 #ifdef CODEM_DEBUG
 /* debug macro to print codeM buffer */
 #  define printd(param)                         \
