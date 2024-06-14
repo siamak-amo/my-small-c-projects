@@ -777,6 +777,7 @@ static const char *PROMPT = "> ";
 static const char PIPE = '|';
 static const char *RD_PROMPT = "enter code: ";
 static const char *CN_PROMPT = "enter name: ";
+static const char *PATH_PROMPT = "enter path: ";
 static char tmp[CODEM_BUF_LEN]; /* codem temporary buffer */
 static char name_tmp[CNAME_BUF_LEN]; /* cname temporary buffer */
 static const char *last_out; /* the last thing which was printed */
@@ -1253,7 +1254,7 @@ exec_command (char prev_comm, char comm)
         case SHELL_MODE:
           {
             /* get the path (readline) -> execute it -> return back to the shell */
-            file_path = readline__H (NULL);
+            file_path = readline__H (PATH_PROMPT);
             if (!fopen_scirpt_file__H (file_path))
               {
                 RET2SHELL (cfg);
@@ -1288,7 +1289,7 @@ exec_command (char prev_comm, char comm)
         case SHELL_MODE:
           {
             /* get the path (readline) -> execute it -> exit */
-            file_path = readline__H (NULL);
+            file_path = readline__H (PATH_PROMPT);
             if (!fopen_scirpt_file__H (file_path))
               {
                 NotRET2SHELL (cfg);
