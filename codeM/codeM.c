@@ -1589,8 +1589,15 @@ main (int argc, char **argv)
           /* print the prompt */
           if (cfg->prompt)
             {
-              if ('\0' == comm || '\n' == comm)
-                fprintf (stdout, PROMPT);
+              switch (comm)
+                {
+                case '\n':
+                case '\r':
+                case '\0':
+                case '!':
+                case '$':
+                  fprintf (stdout, PROMPT);
+                }
             }
           /* read new command until EOF */
           prev_comm = comm;
