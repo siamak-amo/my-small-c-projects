@@ -30,9 +30,11 @@
  *   compilation:
  *     to compile the CLI program:
  *       cc -ggdb -Wall -Wextra -Werror \
+ *          $(pkg-config --cflags readline) \
  *          -D CODEM_IMPLEMENTATION \
  *          -D CODEM_FUZZY_SEARCH_CITYNAME \
- *          -D CODEM_CLI -o codeM codeM.c
+ *          -D CODEM_CLI -o codeM codeM.c \
+ *          $(pkg-config --libs readline)
  *
  *     to compile the test program:
  *       cc -ggdb -Wall -Wextra -Werror \
