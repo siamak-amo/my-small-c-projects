@@ -1597,6 +1597,10 @@ main (int argc, char **argv)
                 case '!':
                 case '$':
                   fprintf (stdout, PROMPT);
+                  break;
+
+                default:
+                  break;
                 }
             }
           /* read new command until EOF */
