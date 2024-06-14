@@ -1552,6 +1552,11 @@ main (int argc, char **argv)
         {
           /* read new command until EOF */
           prev_comm = comm;
+          if (NULL == cfg->script)
+            {
+              GOTO_EXITING (cfg);
+              continue;
+            }
           if (EOF == fscanf (cfg->script, "%c", &comm))
             {
               GOTO_EXITING (cfg);
