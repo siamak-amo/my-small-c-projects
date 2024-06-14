@@ -1281,8 +1281,17 @@ exec_command (char prev_comm, char comm)
         case SHELL_MODE:
           {
             /* get the path (readline) -> execute it -> exit */
-            NotRET2SHELL (cfg);
-            GOTO_EXITING (cfg);
+            file_path = readline__H (NULL);
+            if (!fopen_scirpt_file__H (file_path))
+              {
+                NotRET2SHELL (cfg);
+                GOTO_SCRIPT_MODE (cfg);
+              }
+            else
+              {
+                fprintln (stdout, "%s (%s)", SCERR_FOPEN_FAILED, file_path);
+              }
+            free (file_path);
           }
           break;
 
