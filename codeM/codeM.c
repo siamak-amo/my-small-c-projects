@@ -778,9 +778,10 @@ static const char PIPE = '|';
 static const char *RD_PROMPT = "enter code: ";
 static const char *CN_PROMPT = "enter name: ";
 static const char *PATH_PROMPT = "enter path: ";
+static const char *last_out; /* the last thing which was printed */
+
 static char tmp[CODEM_BUF_LEN]; /* codem temporary buffer */
 static char name_tmp[CNAME_BUF_LEN]; /* cname temporary buffer */
-static const char *last_out; /* the last thing which was printed */
 
 /* script file path mode and error */
 #define SC_FOPEN_FAILED -2
