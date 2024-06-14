@@ -1015,6 +1015,26 @@ fopen_scirpt_file__H (const char *path)
     return 0;
 }
 
+/**
+ *  readline helper function
+ *  must free the result when finished
+ **/
+char *
+readline__H (const char *prompt)
+{
+#ifdef HAS_READLINE
+  return readline (prompt);
+#else
+  UNUSED (prompt);
+  char *p = NULL;
+  size_t len;
+  len = getline (&p, &len, stdin);
+  if (len > 0)
+    p[len - 1] = '\0';
+  return p;
+#endif
+}
+
 static void
 exec_command (char prev_comm, char comm)
 {
