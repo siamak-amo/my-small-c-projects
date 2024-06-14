@@ -745,11 +745,11 @@ main (void)
 
 #ifdef CODEM_DEBUG
 /* debug macro to print codeM buffer */
-#  define printd(param)                         \
-  printf ("[debug %s:%d] %s=[%s]\n",            \
+#  define printd(param)                                 \
+  printf ("[debug %s:%d] %s=[%s]\n",                    \
           __func__, __LINE__, __TOSTR__(param), param);
-#  define dprintf(format, ...)                  \
-  printf ("[debug %s:%d] "format,               \
+#  define dprintf(format, ...)                          \
+  printf ("[debug %s:%d] "format,                       \
           __func__, __LINE__, __VA_ARGS__);
 #else
 #  define printd(param) do{} while (0)
@@ -772,7 +772,7 @@ main (void)
  *  @format must be a C standard string ("xxx")
  *  for expression: `fprintln (stdout, "%s", expression);`
  **/
-#define fprintln(file, format, ...)            \
+#define fprintln(file, format, ...) \
   fprintf (file, format"\n", ##__VA_ARGS__)
 
 static const char *PROMPT = "> ";
@@ -1505,7 +1505,7 @@ parse_options (int argc, char **argv)
               cfg->EOO = true;
               if (NULL != cfg->commands)
                 {
-                  const char *__p = cfg->commands ;
+                  const char *__p = cfg->commands;
                   cfg->commands = malloc (strlen (__p) + 1);
                   cfg->commandsH = cfg->commands;
                   strcpy (cfg->commands, __p);
