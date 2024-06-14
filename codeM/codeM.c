@@ -1284,6 +1284,7 @@ exec_command (char prev_comm, char comm)
                 GOTO_EXITING (cfg);
                 break;
               }
+            free (file_path);
           }
           break;
 
