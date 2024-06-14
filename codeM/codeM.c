@@ -1233,11 +1233,14 @@ exec_command (char prev_comm, char comm)
           }
           break;
 
-        case CMD_MODE:
         case SCRIPT_MODE:
           {
             /* get the path -> execute it, with no other assumption */
           }
+          break;
+
+        case CMD_MODE:
+          fprintln (stderr, "the `$` command is not supported in command mode");
           break;
 
         default:
