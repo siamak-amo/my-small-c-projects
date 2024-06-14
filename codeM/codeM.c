@@ -1264,7 +1264,7 @@ exec_command (char prev_comm, char comm)
               {
                 fprintln (stdout, "%s (%s)", SCERR_FOPEN_FAILED, file_path);
               }
-            free (file_path);
+            Free2Null (file_path);
           }
           break;
 
@@ -1299,7 +1299,7 @@ exec_command (char prev_comm, char comm)
               {
                 fprintln (stdout, "%s (%s)", SCERR_FOPEN_FAILED, file_path);
               }
-            free (file_path);
+            Free2Null (file_path);
           }
           break;
 
@@ -1330,7 +1330,7 @@ exec_command (char prev_comm, char comm)
                 GOTO_EXITING (cfg);
                 break;
               }
-            free (file_path);
+            Free2Null (file_path);
           }
           break;
 
