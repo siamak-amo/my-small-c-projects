@@ -777,8 +777,6 @@ static const char *last_out; /* the last thing which was printed */
 /* script file path mode and error */
 #define SC_FOPEN_FAILED -2
 #define SC_INVALID_PATH -1
-#define SC_PATH_NORMAL 0
-#define SC_PATH_RET 1 /* when you run with `!!` */
 /* script file errors */
 #define SCERR_FOPEN_FAILED "Could not open the script file"
 #define SCERR_INVALID_PATH "Invalid script file path"
@@ -877,7 +875,7 @@ __help_shell ()
            "f: find city code by name   -  F: find city name by code\n"
            "s: search city code         -  S: search city name\n"
            "q: quit                     -  h: help\n"
-           "!: to run a script file and return to the shell, and !! to run and exit\n"
+           "!: to run a script file and return to the shell, and $ to run and exit\n"
            "to give the previous output to the next command use `|` (like shell)\n"
            "use e, E commands to echo and set the last output value respectively\n\n");
 }
@@ -904,57 +902,6 @@ ssrand ()
     }
 
   return r;
-}
-
-/**
- *  gets script file path from stdin and open it up
- *  sets the @mode to 1 when user enters `!xxx` and otherwise 0
- *  this function updates the cfg->script file
- *  @return:
- *     0  -> success
- *    -1  -> invalid file path
- *    -2  -> opening the file failure
- **/
-static int
-__script_getpath_and_open (int *mode)
-{
-  char *line = NULL;
-  char *path = NULL;
-  size_t rw = 0;
-
-  /* read a line */
-  rw = getline (&line, &rw, stdin);
-  if (NULL == line)
-    return SC_INVALID_PATH;
-
-  if ('!' == *line)
-    {
-      path = line + 1; /* remove ! at the beginning */
-      rw--;
-      *mode = SC_PATH_RET;
-    }
-  else
-    {
-      path = line;
-      *mode = SC_PATH_NORMAL;
-    }
-  assert (NULL != path);
-
-  if (rw < 1)
-    return SC_INVALID_PATH;
-  path[rw - 1] = '\0'; /* remove newline */
-
-  /* opening the script file */
-  if (NULL != cfg->script)
-    fclose (cfg->script);
-  cfg->script = fopen (path, "r");
-  if (NULL == cfg->script)
-    return SC_FOPEN_FAILED;
-  else
-    return 0;
-
-  free (line);
-  return 1; /* unreachable */
 }
 
 /**
@@ -1249,52 +1196,52 @@ exec_command (char prev_comm, char comm)
       break;
 
     case '!':
-      int filename_mode = -1;
-      /* preventing file path from being executed by the shell */
       cfg->commented = true;
-      if (cfg->state == SHELL_MODE)
+      switch (cfg->state)
         {
-          int res = __script_getpath_and_open (&filename_mode);
-          if (!res)
-            {
-              if (SC_PATH_RET == filename_mode)
-                RET2SHELL (cfg);
-              else if (SC_PATH_NORMAL == filename_mode)
-                NotRET2SHELL (cfg);
+        case SHELL_MODE:
+          {
+            /* get the path (readline) -> execute it -> return back to the shell */
+            RET2SHELL (cfg);
+            GOTO_SCRIPT_MODE (cfg);
+          }
+          break;
 
-              GOTO_SCRIPT_MODE (cfg);
-            }
-          else
-            fprintln (stderr, "%s", script_strerr (res));
+        case CMD_MODE:
+        case SCRIPT_MODE:
+          {
+            /* only return to the shell */
+            GOTO_SHELL_MODE (cfg);
+            RET2SHELL (cfg);
+          }
+          break;
+
+        default:
+          break;
         }
-      else if (cfg->state == SCRIPT_MODE)
+      break;
+
+    case '$':
+      cfg->commented = true;
+      switch (cfg->state)
         {
-          int res = __script_getpath_and_open (&filename_mode);
-          if (SC_PATH_NORMAL == filename_mode) /* only return to shell */
-            {
-              /**
-               *  if a script file, ends with `!`, it always going to
-               *  return to the shell, even if the user has run the script
-               *  file from the shell (at first) by `!!` (run and exit),
-               *  currently there is no proper way to handle this problem
-               **/
-              RET2SHELL (cfg);
-              GOTO_SHELL_MODE (cfg);
-            }
-          else if (SC_PATH_RET == filename_mode) /* run another script */
-            {
-              if (!res)
-                break; /* just continue */
-              else
-                {
-                  fprintln (stderr, "%s", script_strerr (res));
-                  GOTO_EXITING (cfg);
-                }
-            }
-        }
-      else
-        {
-          fprintln (stderr, "only use `!` command in shell mode or script mode");
+        case SHELL_MODE:
+          {
+            /* get the path (readline) -> execute it -> exit */
+            NotRET2SHELL (cfg);
+            GOTO_EXITING (cfg);
+          }
+          break;
+
+        case CMD_MODE:
+        case SCRIPT_MODE:
+          {
+            /* get the path -> execute it, with no other assumption */
+          }
+          break;
+
+        default:
+          break;
         }
       break;
 
