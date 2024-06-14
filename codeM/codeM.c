@@ -1261,6 +1261,7 @@ exec_command (char prev_comm, char comm)
               {
                 RET2SHELL (cfg);
                 GOTO_SCRIPT_MODE (cfg);
+                cfg->commented = false;
               }
             else
               {
@@ -1296,6 +1297,7 @@ exec_command (char prev_comm, char comm)
               {
                 NotRET2SHELL (cfg);
                 GOTO_SCRIPT_MODE (cfg);
+                cfg->commented = false;
               }
             else
               {
