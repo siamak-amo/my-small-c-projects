@@ -1031,7 +1031,9 @@ char *
 readline__H (const char *prompt)
 {
 #ifdef HAS_READLINE
-  return readline (prompt);
+  char *p = readline (prompt);
+  sscanf (p, " %s ", p);
+  return p;
 #else
   UNUSED (prompt);
   char *p = NULL;
