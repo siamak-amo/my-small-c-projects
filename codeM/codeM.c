@@ -992,6 +992,29 @@ lastout_scanf (char *dest, size_t len)
     }
 }
 
+/**
+ *  fopen, for cfg->script
+ *  there will be no way to access the previous script file
+ *  after calling this function
+ *  this function sets cfg->script to NULL on failure
+ *  @return:
+ *    0 on success and -1 on failure
+ **/
+static int
+fopen_scirpt_file__H (const char *path)
+{
+  if (NULL != cfg->script)
+    {
+      fclose (cfg->script);
+    }
+
+  cfg->script = fopen (path, "r");
+  if (NULL == cfg->script)
+    return -1;
+  else
+    return 0;
+}
+
 static void
 exec_command (char prev_comm, char comm)
 {
