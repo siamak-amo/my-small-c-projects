@@ -758,6 +758,7 @@ main (void)
 
 #define CNAME_BUF_LEN 65
 #define CNAME_MAX_LEN 64 /* BUF_LEN must be MAX_LEN + 1 */
+#define MAX_BUF_LEN MAX (CODEM_BUF_LEN, CNAME_BUF_LEN)
 
 /* normalize character to prevent printing non-ascii characters */
 #define NORMCHAR(c) (((c) >= 0x20 && (c) <= 0x7E) ? (c) : '!')
@@ -787,7 +788,7 @@ static const char *last_out; /* the last thing which was printed */
 static char tmp[CODEM_BUF_LEN]; /* codem temporary buffer */
 static char name_tmp[CNAME_BUF_LEN]; /* cname temporary buffer */
 /* temprary buffer of length MAX(tmp, name_tmp) */
-static char tmp_buffer[MAX (CODEM_BUF_LEN, CNAME_BUF_LEN)];
+static char tmp_buffer[MAX_BUF_LEN];
 
 /* script file path mode and error */
 #define SC_FOPEN_FAILED -2
@@ -941,7 +942,7 @@ scan__H (const char *restrict message,
          const char *restrict sscan_regex)
 {
   int n = 0;
-  assert (dest_len <= MAX(CODEM_BUF_LEN, CNAME_BUF_LEN));
+  assert (dest_len <= MAX_BUF_LEN);
 
   if (cfg->state == SHELL_MODE)
     {
