@@ -766,6 +766,8 @@ main (void)
 /* to string macros (this will not evaluate the input) */
 #define __TOSTR__(x) #x
 #define STR(x) __TOSTR__(x)
+#define MAX(a, b) (((a) < (b)) ? (b) : (a))
+
 /**
  *  newline fprintf
  *  do use any expression in @format
@@ -784,6 +786,8 @@ static const char *last_out; /* the last thing which was printed */
 
 static char tmp[CODEM_BUF_LEN]; /* codem temporary buffer */
 static char name_tmp[CNAME_BUF_LEN]; /* cname temporary buffer */
+/* temprary buffer of length MAX(tmp, name_tmp) */
+static char tmp_buffer[MAX (CODEM_BUF_LEN, CNAME_BUF_LEN)];
 
 /* script file path mode and error */
 #define SC_FOPEN_FAILED -2
@@ -945,19 +949,21 @@ scan__H (const char *restrict message,
         printf (message);
       if (0 > scanf (scan_format, dest))
         return -1;
-      if (0 > sscanf (dest, sscan_regex, dest, &n))
+      if (0 > sscanf (dest, sscan_regex, tmp_buffer, &n))
         return -1;
       if (0 >= n)
         return -1;
+      memcpy (dest, tmp_buffer, dest_len);
     }
   else if (cfg->state == SCRIPT_MODE)
     {
       if (0 > fscanf (cfg->script, scan_format, dest))
         return -1;
-      if (0 > sscanf (dest, sscan_regex, dest, &n))
+      if (0 > sscanf (dest, sscan_regex, tmp_buffer, &n))
         return -1;
       if (0 >= n)
         return -1;
+      memcpy (dest, tmp_buffer, dest_len);
     }
   else if (cfg->state == CMD_MODE)
     {
