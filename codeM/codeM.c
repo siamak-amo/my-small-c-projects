@@ -931,11 +931,13 @@ ssrand ()
  *    on failure  -> -1 on shell mode and 0 on command mode
  */
 static inline int
-scan__H (const char *restrict message, char *restrict dest,
+scan__H (const char *restrict message,
+         char *restrict dest, int dest_len,
          const char *restrict scan_format,
          const char *restrict sscan_regex)
 {
   int n = 0;
+  assert (dest_len <= MAX(CODEM_BUF_LEN, CNAME_BUF_LEN));
 
   if (cfg->state == SHELL_MODE)
     {
@@ -976,9 +978,10 @@ scan__H (const char *restrict message, char *restrict dest,
 static int
 codem_scanf (const char *message, char dest[CODEM_BUF_LEN])
 {
-  int res = scan__H (message, dest,
-                  "%"STR(CODEM_LEN)"s",              // "%10s"
-                  " %"STR(CODEM_LEN)"[^;#]%n");      // " %10[^;#]%n"
+  int res = scan__H (message,
+                     dest, CODEM_BUF_LEN,
+                     "%"STR(CODEM_LEN)"s",              // "%10s"
+                     " %"STR(CODEM_LEN)"[^;#]%n");      // " %10[^;#]%n"
   /* make the dest numeric */
   codem_memnum (dest, CODEM_LEN);
   return res;
@@ -987,8 +990,9 @@ codem_scanf (const char *message, char dest[CODEM_BUF_LEN])
 static int
 cname_scanf (const char *message, char dest[CNAME_BUF_LEN])
 {
-  return scan__H (message, dest,
-                  " %"STR(CNAME_MAX_LEN)"[^\r\n]",   // " %64[^\n\r]" (allow space)
+  return scan__H (message,
+                  dest, CNAME_BUF_LEN,
+                  " %"STR(CNAME_MAX_LEN)"[^\r\n]",   // " %64[^\n\r]" (allows space)
                   " %"STR(CNAME_MAX_LEN)"[^;#]%n");  // " %64[^;#]%n"
 }
 
