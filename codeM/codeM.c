@@ -242,8 +242,8 @@ CODEMDEF void codem_rand (char *codem);
 CODEMDEF void codem_rand2 (char *codem);
 
 /**
- *  generate random codem with suffix
- *  @offset is the length of the suffix
+ *  generate random codem with prefix
+ *  @offset is the length of the prefix
  */
 CODEMDEF void codem_rands (char *codem, int offset);
 
@@ -664,12 +664,12 @@ static void
 test_2_2 ()
 {
   char code[CODEM_BUF_LEN] = "666";
-  DEBUG ("suffix: %s, ", code);
+  DEBUG ("prefix: %s, ", code);
   
   codem_rands (code, 3);
   DEBUG ("codem_rands: %s\n", code);
 
-  /* check the suffix is intact */
+  /* check the prefix is intact */
   assert (0 == strncmp (code, "666", 3));
 
   /* code must be a 10-digit numeric string */
@@ -721,7 +721,7 @@ main (void)
   /**   test type 2  **/
   puts ("\n/* Running test type 2 *******************/");
   FUN_TEST (test_2_1, "random code generator\n");
-  FUN_TEST (test_2_2, "random code with suffix\n");
+  FUN_TEST (test_2_2, "random code with prefix\n");
   FUN_TEST (test_2_3, "random code with city code\n");
   
   return 0;
