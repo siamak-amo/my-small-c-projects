@@ -369,6 +369,11 @@ codem_isvalid (const char *codem)
   return codem_isvalidn (codem_n);
 }
 
+/**
+ *  internal function
+ *  fills @len bytes of the @res with random
+ *  characters '0', ..., '9'
+ */
 CODEMDEF void
 codem_rand_gen (char *res, int len)
 {
