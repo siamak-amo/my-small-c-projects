@@ -1327,6 +1327,7 @@ exec_command (char prev_comm, char comm)
         case SCRIPT_MODE:
           {
             /* only return to the shell */
+            cfg->commented = false;
             GOTO_SHELL_MODE (cfg);
             RET2SHELL (cfg);
           }
