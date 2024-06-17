@@ -785,9 +785,8 @@ static const char *CN_PROMPT = "enter name: ";
 static const char *PATH_PROMPT = "enter path: ";
 static const char *last_out; /* the last thing which was printed */
 
-static char tmp[CODEM_BUF_LEN]; /* codem temporary buffer */
-static char name_tmp[CNAME_BUF_LEN]; /* cname temporary buffer */
 /* temprary buffer of length MAX(tmp, name_tmp) */
+static char buffer[MAX_BUF_LEN];
 static char tmp_buffer[MAX_BUF_LEN];
 
 /* script file path mode and error */
@@ -1099,18 +1098,18 @@ exec_command (char prev_comm, char comm)
     case 'v':
       if (PIPE == prev_comm)
         {
-          if (0 >= lastout_scanf (tmp, CODEM_LEN))
+          if (0 >= lastout_scanf (buffer, CODEM_LEN))
             break;
         }
-      else if (0 > codem_scanf (RD_PROMPT, tmp))
+      else if (0 > codem_scanf (RD_PROMPT, buffer))
         break;
-      if (0 != codem_norm (tmp))
+      if (0 != codem_norm (buffer))
         assert (0 && "Could not normalize");
       printd (tmp);
-      if (codem_isvalidn (tmp))
+      if (codem_isvalidn (buffer))
         {
           fprintln (stdout, "%s", (last_out = "OK."));
-          if (!codem_ccode_isvalid (tmp))
+          if (!codem_ccode_isvalid (buffer))
             fprintln (stdout, "city code was not found.");
         }
       else
@@ -1121,37 +1120,37 @@ exec_command (char prev_comm, char comm)
     case 'V':
       if (PIPE == prev_comm)
         {
-          if (0 >= lastout_scanf (tmp, CODEM_LEN))
+          if (0 >= lastout_scanf (buffer, CODEM_LEN))
             break;
         }
-      else if (0 > codem_scanf (RD_PROMPT, tmp))
+      else if (0 > codem_scanf (RD_PROMPT, buffer))
         break;
-      if (0 != codem_norm (tmp))
+      if (0 != codem_norm (buffer))
         assert (0 && "Could not normalize");
       printd (tmp);
-      codem_set_ctrl_digit (tmp);
-      last_out = tmp;
+      codem_set_ctrl_digit (buffer);
+      last_out = buffer;
       fprintln (stdout, "%s", last_out);
       break;
 
       /* make a random city code */
     case 'c':
-      codem_rand_ccode (tmp);
-      last_out = tmp;
+      codem_rand_ccode (buffer);
+      last_out = buffer;
       printf ("%.3s\n", last_out);
       break;
 
       /* make a random city name */
     case 'C':
-      codem_rand_ccode (tmp);
-      last_out = codem_cname (tmp);
+      codem_rand_ccode (buffer);
+      last_out = codem_cname (buffer);
       fprintln (stdout, "%s", last_out);
       break;
 
       /* make a random code */
     case 'r':
-      codem_rand2 (tmp);
-      last_out = tmp;
+      codem_rand2 (buffer);
+      last_out = buffer;
       fprintln (stdout, "%s", last_out);
       break;
 
@@ -1159,11 +1158,11 @@ exec_command (char prev_comm, char comm)
     case 'R':
       if (PIPE == prev_comm)
         {
-          if (0 > (off = lastout_scanf (tmp, CODEM_LEN)))
+          if (0 > (off = lastout_scanf (buffer, CODEM_LEN)))
             break;
         }
       else
-        off = codem_scanf (RD_PROMPT, tmp);
+        off = codem_scanf (RD_PROMPT, buffer);
       printd (tmp);
       if (off < 0)
         break;
@@ -1171,8 +1170,8 @@ exec_command (char prev_comm, char comm)
         assert (0 && "Invalid offset of codem_scanf");
       else
         {
-          codem_rands (tmp, off);
-          last_out = tmp;
+          codem_rands (buffer, off);
+          last_out = buffer;
           fprintln (stdout, "%s", last_out);
         }
       break;
@@ -1181,13 +1180,13 @@ exec_command (char prev_comm, char comm)
     case 'F':
       if (PIPE == prev_comm)
         {
-          if (0 >= lastout_scanf (tmp, CODEM_LEN))
+          if (0 >= lastout_scanf (buffer, CODEM_LEN))
             break;
         }
-      else if (0 > codem_scanf (RD_PROMPT, tmp))
+      else if (0 > codem_scanf (RD_PROMPT, buffer))
         break;
       printd (tmp);
-      last_out = codem_cname (tmp);
+      last_out = codem_cname (buffer);
       fprintln (stdout, "%s", last_out);
       break;
 
@@ -1195,12 +1194,12 @@ exec_command (char prev_comm, char comm)
     case 'f':
       if (PIPE == prev_comm)
         {
-          if (0 >= lastout_scanf (name_tmp, CNAME_MAX_LEN))
+          if (0 >= lastout_scanf (buffer, CNAME_MAX_LEN))
             break;
         }
-      else if (0 > cname_scanf (CN_PROMPT, name_tmp))
+      else if (0 > cname_scanf (CN_PROMPT, buffer))
         break;
-      res = codem_cname_search (name_tmp);
+      res = codem_cname_search (buffer);
       printd (name_tmp);
       p = codem_ccode (res);
       if (res < 0)
@@ -1218,13 +1217,13 @@ exec_command (char prev_comm, char comm)
     case 's':
       if (PIPE == prev_comm)
         {
-          if (0 >= lastout_scanf (name_tmp, CNAME_MAX_LEN))
+          if (0 >= lastout_scanf (buffer, CNAME_MAX_LEN))
             break;
         }
-      else if (0 > codem_scanf (CN_PROMPT, tmp))
+      else if (0 > codem_scanf (CN_PROMPT, buffer))
         break;
       printd (tmp);
-      res = codem_ccode_idx (tmp);
+      res = codem_ccode_idx (buffer);
       if (res < 0)
         fprintln (stdout, "%s", CCERR_NOT_FOUND);
       else
@@ -1241,13 +1240,13 @@ exec_command (char prev_comm, char comm)
     case 'S':
       if (PIPE == prev_comm)
         {
-          if (0 >= lastout_scanf (name_tmp, CNAME_MAX_LEN))
+          if (0 >= lastout_scanf (buffer, CNAME_MAX_LEN))
             break;
         }
-      else if (0 > cname_scanf (CN_PROMPT, name_tmp))
+      else if (0 > cname_scanf (CN_PROMPT, buffer))
         break;
       printd (name_tmp);
-      res = codem_cname_search (name_tmp);
+      res = codem_cname_search (buffer);
       p = codem_cname_byidx (res);
       last_out = p;
       fprintln (stdout, "%s", last_out);
@@ -1266,10 +1265,10 @@ exec_command (char prev_comm, char comm)
           fprintln (stderr, "do not use this command with pipe");
           break;
         }
-      else if (0 > cname_scanf ("enter value: ", name_tmp))
+      else if (0 > cname_scanf ("enter value: ", buffer))
         break;
       printd (tmp);
-      last_out = name_tmp;
+      last_out = buffer;
       break;
 
     case '!':
