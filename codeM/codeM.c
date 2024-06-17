@@ -756,10 +756,6 @@ main (void)
 #  define dprintf(format, ...) do{} while (0)
 #endif
 
-#define CNAME_BUF_LEN 65
-#define CNAME_MAX_LEN 64 /* BUF_LEN must be MAX_LEN + 1 */
-#define MAX_BUF_LEN MAX (CODEM_BUF_LEN, CNAME_BUF_LEN)
-
 /* normalize character to prevent printing non-ascii characters */
 #define NORMCHAR(c) (((c) >= 0x20 && (c) <= 0x7E) ? (c) : '!')
 /* free and set to null */
@@ -785,8 +781,32 @@ static const char *CN_PROMPT = "enter name: ";
 static const char *PATH_PROMPT = "enter path: ";
 static const char *last_out; /* the last thing which was printed */
 
-/* temprary buffer of length MAX(tmp, name_tmp) */
+/**
+ *  maximum length of a city name (in bytes)
+ *  city names often consist of non-ASCII characters,
+ *  so this value should only be used in scanf-like function calls,
+ *  and no other assumption should be made about this value.
+ *  names within the `codeM_data.h` file consist of UTF-8 characters
+ *  of length 2 (bytes), so the maximum length of a city name
+ *  would be 64/2 = 32 (characters)
+ */
+#define CNAME_MAX_LEN 64
+/* max buffer length for a (null terminated) city name */
+#define CNAME_BUF_LEN 65
+/* maximum codem and city name buffer length */
+#define MAX_BUF_LEN MAX (CODEM_BUF_LEN, CNAME_BUF_LEN)
+/**
+ *  buffer for codem and city name
+ *  used for all inputs and outputs and pipes
+ */
 static char buffer[MAX_BUF_LEN];
+/**
+ *  in the the following sscanf function calls,
+ *  we used tmp_buffer as the destination buffer, where
+ *  the length of the destination buffer specified
+ *  in the sscanf's format parameter is either
+ *  'CODEM_MAX_LEN' or 'CNAME_MAX_LEN'
+ */
 static char tmp_buffer[MAX_BUF_LEN];
 
 /* script file path mode and error */
