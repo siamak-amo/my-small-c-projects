@@ -410,6 +410,7 @@ codem_rand_ccode (char *dest)
       rand /= 10;
     }
 #endif
+  dest[CC_LEN] = '\0';
 }
 
 CODEMDEF void
