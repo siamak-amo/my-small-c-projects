@@ -127,7 +127,7 @@ RandFunction codem_srand = NULL;
  */
 #define ctrl_digit__H(res, codem) do{                    \
     res = 0;                                             \
-    for (int __idx=CODEM_LEN-1; __idx-- != 0;)           \
+    for (int __idx = CODEM_LEN - 1; __idx-- != 0;)       \
       res += (10 - __idx) * char2num ((codem)[__idx]);   \
     res %= 11;                                           \
     if ((res) >= 2)                                      \
