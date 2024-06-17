@@ -376,14 +376,14 @@ codem_isvalid (const char *codem)
  *  fills @len bytes of the @res with random
  *  characters '0', ..., '9'
  */
-CODEMDEF void
+void
 codem_rand_gen (char *res, int len)
 {
   size_t rand = codem_srand ();
   
   while (0 != len--)
     {
-      res[len] = num2char (rand % 10);
+      *(res++) = num2char (rand % 10);
       rand /= 10;
     }
 }
