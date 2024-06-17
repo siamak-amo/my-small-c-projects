@@ -785,10 +785,10 @@ static const char *last_out; /* the last thing which was printed */
  *  maximum length of a city name (in bytes)
  *  city names often consist of non-ASCII characters,
  *  so this value should only be used in scanf-like function calls,
- *  and no other assumption should be made about this value.
+ *  and no other assumption should be made about this value
  *  names within the `codeM_data.h` file consist of UTF-8 characters
  *  of length 2 (bytes), so the maximum length of a city name
- *  would be 64/2 = 32 (characters)
+ *  would be 64/2 = 32 (characters) [despite space characters]
  */
 #define CNAME_MAX_LEN 64
 /* max buffer length for a (null terminated) city name */
