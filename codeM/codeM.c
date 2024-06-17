@@ -417,6 +417,7 @@ codem_rand (char *codem)
 {
   codem_rand_gen (codem, CODEM_LEN - 1);
   codem_set_ctrl_digit (codem);
+  codem[CODEM_LEN] = '\0';
 }
 
 CODEMDEF void
@@ -427,6 +428,7 @@ codem_rand2 (char *codem)
   /* fill the rest by random numbers */
   codem_rand_gen (codem + CC_LEN, CODEM_LEN - CC_LEN - 1);
   codem_set_ctrl_digit (codem);
+  codem[CODEM_LEN] = '\0';
 }
 
 CODEMDEF void
@@ -435,6 +437,7 @@ codem_rands (char *codem, int offset)
   if (offset < 9)
     codem_rand_gen (codem + offset, 9 - offset);
   codem_set_ctrl_digit (codem);
+  codem[CODEM_LEN] = '\0';
 }
 
 CODEMDEF int
