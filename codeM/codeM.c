@@ -30,7 +30,7 @@
  *   compilation:
  *     to compile the CLI program:
  *       cc -ggdb -Wall -Wextra -Werror \
- *          $(pkg-config --cflags readline) \
+ *          -D_READLINE $(pkg-config --cflags readline) \
  *          -D CODEM_IMPLEMENTATION \
  *          -D CODEM_FUZZY_SEARCH_CITYNAME \
  *          -D CODEM_CLI -o codeM codeM.c \
@@ -745,14 +745,14 @@ main (void)
 #include <unistd.h>
 #include <assert.h>
 
-#if defined (_GNU_SOURCE) || defined (__linux__)
-#  define HAS_READLINE
-#  include <readline/readline.h>
-#  include <readline/history.h>
-#elif defined (__APPLE__)
-#  define HAS_READLINE
-#  include <editline/readline.h>
-#endif
+#ifdef _READLINE
+#  if defined (_GNU_SOURCE) || defined (__linux__)
+#    include <readline/readline.h>
+#    include <readline/history.h>
+#  elif defined (__APPLE__)
+#    include <editline/readline.h>
+#  endif
+#endif /* _READLINE */
 
 #ifdef CLI_DEBUG
 /* debug macro to print codeM buffer */
@@ -1081,7 +1081,7 @@ fopen_scirpt_file__H (const char *path)
 char *
 readline__H (const char *prompt)
 {
-#ifdef HAS_READLINE
+#ifdef _READLINE
   char *p = readline (prompt);
   char *res = malloc (strlen (p));
   sscanf (p, " %s ", res);
