@@ -45,8 +45,8 @@
  *     other compilation options:
  *       `-D CODEM_NO_CITY_DATA`:
  *          to compile without data of cites (ignore codeM_data.h)
- *       `-D CLI_DEBUG`:
- *          to enable printing some debug information (in the CLI program)
+ *       `-D CLI_DEBUG` and `-D TEST_DEBUG`:
+ *          to enable printing some debug information
  *       `-D CODEM_FUZZY_SEARCH_CITYNAME`:
  *          to enable fuzzy search, you need to provide
  *          the `leven.c` file (available in the same repository)
@@ -960,6 +960,7 @@ ssrand ()
 /**
  *  internal function to be used by codem_scanf and cname_scanf
  *  this function updates cfg->commands on CMD_MODE
+ *  and expects the @sscanf_regex to have `%n` at the end
  *
  *  @return:
  *    on success  -> number of bytes read
