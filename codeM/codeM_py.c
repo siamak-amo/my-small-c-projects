@@ -61,7 +61,7 @@
 
 /* internal macros */
 /**
- *  Allocate string buffer in the @res from the source @inp[.@len]
+ *  Allocates string buffer in the @res from the source @inp[.@len]
  *  @res:  the result PyObject pointer
  *  @inp:  should be `const char *`
  *         pass it NULL to initialize an empty buffer of length @len

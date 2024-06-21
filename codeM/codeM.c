@@ -68,7 +68,7 @@
  *         codem_rand_init (my_rand_fun);
  *
  *         // do something here
- *         // see examples in the included programs
+ *         // see the examples in the accompanying programs
  *         ...
  *
  *         return 0;
