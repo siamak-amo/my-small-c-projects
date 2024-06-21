@@ -20,16 +20,16 @@
  *
  *  Python C API extension for the codeM.c library
  *
- *  compilation:
+ *  Compilation:
  *    replace xx with your python version
  *    cc -ggdb -Wall -Wextra -Werror \
  *       -shared -fPIC codeM_py.c -o codeM.so \
  *       $(pkg-config --cflags python-3.xx)
  *
- *  compilation options:
- *    define `-D PY_CODEM_DEBUG` to print some debug
- *    information about reference count of globally
- *    handled python objects
+ *    options:
+ *      define `-D PY_CODEM_DEBUG` to print some debug
+ *      information about reference count of globally
+ *      handled python objects
  *
  *  Usage Example:
  *    ```python
