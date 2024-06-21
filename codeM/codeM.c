@@ -1078,7 +1078,7 @@ fopen_scirpt_file__H (const char *path)
 
 /**
  *  readline helper function
- *  must free the result when finished
+ *  free the result when finished
  **/
 char *
 readline__H (const char *prompt)
