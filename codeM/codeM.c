@@ -21,13 +21,13 @@
  *   Common Iranian ID number (code-e-melli) single-file library
  *   A shell (CLI) and a test program are included
  *
- *   the term `codem` in the following refers to `code-e-melli`
- *   this library performs validating and making random codem's
+ *   The term `codem` in the following refers to `code-e-melli`
+ *   This library performs validating and making random codem's
  *
  *   to use this library in python, see `codeM_py.c`
  *   also see `example.cm`, an example of the CLI program's script
  *
- *   compilation:
+ *   Compilation:
  *     to compile the CLI program:
  *       cc -ggdb -Wall -Wextra -Werror \
  *          -D_READLINE $(pkg-config --cflags readline) \
