@@ -1136,7 +1136,7 @@ exec_command (char prev_comm, char comm)
         break;
       if (0 != codem_norm (buffer))
         assert (0 && "Could not normalize");
-      printd (tmp);
+      printd (buffer);
       if (codem_isvalidn (buffer))
         {
           fprintln (stdout, "%s", (last_out = "OK."));
@@ -1158,7 +1158,7 @@ exec_command (char prev_comm, char comm)
         break;
       if (0 != codem_norm (buffer))
         assert (0 && "Could not normalize");
-      printd (tmp);
+      printd (buffer);
       codem_set_ctrl_digit (buffer);
       last_out = buffer;
       fprintln (stdout, "%s", last_out);
@@ -1194,7 +1194,7 @@ exec_command (char prev_comm, char comm)
         }
       else
         off = codem_scanf (RD_PROMPT, buffer);
-      printd (tmp);
+      printd (buffer);
       if (off < 0)
         break;
       else if (off > CODEM_LEN)
@@ -1216,7 +1216,7 @@ exec_command (char prev_comm, char comm)
         }
       else if (0 > codem_scanf (RD_PROMPT, buffer))
         break;
-      printd (tmp);
+      printd (buffer);
       last_out = codem_cname (buffer);
       fprintln (stdout, "%s", last_out);
       break;
@@ -1231,7 +1231,7 @@ exec_command (char prev_comm, char comm)
       else if (0 > cname_scanf (CN_PROMPT, buffer))
         break;
       res = codem_cname_search (buffer);
-      printd (name_tmp);
+      printd (buffer);
       p = codem_ccode (res);
       if (res < 0)
           fprintln (stdout, "%s", p);
@@ -1253,7 +1253,7 @@ exec_command (char prev_comm, char comm)
         }
       else if (0 > codem_scanf (CN_PROMPT, buffer))
         break;
-      printd (tmp);
+      printd (buffer);
       res = codem_ccode_idx (buffer);
       if (res < 0)
         fprintln (stdout, "%s", CCERR_NOT_FOUND);
@@ -1276,7 +1276,7 @@ exec_command (char prev_comm, char comm)
         }
       else if (0 > cname_scanf (CN_PROMPT, buffer))
         break;
-      printd (name_tmp);
+      printd (buffer);
       res = codem_cname_search (buffer);
       p = codem_cname_byidx (res);
       last_out = p;
@@ -1298,7 +1298,7 @@ exec_command (char prev_comm, char comm)
         }
       else if (0 > cname_scanf ("enter value: ", buffer))
         break;
-      printd (tmp);
+      printd (buffer);
       last_out = buffer;
       break;
 
