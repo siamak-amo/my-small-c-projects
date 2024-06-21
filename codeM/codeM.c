@@ -40,13 +40,13 @@
  *       cc -ggdb -Wall -Wextra -Werror \
  *          -D CODEM_IMPLEMENTATION \
  *          -D CODEM_TEST \
- *          -D CODEM_DEBUG -o test codeM.c
+ *          -D TEST_DEBUG -o test codeM.c
  *
  *     other compilation options:
  *       `-D CODEM_NO_CITY_DATA`:
  *          to compile without data of cites (ignore codeM_data.h)
- *       `-D CODEM_DEBUG`:
- *          to enable printing some debug information
+ *       `-D CLI_DEBUG`:
+ *          to enable printing some debug information (in the CLI program)
  *       `-D CODEM_FUZZY_SEARCH_CITYNAME`:
  *          to enable fuzzy search, you need to provide
  *          the `leven.c` file (available in the same repository)
@@ -558,7 +558,7 @@ codem_cname_search (const char *search)
 #include <stdio.h>
 #include <assert.h>
 
-#ifdef CODEM_DEBUG
+#ifdef TEST_DEBUG
 #  define DEBUG(fmt, ...) printf (fmt, ##__VA_ARGS__)
 #else
 #  define DEBUG(fmt, ...) do{} while (0)
@@ -754,7 +754,7 @@ main (void)
 #  include <editline/readline.h>
 #endif
 
-#ifdef CODEM_DEBUG
+#ifdef CLI_DEBUG
 /* debug macro to print codeM buffer */
 #  define printd(param)                                 \
   printf ("[debug %s:%d] %s=[%s]\n",                    \
