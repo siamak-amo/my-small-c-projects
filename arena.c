@@ -113,6 +113,12 @@ typedef Arena_t Arena;
  */
 Arena *arena_alloc (Arena *A, uint cap, uint flags);
 
+// internal macros, to define functions with empty body
+#define Arena_Define_Fun(ret_t, ret_val, name, ...)     \
+  ret_t name (__VA_ARGS__) {return ret_val;}
+#define Arena_Define_NULL_Fun(ret_t, name, ...)       \
+  Arena_Define_Fun (ret_t, NULL, name, __VA_ARGS__)
+
 
 #endif /* ARENA_H__ */
 #ifdef ARENA_IMPLEMENTATION
@@ -125,6 +131,47 @@ Region *__new_huge_region (uint cap);
 // @return:  0 on success, -1 on failure
 int __region_free (Region *r);
 int __region_unmap (Region *r);
+
+#ifdef AHAS_MALLOC
+Region *
+__new_region_malloc (uint cap)
+{
+
+}
+
+Region *
+__new_region_aligned_alloc (uint cap)
+{
+
+}
+
+int
+__region_free (Region *r)
+{
+
+}
+#else
+Arena_Define_NULL_Fun (Region *, __new_region_malloc, uint cap);
+Arena_Define_NULL_Fun (Region *, __new_region_aligned_alloc, uint cap);
+Arena_Define_Fun (int, -1, __region_free, Region *);
+#endif
+#ifdef AHAS_MMAP
+Region *
+__new_region_mmap (uint cap)
+{
+
+}
+
+int
+__region_unmap (Region *r)
+{
+
+}
+#else
+Arena_Define_NULL_Fun (Region *, __new_region_mmap, uint cap);
+Arena_Define_Fun (int, -1, __region_unmap, Region *);
+#endif
+
 
 Region *__new_region_H (uint cap, uint flags)
 {
