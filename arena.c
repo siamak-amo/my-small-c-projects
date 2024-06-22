@@ -87,6 +87,22 @@
 #  endif
 #endif
 
+#ifdef AHAS_MALLOC
+#  ifdef AHAS_ALIGNED_ALLOC
+#    define __arena_aligned_alloc(size) aligned_alloc (ALIGNMENT, size)
+#    define __arena_alloc(size) malloc (size)
+#  else
+#    define __arena_aligned_alloc(size) malloc (size)
+#    define __arena_alloc(size) malloc (size)
+#  endif
+#endif
+#ifdef AHAS_MMAP
+#  define __arena_mmap(size) mmap (NULL, size,                          \
+                                   PROT_READ|PROT_WRITE,                \
+                                   MAP_ANONYMOUS|MAP_PRIVATE,           \
+                                   -1, 0);
+#endif
+
 struct region_t {
   region_t *next; /* next region in linked list */
   uint len, cap; /* occupied length and capacity */
