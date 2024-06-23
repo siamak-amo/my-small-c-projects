@@ -179,6 +179,19 @@ char *arena_realloc (Arena *A, char *old, uint new_size);
  */
 char *arena_mrealloc (Arena *A, char *old, uint old_size, uint new_size, int flags);
 
+/**
+ *  set's occupied length to zero for all the regions
+ *  within the arena @A
+ *  this function will not overwrite the memories, so
+ *  your pointers will be valid until some new allocations occur
+ */
+void arena_reset (Arena *A);
+/**
+ *  frees all regions withing the arena @A
+ *  your pointers are not valid anymore after calling this function
+ */
+void arena_free (Arena *A);
+
 #endif /* ARENA_H__ */
 #ifdef ARENA_IMPLEMENTATION
 
@@ -413,4 +426,25 @@ arena_realloc (Arena *A, char *old, uint new_size, uint old_size)
   return NULL;
 }
 
+void
+arena_reset (Arena *A)
+{
+  for_regions2 (A)
+    {
+      r->len = 0;
+    }
+}
+
+void
+arena_free (Arena *A)
+{
+  Region *tmp;
+  for_regions2 (A)
+    {
+      tmp = r;
+      __region_free (tmp);
+    }
+  A->head = NULL;
+  A->cursor = NULL;
+}
 #endif
