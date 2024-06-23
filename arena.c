@@ -171,20 +171,12 @@ char *arena_alloc (Arena *A, uint cap, uint flags);
 char *arena_alloc2 (Arena *A, uint cap, uint flags);
 
 /**
- *  reallocate the @old pointer
- *  if it fail to find the corresponding containing arena
- *  of the @old, returns NULL, as the length of the @old
- *  pointer is not known, allocating new empty pointer is pointless
- */
-char *arena_realloc (Arena *A, char *old, uint new_size);
-
-/**
  *  manual realloc, preferably use arena_realloc
  *  this function always succeeds
  *  the new @flags, does not need to be the same as the old flags
  *  and the new memory will have the new @flags
  */
-char *arena_mrealloc (Arena *A, char *old, uint old_size, uint new_size, int flags);
+char *arena_realloc (Arena *A, char *old, uint old_size, uint new_size, int flags);
 
 /**
  *  set's occupied length to zero for all the regions
@@ -433,29 +425,6 @@ arena_realloc (Arena *A, char *old, uint old_size,
   char *res = arena_alloc (A, new_size, flags);
   memcpy (res, old, old_size);
   return res;
-}
-
-char *
-arena_realloc (Arena *A, char *old, uint new_size, uint old_size)
-{
-  A->cursor = A->head;
-  while (NULL != A->cursor)
-    {
-      size_t __ptr = (size_t)old;
-      size_t __mem_head = (size_t)(A->cursor->buffer->mem);
-      if (__ptr >= __mem_head &&
-          __ptr <= __mem_head + (size_t)A->cursor->len)
-        {
-          /* we have found the corresponding arena */
-          fprintdln (stderr, "Region %p contains old pointer %p",
-                     A->cursor, old);
-          /* reallocating */
-          return arena_mrealloc (A, old, A->old_size, A->buffer->flag);
-        }
-    }
-
-  assert (NULL != A->head && "Broken linked list");
-  return NULL;
 }
 
 void
