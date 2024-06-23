@@ -275,7 +275,19 @@ __region_unmap (Region *r)
 #endif
 
 
-Region *__new_region_H (uint cap, uint flags)
+Region *
+__new_huge_region (uint cap)
+{
+#if defined (AHAS_MMAP)
+  return __new_region_mmap (cap);
+#else
+  return NULL; /* prevent allocating huge memory with malloc */
+#endif
+  return NULL; /* unreachable */
+}
+
+Region *
+  __new_region_H (uint cap, uint flags)
 {
   if (cap > HUGE_MEM)
     return __new_huge_region (cap);
