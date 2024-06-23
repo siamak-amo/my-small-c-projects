@@ -122,7 +122,7 @@
 #endif
 
 struct region_t {
-  region_t *next; /* next region in linked list */
+  struct region_t *next; /* next region in linked list */
   uint len, cap; /* occupied length and capacity */
 
   struct buffer_t {
@@ -136,15 +136,15 @@ struct region_t {
  */
 #define regionof(size) (size + sizeof (struct region_t))
 #define region_sizeof(r) ((r)->cap + sizeof (struct region_t))
-#define region_leftof(r) ((r)->cap - (r)->size)
-typedef region_t Region;
+#define region_leftof(r) ((r)->cap - (r)->len)
+typedef struct region_t Region;
 
 struct Arena_t {
-  region *head; /* head of the regions linked list */
-  region *cursor; /* the last modified arena */
+  Region *head; /* head of the regions linked list */
+  Region *cursor; /* the last modified arena */
 };
-typedef Arena_t Arena;
-#define new_arena() (Arena *){0}
+typedef struct Arena_t Arena;
+#define new_arena() (Arena){0}
 #define for_regions(a)                                                  \
   for ( (a)->cursor = (a)->head;                                        \
         NULL != (a)->cursor;                                            \
@@ -234,7 +234,7 @@ __new_region_malloc (uint cap)
 Region *
 __new_region_aligned_alloc (uint cap)
 {
-  Region *r = __new_region_aligned_alloc (regionof (cap));
+  Region *r = __arena_alloc (regionof (cap));
   assert (r && "end of memory");
   r->buffer->flag = AFLAG_MALLOCED;
   r->cap = cap;
@@ -282,7 +282,7 @@ __region_free (Region *r)
 Region *
 __new_region_mmap (uint cap)
 {
-  Region *r = __new_region_mmap (regionof (cap));
+  Region *r = __arena_mmap (regionof (cap));
   assert (r && "end of memory");
   r->buffer->flag = AFLAG_MAPPED;
   r->cap = cap;
@@ -415,19 +415,19 @@ arena_alloc (Arena *A, uint size, uint flags)
       if (NULL == A->head)
         return NULL;
       A->cursor = A->head;
-      return A->buffer->mem;
+      return A->cursor->buffer->mem;
     }
 
   A->cursor = A->head; /* go to the beginning */
   while (NULL != A->cursor->next)
     {
       if (A->cursor->len + size <= A->cursor->cap &&
-          a->cursor->buffer->flag == flags)
+          A->cursor->buffer->flag == flags)
         {
           A->cursor->len += size;
           fprintdln (stdout, "Arena allocated %u, left %u bytes",
                      size, region_leftof (A->cursor));
-          return A->cursor->buffer->mem + A->len;
+          return A->cursor->buffer->mem + A->cursor->len;
         }
       else
         fprintdln (stderr, "Arena has cap: %u but wanted: %u",
