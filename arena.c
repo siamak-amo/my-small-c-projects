@@ -67,9 +67,9 @@
 #  define ALIGNMENT (1 << ALIGNMENT_FACTOR)
 #endif
 
-/* larger than 1G is huge */
+/* larger than 2G is huge */
 #ifndef HUGE_MEM
-#  define HUGE_MEM (1*1024*1024)
+#  define HUGE_MEM (2*1024*1024)
 #endif
 
 /* minimum capacity (1M) */
