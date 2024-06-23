@@ -133,7 +133,7 @@ struct region_t {
  *  the @cap only indicates the size of the @mem member
  */
 #define regionof(size) (size + sizeof (struct region_t))
-#define region_sizeof(r) (r->cap + sizeof (struct region_t))
+#define region_sizeof(r) ((r)->cap + sizeof (struct region_t))
 #define region_leftof(r) ((r)->cap - (r)->size)
 typedef region_t Region;
 
@@ -277,7 +277,7 @@ arena_alloc (Arena *A, uint size, uint flags)
       /* initialize the linked list */
       if (NULL != A->cursor)
         {
-          fprintdln (stderr, "Arena @%p, expected to be NULL, but it's not", A);
+          fprintdln (stderr, "Arena expected to be NULL, but it's not");
           assert (0 && "Broken linked list");
         }
       A->head = __new_region_H (size, flags);
