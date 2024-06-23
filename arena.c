@@ -145,6 +145,13 @@ struct Arena_t {
 };
 typedef Arena_t Arena;
 #define new_arena() (Arena *){0}
+#define for_regions(a)                                                  \
+  for ( (a)->cursor = (a)->head;                                        \
+        NULL != (a)->cursor;                                            \
+        (a)->cursor = ((a)->cursor)->next )
+#define for_regions2(a)                                                 \
+  for ( Region *r = (a)->head; NULL != r; r = r->next )
+
 
 /* function definitions */
 /**
