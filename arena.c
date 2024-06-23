@@ -280,6 +280,8 @@ arena_alloc (Arena *A, uint size, uint flags)
           assert (0 && "Broken linked list");
         }
       A->head = __new_region_H (size, flags);
+      if (NULL == A->head)
+        return NULL;
       A->cursor = A->head;
       return A->buffer->mem;
     }
@@ -299,9 +301,9 @@ arena_alloc (Arena *A, uint size, uint flags)
   assert (NULL == A->cursor->next);
   /* alllocate a new region and add it to the list */
   A->cursor->next = __new_region_H (size, flags);
-
+  if (NULL == A->cursor->next)
+    return NULL;
   A->cursor = A->cursor->next;
-  assert (A->cursor && "end of memory");
   return A->cursor->buffer->mem;
 }
 
