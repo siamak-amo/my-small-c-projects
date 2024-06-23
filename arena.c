@@ -276,7 +276,7 @@ arena_alloc (Arena *A, uint size, uint flags)
       /* initialize the linked list */
       if (NULL != A->cursor)
         {
-          fprintd ("Arena @%p, expected to be NULL, but it's not", A);
+          fprintdln (stderr, "Arena @%p, expected to be NULL, but it's not", A);
           assert (0 && "Broken linked list");
         }
       A->head = __new_region_H (size, flags);
@@ -292,8 +292,13 @@ arena_alloc (Arena *A, uint size, uint flags)
       if (A->cursor->len + size <= A->cursor->cap)
         {
           A->cursor->len += size;
+          fprintdln (stdout, "Arena allocated %u, left %u bytes",
+                     size, A->cursor->cap - A->cursor->len);
           return A->cursor->buffer->mem + A->len;
         }
+      else
+        fprintdln (stderr, "Arena has cap: %u but wanted: %u",
+                   A->cursor->cap - A->cursor->len, size);
       A->cursor = A->cursor->next;
     }
 
