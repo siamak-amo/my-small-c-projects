@@ -160,6 +160,8 @@ typedef Arena_t Arena;
  *  @flags:  see allocation method flags (AUSE flags)
  *  this function guarantees that the allocated memory
  *  within some region, has the right flags
+ *  if you provide some new flag, that never has been used in
+ *  the arena @A, it will allocate a whole new region
  */
 char *arena_alloc (Arena *A, uint cap, uint flags);
 /**
