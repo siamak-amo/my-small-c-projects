@@ -155,7 +155,7 @@ Arena *arena_alloc (Arena *A, uint cap, uint flags);
 #endif /* ARENA_H__ */
 #ifdef ARENA_IMPLEMENTATION
 
-// internal functions
+/* internal functions */
 Region *__new_region_malloc (uint cap);
 Region *__new_region_aligned_alloc (int cap);
 Region *__new_region_mmap (uint cap);
@@ -287,7 +287,7 @@ __new_huge_region (uint cap)
 }
 
 Region *
-  __new_region_H (uint cap, uint flags)
+__new_region_H (uint cap, uint flags)
 {
   if (cap > HUGE_MEM)
     return __new_huge_region (cap);
