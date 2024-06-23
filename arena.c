@@ -113,10 +113,11 @@
 #  endif
 #endif
 #ifdef AHAS_MMAP
-#  define __arena_mmap(size) mmap (NULL, size,                          \
-                                   PROT_READ|PROT_WRITE,                \
-                                   MAP_ANONYMOUS|MAP_PRIVATE,           \
-                                   -1, 0);
+#  define __arena_mmap(size)                                            \
+  mmap (NULL, size,                                                     \
+        PROT_READ | PROT_WRITE,                                         \
+        MAP_ANONYMOUS | MAP_PRIVATE,                                    \
+        -1, 0);
 #endif
 
 struct region_t {
