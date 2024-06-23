@@ -174,19 +174,39 @@ int __region_unmap (Region *r);
 Region *
 __new_region_malloc (uint cap)
 {
-
+  Region *r = __new_region_malloc (regionof (cap));
+  assert (r && "end of memory");
+  r->buffer->flag = AFLAG_MALLOCED;
+  r->cap = cap;
+  r->next = NULL;
+  r->len = 0;
+  return r;
 }
 
 Region *
 __new_region_aligned_alloc (uint cap)
 {
-
+  Region *r = __new_region_aligned_alloc (regionof (cap));
+  assert (r && "end of memory");
+  r->buffer->flag = AFLAG_MALLOCED;
+  r->cap = cap;
+  r->next = NULL;
+  r->len = 0;
+  return r;
 }
 
 int
 __region_free (Region *r)
 {
-
+  if (NULL == r)
+    return -1;
+  if (FL2 (AFLAG_MAPPED, r->buffer->flag))
+    {
+      free (r);
+      return 0;
+    }
+  else
+    return -1;
 }
 #else
 Arena_Define_NULL_Fun (Region *, __new_region_malloc, uint cap);
@@ -197,13 +217,30 @@ Arena_Define_Fun (int, -1, __region_free, Region *);
 Region *
 __new_region_mmap (uint cap)
 {
-
+  Region *r = __new_region_mmap (regionof (cap));
+  assert (r && "end of memory");
+  r->buffer->flag = AFLAG_MAPPED;
+  r->cap = cap;
+  r->next = NULL;
+  r->len = 0;
+  return r;
 }
 
 int
 __region_unmap (Region *r)
 {
-
+  if (NULL == r)
+    return -1;
+  if (FL2 (AFLAG_MAPPED, r->buffer->flag))
+    {
+      int ret = munmap (r, region_sizeof (r));
+      if (0 == ret)
+        return 0;
+      else
+        return -1;
+    }
+  else
+    return -1;
 }
 #else
 Arena_Define_NULL_Fun (Region *, __new_region_mmap, uint cap);
