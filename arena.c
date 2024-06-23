@@ -32,8 +32,8 @@
 #ifdef _ARENA_DEBUG
 #  include <stdio.h>
 #  define fprintd(file, format, ...) \
-  fprintf (file, "[debug %s:%d] "format, __func__, __LINE__, __VA_ARGS__)
-#  define fprintdln(file, format, ...) fprintd (file, format"\n", __VA_ARGS__)
+  fprintf (file, "[debug %s:%d] "format, __func__, __LINE__, ##__VA_ARGS__)
+#  define fprintdln(file, format, ...) fprintd (file, format"\n", ##__VA_ARGS__)
 #else
 #  define fprintd(file, format, ...)
 #  define fprintdln(file, format, ...)
@@ -63,7 +63,7 @@
 #endif
 
 #ifndef ALIGNMENT_FACTOR
-#  define ALIGNMENT_FACTOR 32
+#  define ALIGNMENT_FACTOR 16
 #  undef  ALIGNMENT /* must be a power of 2 */
 #  define ALIGNMENT (1 << ALIGNMENT_FACTOR)
 #endif
@@ -75,12 +75,12 @@
 
 /* minimum capacity (1M) */
 #ifndef ARENA_MIN_CAP
-# define ARINA_MIN_CAP (1*1024)
+# define ARENA_MIN_CAP (1*1024)
 #endif
 
 /* flags must fit in 32 bits and be a power of 2 */
 #define EXP2(n) (1 << (n))
-#define FL2(val, flag) ((flag) & (val) != 0)
+#define FL2(val, flag) (((flag) & (val)) != 0)
 
 /* flags              */
 /* memory types       */
