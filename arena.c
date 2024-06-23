@@ -271,10 +271,10 @@ Region *__new_region_H (uint cap, uint flags)
 char *
 arena_alloc (Arena *A, uint size, uint flags)
 {
-  if (NULL == A->cursor)
+  if (NULL == A->head)
     {
       /* initialize the linked list */
-      if (NULL != A->head)
+      if (NULL != A->cursor)
         {
           fprintd ("Arena @%p, expected to be NULL, but it's not", A);
           assert (0 && "Broken linked list");
@@ -289,10 +289,10 @@ arena_alloc (Arena *A, uint size, uint flags)
   A->cursor = A->head; /* go to the beginning */
   while (NULL != A->cursor->next)
     {
-      if (A->len + size <= A->cap)
+      if (A->cursor->len + size <= A->cursor->cap)
         {
-          return A->buffer->mem + A->len;
-          A->len += size;
+          A->cursor->len += size;
+          return A->cursor->buffer->mem + A->len;
         }
       A->cursor = A->cursor->next;
     }
