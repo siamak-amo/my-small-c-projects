@@ -371,7 +371,7 @@ arena_alloc2 (Arena *A, uint size, uint flags)
       if (NULL == A->head)
         return NULL;
       A->cursor = A->head;
-      return A->buffer->mem;
+      return A->head->buffer->mem;
     }
 
   A->cursor = A->head; /* go to the beginning */
@@ -382,7 +382,7 @@ arena_alloc2 (Arena *A, uint size, uint flags)
           A->cursor->len += size;
           fprintdln (stdout, "Arena allocated %u, left %u bytes",
                      size, region_leftof (A->cursor));
-          return A->cursor->buffer->mem + A->len;
+          return A->cursor->buffer->mem + A->cursor->len;
         }
       else
         fprintdln (stderr, "Arena has cap: %u but wanted: %u",
@@ -403,6 +403,8 @@ arena_alloc2 (Arena *A, uint size, uint flags)
 char *
 arena_alloc (Arena *A, uint size, uint flags)
 {
+  if (NULL == A || 0 == size)
+    return NULL;
   if (NULL == A->head)
     {
       /* initialize the linked list */
