@@ -128,7 +128,13 @@ struct region_t {
     char *mem;
   } *buffer;
 };
-typedef region_t region;
+/**
+ *  regions must be allocated of the size below
+ *  the @cap only indicates the size of the @mem member
+ */
+#define regionof(size) (size + sizeof (struct region_t))
+#define region_sizeof(r) (r->cap + sizeof (struct region_t))
+typedef region_t Region;
 
 struct Arena_t {
   region *head; /* head of the regions linked list */
