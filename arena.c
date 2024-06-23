@@ -151,7 +151,7 @@ typedef Arena_t Arena;
  *  initializes the list, if needed
  *  @flags:  see allocation method flags (AUSE flags)
  */
-Arena *arena_alloc (Arena *A, uint cap, uint flags);
+char *arena_alloc (Arena *A, uint cap, uint flags);
 
 #endif /* ARENA_H__ */
 #ifdef ARENA_IMPLEMENTATION
