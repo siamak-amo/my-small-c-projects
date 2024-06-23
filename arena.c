@@ -134,6 +134,7 @@ struct region_t {
  */
 #define regionof(size) (size + sizeof (struct region_t))
 #define region_sizeof(r) (r->cap + sizeof (struct region_t))
+#define region_leftof(r) ((r)->cap - (r)->size)
 typedef region_t Region;
 
 struct Arena_t {
