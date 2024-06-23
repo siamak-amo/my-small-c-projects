@@ -81,11 +81,11 @@
 #define EXP2(n) (1 << (n))
 #define FL2(val, flag) ((flag) & (val) != 0)
 
-/* memory types */
+/* flags              */
+/* memory types       */
 #define AFLAG_MALLOCED       EXP2 (1) /* allocated with malloc */
 #define AFLAG_MAPPED         EXP2 (2) /* allocated with mmap */
 #define AFLAG_HUGE           EXP2 (3) /* huge memory */
-
 /* allocation methods */
 #define AUSE_MALLOC          EXP2 (10)
 #define AUSE_ALIGNEDALLOC    EXP2 (11)
