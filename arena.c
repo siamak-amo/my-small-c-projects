@@ -162,6 +162,13 @@ typedef Arena_t Arena;
  *  within some region, has the right flags
  */
 char *arena_alloc (Arena *A, uint cap, uint flags);
+/**
+ *  the same as the arena_alloc, but the allocated memory
+ *  might have different flags (see AUSE flags)
+ *  in fact, it allocates the memory in the first region
+ *  that has enough free space withing the arena @A
+ */
+char *arena_alloc2 (Arena *A, uint cap, uint flags);
 
 /**
  *  reallocate the @old pointer
@@ -345,6 +352,50 @@ __new_region_H (uint cap, uint flags)
       // unknown flag
       return NULL;
     }
+}
+
+char *
+arena_alloc2 (Arena *A, uint size, uint flags)
+{
+  if (NULL == A->head)
+    {
+      /* initialize the linked list */
+      if (NULL != A->cursor)
+        {
+          fprintdln (stderr, "Arena expected to be NULL, but it's not");
+          assert (0 && "Broken linked list");
+        }
+      A->head = __new_region_H (size, flags);
+      if (NULL == A->head)
+        return NULL;
+      A->cursor = A->head;
+      return A->buffer->mem;
+    }
+
+  A->cursor = A->head; /* go to the beginning */
+  while (NULL != A->cursor->next)
+    {
+      if (A->cursor->len + size <= A->cursor->cap)
+        {
+          A->cursor->len += size;
+          fprintdln (stdout, "Arena allocated %u, left %u bytes",
+                     size, region_leftof (A->cursor));
+          return A->cursor->buffer->mem + A->len;
+        }
+      else
+        fprintdln (stderr, "Arena has cap: %u but wanted: %u",
+                   region_leftof (A->cursor), size);
+      A->cursor = A->cursor->next;
+    }
+
+  /* we must have reached the end of the linked list */
+  assert (NULL == A->cursor->next);
+  /* alllocate a new region and add it to the list */
+  A->cursor->next = __new_region_H (size, flags);
+  if (NULL == A->cursor->next)
+    return NULL;
+  A->cursor = A->cursor->next;
+  return A->cursor->buffer->mem;
 }
 
 char *
