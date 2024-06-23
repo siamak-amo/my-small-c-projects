@@ -151,6 +151,8 @@ typedef Arena_t Arena;
  *  to allocate new arena in linked-list of capacity @cap
  *  initializes the list, if needed
  *  @flags:  see allocation method flags (AUSE flags)
+ *  this function guarantees that the allocated memory
+ *  within some region, has the right flags
  */
 char *arena_alloc (Arena *A, uint cap, uint flags);
 
@@ -346,7 +348,8 @@ arena_alloc (Arena *A, uint size, uint flags)
   A->cursor = A->head; /* go to the beginning */
   while (NULL != A->cursor->next)
     {
-      if (A->cursor->len + size <= A->cursor->cap)
+      if (A->cursor->len + size <= A->cursor->cap &&
+          a->cursor->buffer->flag == flags)
         {
           A->cursor->len += size;
           fprintdln (stdout, "Arena allocated %u, left %u bytes",
