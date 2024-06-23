@@ -160,7 +160,12 @@ Region *__new_region_malloc (uint cap);
 Region *__new_region_aligned_alloc (int cap);
 Region *__new_region_mmap (uint cap);
 Region *__new_huge_region (uint cap);
-// @return:  0 on success, -1 on failure
+/**
+ *  @return:
+ *    0  success
+ *   -1  failur
+ *   -2  when malloc or mmap not included respectively
+ */
 int __region_free (Region *r);
 int __region_unmap (Region *r);
 
