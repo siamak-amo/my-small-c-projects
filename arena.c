@@ -294,12 +294,12 @@ arena_alloc (Arena *A, uint size, uint flags)
         {
           A->cursor->len += size;
           fprintdln (stdout, "Arena allocated %u, left %u bytes",
-                     size, A->cursor->cap - A->cursor->len);
+                     size, region_leftof (A->cursor));
           return A->cursor->buffer->mem + A->len;
         }
       else
         fprintdln (stderr, "Arena has cap: %u but wanted: %u",
-                   A->cursor->cap - A->cursor->len, size);
+                   region_leftof (A->cursor), size);
       A->cursor = A->cursor->next;
     }
 
