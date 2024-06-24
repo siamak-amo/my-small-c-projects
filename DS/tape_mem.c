@@ -191,21 +191,29 @@ main (void)
 
   
   char *data_at = NULL;
+  DBuffer *btmp = NULL;
+
   printf ("testing tape_get... ");
   data_at = tape_get (&mem, 1);
   assert (NULL != data_at);
   assert (0 == strcmp (data_at, "One"));
   // puts (data_at);
+  btmp = bufferof (data_at);
+  assert (btmp->len == 4);
 
   data_at = tape_get (&mem, 2);
   assert (NULL != data_at);
   assert (0 == strcmp (data_at, "2024"));
   // puts (data_at);
+  btmp = bufferof (data_at);
+  assert (btmp->len == 32);
   
   data_at = tape_get (&mem, 3);
   assert (NULL != data_at);
   assert (0 == strcmp (data_at, "XXX"));
   // puts (data_at);
+  btmp = bufferof (data_at);
+  assert (btmp->len == 4);
 
   data_at = tape_get (&mem, 4);
   assert (NULL == data_at);
