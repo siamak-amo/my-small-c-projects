@@ -24,15 +24,15 @@ typedef struct tape_t Tape;
   (Tape){.len=0, .cap=capacity, .data=NULL,}
 
 /* function definitions */
-char *tape_append (Tape *tape, DBuffer *buf);
-char *tape_get (Tape *tape, size_t index);
+char *tape_append (Tape *tape, const DBuffer *buf);
+char *tape_get (const Tape *tape, size_t index);
 
 #endif /* TAPE_MEM__H__ */
 
 
 #ifdef TAPE_MEM_IMPLEMENTATION
 char *
-tape_append (Tape *tape, DBuffer *buf)
+tape_append (Tape *tape, const DBuffer *buf)
 {
   if (NULL == tape->data || 0 == tape->cap || 0 == buf->len)
     return NULL;
@@ -50,7 +50,7 @@ tape_append (Tape *tape, DBuffer *buf)
 }
 
 char *
-tape_get (Tape *tape, size_t index)
+tape_get (const Tape *tape, size_t index)
 {
   char *p = tape->data;
   size_t p_len = tape->len;
