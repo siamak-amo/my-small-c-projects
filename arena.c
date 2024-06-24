@@ -449,6 +449,7 @@ arena_free (Arena *A)
       __region_free (tmp);
     }
   A->head = NULL;
-  A->cursor = NULL;
+  A->end = NULL;
 }
-#endif
+#endif /* ARENA_IMPLEMENTATION */
+
