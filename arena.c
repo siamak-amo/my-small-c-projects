@@ -232,7 +232,7 @@ __region_free (Region *r)
 {
   if (NULL == r)
     return -1;
-  if (FL2 (AFLAG_MAPPED, r->flag))
+  if (FL2 (AFLAG_MALLOCED, r->flag))
     {
       free (r);
       return 0;
