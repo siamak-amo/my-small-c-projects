@@ -110,10 +110,11 @@
 #endif
 
 #ifdef AHAS_MALLOC
+#  define __arena_alloc(size) malloc (size)
 #  ifdef AHAS_ALIGNED_ALLOC
-#    define __arena_alloc(size) aligned_alloc (ALIGNMENT, size)
+#    define __arena_aligned_alloc(size) aligned_alloc (ALIGNMENT, size)
 #  else
-#    define __arena_alloc(size) malloc (size)
+#    define __arena_aligned_alloc(size) malloc (size)
 #  endif
 #endif
 #ifdef AHAS_MMAP
@@ -204,6 +205,7 @@ void arena_free (Arena *A);
 
 /* internal functions */
 Region *__new_region_malloc (uint cap);
+Region *__new_region_aligned_alloc (uint cap);
 Region *__new_region_mmap (uint cap);
 Region *__new_huge_region (uint cap);
 /**
@@ -216,6 +218,17 @@ int __region_free (Region *r);
 int __region_unmap (Region *r);
 
 #ifdef AHAS_MALLOC
+Region *
+__new_region_aligned_alloc (uint cap)
+{
+  Region *r = __arena_aligned_alloc (size_of_region (cap));
+  assert (r && "end of memory");
+  r->flag = AFLAG_MALLOCED | AUSE_MALLOC;
+  r->cap = cap;
+  r->next = NULL;
+  return r;
+}
+
 Region *
 __new_region_malloc (uint cap)
 {
@@ -319,6 +332,8 @@ __new_region_H (uint cap, uint flags)
   else if (cap < ARENA_MIN_CAP)
     cap = ARENA_MIN_CAP;
   
+  if (FL2 (flags, AUSE_ALIGNEDALLOC))
+    return __new_region_aligned_alloc (cap);
   if (FL2 (flags, AUSE_MALLOC))
     return __new_region_malloc (cap);
   else if (FL2 (flags, AUSE_MMAP))
