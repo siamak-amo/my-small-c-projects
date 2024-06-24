@@ -122,11 +122,8 @@
 struct region_t {
   struct region_t *next; /* next region in linked list */
   uint len, cap; /* occupied length and capacity */
-
-  struct buffer_t {
-    uint flag; /* indicates how the memory was allocated */
-    char *mem;
-  } *buffer;
+  uint flag; /* indicates how the memory was allocated */
+  char mem[];
 };
 /**
  *  regions must be allocated of the size below
