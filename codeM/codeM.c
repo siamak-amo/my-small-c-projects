@@ -799,7 +799,7 @@ static const char *last_out; /* the last thing which was printed */
  *  and no other assumption should be made about this value
  *  names within the `codeM_data.h` file consist of UTF-8 characters
  *  of length 2 (bytes), so the maximum length of a city name
- *  would be 64/2 = 32 (characters) [despite space characters]
+ *  would be 64/2 = 32 (characters) [despite the space characters]
  */
 #define CNAME_MAX_LEN 64
 /* max buffer length for a (null terminated) city name */
@@ -847,14 +847,14 @@ struct Conf {
   enum state_t state;
   bool silent_mode;
   bool prompt;
-  bool ret2shell; /* return to shell in script mode */
-  bool EOO; /* End Of Options */
-  bool commented; /* section is commented */
-  char *commands; /* only in command mode */
-  char *commandsH; /* points to head of the .commands */
+  bool ret2shell;             /* return to shell in script mode */
+  bool EOO;                   /* End Of Options */
+  bool commented;             /* section is commented */
+  char *commands;             /* only in command mode */
+  char *commandsH;            /* points to head of the .commands */
   const char *__progname__;
-  FILE *out; /* used by fprintf functions */
-  FILE *script; /* script.cm used in script mode */
+  FILE *out;                  /* used by fprintf functions */
+  FILE *script;               /* script.cm used in script mode */
 };
 static struct Conf *cfg;
 
