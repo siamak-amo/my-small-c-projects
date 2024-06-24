@@ -96,13 +96,17 @@ typedef struct tape_t Tape;
 #define new_tape(capacity)                      \
   (Tape){.len=0, .cap=capacity, .data=NULL,}
 
+#ifndef TAPEMEMDEF
+#  define TAPEMEMDEF static inline
+#endif
+
 /* function definitions */
 /**
  *  append to a tape
  *  @return:  NULL on failure,
  *            pointer to the written DBuffer on success
  */ 
-char *tape_append (Tape *tape, const DBuffer *buf);
+TAPEMEMDEF char *tape_append (Tape *tape, const DBuffer *buf);
 
 /**
  *  get the DBuffer at @index
@@ -110,13 +114,13 @@ char *tape_append (Tape *tape, const DBuffer *buf);
  *  @return: NULL on failure,
  *           pointer to the read DBuffer on success
  */
-char *tape_get (const Tape *tape, size_t index);
+TAPEMEMDEF char *tape_get (const Tape *tape, size_t index);
 
 #endif /* TAPE_MEM__H__ */
 
 
 #ifdef TAPE_MEM_IMPLEMENTATION
-char *
+TAPEMEMDEF char *
 tape_append (Tape *tape, const DBuffer *buf)
 {
   if (NULL == tape->data || 0 == tape->cap || 0 == buf->len)
@@ -134,7 +138,7 @@ tape_append (Tape *tape, const DBuffer *buf)
   return p + offsetof (DBuffer, data);
 }
 
-char *
+TAPEMEMDEF char *
 tape_get (const Tape *tape, size_t index)
 {
   char *p = tape->data;
