@@ -561,43 +561,43 @@ main (void)
   
 
   /* test 2  --  region_alloc */
-  printf ("testing _p1, ..., _p5 are in the expected rigions... ");
+  printf ("testing p1, ..., p5 are in the expected rigions... ");
   Arena tmp = arenabak (&A);
   Region *first_r = A.head;
   Region *second_r = A.head->next;
 
-  r = regionof (&tmp, _p1);
+  r = regionof (&tmp, p1);
   assert (r == first_r &&
-          "_p1 is in wrong region");
-  r = regionof (&tmp, _p2);
+          "p1 is in wrong region");
+  r = regionof (&tmp, p2);
   assert (r == second_r &&
-          "_p2 is in wrong region"); 
-  r = regionof (&tmp, _p3);
+          "p2 is in wrong region"); 
+  r = regionof (&tmp, p3);
   assert (r == first_r &&
-          "_p3 is in wrong region");
-  r = regionof (&tmp, _p4);
+          "p3 is in wrong region");
+  r = regionof (&tmp, p4);
   assert (r == second_r &&
-          "_p4 is in wrong region");
-  r = regionof (&tmp, _p5);
+          "p4 is in wrong region");
+  r = regionof (&tmp, p5);
   assert (r == first_r &&
-          "_p5 is in wrong region");
+          "p5 is in wrong region");
   printf ("pass\n");
 
   /* test 3  --  address */
-  printf ("testing address of _p1, ..., _p5... ");
+  printf ("testing address of p1, ..., p5... ");
   char *_first_r_mem = first_r->mem;
   char *_second_r_mem = second_r->mem;
 
-  assert (_first_r_mem == _p1 &&
-          "address of _p1 is wrong");
-  assert (_second_r_mem == _p2 &&
-          "address of _p2 is wrong");
-  assert (_first_r_mem + 500 == _p3 &&
-          "address of _p3 is wrong");
-  assert (_second_r_mem + 600 == _p4 &&
-          "address of _p1 is wrong");
-  assert (_first_r_mem + 500 + 111 == _p5 &&
-          "address of _p1 is wrong");
+  assert (_first_r_mem == p1 &&
+          "address of p1 is wrong");
+  assert (_second_r_mem == p2 &&
+          "address of p2 is wrong");
+  assert (_first_r_mem + 500 == p3 &&
+          "address of p3 is wrong");
+  assert (_second_r_mem + 600 == p4 &&
+          "address of p1 is wrong");
+  assert (_first_r_mem + 500 + 111 == p5 &&
+          "address of p1 is wrong");
   printf ("pass\n\n");
 
   /* test 3  --  freeing arena */
