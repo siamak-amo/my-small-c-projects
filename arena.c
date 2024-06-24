@@ -371,7 +371,7 @@ arena_alloc2 (Arena *A, uint size, uint flags)
   A->end->len = size;
   return A->end->mem;
 }
-#include <stddef.h>
+
 char *
 arena_alloc (Arena *A, uint size, uint flags)
 {
