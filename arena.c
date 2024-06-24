@@ -181,6 +181,12 @@ char *arena_alloc2 (Arena *A, uint cap, uint flags);
 char *arena_realloc (Arena *A, char *old, uint old_size, uint new_size, int flags);
 
 /**
+ *  gives the corresponding region within the arena @A
+ *  which contains the allocated memory at @ptr
+ */
+Region *regionof (Arena *A, char *ptr);
+
+/**
  *  set's occupied length to zero for all the regions
  *  within the arena @A
  *  this function will not overwrite the memories, so
@@ -429,6 +435,19 @@ arena_alloc (Arena *A, uint size, uint flags)
   return A->end->mem;
 }
 
+Region *
+regionof (Arena *A, char *ptr)
+{
+  for_regions2 (A)
+    {
+      size_t __mem_head = (size_t)&(r->mem);
+      size_t __ptr = (size_t)ptr;
+      if (__ptr >= __mem_head && __ptr <= __mem_head + r->len)
+        return r;
+    }
+  return NULL;
+}
+
 char *
 arena_realloc (Arena *A, char *old, uint old_size,
                uint new_size, int flags)
@@ -476,19 +495,6 @@ arenabak (Arena *A)
     .head = A->head,
     .end = A->end
   };
-}
-
-Region *
-region_of_mem (Arena *A, char *ptr)
-{
-  for_regions2 (A)
-    {
-      size_t __mem_head = (size_t)&(r->mem);
-      size_t __ptr = (size_t)ptr;
-      if (__ptr >= __mem_head && __ptr <= __mem_head + r->len)
-        return r;
-    }
-  return NULL;
 }
 
 int
@@ -560,19 +566,19 @@ main (void)
   Region *first_r = A.head;
   Region *second_r = A.head->next;
 
-  r = region_of_mem (&tmp, _p1);
+  r = regionof (&tmp, _p1);
   assert (r == first_r &&
           "_p1 is in wrong region");
-  r = region_of_mem (&tmp, _p2);
+  r = regionof (&tmp, _p2);
   assert (r == second_r &&
           "_p2 is in wrong region"); 
-  r = region_of_mem (&tmp, _p3);
+  r = regionof (&tmp, _p3);
   assert (r == first_r &&
           "_p3 is in wrong region");
-  r = region_of_mem (&tmp, _p4);
+  r = regionof (&tmp, _p4);
   assert (r == second_r &&
           "_p4 is in wrong region");
-  r = region_of_mem (&tmp, _p5);
+  r = regionof (&tmp, _p5);
   assert (r == first_r &&
           "_p5 is in wrong region");
   printf ("pass\n");
