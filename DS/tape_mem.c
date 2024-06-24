@@ -106,8 +106,8 @@ tape_append (Tape *tape, const DBuffer *buf)
     return NULL;
   if (tape->len + __buf_size >= tape->cap)
     return NULL;
-  
-  char *p = memcpy (tape->data + tape->len, buf, 8);
+
+  char *p = memcpy (tape->data + tape->len, buf, offsetof (DBuffer, data));
   memcpy (p + offsetof (DBuffer, data), buf->data, buf->len);
   tape->len += __buf_size;
   return p + offsetof (DBuffer, data);
