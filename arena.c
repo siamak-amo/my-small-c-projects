@@ -464,3 +464,137 @@ arena_free (Arena *A)
 }
 #endif /* ARENA_IMPLEMENTATION */
 
+#ifdef ARENA_TEST
+/* the test program */
+#include <stdio.h>
+#include <assert.h>
+
+Arena
+arenabak (Arena *A)
+{
+  return (Arena){
+    .head = A->head,
+    .end = A->end
+  };
+}
+
+Region *
+region_of_mem (Arena *A, char *ptr)
+{
+  for_regions2 (A)
+    {
+      size_t __mem_head = (size_t)&(r->mem);
+      size_t __ptr = (size_t)ptr;
+      if (__ptr >= __mem_head && __ptr <= __mem_head + r->len)
+        return r;
+    }
+  return NULL;
+}
+
+int
+main (void)
+{
+  Region *r = NULL;
+  // min size is 1M
+  Arena A = new_arena ();
+
+  printf ("start allocating...\n");
+  /* _p1 should be allocated in the first region, of capacity 1024 */
+  char *_p1 = arena_alloc (&A, 500, AUSE_MALLOC);
+  assert (NULL != _p1);
+
+  /**
+   *  _p2 should be allocated in the second region, because
+   *  the flags of _p2 is different (allocated with mmap)
+   */
+  char *_p2 = arena_alloc (&A, 600, AUSE_MMAP);
+  assert (NULL != _p2);
+
+  /**
+   *  _p3 should be alocated in the first region, because
+   *  the first region has enough capacity (1024 - 500)
+   */
+  char *_p3 = arena_alloc (&A, 111, AUSE_MALLOC);
+  assert (NULL != _p3);
+
+  /**
+   *  although the first region has enough space
+   *  for this allocation (1024 - 500 - 100),
+   *  _p4 should be allocated in the second region; because
+   *  flags of this one is differet
+   *  it uses mmap but the first region has allocated using mmap
+   */
+  char *_p4 = arena_alloc (&A, 200, AUSE_MMAP);
+  assert (NULL != _p4);
+
+  /**
+   *  the `arena_alloc2` function does not care about the flags
+   *  thus, this should be allocated in the first region
+   */
+  char *_p5 = arena_alloc2 (&A, 150, AUSE_MMAP);
+  assert (NULL != _p5);
+  printf ("done\n\n");
+
+  /* test 1  --  expected regions */
+  printf ("testing expected regions has created... ");
+  r = A.head;
+  assert (NULL != r && "empty list");
+  r = r->next;
+  assert (NULL != r && "second region is NULL");
+  // assert (NULL == r->next && "more than 2 region");
+  printf ("pass\n");
+
+  printf ("testing length and capacity of regions... ");
+  r = A.head;
+  assert (r->cap == ARENA_MIN_CAP && "Wrong capacity");
+  assert (r->len == (500+111+150) && "Wrong length");
+  r = r->next;
+  assert (r->cap == ARENA_MIN_CAP && "Wrong capacity");
+  assert (r->len == (600+200) && "Wrong length");
+  printf ("pass\n\n");
+  
+
+  /* test 2  --  region_alloc */
+  printf ("testing _p1, ..., _p5 are in the expected rigions... ");
+  Arena tmp = arenabak (&A);
+  Region *first_r = A.head;
+  Region *second_r = A.head->next;
+
+  r = region_of_mem (&tmp, _p1);
+  assert (r == first_r &&
+          "_p1 is in wrong region");
+  r = region_of_mem (&tmp, _p2);
+  assert (r == second_r &&
+          "_p2 is in wrong region"); 
+  r = region_of_mem (&tmp, _p3);
+  assert (r == first_r &&
+          "_p3 is in wrong region");
+  r = region_of_mem (&tmp, _p4);
+  assert (r == second_r &&
+          "_p4 is in wrong region");
+  r = region_of_mem (&tmp, _p5);
+  assert (r == first_r &&
+          "_p5 is in wrong region");
+  printf ("pass\n");
+
+  /* test 3  --  address */
+  printf ("testing address of _p1, ..., _p5... ");
+  char *_first_r_mem = first_r->mem;
+  char *_second_r_mem = second_r->mem;
+
+  assert (_first_r_mem == _p1 &&
+          "address of _p1 is wrong");
+  assert (_second_r_mem == _p2 &&
+          "address of _p2 is wrong");
+  assert (_first_r_mem + 500 == _p3 &&
+          "address of _p3 is wrong");
+  assert (_second_r_mem + 600 == _p4 &&
+          "address of _p1 is wrong");
+  assert (_first_r_mem + 500 + 111 == _p5 &&
+          "address of _p1 is wrong");
+  printf ("pass\n");
+  
+  return 0;
+}
+
+#endif /* ARENA_TEST */
