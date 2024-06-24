@@ -134,7 +134,7 @@ struct region_t {
  *  regions must be allocated of the size below
  *  the @cap only indicates the size of the @mem member
  */
-#define regionof(size) (size + sizeof (struct region_t))
+#define size_of_region(size) (size + sizeof (struct region_t))
 #define region_sizeof(r) ((r)->cap + sizeof (struct region_t))
 #define region_leftof(r) ((r)->cap - (r)->len)
 typedef struct region_t Region;
@@ -213,7 +213,7 @@ int __region_unmap (Region *r);
 Region *
 __new_region_malloc (uint cap)
 {
-  Region *r = __arena_alloc (regionof (cap));
+  Region *r = __arena_alloc (size_of_region (cap));
   assert (r && "end of memory");
   r->flag = AFLAG_MALLOCED | AUSE_MALLOC;
   r->cap = cap;
@@ -253,7 +253,7 @@ __region_free (Region *r)
 Region *
 __new_region_mmap (uint cap)
 {
-  Region *r = __arena_mmap (regionof (cap));
+  Region *r = __arena_mmap (size_of_region (cap));
   assert (r && "end of memory");
   r->flag = AFLAG_MAPPED | AUSE_MMAP;
   r->cap = cap;
