@@ -136,7 +136,7 @@ typedef struct region_t Region;
 
 struct Arena_t {
   Region *head; /* head of the regions linked list */
-  Region *cursor; /* the last modified arena */
+  Region *end;
 };
 typedef struct Arena_t Arena;
 #define new_arena() (Arena){0}
@@ -327,44 +327,48 @@ arena_alloc2 (Arena *A, uint size, uint flags)
   if (NULL == A->head)
     {
       /* initialize the linked list */
-      if (NULL != A->cursor)
+      if (NULL != A->end)
         {
           fprintdln (stderr, "Arena expected to be NULL, but it's not");
           assert (0 && "Broken linked list");
         }
-      A->head = __new_region_H (size, flags);
+      A->head->next = __new_region_H (size, flags);
       if (NULL == A->head)
         return NULL;
-      A->cursor = A->head;
-      return A->head->buffer->mem;
+      A->head->len = size;
+      A->end = A->head;
+      return A->head->mem;
     }
 
-  A->cursor = A->head; /* go to the beginning */
-  while (NULL != A->cursor->next)
+  Region *r = A->head; /* go to the beginning */
+  uint __len = 0;
+  while (NULL != r)
     {
-      if (A->cursor->len + size <= A->cursor->cap)
+      if (r->len + size <= r->cap)
         {
-          A->cursor->len += size;
-          fprintdln (stdout, "Arena allocated %u, left %u bytes",
-                     size, region_leftof (A->cursor));
-          return A->cursor->buffer->mem + A->cursor->len;
+          __len = r->len;
+          r->len += size;
+          fprintdln (stdout, "region allocated %u, left %u bytes",
+                     size, region_leftof (r));
+          return r->mem + __len;
         }
       else
-        fprintdln (stderr, "Arena has cap: %u but wanted: %u",
-                   region_leftof (A->cursor), size);
-      A->cursor = A->cursor->next;
+        fprintdln (stderr, "region has cap: %u but wanted: %u",
+                   region_leftof (r), size);
+      r = r->next;
     }
 
   /* we must have reached the end of the linked list */
-  assert (NULL == A->cursor->next);
+  assert (NULL == r && NULL != A->end);
   /* alllocate a new region and add it to the list */
-  A->cursor->next = __new_region_H (size, flags);
-  if (NULL == A->cursor->next)
+  A->end->next = __new_region_H (size, flags);
+  if (NULL == A->end->next)
     return NULL;
-  A->cursor = A->cursor->next;
-  return A->cursor->buffer->mem;
+  A->end = A->end->next;
+  A->end->len = size;
+  return A->end->mem;
 }
-
+#include <stddef.h>
 char *
 arena_alloc (Arena *A, uint size, uint flags)
 {
@@ -381,35 +385,39 @@ arena_alloc (Arena *A, uint size, uint flags)
       A->head = __new_region_H (size, flags);
       if (NULL == A->head)
         return NULL;
-      A->cursor = A->head;
-      return A->cursor->buffer->mem;
+      A->head->len = size;
+      A->end = A->head;
+      return A->head->mem;
     }
 
-  A->cursor = A->head; /* go to the beginning */
-  while (NULL != A->cursor->next)
+  Region *r = A->head; /* go to the beginning */
+  uint __len = 0;
+  while (NULL != r)
     {
-      if (A->cursor->len + size <= A->cursor->cap &&
-          A->cursor->buffer->flag == flags)
+      if (r->len + size <= r->cap &&
+          (r->flag >> 10) == (flags >>10))
         {
-          A->cursor->len += size;
-          fprintdln (stdout, "Arena allocated %u, left %u bytes",
-                     size, region_leftof (A->cursor));
-          return A->cursor->buffer->mem + A->cursor->len;
+          __len = r->len;
+          r->len += size;
+          fprintdln (stdout, "region allocated %u, left %u bytes",
+                     size, region_leftof (r));
+          return r->mem + __len;
         }
       else
-        fprintdln (stderr, "Arena has cap: %u but wanted: %u",
-                   region_leftof (A->cursor), size);
-      A->cursor = A->cursor->next;
+        fprintdln (stderr, "region has cap: %u but wanted: %u",
+                   region_leftof (r), size);
+      r = r->next;
     }
 
   /* we must have reached the end of the linked list */
-  assert (NULL == A->cursor->next);
+  assert (NULL == r && NULL != A->end);
   /* alllocate a new region and add it to the list */
-  A->cursor->next = __new_region_H (size, flags);
-  if (NULL == A->cursor->next)
+  A->end->next = __new_region_H (size, flags);
+  if (NULL == A->end->next)
     return NULL;
-  A->cursor = A->cursor->next;
-  return A->cursor->buffer->mem;
+  A->end = A->end->next;
+  A->end->len = size;
+  return A->end->mem;
 }
 
 char *
