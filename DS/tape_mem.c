@@ -15,7 +15,7 @@
  */
 
 /**
- *  file: arena.c
+ *  file: tape_mem.c
  *  created on: 24 Jun 2024
  *
  *  Tape like memory allocator
