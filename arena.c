@@ -375,7 +375,7 @@ arena_alloc (Arena *A, uint size, uint flags)
   if (NULL == A->head)
     {
       /* initialize the linked list */
-      if (NULL != A->cursor)
+      if (NULL != A->end)
         {
           fprintdln (stderr, "Arena expected to be NULL, but it's not");
           assert (0 && "Broken linked list");
