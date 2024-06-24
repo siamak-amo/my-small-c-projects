@@ -24,7 +24,7 @@ typedef struct tape_t Tape;
   (Tape){.len=0, .cap=capacity, .data=NULL,}
 
 /* function definitions */
-char *tape_append (Tape *tape, DBuffer buf);
+char *tape_append (Tape *tape, DBuffer *buf);
 char *tape_get (Tape *tape, size_t index);
 
 #endif /* TAPE_MEM__H__ */
@@ -32,19 +32,19 @@ char *tape_get (Tape *tape, size_t index);
 
 #ifdef TAPE_MEM_IMPLEMENTATION
 char *
-tape_append (Tape *tape, DBuffer buf)
+tape_append (Tape *tape, DBuffer *buf)
 {
-  if (NULL == tape->data || 0 == tape->cap || 0 == buf.len)
+  if (NULL == tape->data || 0 == tape->cap || 0 == buf->len)
     return NULL;
 
-  size_t __buf_size = sizeof_buffer (&buf);
+  size_t __buf_size = sizeof_buffer (buf);
   if (__buf_size > BUF_MAX_LEN)
     return NULL;
   if (tape->len + __buf_size >= tape->cap)
     return NULL;
   
-  char *p = memcpy (tape->data + tape->len, &buf, 8);
-  memcpy (p + offsetof (DBuffer, data), buf.data, buf.len);
+  char *p = memcpy (tape->data + tape->len, buf, 8);
+  memcpy (p + offsetof (DBuffer, data), buf->data, buf->len);
   tape->len += __buf_size;
   return p + offsetof (DBuffer, data);
 }
@@ -96,15 +96,15 @@ main (void)
   printf ("adding items... ");
   tmp.len = 4;
   tmp.data = "One";
-  tape_append (&mem, tmp);
+  tape_append (&mem, &tmp);
   
   tmp.len = 32;
   tmp.data = "2024";
-  tape_append (&mem, tmp);
+  tape_append (&mem, &tmp);
   
   tmp.len = 4;
   tmp.data = "XXX";
-  tape_append (&mem, tmp);
+  tape_append (&mem, &tmp);
   printf ("done\n");
 
   
