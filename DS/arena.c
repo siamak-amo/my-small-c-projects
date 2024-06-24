@@ -193,6 +193,9 @@ typedef struct Arena_t Arena;
 #define for_regions2(a)                                                 \
   for ( Region *r = (a)->head; NULL != r; r = r->next )
 
+#ifndef ARENADEF
+#  define ARENADEF static inline
+#endif
 
 /* function definitions */
 /**
@@ -204,14 +207,14 @@ typedef struct Arena_t Arena;
  *  if you provide some new flag, that never has been used in
  *  the arena @A, it will allocate a whole new region
  */
-char *arena_alloc (Arena *A, uint cap, uint flags);
+ARENADEF char *arena_alloc (Arena *A, uint cap, uint flags);
 /**
  *  the same as the arena_alloc, but the allocated memory
  *  might have different flags (see AUSE flags)
  *  in fact, it allocates the memory in the first region
  *  that has enough free space withing the arena @A
  */
-char *arena_alloc2 (Arena *A, uint cap, uint flags);
+ARENADEF char *arena_alloc2 (Arena *A, uint cap, uint flags);
 
 /**
  *  manual realloc, preferably use arena_realloc
@@ -219,13 +222,14 @@ char *arena_alloc2 (Arena *A, uint cap, uint flags);
  *  the new @flags, does not need to be the same as the old flags
  *  and the new memory will have the new @flags
  */
-char *arena_realloc (Arena *A, char *old, uint old_size, uint new_size, int flags);
+ARENADEF char *
+arena_realloc (Arena *A, char *old, uint old_size, uint new_size, int flags);
 
 /**
  *  gives the corresponding region within the arena @A
  *  which contains the allocated memory at @ptr
  */
-Region *regionof (Arena *A, char *ptr);
+ARENADEF Region *regionof (Arena *A, char *ptr);
 
 /**
  *  set's occupied length to zero for all the regions
@@ -233,12 +237,12 @@ Region *regionof (Arena *A, char *ptr);
  *  this function will not overwrite the memories, so
  *  your pointers will be valid until some new allocations occur
  */
-void arena_reset (Arena *A);
+ARENADEF void arena_reset (Arena *A);
 /**
  *  frees all regions withing the arena @A
  *  your pointers are not valid anymore after calling this function
  */
-void arena_free (Arena *A);
+ARENADEF void arena_free (Arena *A);
 
 #endif /* ARENA_H__ */
 #ifdef ARENA_IMPLEMENTATION
@@ -385,7 +389,7 @@ __new_region_H (uint cap, uint flags)
     }
 }
 
-char *
+ARENADEF char *
 arena_alloc2 (Arena *A, uint size, uint flags)
 {
   if (NULL == A->head)
@@ -433,7 +437,7 @@ arena_alloc2 (Arena *A, uint size, uint flags)
   return A->end->mem;
 }
 
-char *
+ARENADEF char *
 arena_alloc (Arena *A, uint size, uint flags)
 {
   if (NULL == A || 0 == size)
@@ -490,7 +494,7 @@ arena_alloc (Arena *A, uint size, uint flags)
   return A->end->mem;
 }
 
-Region *
+ARENADEF Region *
 regionof (Arena *A, char *ptr)
 {
   for_regions2 (A)
@@ -503,7 +507,7 @@ regionof (Arena *A, char *ptr)
   return NULL;
 }
 
-char *
+ARENADEF char *
 arena_realloc (Arena *A, char *old, uint old_size,
                uint new_size, int flags)
 {
@@ -515,7 +519,7 @@ arena_realloc (Arena *A, char *old, uint old_size,
   return res;
 }
 
-void
+ARENADEF void
 arena_reset (Arena *A)
 {
   for_regions2 (A)
@@ -524,7 +528,7 @@ arena_reset (Arena *A)
     }
 }
 
-void
+ARENADEF void
 arena_free (Arena *A)
 {
   Region *tmp;
