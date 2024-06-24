@@ -392,14 +392,20 @@ arena_alloc (Arena *A, uint size, uint flags)
   uint __len = 0;
   while (NULL != r)
     {
-      if (r->len + size <= r->cap &&
-          (r->flag >> 10) == (flags >>10))
+      if (r->len + size <= r->cap)
         {
-          __len = r->len;
-          r->len += size;
-          fprintdln (stdout, "region allocated %u, left %u bytes",
-                     size, region_leftof (r));
-          return r->mem + __len;
+          if ((r->flag >> 10) == (flags >>10))
+            {
+              __len = r->len;
+              r->len += size;
+              fprintdln (stdout, "region allocated %u, left %u bytes",
+                         size, region_leftof (r));
+              return r->mem + __len;
+            } else
+            {
+              fprintdln (stderr, "region has flag: %u but wanted: %u",
+                         r->flag, flags);
+            }
         }
       else
         fprintdln (stderr, "region has cap: %u but wanted: %u",
