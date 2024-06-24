@@ -56,7 +56,7 @@
  *      // see the example in the test program
  *      tmp.len = 4;
  *      tmp.data = "One";
- *      tape_append (&mem, tmp);
+ *      tape_append (&mem, &tmp);
  *
  *      return 0;
  *    }
