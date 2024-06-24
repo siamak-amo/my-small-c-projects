@@ -58,6 +58,10 @@
  *      tmp.data = "One";
  *      tape_append (&mem, &tmp);
  *
+ *      char *d = tape_get (1);
+ *      DBuffer *db = bufferof (d);
+ *      printf ("len: %lu, val: %s\n", db->len, d);
+ *
  *      return 0;
  *    }
  *    ```
