@@ -505,40 +505,40 @@ main (void)
   Arena A = new_arena ();
 
   printf ("start allocating...\n");
-  /* _p1 should be allocated in the first region, of capacity 1024 */
-  char *_p1 = arena_alloc (&A, 500, AUSE_MALLOC);
-  assert (NULL != _p1);
+  /* p1 should be allocated in the first region, of capacity 1024 */
+  char *p1 = arena_alloc (&A, 500, AUSE_MALLOC);
+  assert (NULL != p1);
 
   /**
-   *  _p2 should be allocated in the second region, because
-   *  the flags of _p2 is different (allocated with mmap)
+   *  p2 should be allocated in the second region, because
+   *  the flags of p2 is different (allocated with mmap)
    */
-  char *_p2 = arena_alloc (&A, 600, AUSE_MMAP);
-  assert (NULL != _p2);
+  char *p2 = arena_alloc (&A, 600, AUSE_MMAP);
+  assert (NULL != p2);
 
   /**
-   *  _p3 should be alocated in the first region, because
+   *  p3 should be alocated in the first region, because
    *  the first region has enough capacity (1024 - 500)
    */
-  char *_p3 = arena_alloc (&A, 111, AUSE_MALLOC);
-  assert (NULL != _p3);
+  char *p3 = arena_alloc (&A, 111, AUSE_MALLOC);
+  assert (NULL != p3);
 
   /**
    *  although the first region has enough space
    *  for this allocation (1024 - 500 - 100),
-   *  _p4 should be allocated in the second region; because
+   *  p4 should be allocated in the second region; because
    *  flags of this one is differet
    *  it uses mmap but the first region has allocated using mmap
    */
-  char *_p4 = arena_alloc (&A, 200, AUSE_MMAP);
-  assert (NULL != _p4);
+  char *p4 = arena_alloc (&A, 200, AUSE_MMAP);
+  assert (NULL != p4);
 
   /**
    *  the `arena_alloc2` function does not care about the flags
    *  thus, this should be allocated in the first region
    */
-  char *_p5 = arena_alloc2 (&A, 150, AUSE_MMAP);
-  assert (NULL != _p5);
+  char *p5 = arena_alloc2 (&A, 150, AUSE_MMAP);
+  assert (NULL != p5);
   printf ("done\n\n");
 
   /* test 1  --  expected regions */
