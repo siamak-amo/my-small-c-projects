@@ -598,7 +598,20 @@ main (void)
           "address of _p1 is wrong");
   assert (_first_r_mem + 500 + 111 == _p5 &&
           "address of _p1 is wrong");
+  printf ("pass\n\n");
+
+  /* test 3  --  freeing arena */
+  printf ("resetting... ");
+  arena_reset (&A);
+  for_regions2 (&A)
+    {
+      assert (r->len == 0 && "region was missed");
+    }
   printf ("pass\n");
+
+  printf ("freeing... ");
+  arena_free (&A);
+  printf ("passed\n");
   
   return 0;
 }
