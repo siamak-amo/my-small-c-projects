@@ -84,13 +84,18 @@
 
 /* flags              */
 /* memory types       */
-#define AFLAG_MALLOCED       EXP2 (1) /* allocated with malloc */
-#define AFLAG_MAPPED         EXP2 (2) /* allocated with mmap */
-#define AFLAG_HUGE           EXP2 (3) /* huge memory */
+#define AFLAG_MALLOCED       EXP2 (10) /* allocated with malloc */
+#define AFLAG_MAPPED         EXP2 (11) /* allocated with mmap */
 /* allocation methods */
-#define AUSE_MALLOC          EXP2 (10)
-#define AUSE_ALIGNEDALLOC    EXP2 (11)
-#define AUSE_MMAP            EXP2 (12)
+#define AUSE_MALLOC          EXP2 (1)
+#define AUSE_ALIGNEDALLOC    EXP2 (2)
+#define AUSE_MMAP            EXP2 (3)
+
+/**
+ *  converts flag of a region to it's memory type
+ *  the first 10 bits of a flag
+ */
+#define memtypeof(flag) ((flag) & 0x3FF)
 
 /**
  *  define `AALLOW_BIG_MAP`, to allow allocating
@@ -394,7 +399,7 @@ arena_alloc (Arena *A, uint size, uint flags)
     {
       if (r->len + size <= r->cap)
         {
-          if ((r->flag >> 10) == (flags >>10))
+          if (memtypeof (r->flag) == flags)
             {
               __len = r->len;
               r->len += size;
@@ -404,7 +409,7 @@ arena_alloc (Arena *A, uint size, uint flags)
             } else
             {
               fprintdln (stderr, "region has flag: %u but wanted: %u",
-                         r->flag, flags);
+                         memtypeof (r->flag), flags);
             }
         }
       else
