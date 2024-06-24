@@ -74,6 +74,11 @@ struct buff_t {
   char *data;
 };
 typedef struct buff_t DBuffer; /* data buffer */
+/**
+ *  this is not size of your DBuffer, this is size of
+ *  the memory that is needed to write the entire DBuffer
+ *  plus the value of it's data (consider it as `char data[]`)
+ */
 #define buffer_of_size(size) (size + sizeof (DBuffer))
 #define sizeof_buffer(buf) ((buf)->len + sizeof (DBuffer))
 #define bufferof(data_ptr) \
@@ -88,7 +93,19 @@ typedef struct tape_t Tape;
   (Tape){.len=0, .cap=capacity, .data=NULL,}
 
 /* function definitions */
+/**
+ *  append to a tape
+ *  @return:  NULL on failure,
+ *            pointer to the written DBuffer on success
+ */ 
 char *tape_append (Tape *tape, const DBuffer *buf);
+
+/**
+ *  get the DBuffer at @index
+ *  @index:  starts from 1
+ *  @return: NULL on failure,
+ *           pointer to the read DBuffer on success
+ */
 char *tape_get (const Tape *tape, size_t index);
 
 #endif /* TAPE_MEM__H__ */
@@ -143,6 +160,7 @@ tape_get (const Tape *tape, size_t index)
 #endif /* TAPE_MEM_IMPLEMENTATION */
 
 
+/* the test program */
 #ifdef TAPE_MEM_TEST
 #include <stdio.h>
 #include <stdlib.h>
