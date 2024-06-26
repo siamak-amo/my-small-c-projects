@@ -774,7 +774,14 @@ main (void)
 /* to string macros (this will not evaluate the input) */
 #define __TOSTR__(x) #x
 #define STR(x) __TOSTR__(x)
-#define MAX(a, b) (((a) < (b)) ? (b) : (a))
+
+#ifndef MAX
+#  define MAX(a, b) (((a) < (b)) ? (b) : (a))
+#endif
+#ifndef MIN
+#  define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+
 
 /**
  *  newline fprintf
