@@ -785,9 +785,7 @@ main (void)
 
 /**
  *  newline fprintf
- *  do use any expression in @format
- *  @format must be a C standard string ("xxx")
- *  for expression: `fprintln (stdout, "%s", expression);`
+ *  @format:  *only* use string "xxx"
  **/
 #define fprintln(file, format, ...) \
   fprintf (file, format"\n", ##__VA_ARGS__)
