@@ -850,14 +850,14 @@ enum state_t {
 
 struct Conf {
   enum state_t state;
-  bool silent_mode;
-  bool prompt;
+  bool silent_mode;           /* disables help and prompt */
+  bool prompt;                /* printing ths PROMPT */
   bool ret2shell;             /* return to shell in script mode */
   bool EOO;                   /* End Of Options */
   bool commented;             /* section is commented */
   char *commands;             /* only in command mode */
-  char *commandsH;            /* points to head of the .commands */
-  const char *__progname__;
+  char *commandsH;            /* points to the .commands head */
+  const char *__progname__;   /* name of the program */
   FILE *out;                  /* used by fprintf functions */
   FILE *script;               /* script.cm used in script mode */
 };
