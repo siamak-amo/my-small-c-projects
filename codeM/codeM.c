@@ -1,4 +1,4 @@
-/* This file is part of my-small-c-projects
+/* This file is part of my-small-c-projects <https://gitlab.com/SI.AMO/>
    
   codeM is free software: you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
  *   A shell (CLI) and a test program are included
  *
  *   The term `codem` in the following refers to `code-e-melli`
- *   This library performs validating and making random codem's
+ *   This library performs validating and making random codems
  *
  *   to use this library in python, see `codeM_py.c`
  *   also see `example.cm`, an example of the CLI program's script
