@@ -1684,21 +1684,31 @@ parse_options (int argc, char **argv)
 static int
 command_scanf (char *c)
 {
-  char *p;
-  if (cfg->prompt)
-    p = readline (PROMPT);
+  if (NULL == cfg->commands)
+    {
+      cfg->commands = readline ((cfg->prompt) ? PROMPT : NULL);
+      if (NULL == cfg->commands)
+        return EOF;
+      cfg->commandsH = cfg->commands;
+      *c = ';';
+    }
   else
-    p = readline (NULL);
-
-  if (NULL == p)
-    return EOF;
-
-  if (*p >= 0x20 && *p <= 0x7E)
-      *c = *p;
-  else
-    *c = ' ';
-
-  free (p);
+    {
+      if (*cfg->commands == '\0')
+        {
+          free (cfg->commandsH);
+          cfg->commands = NULL;
+          *c = ';';
+        }
+      else
+        {
+          if (*cfg->commands >= 0x20 && *cfg->commands <= 0x7E)
+            *c = *cfg->commands;
+          else
+            *c = ' ';
+          cfg->commands++;
+        }
+    }
   return 0;
 }
 #endif
