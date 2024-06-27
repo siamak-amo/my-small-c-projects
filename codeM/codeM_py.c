@@ -109,6 +109,7 @@ static size_t default_srand (void);
 PYCODEMDEF py_rand2 (PyObject *self, PyObject *args);
 PYCODEMDEF py_rand (PyObject *self, PyObject *args);
 PYCODEMDEF py_rand_prefix (PyObject *self, PyObject *args);
+PYCODEMDEF py_rand_suffix (PyObject *self, PyObject *args);
 PYCODEMDEF py_isvalid (PyObject *self, PyObject *args);
 PYCODEMDEF py_validate (PyObject *self, PyObject *args);
 PYCODEMDEF py_validate2 (PyObject *self, PyObject *args);
@@ -133,6 +134,10 @@ static struct PyMethodDef funs[] = {
     "rand_with_prefix", py_rand_prefix,
     METH_VARARGS,
     "random codem with prefix"
+  },{
+    "rand_with_suffix", py_rand_suffix,
+    METH_VARARGS,
+    "random codem with suffix"
   },{
     "rand_ccode", py_rand_ccode,
     METH_VARARGS,
@@ -218,6 +223,29 @@ py_rand (PyObject *self, PyObject *args)
   char *result_ptr = py_mkstrbuf_H (result, CODEM_LEN, NULL);
 
   codem_rand (result_ptr);
+
+  return result;
+}
+
+PYCODEMDEF
+py_rand_suffix (PyObject *self, PyObject *args)
+{
+  UNUSED (self);
+
+  const char *suffix;
+  size_t offset;
+
+  if (!PyArg_ParseTuple (args, "s#", &suffix, &offset))
+    Py_RETURN_NONE;
+  if (offset > CODEM_LEN)
+    offset = CODEM_LEN;
+
+  PyObject *result;
+  char *result_ptr = py_mkstrbuf_H (result, CODEM_LEN, suffix);
+
+  codem_norm (result_ptr);
+  codem_memnum (result_ptr, CODEM_LEN);
+  codem_rands (result_ptr, offset);
 
   return result;
 }
