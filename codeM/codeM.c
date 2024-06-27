@@ -249,6 +249,13 @@ CODEMDEF void codem_rand2 (char *codem);
  */
 CODEMDEF void codem_randp (char *codem, int offset);
 
+/**
+ *  generate random codem with suffix
+ *  @len is the length of the suffix
+ *  city code of the result might be invalid
+ */
+CODEMDEF void codem_rands (char *codem, int len);
+
 /* write a valid random city code on @dest */
 CODEMDEF void codem_rand_ccode (char *dest);
 
@@ -440,7 +447,43 @@ codem_rand2 (char *codem)
 }
 
 CODEMDEF void
-codem_rands (char *codem, int offset)
+codem_rands (char *codem, int len)
+{
+  int sum11 = 0;
+  int exp_sum = char2num (codem[CTRL_DIGIT_IDX]);
+  if (exp_sum >= 2)
+    exp_sum = 11 - exp_sum; // in {0,1, 9,8,7,6,5,4,3,2}
+
+  /* fill codem from index 1 until the suffix with random numbers */
+  if (len < CODEM_LEN - 1)
+    codem_rand_gen (codem + 1, CODEM_LEN - 1 - len);
+
+  /* calculate the weighted sum */
+  for (int idx = 1; idx < 9; ++idx)
+    sum11 += (10 - idx) * char2num (codem[idx]);
+
+  sum11 -= exp_sum;
+  sum11 %= 11; // in {0, ..., 10}
+
+  /**
+   *  now we need to solve the equation below:
+   *  10*c_10 + sum11 = exp_sum   (mod 11)
+   *  => c_10 = sum11 - exp_sum   (mod 11)
+   *  which always has a unique solution c_10 in {0, ..., 9}
+   */
+  int c10;
+  if (sum11 < 10)
+    c10 = sum11;
+  else if (sum11 == 10)
+    c10 = 0;
+  else
+    c10 = char2num ('*'); /* unreachable */
+
+  *codem = num2char (c10);
+}
+
+CODEMDEF void
+codem_randp (char *codem, int offset)
 {
   if (offset < 9)
     codem_rand_gen (codem + offset, 9 - offset);
