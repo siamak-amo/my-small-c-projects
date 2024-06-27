@@ -470,12 +470,34 @@ codem_rands (char *codem, int len)
    *  10*c_10 + sum11 = exp_sum   (mod 11)
    *  => c_10 = sum11 - exp_sum   (mod 11)
    *  which always has a unique solution c_10 in {0, ..., 9}
+   *  except for the case c_10 = 10 (mod 11), so we handle it first
    */
+  if (sum11 == 10)
+    {
+      if (len >= 9)
+        {
+          // we cannot fix it, as it overwrites the suffix
+          return 0;
+        }
+      else
+        {
+          int __c = char2num (codem[1]);
+          if (__c == 0)
+            {
+              codem[1] = '1';
+              sum11 = 8;
+            }
+          else
+            {
+              codem[1] = num2char (__c - 1);
+              sum11 = 1;
+            }
+        }
+    }
+  // solve the equation when c_10 = 0, ..., 9   (mod 11)
   int c10;
   if (sum11 < 10)
     c10 = sum11;
-  else if (sum11 == 10)
-    c10 = 0;
   else
     c10 = char2num ('*'); /* unreachable */
 
