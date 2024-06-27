@@ -928,7 +928,7 @@ struct Conf {
   bool ret2shell;             /* return to shell in script mode */
   bool EOO;                   /* End Of Options */
   bool commented;             /* section is commented */
-  char *commands;             /* only in command mode */
+  char *commands;             /* in command mode and shell mode when using readline */
   char *commandsH;            /* points to the .commands head */
   const char *__progname__;   /* name of the program */
   FILE *out;                  /* used by fprintf functions */
@@ -1682,7 +1682,7 @@ parse_options (int argc, char **argv)
 
 #ifdef HAS_READLINE
 static int
-command_scanf (char *c)
+rlcmd_scanf (char *c)
 {
   if (NULL == cfg->commands)
     {
@@ -1804,7 +1804,7 @@ main (int argc, char **argv)
               continue;
             }
 #else
-          if (EOF == command_scanf (&comm))
+          if (EOF == rlcmd_scanf (&comm))
             {
               GOTO_EXITING (cfg);
               continue;
