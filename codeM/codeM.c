@@ -1099,6 +1099,8 @@ codem_scanf (const char *message, char dest[CODEM_BUF_LEN])
                      dest, CODEM_BUF_LEN,
                      "%"STR(CODEM_LEN)"s",              // "%10s"
                      " %"STR(CODEM_LEN)"[^;# ]%n");     // " %10[^;#]%n"
+  if (res < 0)
+    return -1;
   res = MIN (res, (int)strlen (dest));
   /* make the dest numeric */
   codem_memnum (dest, res);
