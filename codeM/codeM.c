@@ -818,6 +818,7 @@ main (void)
 #include <assert.h>
 
 #ifdef _READLINE
+#  define HAS_READLINE
 #  if defined (_GNU_SOURCE) || defined (__linux__)
 #    include <readline/readline.h>
 #    include <readline/history.h>
@@ -1162,7 +1163,7 @@ fopen_scirpt_file__H (const char *path)
 char *
 readline__H (const char *prompt)
 {
-#ifdef _READLINE
+#ifdef HAS_READLINE
   char *p = readline (prompt);
   char *res = malloc (strlen (p));
   sscanf (p, " %s ", res);
@@ -1677,7 +1678,7 @@ parse_options (int argc, char **argv)
   return 0;
 }
 
-#ifdef _READLINE
+#ifdef HAS_READLINE
 static int
 command_scanf (char *c)
 {
@@ -1759,7 +1760,7 @@ main (int argc, char **argv)
         }
       while (cfg->state == SHELL_MODE)
         {
-#ifndef _READLINE
+#ifndef HAS_READLINE
           /* print the prompt */
           if (cfg->prompt)
             {
@@ -1780,7 +1781,7 @@ main (int argc, char **argv)
 #endif
           /* read new command until EOF */
           prev_comm = comm;
-#ifndef _READLINE
+#ifndef HAS_READLINE
           if (EOF == scanf ("%c", &comm))
             {
               if (cfg->prompt)
