@@ -973,6 +973,7 @@ __help_shell ()
            "v: validate                 -  V: make the input valid\n"
            "c: make randon city code    -  C: make random city name\n"
            "r: make random codem        -  R: random with prefix\n"
+           "                               Q: random with suffix\n"
            "f: find city code by name   -  F: find city name by code\n"
            "s: search city code         -  S: search city name\n"
            "q: quit                     -  h: help\n"
@@ -1249,6 +1250,29 @@ exec_command (char prev_comm, char comm)
         break;
       else if (off > CODEM_LEN)
         assert (0 && "Invalid offset of codem_scanf");
+      else
+        {
+          codem_randp (buffer, off);
+          last_out = buffer;
+          fprintln (stdout, "%s", last_out);
+        }
+      break;
+
+    case 'Q':
+      if (PIPE == prev_comm)
+        {
+          if (0 > (off = lastout_scanf (buffer, CODEM_LEN)))
+            break;
+        }
+      else
+        off = codem_scanf (RD_PROMPT, buffer);
+      if (off < 0)
+        break;
+      else if (off > CODEM_LEN)
+        assert (0 && "Invalid offset of codem_scanf");
+      printd (buffer);
+      if (0 != codem_norm (buffer))
+        assert (0 && "Could not normalize");
       else
         {
           codem_rands (buffer, off);
