@@ -108,7 +108,7 @@ static size_t default_srand (void);
 /* external PyMethod definitions */
 PYCODEMDEF py_rand2 (PyObject *self, PyObject *args);
 PYCODEMDEF py_rand (PyObject *self, PyObject *args);
-PYCODEMDEF py_rand_suffix (PyObject *self, PyObject *args);
+PYCODEMDEF py_rand_prefix (PyObject *self, PyObject *args);
 PYCODEMDEF py_isvalid (PyObject *self, PyObject *args);
 PYCODEMDEF py_validate (PyObject *self, PyObject *args);
 PYCODEMDEF py_validate2 (PyObject *self, PyObject *args);
@@ -130,9 +130,9 @@ static struct PyMethodDef funs[] = {
     METH_VARARGS,
     "like mkrand, but city code might be invalid"
   },{
-    "rand_suffix", py_rand_suffix,
+    "rand_with_prefix", py_rand_prefix,
     METH_VARARGS,
-    "random codem with suffix"
+    "random codem with prefix"
   },{
     "rand_ccode", py_rand_ccode,
     METH_VARARGS,
@@ -223,20 +223,20 @@ py_rand (PyObject *self, PyObject *args)
 }
 
 PYCODEMDEF
-py_rand_suffix (PyObject *self, PyObject *args)
+py_rand_prefix (PyObject *self, PyObject *args)
 {
   UNUSED (self);
 
-  const char *suffix;
+  const char *prefix;
   size_t offset;
 
-  if (!PyArg_ParseTuple (args, "s#", &suffix, &offset))
+  if (!PyArg_ParseTuple (args, "s#", &prefix, &offset))
     Py_RETURN_NONE;
   if (offset > CODEM_LEN)
     offset = CODEM_LEN;
 
   PyObject *result;
-  char *result_ptr = py_mkstrbuf_H (result, CODEM_LEN, suffix);
+  char *result_ptr = py_mkstrbuf_H (result, CODEM_LEN, prefix);
 
   codem_memnum (result_ptr, CODEM_LEN);
   codem_randp (result_ptr, offset);
