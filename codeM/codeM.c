@@ -1439,7 +1439,9 @@ exec_command (char prev_comm, char comm)
                 RET2SHELL (cfg);
                 GOTO_SCRIPT_MODE (cfg);
                 cfg->commented = false;
+#ifndef HAS_READLINE
                 __stdin_flush ();
+#endif
               }
             else
               {
