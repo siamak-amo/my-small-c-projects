@@ -227,6 +227,12 @@ py_rand (PyObject *self, PyObject *args)
   return result;
 }
 
+/**
+ *  @return:
+ *    on error    -> None
+ *    on success  -> bytearray of a valid codeM
+ *                   city code is not necessarily valid
+ */
 PYCODEMDEF
 py_rand_suffix (PyObject *self, PyObject *args)
 {
@@ -245,9 +251,14 @@ py_rand_suffix (PyObject *self, PyObject *args)
 
   codem_norm (result_ptr);
   codem_memnum (result_ptr, CODEM_LEN);
-  codem_rands (result_ptr, offset);
 
-  return result;
+  if (codem_rands (result_ptr, offset))
+    return result;
+  else
+    {
+      py_DECREF (result_ptr);
+      Py_RETURN_NONE;
+    }
 }
 
 PYCODEMDEF
