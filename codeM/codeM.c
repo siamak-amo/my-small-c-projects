@@ -247,7 +247,7 @@ CODEMDEF void codem_rand2 (char *codem);
  *  generate random codem with prefix
  *  @offset is the length of the prefix
  */
-CODEMDEF void codem_rands (char *codem, int offset);
+CODEMDEF void codem_randp (char *codem, int offset);
 
 /* write a valid random city code on @dest */
 CODEMDEF void codem_rand_ccode (char *dest);
@@ -644,7 +644,7 @@ test_1_2 ()
  *    Test Type 2
  *    
  *    tests:  codem_rand, codem_rand2
- *            codem_rands
+ *            codem_randp
  *            codem_ccode_idx
  **/
 static void
@@ -668,8 +668,8 @@ test_2_2 ()
   char code[CODEM_BUF_LEN] = "666";
   DEBUG ("prefix: %s, ", code);
   
-  codem_rands (code, 3);
-  DEBUG ("codem_rands: %s\n", code);
+  codem_randp (code, 3);
+  DEBUG ("codem_randp: %s\n", code);
 
   /* check the prefix is intact */
   assert (0 == strncmp (code, "666", 3));
