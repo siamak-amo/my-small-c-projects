@@ -823,7 +823,7 @@ main (void)
 #    include <readline/readline.h>
 #    include <readline/history.h>
 #  elif defined (__APPLE__)
-#    include <editline/readline.h>
+#    include <editline/readline.h> /* not tested */
 #  endif
 #endif /* _READLINE */
 
