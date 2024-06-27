@@ -336,14 +336,21 @@ codem_memnum (char *src, size_t n)
 CODEMDEF int
 codem_normcpy (char *restrict dest, const char *restrict src)
 {
-  size_t l = strlen (src);
+  int l = strlen (src);
 
   if (l > CODEM_BUF_LEN-1)
     return -1; // error
   
   memset (dest, '0', CODEM_LEN - l);
-  codem_memnumcpy (dest + (CODEM_LEN - l), src, l);
-  /* make dest null-terminated */
+
+  char *__p = dest + (CODEM_LEN - l);
+  for (l--; l >= 0; --l)
+    {
+      if (src[l] <= '9' && src[l] >= '0')
+        __p[l] = src[l];
+      else
+        return -1; /* cannot be normalized */
+    }
   dest[CODEM_LEN] = '\0';
   return 0;
 }
