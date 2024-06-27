@@ -1812,6 +1812,7 @@ main (int argc, char **argv)
 #endif
           /* read new command until EOF */
           prev_comm = comm;
+
 #ifndef HAS_READLINE
           if (EOF == scanf ("%c", &comm))
             {
@@ -1827,6 +1828,7 @@ main (int argc, char **argv)
               continue;
             }
 #endif
+
           /* interpretation of backslash escapes */
           normalize_command (&prev_comm, &comm);
           /* execute the current command */
