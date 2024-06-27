@@ -1677,6 +1677,27 @@ parse_options (int argc, char **argv)
   return 0;
 }
 
+#ifdef _READLINE
+static int
+command_scanf (char *c)
+{
+  char *p;
+  if (cfg->prompt)
+    p = readline (PROMPT);
+  else
+    p = readline (NULL);
+
+  if (NULL == p)
+    return EOF;
+
+  if (*p >= 0x20 && *p <= 0x7E)
+      *c = *p;
+  else
+    *c = ' ';
+  return 5;
+}
+#endif
+
 int
 main (int argc, char **argv)
 {
@@ -1738,6 +1759,7 @@ main (int argc, char **argv)
         }
       while (cfg->state == SHELL_MODE)
         {
+#ifndef _READLINE
           /* print the prompt */
           if (cfg->prompt)
             {
@@ -1755,8 +1777,10 @@ main (int argc, char **argv)
                   break;
                 }
             }
+#endif
           /* read new command until EOF */
           prev_comm = comm;
+#ifndef _READLINE
           if (EOF == scanf ("%c", &comm))
             {
               if (cfg->prompt)
@@ -1764,6 +1788,13 @@ main (int argc, char **argv)
               GOTO_EXITING (cfg);
               continue;
             }
+#else
+          if (EOF == command_scanf (&comm))
+            {
+              GOTO_EXITING (cfg);
+              continue;
+            }
+#endif
           /* interpretation of backslash escapes */
           normalize_command (&prev_comm, &comm);
           /* execute the current command */
