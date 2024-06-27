@@ -1226,7 +1226,10 @@ exec_command (char prev_comm, char comm)
       else if (0 > codem_scanf (RD_PROMPT, buffer))
         break;
       if (0 != codem_norm (buffer))
-        assert (0 && "Could not normalize");
+        {
+          fprintln (stderr, "Could not normalize the input");
+          break;
+        }
       printd (buffer);
       if (codem_isvalidn (buffer))
         {
@@ -1248,7 +1251,10 @@ exec_command (char prev_comm, char comm)
       else if (0 > codem_scanf (RD_PROMPT, buffer))
         break;
       if (0 != codem_norm (buffer))
-        assert (0 && "Could not normalize");
+        {
+          fprintln (stderr, "Could not normalize the input");
+          break;
+        }
       printd (buffer);
       codem_set_ctrl_digit (buffer);
       last_out = buffer;
@@ -1312,7 +1318,10 @@ exec_command (char prev_comm, char comm)
         assert (0 && "Invalid offset of codem_scanf");
       printd (buffer);
       if (0 != codem_norm (buffer))
-        assert (0 && "Could not normalize");
+        {
+          fprintln (stderr, "Could not normalize the input");
+          break;
+        }
       else
         {
           if (codem_rands (buffer, off))
