@@ -253,8 +253,11 @@ CODEMDEF void codem_randp (char *codem, int offset);
  *  generate random codem with suffix
  *  @len is the length of the suffix
  *  city code of the result might be invalid
+ *  @return:
+ *    1  -> on success
+ *    0  -> on failure (it might fail only when: @len >= 9)
  */
-CODEMDEF void codem_rands (char *codem, int len);
+CODEMDEF int codem_rands (char *codem, int len);
 
 /* write a valid random city code on @dest */
 CODEMDEF void codem_rand_ccode (char *dest);
@@ -446,9 +449,12 @@ codem_rand2 (char *codem)
   codem[CODEM_LEN] = '\0';
 }
 
-CODEMDEF void
+CODEMDEF int
 codem_rands (char *codem, int len)
 {
+  if (len > 9)
+    return codem_isvalidn (codem);
+
   int sum11 = 0;
   int exp_sum = char2num (codem[CTRL_DIGIT_IDX]);
   if (exp_sum >= 2)
@@ -502,6 +508,7 @@ codem_rands (char *codem, int len)
     c10 = char2num ('*'); /* unreachable */
 
   *codem = num2char (c10);
+  return 1;
 }
 
 CODEMDEF void
@@ -1297,8 +1304,10 @@ exec_command (char prev_comm, char comm)
         assert (0 && "Could not normalize");
       else
         {
-          codem_rands (buffer, off);
-          last_out = buffer;
+          if (codem_rands (buffer, off))
+            last_out = buffer;
+          else
+            last_out = "failure";
           fprintln (stdout, "%s", last_out);
         }
       break;
