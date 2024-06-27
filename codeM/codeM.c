@@ -1110,7 +1110,6 @@ codem_scanf (const char *message, char dest[CODEM_BUF_LEN])
     return -1;
   res = MIN (res, (int)strlen (dest));
   /* make the dest numeric */
-  codem_memnum (dest, res);
   dest[res] = '\0';
   return res;
 }
