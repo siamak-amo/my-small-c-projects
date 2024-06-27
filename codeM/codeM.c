@@ -1697,7 +1697,9 @@ command_scanf (char *c)
       *c = *p;
   else
     *c = ' ';
-  return 5;
+
+  free (p);
+  return 0;
 }
 #endif
 
