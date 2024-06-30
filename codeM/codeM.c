@@ -509,17 +509,16 @@ codem_rands (char *codem, int len)
         }
     }
   // solve the equation when c_10 = 0, ..., 9   (mod 11)
-  int c10;
   if (sum11 <= 9 && sum11 >= 0)
-    c10 = sum11;
+    {
+      *codem = num2char (sum11);
+      return 1;
+    }
   else
     {
-      c10 = char2num ('*'); /* unreachable */
+      *codem = '*'; /* unreachable */
       return 0; /* unknown error */
     }
-
-  *codem = num2char (c10);
-  return 1;
 }
 
 CODEMDEF void
