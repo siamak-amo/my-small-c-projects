@@ -513,7 +513,10 @@ codem_rands (char *codem, int len)
   if (sum11 <= 9 && sum11 >= 0)
     c10 = sum11;
   else
-    c10 = char2num ('*'); /* unreachable */
+    {
+      c10 = char2num ('*'); /* unreachable */
+      return 0; /* unknown error */
+    }
 
   *codem = num2char (c10);
   return 1;
