@@ -117,6 +117,7 @@ RandFunction codem_srand = NULL;
 
 #define char2num(c) ((c) - '0')
 #define num2char(x) ((x) + '0')
+#define isnumber(c) (((c) >= '0') && ((c) <= '9'))
 #define UNUSED(x) (void)(x)
 /* macro to initialize codem_srand */
 #define codem_rand_init(randfun) codem_srand = &(randfun)
@@ -346,7 +347,7 @@ codem_normcpy (char *restrict dest, const char *restrict src)
   char *__p = dest + (CODEM_LEN - l);
   for (l--; l >= 0; --l)
     {
-      if (src[l] <= '9' && src[l] >= '0')
+      if (isnumber (src[l]))
         __p[l] = src[l];
       else
         return -1; /* cannot be normalized */
@@ -644,7 +645,7 @@ codem_cname_search (const char *search)
 #endif
 
 /* assert char x is a number '0', ..., '9' */
-#define assert_isnumber(x) assert ((x)>='0' && (x)<='9')
+#define assert_isnumber(x) assert (isnumber (x))
 
 /* assert x is a 10-digit numeric string */
 #define assert_10numeric(x) do{                             \
