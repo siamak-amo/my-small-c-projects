@@ -1624,7 +1624,6 @@ parse_options (int argc, char **argv)
               cfg->commandsH = cfg->commands;
               strcpy (cfg->commands + cmd_len, *argv);
             }
-          return 0;
         }
       /* script filename */
       if (argv[0][0] != '-')
