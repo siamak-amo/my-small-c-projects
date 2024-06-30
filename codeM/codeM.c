@@ -472,12 +472,9 @@ codem_rands (char *codem, int len)
   if (len < CODEM_LEN - 1)
     codem_rand_gen (codem + 1, CODEM_LEN - 1 - len);
 
-  /* calculate the weighted sum */
+  /* calculate codem's CTRL_DIGIT algorithm for index 2 to 9 */
   for (int idx = 1; idx < 9; ++idx)
     sum11 += (10 - idx) * char2num (codem[idx]);
-
-  sum11 -= exp_sum;
-  sum11 %= 11; // in {0, ..., 10}
 
   /**
    *  now we need to solve the equation below:
@@ -486,6 +483,8 @@ codem_rands (char *codem, int len)
    *  which always has a unique solution c_10 in {0, ..., 9}
    *  except for the case c_10 = 10 (mod 11), so we handle it first
    */
+  sum11 -= exp_sum;
+  sum11 %= 11; // in {0, ..., 10}
   if (sum11 == 10)
     {
       if (len >= 9)
