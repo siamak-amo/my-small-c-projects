@@ -510,7 +510,7 @@ codem_rands (char *codem, int len)
     }
   // solve the equation when c_10 = 0, ..., 9   (mod 11)
   int c10;
-  if (sum11 < 10)
+  if (sum11 <= 9 && sum11 >= 0)
     c10 = sum11;
   else
     c10 = char2num ('*'); /* unreachable */
@@ -1829,7 +1829,6 @@ main (int argc, char **argv)
               continue;
             }
 #endif
-
           /* interpretation of backslash escapes */
           normalize_command (&prev_comm, &comm);
           /* execute the current command */
