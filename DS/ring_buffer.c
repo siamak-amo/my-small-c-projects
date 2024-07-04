@@ -214,7 +214,33 @@ map_file2ring (FILE *f, RBuffer *r)
 int
 TEST_1 (RBuffer *r)
 {
-  UNUSED (r);
+  char tmp[32] = {0};
+
+  /* before overflow */
+  for (int i=0; i<10; ++i)
+    rb_writec (r, '0' + i);
+
+  rb_readn (r, tmp, 10);
+  strnassert (tmp, "0123456789", 10, "rb_readn failed", true);
+  strnassert (r->mem, "0123456789\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 32,
+              "simple writec failed", true);
+
+  /* on overflow */
+  for (int i=0; i<22; ++i)
+    rb_writec (r, 'a' + i);
+
+  rb_readn (r, tmp, 32);
+  strnassert (tmp, "0123456789abcdefghijklmnopqrstuv", 32,
+            "simple rb_readn failed", true);
+
+  /* after overflow */
+  for (int i=0; i<3; ++i)
+    rb_writec (r, 'A' + i);
+
+  rb_readn (r, tmp, 32);
+  strnassert (tmp, "3456789abcdefghijklmnopqrstuvABC", 32,
+            "rb_readn failed after overflow", true);
+
   RETPASS ();
 }
 
