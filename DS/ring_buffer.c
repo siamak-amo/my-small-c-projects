@@ -102,8 +102,9 @@ rb_writen (RBuffer *r, const char *src, size_t len)
 RINGDEF int
 rb_readc (RBuffer *r, char *dest)
 {
-  UNUSED (r);
-  UNUSED (dest);
+  if (NULL == r->mem)
+    return 0;
+  *dest = r->mem[r->idx];
   return 0;
 }
 
