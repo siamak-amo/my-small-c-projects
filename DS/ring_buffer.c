@@ -80,8 +80,13 @@ RINGDEF int rb_readn (RBuffer *r, char *dest, size_t n);
 RINGDEF int
 rb_writec (RBuffer *r, char c)
 {
-  UNUSED (r);
-  UNUSED (c);
+  r->mem[r->idx] = c;
+  r->idx = (r->idx + 1) % r->cap;
+
+  if (r->full)
+    r->head = (r->head + 1) % r->cap;
+  if (0 == r->idx)
+    r->full = true;
   return 0;
 }
 
