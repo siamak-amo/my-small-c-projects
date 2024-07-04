@@ -40,10 +40,11 @@ struct ring_buffer {
 };
 typedef struct ring_buffer RBuffer;
 
-#define rb_new(buf, len) (RBuffer){   \
-    .mem = buf,  .cap = len,                      \
-    .head_idx = 0, .full = false,                  \
-  }
+#define rb_new(buf, len) (RBuffer) {                            \
+      .mem = buf,                                               \
+      .cap = len,                                               \
+      .head_idx = 0, .full = false                              \
+   }
 
 /* write null-terminated string to ring */
 #define rb_writes (ring, src) rb_writen (ring, src, strlen (src))
