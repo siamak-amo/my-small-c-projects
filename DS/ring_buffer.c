@@ -111,10 +111,25 @@ rb_readc (RBuffer *r, char *dest)
 RINGDEF int
 rb_readn (RBuffer *r, char *dest, size_t n)
 {
-  UNUSED (r);
-  UNUSED (n);
-  UNUSED (dest);
-  return 0;
+  size_t rw = 0;
+  size_t __rest;
+
+  __rest = MIN (n, r->cap - r->idx);
+  memcpy (dest, r->mem + r->head, __rest);
+  n -= __rest;
+  rw += __rest;
+  dest += __rest;
+
+  while (n != 0)
+    {
+      __rest = MIN (n, r->cap);
+      memcpy (dest, r->mem, __rest);
+      n -= __rest;
+      dest += __rest;
+      rw += __rest;
+    }
+
+  return rw;
 }
 
 #ifdef HAVE_FILEIO
