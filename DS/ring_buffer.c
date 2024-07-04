@@ -64,6 +64,7 @@ RINGDEF int rb_fwrite (RBuffer *r, FILE *f, size_t len);
 /* only read from ring */
 RINGDEF int rb_readc (RBuffer *r, char *dest);
 RINGDEF int rb_readn (RBuffer *r, char *dest, size_t n);
+RINGDEF int rb_sreadn (RBuffer *r, char *dest, size_t n); /* read string */
 
 /* read and move the head forward (flush) */
 #define rb_flushc(ring, dest) ({                                \
@@ -106,6 +107,14 @@ rb_readc (RBuffer *r, char *dest)
     return 0;
   *dest = r->mem[r->idx];
   return 0;
+}
+
+RINGDEF int
+rb_sreadn (RBuffer *r, char *dest, size_t n)
+{
+  int __ret = rb_readn (r, dest, n);
+  dest[n] = '\0';
+  return __ret;
 }
 
 RINGDEF int
