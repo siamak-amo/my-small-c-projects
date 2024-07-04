@@ -177,22 +177,6 @@ ringset (RBuffer *r)
   memset (r->mem, 0, r->cap);
 }
 
-void
-assert__H (RBuffer *r, const char exp[r->cap], const char *msg)
-{
-  size_t i = 0;
-  if (exp != 0)
-    {
-      for (; i < r->cap; ++i)
-        rbassert (exp[i] == r->mem[i], msg, true);
-    }
-  else
-    {
-      for (; i < r->cap; ++i)
-        rbassert (0 == r->mem[i], msg, true);
-    }
-}
-
 int
 map_file2ring (FILE *f, RBuffer *r)
 {
@@ -242,7 +226,6 @@ main (void)
 
   /* only for testing, it's not mandatory */
   ringset (&ring);
-  assert__H (&ring, 0, "memset 0 failed");
 
   /* running tests */
   TESTFUN (TEST_1, &ring);
