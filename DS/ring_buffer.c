@@ -39,7 +39,7 @@
 struct ring_buffer {
   char *mem;
   size_t cap;
-  size_t head_idx;
+  size_t head, idx;
   bool full;
 };
 typedef struct ring_buffer RBuffer;
@@ -47,7 +47,7 @@ typedef struct ring_buffer RBuffer;
 #define rb_new(buf, len) (RBuffer) {                            \
       .mem = buf,                                               \
       .cap = len,                                               \
-      .head_idx = 0, .full = false                              \
+      .head = 0, .idx = 0, .full = false                        \
    }
 
 /* write null-terminated string to ring */
