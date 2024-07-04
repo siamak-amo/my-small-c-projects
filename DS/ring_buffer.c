@@ -11,6 +11,7 @@
 #ifndef RIBG_BUFFER__H__
 #define RIBG_BUFFER__H__
 #include <stdbool.h>
+#include <string.h>
 
 #ifndef RB_NO_STDIO
 #  define HAVE_FILEIO
@@ -128,7 +129,6 @@ rb_fwrite (struct ring_buffer *r, FILE *f, size_t len)
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
 #include <sys/mman.h>
 
 #define rbassert(con, msg, exit) do { if (!(con)) {                     \
