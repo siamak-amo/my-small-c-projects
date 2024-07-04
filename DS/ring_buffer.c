@@ -158,6 +158,9 @@ rb_fwrite (struct ring_buffer *r, FILE *f, size_t len)
       if (exit) abort ();                                               \
     }} while (0)
 
+#define strnassert(str1, str2, n, msg, exit) \
+  rbassert (0 == strncmp (str1, str2, n), msg, exit)
+
 /* prints function name @fun and runs `fun(...)` */
 #define TESTFUN(fun, ...) do {                     \
     fprintf (stdout, " * Running %s:\n", #fun);    \
