@@ -91,8 +91,11 @@ rb_writec (RBuffer *r, char c)
   if (r->full)
     r->head = (r->head + 1) % r->cap;
   if (0 == r->idx)
-    r->full = true;
-  return 0;
+    {
+      r->full = true;
+    }
+
+  return 1;
 }
 
 RINGDEF int
