@@ -104,18 +104,19 @@ rb_writen (RBuffer *r, const char *src, size_t len)
   size_t rw = 0;
   size_t __rest;
 
-  if (len < r->cap)
+  if (len <= r->cap)
     {
-      // TODO
       __rest = MIN (len, r->cap - r->idx);
       len -= __rest;
       rw += __rest;
       memcpy (r->mem + r->idx, src, __rest);
       src += __rest;
-      r->idx = (r->idx + __rest) % r->cap;
 
       if (r->full)
         r->head = (r->head + __rest) % r->cap;
+      if (r->idx + __rest >= r->cap)
+        r->full = true;
+      r->idx = (r->idx + __rest) % r->cap;
 
       if (0 != len)
         r->full = true;
@@ -130,7 +131,7 @@ rb_writen (RBuffer *r, const char *src, size_t len)
     }
   else
     {
-      src += len - r->cap - 1;
+      src += len - r->cap;
       memcpy (r->mem, src, r->cap);
 
       r->full = true;
