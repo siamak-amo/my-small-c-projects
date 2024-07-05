@@ -318,14 +318,14 @@ typedef struct test_case_t TestCase;
     .expected=exp, .description=msg               \
   }
 #define do_test(r, tcase, action) do {                          \
-    printf (" - testing %s:\n", (tcase)->description);           \
+    printf (" - testing %s:\n", (tcase)->description);          \
     action;                                                     \
     int __explen = strlen ((tcase)->expected);                  \
     char *tmp = malloc (__explen + 1);                          \
     rb_sreadn (r, __explen, tmp);                               \
     strnassert (tmp, (tcase)->expected, __explen,               \
                 (tcase)->description, true);                    \
-    printf ("     [%-32s]\n", tmp);                             \
+    printf ("    [%-32s]\n", tmp);                              \
     free (tmp);                                                 \
   } while (0)
 
