@@ -167,6 +167,13 @@ rb_readn (RBuffer *r, size_t n, char dest[n])
   size_t rw = 0;
   size_t __rest;
 
+  if (!r->full)
+    {
+      __rest = MIN (n, r->idx);
+      memcpy (dest, r->mem, __rest);
+      return __rest;
+    }
+
   __rest = MIN (n, r->cap - r->idx);
   memcpy (dest, r->mem + r->head, __rest);
   n -= __rest;
