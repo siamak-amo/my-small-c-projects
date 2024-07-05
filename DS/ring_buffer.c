@@ -332,32 +332,32 @@ typedef struct test_case_t TestCase;
 int
 TEST_1 (RBuffer *r)
 {
-  char tmp[33] = {0};
+  const TestCase tests[] = {
+    Tcase("0123456789",
+          "simple writec"),
+    Tcase("0123456789abcdefghijklmnopqrstuv",
+          "simple rb_readn"),
+    Tcase("3456789abcdefghijklmnopqrstuvABC",
+          "rb_readn after overflow"),
+  };
 
-  /* before overflow */
-  for (int i=0; i<10; ++i)
-    rb_writec (r, '0' + i);
+  /* test 1: before overflow */
+  do_test (r, tests, {
+      for (int i=0; i<10; ++i)
+        rb_writec (r, '0' + i);
+    });
 
-  rb_readn (r, 10, tmp);
-  strnassert (tmp, "0123456789", 10, "rb_readn failed", true);
-  strnassert (r->mem, "0123456789\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 32,
-              "simple writec failed", true);
+  /* test 2: on overflow */
+  do_test (r, tests + 1, {
+      for (int i=0; i<22; ++i)
+        rb_writec (r, 'a' + i);
+    });
 
-  /* on overflow */
-  for (int i=0; i<22; ++i)
-    rb_writec (r, 'a' + i);
-
-  rb_readn (r, 32, tmp);
-  strnassert (tmp, "0123456789abcdefghijklmnopqrstuv", 32,
-            "simple rb_readn failed", true);
-
-  /* after overflow */
-  for (int i=0; i<3; ++i)
-    rb_writec (r, 'A' + i);
-
-  rb_readn (r, 32, tmp);
-  strnassert (tmp, "3456789abcdefghijklmnopqrstuvABC", 32,
-            "rb_readn failed after overflow", true);
+  /* test 3: after overflow */
+  do_test (r, tests + 2, {
+      for (int i=0; i<3; ++i)
+        rb_writec (r, 'A' + i);
+    });
 
   RETPASS ();
 }
@@ -365,23 +365,28 @@ TEST_1 (RBuffer *r)
 int
 TEST_2 (RBuffer *r)
 {
-  char tmp[33] = {0};
   rbassert (r->mem != NULL, "NULL", true);
 
-  rb_writen (r, "0123456789", 10);
-  rb_sreadn (r, 32, tmp);
-  strnassert (tmp, "defghijklmnopqrstuvABC0123456789", 32,
-              "simple writen failed", true);
+  const TestCase tests[] = {
+    Tcase("defghijklmnopqrstuvABC0123456789",
+          "simple writen"),
+    Tcase("6789**********************ABCDEF",
+          "writen on overflow"),
+    Tcase("**************************abcdef",
+          "longer than capacity writen")
+  };
 
-  rb_writen (r, "**********************ABCDEF", 28);
-  rb_sreadn (r, 32, tmp);
-  strnassert (tmp, "6789**********************ABCDEF", 32,
-              "writen failed on overflow", true);
+  do_test (r, tests, {
+      rb_writen (r, "0123456789", 10);
+    });
 
-  rb_writen (r, "******************************abcdef", 37);
-  rb_sreadn (r, 32, tmp);
-  strnassert (tmp, "**************************abcdef", 32,
-              "longer than capacity writen failed", true);
+  do_test (r, tests + 1, {
+      rb_writen (r, "**********************ABCDEF", 28);
+    });
+
+  do_test (r, tests + 2, {
+      rb_writen (r, "******************************abcdef", 37);
+    });
 
   RETPASS ();
 }
@@ -389,29 +394,33 @@ TEST_2 (RBuffer *r)
 int
 TEST_3 (RBuffer *r)
 {
+  rbassert (r->mem != NULL, "NULL", true);
   FILE *tmp_file = tmpfile ();
   ftruncate (fileno (tmp_file), 50);
   fwrite ("ABCDEFGHIJ012345678901234567890123456789abcdefghij",
           1, 50, tmp_file);
   fseek (tmp_file, 0, SEEK_SET);
 
-  char tmp[33] = {0};
-  rbassert (r->mem != NULL, "NULL", true);
+  const TestCase tests[] = {
+    Tcase("****************abcdefABCDEFGHIJ",
+          "simple fwrite"),
+    Tcase("345678901234567890123456789abcde",
+          "longer than capacity fwrite"),
+    Tcase("8901234567890123456789abcdefg",
+          "longer than file fwrite")
+  };
 
-  rb_fwrite (r, tmp_file, 10);
-  rb_sreadn (r, 32, tmp);
-  strnassert (tmp, "****************abcdefABCDEFGHIJ", 32,
-              "", true);
+  do_test (r, tests, {
+      rb_fwrite (r, tmp_file, 10);
+    });
 
-  rb_fwrite (r, tmp_file, 35);
-  rb_sreadn (r, 32, tmp);
-  strnassert (tmp, "345678901234567890123456789abcde", 32,
-              "", true);
+  do_test (r, tests + 1, {
+      rb_fwrite (r, tmp_file, 35);
+    });
 
-  rb_fwrite (r, tmp_file, 10);
-  rb_sreadn (r, 32, tmp);
-  strnassert (tmp, "8901234567890123456789abcdefghij", 32,
-              "", true);
+  do_test (r, tests + 2, {
+      rb_fwrite (r, tmp_file, 10);
+    });
 
   RETPASS ();
 }
