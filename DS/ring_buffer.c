@@ -340,9 +340,9 @@ typedef struct test_case_t TestCase;
     int __explen = strlen ((tcase)->expected);                  \
     char *tmp = malloc (__explen + 1);                          \
     rb_sreadn (r, __explen, tmp);                               \
+    printf ("    [%-32s]\n", tmp);                              \
     strnassert (tmp, (tcase)->expected, __explen,               \
                 (tcase)->description, true);                    \
-    printf ("    [%-32s]\n", tmp);                              \
     free (tmp);                                                 \
   } while (0)
 
