@@ -20,8 +20,10 @@
  *
  *  Ring Buffer Implementation
  *
- *  We do not handle memory, allocating and freeing memory is up to users
- *  also you can use a mmaped file for memory, see the test program
+ *  This program is impartial to memory allocation
+ *  and as it uses indexes to access its memory,
+ *  remapping the memory is safe
+ *  It's possible to use mapped files as memory, see the test program
  *
  *  Compilation:
  *    to compile the test program:
