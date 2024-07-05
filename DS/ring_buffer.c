@@ -258,8 +258,9 @@ rb_fwrite (struct ring_buffer *r, FILE *f, size_t len)
 #include <sys/mman.h>
 
 #define rbassert(con, msg, exit) do { if (!(con)) {                     \
-      fprintf (stderr, "%s:%d: [%s] Assertion `%s` failed",             \
-               __FILE__, __LINE__, (msg) ? msg : "--", #con);           \
+      fprintf (stderr, "%s:%d: [%s%s] Assertion `%s` failed",           \
+               __FILE__, __LINE__, (msg) ? msg : "",                    \
+               (msg) ? " FAILED" : "FAILED", #con);                     \
       if (exit) abort ();                                               \
     }} while (0)
 
