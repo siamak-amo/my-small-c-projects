@@ -351,7 +351,9 @@ TEST_1 (RBuffer *r)
           "simple writec"),
     Tcase("0123456789abcdefghijklmnopqrstuv",
           "simple rb_readn"),
-    Tcase("3456789abcdefghijklmnopqrstuvABC",
+    Tcase("123456789abcdefghijklmnopqrstuvW",
+          "simple rb_readn"),
+    Tcase("456789abcdefghijklmnopqrstuvWABC",
           "rb_readn after overflow"),
   };
 
@@ -367,8 +369,12 @@ TEST_1 (RBuffer *r)
         rb_writec (r, 'a' + i);
     });
 
-  /* test 3: after overflow */
   do_test (r, tests + 2, {
+      rb_writec (r, 'W');
+    });
+
+  /* test 3: after overflow */
+  do_test (r, tests + 3, {
       for (int i=0; i<3; ++i)
         rb_writec (r, 'A' + i);
     });
@@ -382,7 +388,7 @@ TEST_2 (RBuffer *r)
   rbassert (r->mem != NULL, "NULL", true);
 
   const TestCase tests[] = {
-    Tcase("defghijklmnopqrstuvABC0123456789",
+    Tcase("efghijklmnopqrstuvWABC0123456789",
           "simple writen"),
     Tcase("6789**********************ABCDEF",
           "writen on overflow"),
@@ -400,7 +406,7 @@ TEST_2 (RBuffer *r)
     });
 
   do_test (r, tests + 2, {
-      rb_writen (r, "******************************abcdef", 37);
+      rb_writen (r, "******************************abcdef", 36);
     });
 
   do_test (r, tests + 3, {
