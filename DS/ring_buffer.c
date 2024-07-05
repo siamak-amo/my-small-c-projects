@@ -308,6 +308,27 @@ map_file2ring (FILE *f, RBuffer *r)
   return 0;
 }
 
+struct test_case_t {
+  char *expected;
+  char *description;
+};
+typedef struct test_case_t TestCase;
+
+#define Tcase(exp, msg) (TestCase) {              \
+    .expected=exp, .description=msg               \
+  }
+#define do_test(r, tcase, action) do {                          \
+    action;                                                     \
+    int __explen = strlen ((tcase)->expected);                  \
+    char *tmp = malloc (__explen + 1);                          \
+    rb_sreadn (r, __explen, tmp);                               \
+    strnassert (tmp, (tcase)->expected, __explen,               \
+                (tcase)->description, true);                    \
+    printf ("%d: [%-32s]\n", __explen, tmp);                    \
+    free (tmp);                                                 \
+  } while (0)
+
+
 int
 TEST_1 (RBuffer *r)
 {
