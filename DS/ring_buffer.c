@@ -249,7 +249,6 @@ rb_fwrite (RBuffer *r, FILE *f, size_t len)
         }
       else
         {
-          printf ("%lu,\n", freads);
           /* unexpected end of file */
           if (r->full || (r->idx + freads >= r->cap))
             {
