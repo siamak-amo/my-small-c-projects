@@ -1,11 +1,41 @@
-/**
+/* This file is part of my-small-c-projects <https://gitlab.com/SI.AMO/>
+
+  ring_buffer is free software: you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License,
+  or (at your option) any later version.
+
+  ring_buffer is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  See the GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+**
  *  file: ring_buffer.c
  *  created on: 4 Jul 2024
  *
  *  Ring Buffer Implementation
  *
- *  We not handle memory, allocating and freeing memory is up to users
- *  also you can use a mmaped file, see the test program
+ *  We do not handle memory, allocating and freeing memory is up to users
+ *  also you can use a mmaped file for memory, see the test program
+ *
+ *  Compilation:
+ *    to compile the test program:
+ *      cc -ggdb -Wall -Wextra -Werror \
+ *        -D RB_IMPLEMENTATION \
+ *        -D RB_TEST \
+ *        -o test.out ring_buffer.c
+ *
+ *    to compile the example program:
+ *      cc -ggdb -Wall -Wextra -Werror \
+ *        -D RB_IMPLEMENTATION \
+ *        -D RB_EXAMPLE \
+ *        -o ring.out ring_buffer.c \
+ *        $(pkg-config --libs readline)
  *
  **/
 #ifndef RIBG_BUFFER__H__
