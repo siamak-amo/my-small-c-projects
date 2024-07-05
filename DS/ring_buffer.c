@@ -77,13 +77,6 @@ RINGDEF int rb_readn (RBuffer *r, size_t n, char dest[n]);
  *  otherwise it has undefined behavior
  */
 RINGDEF int rb_sreadn (RBuffer *r, size_t n, char dest[n+1]);
-/* read and move the head forward (flush) */
-#define rb_flushc(ring, dest) ({                                \
-      ring->head_idx = (ring->head_idx + 1) % (ring->cap);      \
-      rb_readc (ring, dest); })
-#define rb_flushn(ring, dest, n) ({                             \
-      ring->head_idx = (ring->head_idx + n) % (ring->cap);      \
-      rb_readn (ring, dest, n); })
 
 #endif /* RIBG_BUFFER__H__ */
 
