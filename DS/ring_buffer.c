@@ -63,9 +63,9 @@ RINGDEF int rb_fwrite (RBuffer *r, FILE *f, size_t len);
 
 /* only read from ring */
 RINGDEF int rb_readc (RBuffer *r, char *dest);
-RINGDEF int rb_readn (RBuffer *r, char *dest, size_t n);
-RINGDEF int rb_sreadn (RBuffer *r, char *dest, size_t n); /* read string */
 
+RINGDEF int rb_readn (RBuffer *r, size_t n, char dest[n]);
+RINGDEF int rb_sreadn (RBuffer *r, size_t n, char dest[n+1]);
 /* read and move the head forward (flush) */
 #define rb_flushc(ring, dest) ({                                \
       ring->head_idx = (ring->head_idx + 1) % (ring->cap);      \
@@ -110,15 +110,15 @@ rb_readc (RBuffer *r, char *dest)
 }
 
 RINGDEF int
-rb_sreadn (RBuffer *r, char *dest, size_t n)
+rb_sreadn (RBuffer *r, size_t n, char dest[n+1])
 {
-  int __ret = rb_readn (r, dest, n);
+  int __ret = rb_readn (r, n, dest);
   dest[n] = '\0';
   return __ret;
 }
 
 RINGDEF int
-rb_readn (RBuffer *r, char *dest, size_t n)
+rb_readn (RBuffer *r, size_t n, char dest[n])
 {
   size_t rw = 0;
   size_t __rest;
@@ -214,13 +214,13 @@ map_file2ring (FILE *f, RBuffer *r)
 int
 TEST_1 (RBuffer *r)
 {
-  char tmp[32] = {0};
+  char tmp[33] = {0};
 
   /* before overflow */
   for (int i=0; i<10; ++i)
     rb_writec (r, '0' + i);
 
-  rb_readn (r, tmp, 10);
+  rb_readn (r, 10, tmp);
   strnassert (tmp, "0123456789", 10, "rb_readn failed", true);
   strnassert (r->mem, "0123456789\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 32,
               "simple writec failed", true);
@@ -229,7 +229,7 @@ TEST_1 (RBuffer *r)
   for (int i=0; i<22; ++i)
     rb_writec (r, 'a' + i);
 
-  rb_readn (r, tmp, 32);
+  rb_readn (r, 32, tmp);
   strnassert (tmp, "0123456789abcdefghijklmnopqrstuv", 32,
             "simple rb_readn failed", true);
 
@@ -237,7 +237,7 @@ TEST_1 (RBuffer *r)
   for (int i=0; i<3; ++i)
     rb_writec (r, 'A' + i);
 
-  rb_readn (r, tmp, 32);
+  rb_readn (r, 32, tmp);
   strnassert (tmp, "3456789abcdefghijklmnopqrstuvABC", 32,
             "rb_readn failed after overflow", true);
 
