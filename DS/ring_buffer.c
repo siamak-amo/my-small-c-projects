@@ -487,3 +487,78 @@ main (void)
   return 0;
 }
 #endif /* RB_TEST */
+
+
+#ifdef RB_EXAMPLE
+#include <stdio.h>
+#include <stdlib.h>
+#include <readline/readline.h>
+#include <readline/history.h>
+
+static RBuffer r;
+static char *__tmp;
+
+void
+help ()
+{
+  puts ("type:\n"
+        "  \\ring          ~~> to see the ring structure\n"
+        "  \\help          ~~> to print help\n"
+        "  \\              ~~> to read from the ring\n"
+        "  anything else  ~~> to write on the ring");
+}
+
+void
+cmd (char *c)
+{
+  if (0 == strncmp (c, "ring", 4))
+    {
+      printf ("head: %lu, index: %lu, cap: %lu\nmem: [%s]\n",
+              r.head, r.idx, r.cap, r.mem);
+    }
+  if (0 == strncmp (c, "help", 4))
+    {
+      help ();
+    }
+  else if (0 == strlen (c))
+    {
+      rb_sreadn (&r, r.cap, __tmp);
+      printf ("@r [%s]\n", __tmp);
+    }
+}
+
+int
+main ()
+{
+  char *__ln = NULL; /* for readline */
+  r = rb_new (NULL, 32);
+  r.mem = malloc (r.cap);
+
+  __tmp = malloc (r.cap + 1);
+  memset (__tmp, 0, r.cap + 1);
+
+  printf ("Ring Buffer -- example program ring capacity: %lu\n", r.cap);
+  help ();
+
+  while (true)
+    {
+      __ln = readline (">>> ");
+      if (NULL == __ln)
+        break;
+
+      if ('\\' == *__ln)
+        {
+          cmd (__ln + 1);
+          continue;
+        }
+
+      if (strlen (__ln) > 0)
+        rb_writes (&r, __ln);
+
+      free (__ln);
+    }
+
+  free (__tmp);
+  return 0;
+}
+#endif
