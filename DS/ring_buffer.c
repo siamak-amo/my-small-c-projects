@@ -407,7 +407,7 @@ TEST_3 (RBuffer *r)
           "simple fwrite"),
     Tcase("345678901234567890123456789abcde",
           "longer than capacity fwrite"),
-    Tcase("8901234567890123456789abcdefg",
+    Tcase("8901234567890123456789abcdefghij",
           "longer than file fwrite")
   };
 
