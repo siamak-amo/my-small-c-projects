@@ -61,10 +61,19 @@ RINGDEF int rb_writen (RBuffer *r, const char *src, size_t len);
 RINGDEF int rb_fwrite (RBuffer *r, FILE *f, size_t len);
 #endif
 
-/* only read from ring */
+/* function definitions */
+/* read one byte from the ring @r */
 RINGDEF int rb_readc (RBuffer *r, char *dest);
-
+/**
+ *  to read @n bytes from the ring @r
+ *  to the destination @dest
+ */
 RINGDEF int rb_readn (RBuffer *r, size_t n, char dest[n]);
+/**
+ *  like rb_readn, but makes the @dest null-terminated
+ *  length of the @dest buffer must be at least n+1
+ *  otherwise it has undefined behavior
+ */
 RINGDEF int rb_sreadn (RBuffer *r, size_t n, char dest[n+1]);
 /* read and move the head forward (flush) */
 #define rb_flushc(ring, dest) ({                                \
