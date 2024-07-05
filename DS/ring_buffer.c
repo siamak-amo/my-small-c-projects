@@ -189,10 +189,62 @@ rb_readn (RBuffer *r, size_t n, char dest[n])
 RINGDEF int
 rb_fwrite (struct ring_buffer *r, FILE *f, size_t len)
 {
-  UNUSED (r);
-  UNUSED (f);
-  UNUSED (len);
-  return 0;
+  size_t rw = 0;
+  size_t __rest;
+  size_t freads;
+
+  if (len < r->cap)
+    {
+      // TODO
+      __rest = MIN (len, r->cap - r->idx);
+      len -= __rest;
+      freads = fread (r->mem + r->idx, 1, __rest, f);
+      rw += freads;
+      r->idx = (r->idx + freads) % r->cap;
+
+      if (r->full)
+        r->head = (r->head + freads) % r->cap;
+      if (0 != len)
+        r->full = true;
+      else
+        return rw;
+
+      if (freads < __rest)
+        {
+          return rw;
+        }
+
+      freads = fread (r->mem, 1, len, f);
+      rw += freads;
+      r->head = (r->head + freads) % r->cap;
+      r->idx = (r->idx + freads) % r->cap;
+      return rw;
+    }
+  else
+    {
+      fseek (f, len - r->cap, SEEK_CUR);
+      freads = fread (r->mem, 1, r->cap, f);
+      if (freads == r->cap)
+        {
+          r->full = true;
+          r->head = 0;
+          r->idx = 0;
+        }
+      else
+        {
+          /* unexpected end of file */
+          r->idx = (r->idx + freads) % r->cap;
+          /* unexpected end of file */
+          if (r->full || (r->idx + freads > r->cap))
+            {
+              r->full = true;
+              r->head = (r->head + freads) % r->cap;
+            }
+        }
+      return r->cap;
+    }
+
+  return rw;
 }
 #endif /* HAVE_FILEIO */
 
