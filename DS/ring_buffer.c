@@ -425,7 +425,9 @@ TEST_3 (RBuffer *r)
     Tcase("345678901234567890123456789abcde",
           "longer than capacity fwrite"),
     Tcase("8901234567890123456789abcdefghij",
-          "longer than file fwrite")
+          "longer than file fwrite"),
+    Tcase("34567890123456789abcdefghij",
+          "after reset")
   };
 
   do_test (r, tests, {
@@ -440,6 +442,11 @@ TEST_3 (RBuffer *r)
       rb_fwrite (r, tmp_file, 10);
     });
 
+  do_test (r, tests + 3, {
+      rb_reset (r);
+      fseek (tmp_file, 0, SEEK_SET);
+      rb_fwrite (r, tmp_file, 55);
+    });
   RETPASS ();
 }
 
