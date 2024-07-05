@@ -94,10 +94,45 @@ rb_writec (RBuffer *r, char c)
 RINGDEF int
 rb_writen (RBuffer *r, const char *src, size_t len)
 {
-  UNUSED (r);
-  UNUSED (src);
-  UNUSED (len);
-  return 0;
+  size_t rw = 0;
+  size_t __rest;
+
+  if (len < r->cap)
+    {
+      // TODO
+      __rest = MIN (len, r->cap - r->idx);
+      len -= __rest;
+      rw += __rest;
+      memcpy (r->mem + r->idx, src, __rest);
+      src += __rest;
+      r->idx = (r->idx + __rest) % r->cap;
+
+      if (r->full)
+        r->head = (r->head + __rest) % r->cap;
+
+      if (0 != len)
+        r->full = true;
+      else
+        return rw;
+
+      memcpy (r->mem, src, len);
+      rw += len;
+      r->head = (r->head + len) % r->cap;
+      r->idx = (r->idx + len) % r->cap;;
+      return rw;
+    }
+  else
+    {
+      src += len - r->cap;
+      memcpy (r->mem, src, r->cap);
+
+      r->full = true;
+      r->head = 0;
+      r->idx = r->cap - 1;
+      return r->cap;
+    }
+
+  return rw;
 }
 
 RINGDEF int
