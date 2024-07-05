@@ -390,7 +390,8 @@ TEST_2 (RBuffer *r)
     Tcase("6789**********************ABCDEF",
           "writen on overflow"),
     Tcase("**************************abcdef",
-          "longer than capacity writen")
+          "longer than capacity writen"),
+    Tcase("1234", "use after reset")
   };
 
   do_test (r, tests, {
@@ -403,6 +404,11 @@ TEST_2 (RBuffer *r)
 
   do_test (r, tests + 2, {
       rb_writen (r, "******************************abcdef", 37);
+    });
+
+  do_test (r, tests + 3, {
+      rb_reset (r);
+      rb_writen (r, "1234", 4);
     });
 
   RETPASS ();
