@@ -418,8 +418,11 @@ TEST_3 (RBuffer *r)
           1, 50, tmp_file);
   fseek (tmp_file, 0, SEEK_SET);
 
+  /* reset the ring */
+  rb_reset (r);
+
   const TestCase tests[] = {
-    Tcase("****************abcdefABCDEFGHIJ",
+    Tcase("ABCDEFGHIJ",
           "simple fwrite"),
     Tcase("345678901234567890123456789abcde",
           "longer than capacity fwrite"),
