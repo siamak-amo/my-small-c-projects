@@ -51,7 +51,7 @@ typedef struct ring_buffer RBuffer;
    }
 
 /* write null-terminated string to ring */
-#define rb_writes (ring, src) rb_writen (ring, src, strlen (src))
+#define rb_writes(ring, src) rb_writen (ring, src, strlen (src))
 /* write to ring */
 RINGDEF int rb_writec (RBuffer *r, char c);
 RINGDEF int rb_writen (RBuffer *r, const char *src, size_t len);
