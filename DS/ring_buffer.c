@@ -132,12 +132,12 @@ rb_writen (RBuffer *r, const char *src, size_t len)
     }
   else
     {
-      src += len - r->cap;
+      src += len - r->cap - 1;
       memcpy (r->mem, src, r->cap);
 
       r->full = true;
       r->head = 0;
-      r->idx = r->cap - 1;
+      r->idx = 0;
       return r->cap;
     }
 
