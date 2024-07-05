@@ -204,7 +204,7 @@ rb_readn (RBuffer *r, size_t n, char dest[n])
 
 #ifdef HAVE_FILEIO
 RINGDEF int
-rb_fwrite (struct ring_buffer *r, FILE *f, size_t len)
+rb_fwrite (RBuffer *r, FILE *f, size_t len)
 {
   size_t rw = 0;
   size_t __rest;
