@@ -282,8 +282,25 @@ TEST_1 (RBuffer *r)
 int
 TEST_2 (RBuffer *r)
 {
-  UNUSED (r);
-  RETFAIL (-1);
+  char tmp[33] = {0};
+  rbassert (r->mem != NULL, "NULL", true);
+
+  rb_writen (r, "0123456789", 10);
+  rb_sreadn (r, 32, tmp);
+  strnassert (tmp, "defghijklmnopqrstuvABC0123456789", 32,
+              "simple writen failed", true);
+
+  rb_writen (r, "**********************ABCDEF", 28);
+  rb_sreadn (r, 32, tmp);
+  strnassert (tmp, "6789**********************ABCDEF", 32,
+              "writen failed on overflow", true);
+
+  rb_writen (r, "******************************abcdef", 37);
+  rb_sreadn (r, 32, tmp);
+  strnassert (tmp, "**************************abcdef", 32,
+              "longer than capacity writen failed", true);
+
+  RETPASS ();
 }
 
 int
