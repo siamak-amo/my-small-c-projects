@@ -365,6 +365,36 @@ TEST_2 (RBuffer *r)
 }
 
 int
+TEST_3 (RBuffer *r)
+{
+  FILE *tmp_file = tmpfile ();
+  ftruncate (fileno (tmp_file), 50);
+  fwrite ("ABCDEFGHIJ012345678901234567890123456789abcdefghij",
+          1, 50, tmp_file);
+  fseek (tmp_file, 0, SEEK_SET);
+
+  char tmp[33] = {0};
+  rbassert (r->mem != NULL, "NULL", true);
+
+  rb_fwrite (r, tmp_file, 10);
+  rb_sreadn (r, 32, tmp);
+  strnassert (tmp, "****************abcdefABCDEFGHIJ", 32,
+              "", true);
+
+  rb_fwrite (r, tmp_file, 35);
+  rb_sreadn (r, 32, tmp);
+  strnassert (tmp, "345678901234567890123456789abcde", 32,
+              "", true);
+
+  rb_fwrite (r, tmp_file, 10);
+  rb_sreadn (r, 32, tmp);
+  strnassert (tmp, "8901234567890123456789abcdefghij", 32,
+              "", true);
+
+  RETPASS ();
+}
+
+int
 main (void)
 {
   FILE *f = tmpfile ();
@@ -381,6 +411,7 @@ main (void)
   /* running tests */
   TESTFUN (TEST_1, &ring);
   TESTFUN (TEST_2, &ring);
+  TESTFUN (TEST_3, &ring);
   
   rbassert (0 == munmap (ring.mem, ring.cap),
              "munmap failed, broken ring logic!", true);
