@@ -25,6 +25,9 @@
  *  remapping the memory is safe
  *  It's possible to use mapped files as memory, see the test program
  *
+ *  time and memory complexity:
+ *    all functions:  O(1), O(1)
+ *
  *  Compilation:
  *    to compile the test program:
  *      cc -ggdb -Wall -Wextra -Werror \
