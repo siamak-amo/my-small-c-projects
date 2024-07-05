@@ -269,7 +269,7 @@ rb_fwrite (struct ring_buffer *r, FILE *f, size_t len)
 
 /* prints function name @fun and runs `fun(...)` */
 #define TESTFUN(fun, ...) do {                     \
-    fprintf (stdout, " * Running %s:\n", #fun);    \
+    fprintf (stdout, "Running %s:\n", #fun);       \
     if (0 == fun (__VA_ARGS__))                    \
       fprintf (stdout, "PASS\n\n");                \
     else                                           \
@@ -318,13 +318,14 @@ typedef struct test_case_t TestCase;
     .expected=exp, .description=msg               \
   }
 #define do_test(r, tcase, action) do {                          \
+    printf (" - testing %s:\n", (tcase)->description);           \
     action;                                                     \
     int __explen = strlen ((tcase)->expected);                  \
     char *tmp = malloc (__explen + 1);                          \
     rb_sreadn (r, __explen, tmp);                               \
     strnassert (tmp, (tcase)->expected, __explen,               \
                 (tcase)->description, true);                    \
-    printf ("%d: [%-32s]\n", __explen, tmp);                    \
+    printf ("     [%-32s]\n", tmp);                             \
     free (tmp);                                                 \
   } while (0)
 
