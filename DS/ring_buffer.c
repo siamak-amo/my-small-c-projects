@@ -218,9 +218,9 @@ rb_fwrite (struct ring_buffer *r, FILE *f, size_t len)
 #define TESTFUN(fun, ...) do {                     \
     fprintf (stdout, " * Running %s:\n", #fun);    \
     if (0 == fun (__VA_ARGS__))                    \
-      fprintf (stdout, "   PASS\n\n");             \
+      fprintf (stdout, "PASS\n\n");                \
     else                                           \
-      fprintf (stdout, "   FAIL\n\n");             \
+      fprintf (stdout, "FAIL\n\n");                \
   } while (0)
 
 #define RETFAIL(n) return n
