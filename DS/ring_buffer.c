@@ -14,7 +14,7 @@
   along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-**
+/**
  *  file: ring_buffer.c
  *  created on: 4 Jul 2024
  *
