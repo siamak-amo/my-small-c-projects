@@ -565,7 +565,7 @@ main ()
   __tmp = malloc (r.cap + 1);
   memset (__tmp, 0, r.cap + 1);
 
-  printf ("Ring Buffer -- example program ring capacity: %lu\n", r.cap);
+  printf ("Ring Buffer -- example program\n");
   help ();
 
   while (true)
