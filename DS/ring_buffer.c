@@ -473,7 +473,11 @@ TEST_3 (RBuffer *r)
     Tcase("8901234567890123456789abcdefghij",
           "longer than file fwrite"),
     Tcase("34567890123456789abcdefghij",
-          "after reset")
+          "after reset"),
+    Tcase("ABCDEFGHIJ0123456789012345678901",
+          "after rest, frwite on boundary"),
+    Tcase("DEFGHIJ0123456789012345678901234",
+          "use after fwrite on boundary")
   };
 
   do_test (r, tests, {
@@ -493,6 +497,17 @@ TEST_3 (RBuffer *r)
       fseek (tmp_file, 0, SEEK_SET);
       rb_fwrite (r, tmp_file, 55);
     });
+
+  do_test (r, tests + 4, {
+      rb_reset (r);
+      fseek (tmp_file, 0, SEEK_SET);
+      rb_fwrite (r, tmp_file, 32);
+    });
+
+  do_test (r, tests + 5, {
+      rb_fwrite (r, tmp_file, 3);
+    });
+
   RETPASS ();
 }
 
