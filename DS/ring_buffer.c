@@ -508,6 +508,7 @@ TEST_3 (RBuffer *r)
       rb_fwrite (r, tmp_file, 3);
     });
 
+  fclose (tmp_file);
   RETPASS ();
 }
 
