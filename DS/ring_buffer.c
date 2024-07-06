@@ -97,15 +97,19 @@ RINGDEF void rb_fwrite (RBuffer *r, FILE *f, size_t len);
 #endif
 
 /* function definitions */
+
 /* reset the ring */
 RINGDEF void rb_reset (RBuffer *r);
+
 /* read one byte from the ring @r */
 RINGDEF void rb_readc (RBuffer *r, char *dest);
+
 /**
  *  to read @n bytes from the ring @r
  *  to the destination @dest
  */
 RINGDEF void rb_readn (RBuffer *r, size_t n, char dest[n]);
+
 /**
  *  like rb_readn, but makes the @dest null-terminated
  *  length of the @dest buffer must be at least n+1
