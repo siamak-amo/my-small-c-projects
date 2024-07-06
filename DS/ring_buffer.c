@@ -89,6 +89,11 @@ typedef struct ring_buffer RBuffer;
       .head = 0, .idx = 0, .full = false                        \
    }
 
+/* reset and memset the memory */
+#define rb_rememset(r) {                        \
+    rb_reset (r);                               \
+    memset ((r)->mem, 0, (r)->cap);             \
+  }
 /* write null-terminated string to ring */
 #define rb_writes(ring, src) rb_writen (ring, src, strlen (src))
 /* write to ring */
@@ -307,13 +312,6 @@ rb_fwrite (RBuffer *r, FILE *f, size_t len)
 #define RETFAIL(n) return n
 #define RETPASS() return 0
 
-void
-ringset (RBuffer *r)
-{
-  rbassert (NULL != r, "broken test", true);
-  memset (r->mem, 0, r->cap);
-}
-
 int
 map_file2ring (FILE *f, RBuffer *r)
 {
@@ -504,7 +502,7 @@ main (void)
     }
 
   /* only for testing, it's not mandatory */
-  ringset (&ring);
+  rb_rememset (&ring);
 
   /* running tests */
   TESTFUN (TEST_1, &ring);
@@ -565,6 +563,7 @@ main ()
   char *__ln = NULL; /* for readline */
   r = rb_new (NULL, 32);
   r.mem = malloc (r.cap);
+  rb_rememset (&r);
 
   __tmp = malloc (r.cap + 1);
   memset (__tmp, 0, r.cap + 1);
