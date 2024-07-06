@@ -88,36 +88,36 @@ typedef struct ring_buffer RBuffer;
 /* write null-terminated string to ring */
 #define rb_writes(ring, src) rb_writen (ring, src, strlen (src))
 /* write to ring */
-RINGDEF int rb_writec (RBuffer *r, char c);
-RINGDEF int rb_writen (RBuffer *r, const char *src, size_t len);
+RINGDEF void rb_writec (RBuffer *r, char c);
+RINGDEF void rb_writen (RBuffer *r, const char *src, size_t len);
 
 #ifdef HAVE_FILEIO
 /* write from file to ring */
-RINGDEF int rb_fwrite (RBuffer *r, FILE *f, size_t len);
+RINGDEF void rb_fwrite (RBuffer *r, FILE *f, size_t len);
 #endif
 
 /* function definitions */
 /* reset the ring */
 RINGDEF void rb_reset (RBuffer *r);
 /* read one byte from the ring @r */
-RINGDEF int rb_readc (RBuffer *r, char *dest);
+RINGDEF void rb_readc (RBuffer *r, char *dest);
 /**
  *  to read @n bytes from the ring @r
  *  to the destination @dest
  */
-RINGDEF int rb_readn (RBuffer *r, size_t n, char dest[n]);
+RINGDEF void rb_readn (RBuffer *r, size_t n, char dest[n]);
 /**
  *  like rb_readn, but makes the @dest null-terminated
  *  length of the @dest buffer must be at least n+1
  *  otherwise it has undefined behavior
  */
-RINGDEF int rb_sreadn (RBuffer *r, size_t n, char dest[n+1]);
+RINGDEF void rb_sreadn (RBuffer *r, size_t n, char dest[n+1]);
 
 #endif /* RIBG_BUFFER__H__ */
 
 
 #ifdef RB_IMPLEMENTATION
-RINGDEF int
+RINGDEF void
 rb_writec (RBuffer *r, char c)
 {
   r->mem[r->idx] = c;
@@ -129,21 +129,17 @@ rb_writec (RBuffer *r, char c)
     {
       r->full = true;
     }
-
-  return 1;
 }
 
-RINGDEF int
+RINGDEF void
 rb_writen (RBuffer *r, const char *src, size_t len)
 {
-  size_t rw = 0;
   size_t __rest;
 
   if (len <= r->cap)
     {
       __rest = MIN (len, r->cap - r->idx);
       len -= __rest;
-      rw += __rest;
       memcpy (r->mem + r->idx, src, __rest);
       src += __rest;
 
@@ -156,13 +152,11 @@ rb_writen (RBuffer *r, const char *src, size_t len)
       if (0 != len)
         r->full = true;
       else
-        return rw;
+        return;
 
       memcpy (r->mem, src, len);
-      rw += len;
       r->head = (r->head + len) % r->cap;
       r->idx = (r->idx + len) % r->cap;;
-      return rw;
     }
   else
     {
@@ -172,10 +166,7 @@ rb_writen (RBuffer *r, const char *src, size_t len)
       r->full = true;
       r->head = 0;
       r->idx = 0;
-      return r->cap;
     }
-
-  return rw;
 }
 
 RINGDEF void
@@ -186,40 +177,35 @@ rb_reset (RBuffer *r)
   r->full = false;
 }
 
-RINGDEF int
+RINGDEF void
 rb_readc (RBuffer *r, char *dest)
 {
-  if (NULL == r->mem)
-    return 0;
-  *dest = r->mem[r->idx];
-  return 0;
+  if (NULL != r->mem)
+    *dest = r->mem[r->idx];
 }
 
-RINGDEF int
+RINGDEF void
 rb_sreadn (RBuffer *r, size_t n, char dest[n+1])
 {
-  int __ret = rb_readn (r, n, dest);
+  rb_readn (r, n, dest);
   dest[n] = '\0';
-  return __ret;
 }
 
-RINGDEF int
+RINGDEF void
 rb_readn (RBuffer *r, size_t n, char dest[n])
 {
-  size_t rw = 0;
   size_t __rest;
 
   if (!r->full)
     {
       __rest = MIN (n, r->idx);
       memcpy (dest, r->mem, __rest);
-      return __rest;
+      return;
     }
 
   __rest = MIN (n, r->cap - r->idx);
   memcpy (dest, r->mem + r->head, __rest);
   n -= __rest;
-  rw += __rest;
   dest += __rest;
 
   while (n != 0)
@@ -228,27 +214,21 @@ rb_readn (RBuffer *r, size_t n, char dest[n])
       memcpy (dest, r->mem, __rest);
       n -= __rest;
       dest += __rest;
-      rw += __rest;
     }
-
-  return rw;
 }
 
 #ifdef HAVE_FILEIO
-RINGDEF int
+RINGDEF void
 rb_fwrite (RBuffer *r, FILE *f, size_t len)
 {
-  size_t rw = 0;
   size_t __rest;
   size_t freads;
 
   if (len < r->cap)
     {
-      // TODO
       __rest = MIN (len, r->cap - r->idx);
       len -= __rest;
       freads = fread (r->mem + r->idx, 1, __rest, f);
-      rw += freads;
       r->idx = (r->idx + freads) % r->cap;
 
       if (r->full)
@@ -256,18 +236,16 @@ rb_fwrite (RBuffer *r, FILE *f, size_t len)
       if (0 != len)
         r->full = true;
       else
-        return rw;
+        return;
 
       if (freads < __rest)
         {
-          return rw;
+          return;
         }
 
       freads = fread (r->mem, 1, len, f);
-      rw += freads;
       r->head = (r->head + freads) % r->cap;
       r->idx = (r->idx + freads) % r->cap;
-      return rw;
     }
   else
     {
@@ -289,10 +267,7 @@ rb_fwrite (RBuffer *r, FILE *f, size_t len)
             }
           r->idx = (r->idx + freads) % r->cap;
         }
-      return r->cap;
     }
-
-  return rw;
 }
 #endif /* HAVE_FILEIO */
 
