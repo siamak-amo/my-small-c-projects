@@ -26,7 +26,7 @@
  *  It's possible to use mapped files as memory, see the test program
  *
  *  time and memory complexity:
- *    all functions:  O(1), O(1)
+ *    all functions:  time: O(1), mem: O(1)
  *
  *  Compilation:
  *    to compile the test program:
