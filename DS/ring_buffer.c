@@ -538,12 +538,13 @@ help ()
 void
 cmd (char *c)
 {
-  if (0 == strncmp (c, "ring", 4))
+  if ('r' == *c || 0 == strncmp (c, "ring", 4))
     {
-      printf ("head: %lu, index: %lu, cap: %lu\nmem: [%s]\n",
-              r.head, r.idx, r.cap, r.mem);
+      printf ("ring @%p\nhead: %lu, index:"
+              " %lu, cap: %lu\nmem: [%s]\n",
+              &r, r.head, r.idx, r.cap, r.mem);
     }
-  if (0 == strncmp (c, "help", 4))
+  if ('h' == *c || 0 == strncmp (c, "help", 4))
     {
       help ();
     }
