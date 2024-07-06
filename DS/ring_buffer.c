@@ -111,7 +111,11 @@ RINGDEF void rb_readn (RBuffer *r, size_t n, char dest[n]);
  *  length of the @dest buffer must be at least n+1
  *  otherwise it has undefined behavior
  */
-RINGDEF void rb_sreadn (RBuffer *r, size_t n, char dest[n+1]);
+#define rb_sreadn(r, n, dest)     \
+  do {                            \
+    rb_readn (r, n, dest);        \
+    dest[n] = 0;                  \
+  } while (0)
 
 #endif /* RIBG_BUFFER__H__ */
 
@@ -182,13 +186,6 @@ rb_readc (RBuffer *r, char *dest)
 {
   if (NULL != r->mem)
     *dest = r->mem[r->idx];
-}
-
-RINGDEF void
-rb_sreadn (RBuffer *r, size_t n, char dest[n+1])
-{
-  rb_readn (r, n, dest);
-  dest[n] = '\0';
 }
 
 RINGDEF void
