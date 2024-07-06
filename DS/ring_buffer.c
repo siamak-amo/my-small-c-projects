@@ -97,10 +97,10 @@ typedef struct ring_buffer RBuffer;
   } while (0)
 
 /* reset and memset the memory */
-#define rb_rememset(r) {                        \
+#define rb_rememset(r) do {                     \
     rb_reset (r);                               \
     memset ((r)->mem, 0, (r)->cap);             \
-  }
+  } while (0)
 
 /**
  *  like rb_readn, but makes the @dest null-terminated
