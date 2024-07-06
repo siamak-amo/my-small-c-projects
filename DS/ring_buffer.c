@@ -94,6 +94,18 @@ typedef struct ring_buffer RBuffer;
     rb_reset (r);                               \
     memset ((r)->mem, 0, (r)->cap);             \
   }
+
+/**
+ *  like rb_readn, but makes the @dest null-terminated
+ *  length of the @dest buffer must be at least n+1
+ *  otherwise it has undefined behavior
+ */
+#define rb_sreadn(r, n, dest)     \
+  do {                            \
+    rb_readn (r, n, dest);        \
+    dest[n] = 0;                  \
+  } while (0)
+
 /* write null-terminated string to ring */
 #define rb_writes(ring, src) rb_writen (ring, src, strlen (src))
 /* write to ring */
@@ -118,17 +130,6 @@ RINGDEF void rb_readc (RBuffer *r, char *dest);
  *  to the destination @dest
  */
 RINGDEF void rb_readn (RBuffer *r, size_t n, char dest[n]);
-
-/**
- *  like rb_readn, but makes the @dest null-terminated
- *  length of the @dest buffer must be at least n+1
- *  otherwise it has undefined behavior
- */
-#define rb_sreadn(r, n, dest)     \
-  do {                            \
-    rb_readn (r, n, dest);        \
-    dest[n] = 0;                  \
-  } while (0)
 
 #endif /* RIBG_BUFFER__H__ */
 
