@@ -89,6 +89,13 @@ typedef struct ring_buffer RBuffer;
       .head = 0, .idx = 0, .full = false                        \
    }
 
+/* reset the ring */
+#define rb_reset(r) do {                        \
+    (r)->head = 0;                              \
+    (r)->idx = 0;                               \
+    (r)->full = false;                          \
+  } while (0)
+
 /* reset and memset the memory */
 #define rb_rememset(r) {                        \
     rb_reset (r);                               \
@@ -118,9 +125,6 @@ RINGDEF void rb_fwrite (RBuffer *r, FILE *f, size_t len);
 #endif
 
 /* function definitions */
-
-/* reset the ring */
-RINGDEF void rb_reset (RBuffer *r);
 
 /* read one byte from the ring @r */
 RINGDEF void rb_readc (RBuffer *r, char *dest);
@@ -185,14 +189,6 @@ rb_writen (RBuffer *r, const char *src, size_t len)
       r->head = 0;
       r->idx = 0;
     }
-}
-
-RINGDEF void
-rb_reset (RBuffer *r)
-{
-  r->head = 0;
-  r->idx = 0;
-  r->full = false;
 }
 
 RINGDEF void
