@@ -577,12 +577,13 @@ main ()
       if ('\\' == *__ln)
         {
           cmd (__ln + 1);
-          continue;
+          goto EOLOOP;
         }
 
       if (strlen (__ln) > 0)
         rb_writes (&r, __ln);
 
+    EOLOOP: /* end of loop */
       free (__ln);
     }
 
