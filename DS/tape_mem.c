@@ -172,14 +172,15 @@ tape_get (const Tape *tape, size_t index)
 #ifdef TAPE_MEM_TEST
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 int
 main (void)
 {
   DBuffer tmp = {0};
-  Tape mem = new_tape (1 * 1024 * 1024); // 1G
+  Tape mem = new_tape (getpagesize ()); // 4k
 
-  printf ("allocating 1G or dynamic memory... ");
+  printf ("allocating %luK... ", mem.cap / 1024);
   mem.data = malloc (mem.cap);
   printf ("done\n");
 
