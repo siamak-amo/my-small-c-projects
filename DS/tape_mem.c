@@ -182,7 +182,13 @@ main (void)
 
   printf ("allocating %luK... ", mem.cap / 1024);
   mem.data = malloc (mem.cap);
-  printf ("done\n");
+  if (mem.data)
+    printf ("done\n");
+  else
+    {
+      printf ("no\nmem allocation failed.\n");
+      return 1;
+    }
 
   printf ("adding items... ");
   tmp.len = 4;
