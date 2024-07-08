@@ -65,12 +65,10 @@
 #  define UNUSED(x) (void)(x)
 #endif
 
-#ifndef MIN
-#  define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#endif
-#ifndef MAX
-#  define MAX(a, b) (((a) < (b)) ? (b) : (a))
-#endif
+#undef MIN
+#undef MAX
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) < (b)) ? (b) : (a))
 
 /* safe ring access macros */
 #define rb_safe_idx(ring, idx) ((idx) % (ring->cap))
