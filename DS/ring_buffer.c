@@ -61,9 +61,8 @@
 #  define RINGDEF static inline
 #endif
 
-#ifndef UNUSED
-#  define UNUSED(x) (void)(x)
-#endif
+#undef UNUSED
+#define UNUSED(x) (void)(x)
 
 #undef MIN
 #undef MAX
