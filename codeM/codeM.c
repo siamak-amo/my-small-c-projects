@@ -118,6 +118,8 @@ RandFunction codem_srand = NULL;
 #define char2num(c) ((c) - '0')
 #define num2char(x) ((x) + '0')
 #define isnumber(c) (((c) >= '0') && ((c) <= '9'))
+
+#undef UNUSED
 #define UNUSED(x) (void)(x)
 /* macro to initialize codem_srand */
 #define codem_rand_init(randfun) codem_srand = &(randfun)
