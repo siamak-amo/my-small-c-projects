@@ -96,6 +96,8 @@ typedef size_t(*RandFunction)(void);
  *  any of *_rand_* functions and macros
  */
 RandFunction codem_srand = NULL;
+/* macro to initialize codem_srand */
+#define codem_rand_init(randfun) codem_srand = &(randfun)
 
 #ifndef CODEMDEF
 #  define CODEMDEF static inline
@@ -121,8 +123,6 @@ RandFunction codem_srand = NULL;
 
 #undef UNUSED
 #define UNUSED(x) (void)(x)
-/* macro to initialize codem_srand */
-#define codem_rand_init(randfun) codem_srand = &(randfun)
 
 /**
  *  internal macro to calculate the control-digit of the @codem
