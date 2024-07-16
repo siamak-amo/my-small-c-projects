@@ -1,0 +1,106 @@
+/**
+ *  file: ptable.c
+ *  created on: 16 Jul 2024
+ *
+ *  Pointer Table
+ *  remap / realloc safe
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ **/
+#ifndef PTABLE__H__
+#define PTABLE__H__
+#include <string.h>
+#include <assert.h>
+
+#ifndef PTDEFF
+#  define PTDEFF static inline
+#endif
+
+struct ptable_t {
+  void *mem;
+  size_t cap; /* capacity (entry count) of mem */
+  /* internal fields */
+  size_t __freeidx; /* free to write index */
+  size_t __lastocc; /* last occupied index */
+};
+typedef struct ptable_t PTable;
+
+/* size of mem of capacity @cap in bytes */
+#define ptmem_sizeof(cap) ((cap) * sizeof (void *))
+#define new_ptable(c) (PTable){.cap = c,                \
+      .__freeidx = 0, .__lastocc = 0,                   \
+      .mem = NULL                                       \
+    }
+#define pt_alloc(ptable, funcall) do {          \
+    size_t cap = ptmem_sizeof ((ptable)->cap);  \
+    (ptable)->mem = funcall;                    \
+  } while (0)
+
+#define pt_free(ptable, funcall) do {           \
+    size_t cap = ptmem_sizeof ((ptable)->cap);  \
+    void *mem = (ptable)->mem;                  \
+    if (mem && cap > 0) funcall;                \
+  } while (0)
+
+#define pt_addrof(ptable, index) ((ptable)->mem + index)
+#define pt_GET pt_addrof
+
+/**
+ *  finds index of @addr (pointer to the mem)
+ *  @return: max value of size_t on failure
+ */
+PTDEFF size_t pt_indexof (PTable *pt, void *addr);
+
+/**
+ *  linear search
+ *  @return: index on success
+ *           max value of size_t on failure
+ */
+PTDEFF size_t pt_search (PTable *pt, void *value);
+
+/**
+ *  append to the table
+ *  @return: pointer to the @value on success
+ *           NULL on table overflow
+ */
+PTDEFF void *pt_append (PTable *pt, void *value);
+/**
+ *  delete arbitrary item from table by address
+ *  @return: NULL on failure, @value on success
+ */
+PTDEFF void *pt_delete (PTable *pt, void *value);
+/* delete by index, @return: same as pt_delete */
+PTDEFF void *pt_delete_byidx (PTable *pt, size_t idx);
+/* delete by value, @return: same as pt_delete */
+#define pt_delete_byvalue(pt, val) \
+  pt_delete_byidx (pt, pt_search (pt, val))
+
+#endif /* PTABLE__H__ */
+
+#ifdef PTABLE_IMPLEMENTATION
+#endif /* PTABLE_IMPLEMENTATION */
+
+#ifdef PTABLE_TEST
+#include <stdio.h>
+#include <stdlib.h>
+
+int
+main (void)
+{
+  PTable pt = new_ptable (64); /* 64 entries */
+  pt_alloc (&pt, malloc (cap));
+
+  {
+    // main
+  }
+  
+  pt_free (&pt, free (mem));
+  return 0;
+}
+
+#endif
