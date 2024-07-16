@@ -30,25 +30,43 @@ struct ptable_t {
 };
 typedef struct ptable_t PTable;
 
-/* size of mem of capacity @cap in bytes */
+/* this value must exist in mem[__lastocc + 1] */
+#if   __SIZEOF_POINTER__ == 8
+#  define SLOT_GUARD (0xdeadbeefcafebabe)
+#elif __SIZEOF_POINTER__ == 4
+#  define SLOT_GUARD (0xdeadbeef)
+#elif __SIZEOF_POINTER__ == 2
+#  define SLOT_GUARD (0x4242)
+#elif __SIZEOF_POINTER__ == 1
+#  define SLOT_GUARD (0x42)
+#else
+#  define FLOT_GUARD (0)
+#endif
+
+/* sizeof mem of capacity @cap (in bytes) */
 #define ptmem_sizeof(cap) ((cap) * sizeof (void *))
 #define new_ptable(c) (PTable){.cap = c,                \
       .__freeidx = 0, .__lastocc = 0,                   \
       .mem = NULL                                       \
     }
+/* alloc, free, realloc */
 #define pt_alloc(ptable, funcall) do {          \
     size_t cap = ptmem_sizeof ((ptable)->cap);  \
     (ptable)->mem = funcall;                    \
   } while (0)
-
+#define pt_realloc(ptable, funcall) do {        \
+    size_t cap = ptmem_sizeof ((ptable)->cap);  \
+    void *mem = (ptable)->mem;                  \
+    if (mem) {(ptable)->mem = funcall;}         \
+  } while (0)
 #define pt_free(ptable, funcall) do {           \
     size_t cap = ptmem_sizeof ((ptable)->cap);  \
     void *mem = (ptable)->mem;                  \
-    if (mem && cap > 0) funcall;                \
+    if (mem && cap > 0) {funcall;}              \
   } while (0)
 
 #define pt_addrof(ptable, index) ((ptable)->mem + index)
-#define pt_GET pt_addrof
+#define pt_GET(pt, idx, T) ((T *)pt_addrof (pt, idx))
 
 /**
  *  finds index of @addr (pointer to the mem)
