@@ -189,7 +189,7 @@ pt_delete_byidx (PTable *pt, idx_t idx)
   if (MEMPROTO_FLAG ((ptr_t)pt->mem[idx]) == SLOT_GUARD_H)
     {
       /* double free detected */
-      return PT_DOUBLEFREE;
+      return PT_ALREADY_FREED;
     }
   pt->mem[idx] = (void *)value;
 #else
