@@ -92,7 +92,7 @@ typedef struct ptable_t PTable;
 #define pt_addrof(ptable, index) ((ptable)->mem + index)
 #define pt_GET(pt, idx, T) ((T *)pt_addrof (pt, idx))
 
-PTDEFF size_t pt_next_free_idx (PTable *pt, size_t idx);
+PTDEFF size_t pt_prev_free_idx (PTable *pt, size_t idx);
 
 /**
  *  append to the table
@@ -191,6 +191,24 @@ pt_prev_free_idx (PTable *pt, size_t idx)
 
   ssize_t _offset = (ssize_t)pt->mem[idx];
 
+#ifdef HAVE_DFREE_PROTECTION
+  _offset = MEMPROTO_OF (_offset);
+#endif
+
+  if (_offset == 0)
+    {
+      if (pt->__lastocc <= pt->__freeidx)
+        return -1;
+      else
+        {
+          /* double free detected! */
+          return -1;
+        }
+    }
+  idx += _offset;
+  if (idx > pt->__lastocc)
+    return -1;
+  return idx;
 }
 #endif /* PTABLE_IMPLEMENTATION */
 
