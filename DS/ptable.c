@@ -36,28 +36,46 @@ typedef struct ptable_t PTable;
 
 /* this value must exist in mem[__lastocc + 1] */
 #if   __SIZEOF_POINTER__ == 8
+#  define ptr_t size_t
+#  define idx_t size_t
+#  define off_t ssize_t
 #  define HAVE_DFREE_PROTECTION
 #  define SLOT_GUARD (0xdeadbeefcafebabe)
 #  define SLOT_GUARD_H (0xdeadbeef)
    // idx ->  0x[flag]...[idx]
-#  define MEMPROTO_TO(idx) (((size_t)SLOT_GUARD_H << 32) | ((idx) & 0xFFFFFFFF))
+#  define MEMPROTO_TO(idx) (((ptr_t)SLOT_GUARD_H << 32) | ((idx) & 0xFFFFFFFF))
    // 0x[flag]...[idx] ->  idx
    // cast to int to save the sign of the underlying offset
 #  define MEMPROTO_OF(addr) (int)((addr) & 0xFFFFFFFF)
 #  define MEMPROTO_FLAG(addr) ((addr) >> 32)
+
 #elif __SIZEOF_POINTER__ == 4
+#  define ptr_t unsigned long
+#  define idx_t unsigned long
+#  define off_t long
 #  define SLOT_GUARD (0xdeadbeef)
 #  define SLOT_GUARD_H (0xcafe)
 #  ifndef _NO_DFREE_PROTECTION
 #    define HAVE_DFREE_PROTECTION
-#    define MEMPROTO_TO(idx) (((unsigned int)SLOT_GUARD_H << 16) | ((idx) & 0x0000FFFF))
+#    define MEMPROTO_TO(idx) (((ptr_t)SLOT_GUARD_H << 16) | ((idx) & 0x0000FFFF))
 #    define MEMPROTO_OF(addr) (short)((addr) & 0x0000FFFF)
 #    define MEMPROTO_FLAG(addr) ((addr) >> 16)
 #  endif
+
 #elif __SIZEOF_POINTER__ == 2
+#  include <stdint.h>
+#  define ptr_t uint16_t
+#  define idx_t uint16_t
+#  define off_t int16_t
 #  define SLOT_GUARD (0x4242)
+
 #elif __SIZEOF_POINTER__ == 1
+#  include <stdint.h>
+#  define ptr_t uint8_t
+#  define idx_t uint8_t
+#  define off_t int8_t
 #  define SLOT_GUARD (0x42)
+
 #else
 #  define FLOT_GUARD (0)
 #endif
