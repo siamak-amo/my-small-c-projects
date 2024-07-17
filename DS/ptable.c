@@ -129,9 +129,36 @@ PTDEFF int pt_append (PTable *pt, void *value);
 PTDEFF int pt_delete_byidx (PTable *pt, idx_t idx);
 /* delete by value, @return: same as pt_delete */
 
+PTDEFF const char *pt_strerr (int errnum);
+
 #endif /* PTABLE__H__ */
 
 #ifdef PTABLE_IMPLEMENTATION
+
+PTDEFF const char *
+pt_strerr (int errnum)
+{
+  switch (errnum)
+    {
+    case PT_NONE:
+      return NULL;
+    case PT_OVERFLOW:
+      return "Table Overflow";
+    case PT_ALREADY_FREED:
+      return "Slot is already free";
+    case PT_DOUBLEFREE:
+      return "Double free detected";
+    case PT_BROKEN_LOGIC:
+      return "Broken Logic";
+    case PT_IDX_OUTOF_BOUND:
+      return "Index out of range";
+
+    default:
+      return "Unknown Error";
+    }
+  return NULL;
+}
+
 PTDEFF int
 pt_append (PTable *pt, void *value)
 {
