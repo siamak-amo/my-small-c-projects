@@ -71,10 +71,14 @@
 #  define FLOT_GUARD (0)
 #endif
 
-#define PT_OVERFLOW -1
-#define PT_DOUBLEFREE -2
-#define PT_BROKEN_LOGIC -3
-#define PT_IDX_OUTOF_BOUND -4
+enum pt_errnum_t {
+  PT_NONE = 0,
+  PT_OVERFLOW,
+  PT_ALREADY_FREED,
+  PT_DOUBLEFREE,
+  PT_BROKEN_LOGIC,
+  PT_IDX_OUTOF_BOUND,
+};
 
 struct ptable_t {
   void **mem;
