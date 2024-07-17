@@ -61,6 +61,11 @@ typedef struct ptable_t PTable;
 #  define FLOT_GUARD (0)
 #endif
 
+#define PT_OVERFLOW -1
+#define PT_DOUBLEFREE -2
+#define PT_BROKEN_LOGIC -3
+#define PT_IDX_OUTOF_BOUND -4
+
 /* sizeof mem of capacity @cap (in bytes) */
 #define ptmem_sizeof(cap) ((cap) * sizeof (void *))
 #define new_ptable(c) (PTable){.cap = c,                \
