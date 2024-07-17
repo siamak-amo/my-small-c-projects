@@ -91,28 +91,12 @@ typedef struct ptable_t PTable;
 #define pt_addrof(ptable, index) ((ptable)->mem + index)
 #define pt_GET(pt, idx, T) ((T *)pt_addrof (pt, idx))
 
-/**
- *  finds index of @addr (pointer to the mem)
- *  @return: max value of size_t on failure
- */
-PTDEFF size_t pt_indexof (PTable *pt, void *addr);
-
-/**
- *  linear search
- *  @return: index on success
- *           max value of size_t on failure
- */
 PTDEFF size_t pt_search (PTable *pt, void *value);
 
 /**
  *  append to the table
  *  @return: pointer to the @value on success
  *           NULL on table overflow
- */
-PTDEFF void *pt_append (PTable *pt, void *value);
-/**
- *  delete arbitrary item from table by address
- *  @return: NULL on failure, @value on success
  */
 PTDEFF void *pt_delete (PTable *pt, void *value);
 /* delete by index, @return: same as pt_delete */
@@ -124,37 +108,24 @@ PTDEFF void *pt_delete_byidx (PTable *pt, size_t idx);
 #endif /* PTABLE__H__ */
 
 #ifdef PTABLE_IMPLEMENTATION
-PTDEFF size_t
-pt_indexof (PTable *pt, void *addr)
 {
   UNUSED(pt);
   UNUSED(addr);
   return 0;
 }
 
-PTDEFF size_t
-pt_search (PTable *pt, void *value)
 {
   UNUSED(pt);
   UNUSED(value);
   return 0;
 }
 
-PTDEFF void *
-pt_append (PTable *pt, void *value)
 {
   UNUSED(pt);
   UNUSED(value);
   return NULL;
 }
 
-PTDEFF void *
-pt_delete (PTable *pt, void *value)
-{
-  UNUSED(pt);
-  UNUSED(value);
-  return NULL;
-}
 
 PTDEFF void *
 pt_delete_byidx (PTable *pt, size_t idx)
