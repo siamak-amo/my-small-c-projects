@@ -91,16 +91,17 @@ typedef struct ptable_t PTable;
 #define pt_addrof(ptable, index) ((ptable)->mem + index)
 #define pt_GET(pt, idx, T) ((T *)pt_addrof (pt, idx))
 
-PTDEFF size_t pt_search (PTable *pt, void *value);
+PTDEFF size_t pt_next_free_idx (PTable *pt, size_t idx);
 
 /**
  *  append to the table
  *  @return: pointer to the @value on success
  *           NULL on table overflow
  */
-PTDEFF void *pt_delete (PTable *pt, void *value);
+PTDEFF int pt_append (PTable *pt, void *value);
+
 /* delete by index, @return: same as pt_delete */
-PTDEFF void *pt_delete_byidx (PTable *pt, size_t idx);
+PTDEFF int pt_delete_byidx (PTable *pt, size_t idx);
 /* delete by value, @return: same as pt_delete */
 #define pt_delete_byvalue(pt, val) \
   pt_delete_byidx (pt, pt_search (pt, val))
@@ -108,18 +109,25 @@ PTDEFF void *pt_delete_byidx (PTable *pt, size_t idx);
 #endif /* PTABLE__H__ */
 
 #ifdef PTABLE_IMPLEMENTATION
+PTDEFF int
+pt_append (PTable *pt, void *value)
 {
   UNUSED(pt);
   UNUSED(addr);
   return 0;
 }
 
+
+PTDEFF int
+pt_delete_byidx (PTable *pt, size_t idx)
 {
   UNUSED(pt);
   UNUSED(value);
   return 0;
 }
 
+PTDEFF size_t
+pt_next_free_idx (PTable *pt, size_t idx)
 {
   UNUSED(pt);
   UNUSED(value);
