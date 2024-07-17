@@ -38,7 +38,7 @@
    // 0x[flag]...[idx] ->  idx
    // cast to int to save the sign of the underlying offset
 #  define MEMPROTO_OF(addr) (int)((addr) & 0xFFFFFFFF)
-#  define MEMPROTO_FLAG(addr) ((addr) >> 32)
+#  define MEMPROTO_FLAG(addr) (((addr) & 0xFFFFFFFF00000000) >> 32)
 
 #elif __SIZEOF_POINTER__ == 4
 #  define ptr_t unsigned long
@@ -50,7 +50,7 @@
 #    define HAVE_DFREE_PROTECTION
 #    define MEMPROTO_TO(idx) (((ptr_t)SLOT_GUARD_H << 16) | ((idx) & 0x0000FFFF))
 #    define MEMPROTO_OF(addr) (short)((addr) & 0x0000FFFF)
-#    define MEMPROTO_FLAG(addr) ((addr) >> 16)
+#    define MEMPROTO_FLAG(addr) (((addr) & 0xFFFF0000) >> 16)
 #  endif
 
 #elif __SIZEOF_POINTER__ == 2
