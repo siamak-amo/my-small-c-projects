@@ -15,6 +15,7 @@
 #ifndef PTABLE__H__
 #define PTABLE__H__
 #include <string.h>
+#include <sys/types.h>
 #include <assert.h>
 
 #ifndef PTDEFF
@@ -112,8 +113,42 @@ PTDEFF int pt_delete_byidx (PTable *pt, size_t idx);
 PTDEFF int
 pt_append (PTable *pt, void *value)
 {
-  UNUSED(pt);
-  UNUSED(addr);
+  assert (pt->__lastocc <= pt->cap && pt->__freeidx <= pt->cap);
+
+  if (pt->__freeidx >= pt->__lastocc)
+    {
+      if (pt->__freeidx == pt->cap)
+        return PT_OVERFLOW;
+      /* write on unused indices */
+      pt->__lastocc = pt->__freeidx;
+      pt->mem[pt->__freeidx] = value;
+      pt->__freeidx++;
+      return 0;
+    }
+  else
+    {
+      /* write on freed indices */
+      ssize_t _offset = (ssize_t)pt->mem[pt->__freeidx];
+#ifdef HAVE_DFREE_PROTECTION
+      if (MEMPROTO_FLAG (_offset) != SLOT_GUARD_H)
+        {
+          /* double free detected */
+          return PT_DOUBLEFREE;
+        }
+      _offset = MEMPROTO_OF (_offset);
+#endif
+      if (_offset == 0)
+        {
+          /* double free detected! */
+          return PT_DOUBLEFREE;
+        }
+      assert (pt->__freeidx < pt->__lastocc && "Broken Logic");
+      pt->mem[pt->__freeidx] = value;
+      if (pt->__freeidx >= pt->__lastocc)
+        pt->__lastocc = pt->__freeidx;
+      pt->__freeidx += _offset;
+    }
+
   return 0;
 }
 
