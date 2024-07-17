@@ -25,10 +25,10 @@
 #define UNUSED(x) ((void)(x))
 
 struct ptable_t {
-  void *mem;
+  void **mem;
   size_t cap; /* capacity (entry count) of mem */
   /* internal fields */
-  size_t __freeidx; /* free to write index */
+  size_t __freeidx; /* first free to write index */
   size_t __lastocc; /* last occupied index */
 };
 typedef struct ptable_t PTable;
