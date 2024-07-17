@@ -182,20 +182,15 @@ pt_delete_byidx (PTable *pt, size_t idx)
 }
 
 PTDEFF size_t
-pt_next_free_idx (PTable *pt, size_t idx)
+pt_prev_free_idx (PTable *pt, size_t idx)
 {
-  UNUSED(pt);
-  UNUSED(value);
-  return NULL;
-}
+  if (idx == (size_t)-1)
+    return -1;
+  if (pt->__freeidx >= pt->__lastocc)
+    return -1;
 
+  ssize_t _offset = (ssize_t)pt->mem[idx];
 
-PTDEFF void *
-pt_delete_byidx (PTable *pt, size_t idx)
-{
-  UNUSED(pt);
-  UNUSED(idx);
-  return NULL;
 }
 #endif /* PTABLE_IMPLEMENTATION */
 
