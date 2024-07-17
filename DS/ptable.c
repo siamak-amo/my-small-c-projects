@@ -126,8 +126,6 @@ PTDEFF int pt_append (PTable *pt, void *value);
 /* delete by index, @return: same as pt_delete */
 PTDEFF int pt_delete_byidx (PTable *pt, idx_t idx);
 /* delete by value, @return: same as pt_delete */
-#define pt_delete_byvalue(pt, val) \
-  pt_delete_byidx (pt, pt_search (pt, val))
 
 #endif /* PTABLE__H__ */
 
