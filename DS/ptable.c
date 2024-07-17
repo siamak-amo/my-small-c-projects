@@ -156,8 +156,28 @@ pt_append (PTable *pt, void *value)
 PTDEFF int
 pt_delete_byidx (PTable *pt, size_t idx)
 {
-  UNUSED(pt);
-  UNUSED(value);
+  if (idx > pt->__lastocc)
+    return PT_IDX_OUTOF_BOUND;
+
+#ifdef HAVE_DFREE_PROTECTION
+  /* have double free protection */
+  size_t value = pt->__freeidx - idx;
+  value = MEMPROTO_TO (value);
+
+  if (MEMPROTO_FLAG ((size_t)pt->mem[idx]) == SLOT_GUARD_H)
+    {
+      /* double free detected */
+      return PT_DOUBLEFREE;
+    }
+  pt->mem[idx] = (void *)value;
+#else
+  pt->mem[idx] = (void*)(pt->__freeidx - idx);
+#endif
+
+  pt->__freeidx = idx;
+  if (pt->__freeidx == pt->__lastocc && pt->__lastocc > 0)
+    pt->__lastocc--;
+
   return 0;
 }
 
