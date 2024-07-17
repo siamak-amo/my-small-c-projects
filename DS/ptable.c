@@ -25,15 +25,6 @@
 #undef UNUSED
 #define UNUSED(x) ((void)(x))
 
-struct ptable_t {
-  void **mem;
-  size_t cap; /* capacity (entry count) of mem */
-  /* internal fields */
-  size_t __freeidx; /* first free to write index */
-  size_t __lastocc; /* last occupied index */
-};
-typedef struct ptable_t PTable;
-
 /* this value must exist in mem[__lastocc + 1] */
 #if   __SIZEOF_POINTER__ == 8
 #  define ptr_t size_t
@@ -85,24 +76,33 @@ typedef struct ptable_t PTable;
 #define PT_BROKEN_LOGIC -3
 #define PT_IDX_OUTOF_BOUND -4
 
+struct ptable_t {
+  void **mem;
+  idx_t cap; /* capacity (entry count) of mem */
+  /* internal fields */
+  idx_t __freeidx; /* first free to write index */
+  idx_t __lastocc; /* last occupied index */
+};
+typedef struct ptable_t PTable;
+
 /* sizeof mem of capacity @cap (in bytes) */
 #define ptmem_sizeof(cap) ((cap) * sizeof (void *))
 #define new_ptable(c) (PTable){.cap = c,                \
       .__freeidx = 0, .__lastocc = 0,                   \
       .mem = NULL                                       \
-    }
+      }
 /* alloc, free, realloc */
 #define pt_alloc(ptable, funcall) do {          \
-    size_t cap = ptmem_sizeof ((ptable)->cap);  \
+    idx_t cap = ptmem_sizeof ((ptable)->cap);   \
     (ptable)->mem = funcall;                    \
   } while (0)
 #define pt_realloc(ptable, funcall) do {        \
-    size_t cap = ptmem_sizeof ((ptable)->cap);  \
+    idx_t cap = ptmem_sizeof ((ptable)->cap);   \
     void *mem = (ptable)->mem;                  \
     if (mem) {(ptable)->mem = funcall;}         \
   } while (0)
 #define pt_free(ptable, funcall) do {           \
-    size_t cap = ptmem_sizeof ((ptable)->cap);  \
+    idx_t cap = ptmem_sizeof ((ptable)->cap);   \
     void *mem = (ptable)->mem;                  \
     if (mem && cap > 0) {funcall;}              \
   } while (0)
@@ -110,7 +110,7 @@ typedef struct ptable_t PTable;
 #define pt_addrof(ptable, index) ((ptable)->mem + index)
 #define pt_GET(pt, idx, T) ((T *)pt_addrof (pt, idx))
 
-PTDEFF size_t pt_prev_free_idx (PTable *pt, size_t idx);
+PTDEFF idx_t pt_prev_free_idx (PTable *pt, size_t idx);
 
 /**
  *  append to the table
@@ -120,7 +120,7 @@ PTDEFF size_t pt_prev_free_idx (PTable *pt, size_t idx);
 PTDEFF int pt_append (PTable *pt, void *value);
 
 /* delete by index, @return: same as pt_delete */
-PTDEFF int pt_delete_byidx (PTable *pt, size_t idx);
+PTDEFF int pt_delete_byidx (PTable *pt, idx_t idx);
 /* delete by value, @return: same as pt_delete */
 #define pt_delete_byvalue(pt, val) \
   pt_delete_byidx (pt, pt_search (pt, val))
@@ -146,7 +146,7 @@ pt_append (PTable *pt, void *value)
   else
     {
       /* write on freed indices */
-      ssize_t _offset = (ssize_t)pt->mem[pt->__freeidx];
+      off_t _offset = (off_t)pt->mem[pt->__freeidx];
 #ifdef HAVE_DFREE_PROTECTION
       if (MEMPROTO_FLAG (_offset) != SLOT_GUARD_H)
         {
@@ -172,17 +172,17 @@ pt_append (PTable *pt, void *value)
 
 
 PTDEFF int
-pt_delete_byidx (PTable *pt, size_t idx)
+pt_delete_byidx (PTable *pt, idx_t idx)
 {
   if (idx > pt->__lastocc)
     return PT_IDX_OUTOF_BOUND;
 
 #ifdef HAVE_DFREE_PROTECTION
   /* have double free protection */
-  size_t value = pt->__freeidx - idx;
+  ptr_t value = pt->__freeidx - idx;
   value = MEMPROTO_TO (value);
 
-  if (MEMPROTO_FLAG ((size_t)pt->mem[idx]) == SLOT_GUARD_H)
+  if (MEMPROTO_FLAG ((ptr_t)pt->mem[idx]) == SLOT_GUARD_H)
     {
       /* double free detected */
       return PT_DOUBLEFREE;
@@ -199,15 +199,15 @@ pt_delete_byidx (PTable *pt, size_t idx)
   return 0;
 }
 
-PTDEFF size_t
-pt_prev_free_idx (PTable *pt, size_t idx)
+PTDEFF idx_t
+pt_prev_free_idx (PTable *pt, idx_t idx)
 {
-  if (idx == (size_t)-1)
+  if (idx == (idx_t)-1)
     return -1;
   if (pt->__freeidx >= pt->__lastocc)
     return -1;
 
-  ssize_t _offset = (ssize_t)pt->mem[idx];
+  off_t _offset = (off_t)pt->mem[idx];
 
 #ifdef HAVE_DFREE_PROTECTION
   _offset = MEMPROTO_OF (_offset);
