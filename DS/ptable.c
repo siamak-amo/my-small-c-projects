@@ -19,15 +19,20 @@
  *  created on: 16 Jul 2024
  *
  *  Pointer Table, unordered pointer array
- *  with append and delete items in O(1) time and memory
- *  it can be used as dynamic table, see the CLI program,
- *  in O(1) amortized time and memory
+ *  This data structure allows for appending and deleting
+ *  void pointers in O(1) time and memory complexity
+ *  It does not allocate or free memory; instead, keeps track of
+ *  indices, making it remap and realloc safe
+ *  It can be used as a dynamic table (see the CLI program)
+ *  with O(1) amortized time and memory complexity
  *
- * - in 64bit, always has memory protection feature
- * - in 32bit, with memory protection, the maximum length
- *    of table <= 0xffff=65535  ~512Mb
- *    you can define _NO_DFREE_PROTECTION to disable
- *    memory protection and get full table size
+ *  In 64bit machines, always has memory protection feature
+ *  In 32bit machines, with memory protection, the maximum length
+ *  of table <= 0xffff=65535  ~512Mb
+ *  you can define _NO_DFREE_PROTECTION to disable
+ *  memory protection and get full table size
+ *  In other platforms, there is no memory protection,
+ *  and double free can happen with undefined behavior
  *
  *  Compilation:
  *    to compile the CLI program:
