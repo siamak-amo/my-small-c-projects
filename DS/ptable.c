@@ -434,9 +434,10 @@ main (void)
         "  dn       to delete index n\n"
         "  p,P      to print the table\n"
         "  q        to exit\n");
-  test_loop (&pt);
+  main_loop (&pt);
 #else
   /* normal test */
+  run_tests (&pt);
 #endif
   
   pt_free (&pt, free (mem));
