@@ -674,7 +674,8 @@ run_tests (PTable *pt)
             pt_append (pt, i);
         },
         MT(0, 0), MT(1, 0x111), MT(2, 0x222), /* beginning */
-        MT(9, 0), MT(10, 0)); /* boundary values */
+        MT(9, SLOT_GUARD), /* memory guard */
+        MT(10, 0)); /* after guard must be 0 */
 
   TEST (pt, "test 2 (64bit only)  --  delete by index",
         {
