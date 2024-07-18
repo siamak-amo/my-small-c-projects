@@ -119,6 +119,7 @@ typedef struct ptable_t PTable;
     idx_t cap = ptmem_sizeof ((ptable)->cap);   \
     void *mem = (ptable)->mem;                  \
     if (mem && cap > 0) {funcall;}              \
+    (ptable)->mem = NULL;                       \
   } while (0)
 
 #define pt_addrof(ptable, index) ((ptable)->mem + index)
