@@ -429,6 +429,18 @@ main_loop (PTable *pt)
     }
   return __errno;
 }
+
+#else
+
+struct mem_test_case_t {
+  idx_t index;
+  void *exp_value; /* expected value */
+};
+typedef struct mem_test_case_t mt_case;
+#define MT(i, val) (mt_case){.index=i, .exp_value=(void*)val}
+#define lenof(carray) \
+  ((sizeof (carray) != 0) ? (sizeof (carray) / sizeof ((carray)[0])) : 0)
+
 #endif /* PTABLE_TEST */
 
 
