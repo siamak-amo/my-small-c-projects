@@ -460,6 +460,18 @@ main_loop (PTable *pt)
                     }
 
                   off_t val = (off_t)pt->mem[i];
+#ifdef HAVE_DFREE_PROTECTION
+                  /* we only have memory flag for freed slots */
+                  if (slot_type == 'f')
+                    {
+                      if (SLOT_GUARD_H != MEMPROTO_FLAG (val))
+                        {
+                          /* memory smashing detected */
+                          slot_type = '*';
+                        }
+                      val = MEMPROTO_OF (val);
+                    }
+#endif
                   if (0 == val && 'f' == slot_type)
                     {
                       slot_type = '*'; /* double free! */
@@ -469,7 +481,7 @@ main_loop (PTable *pt)
                           (val >= 0) ? ' ' : '-', val);
 
                   if ('*' == slot_type)
-                    printf (" <- double free!");
+                    printf ("  \t<- memory smashing");
                   else
                     {
                       if (i == pt_last_idx(pt))
