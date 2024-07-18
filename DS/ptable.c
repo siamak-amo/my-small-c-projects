@@ -1,16 +1,68 @@
+/* This file is part of my-small-c-projects <https://gitlab.com/SI.AMO/>
+
+  ptable is free software: you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License,
+  or (at your option) any later version.
+
+  ptable is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  See the GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 /**
  *  file: ptable.c
  *  created on: 16 Jul 2024
  *
- *  Pointer Table
- *  remap / realloc safe
+ *  Pointer Table, unordered pointer array
+ *  with append and delete items in O(1) time and memory
+ *  it can be used as dynamic table, see the CLI program,
+ *  in O(1) amortized time and memory
  *
+ * - in 64bit, always has memory protection feature
+ * - in 32bit, with memory protection, the maximum length
+ *    of table <= 0xffff=65535  ~512Mb
+ *    you can define _NO_DFREE_PROTECTION to disable
+ *    memory protection and get full table size
  *
+ *  Compilation:
+ *    to compile the CLI program:
+ *    cc -ggdb -Wall -Wextea -Werror ptable.c \
+ *       $(pkg-config --cflags readline)
+ *       -D PTABLE_IMPLEMENTATION \
+ *       -D PTABLE_CLI -D PTABLE_TEST \
+ *       -o test.out pkg-config --libs readline
  *
+ *    to compile the test program:
+ *    cc -ggdb -Wall -Wextea -Werror ptable.c \
+ *       -D PTABLE_IMPLEMENTATION \
+ *       -D PTABLE_TEST \
+ *       -o test.out
  *
+ *    to include in c files:
+ *    ```{c}
+ *    #include <stdlib.h>
+ *    #define PTABLE_IMPLEMENTATION
  *
+ *    int
+ *    main (void)
+ *    {
+ *      PTable pt = new_ptable (32); // length 32
+ *      pt_alloc (&pt, malloc (cap));
  *
+ *      {
+ *        // do something here
+ *        // call pa_append or pa_delete_by_idx
+ *      }
  *
+ *      pt_free (&pt, free (mem));
+ *      return 0;
+ *    }
+ *    ```
  **/
 #ifndef PTABLE__H__
 #define PTABLE__H__
