@@ -455,7 +455,7 @@ main_loop (PTable *pt)
               {
                 pt->cap += BASE_TABLE_SIZE;
                 pt_realloc (pt, realloc (mem, cap));
-                printf ("table has extended, capacity: %lu", pt->cap);
+                printf ("table has extended, capacity: %lu\n", pt->cap);
               }
           }
           break;
