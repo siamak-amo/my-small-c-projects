@@ -224,12 +224,15 @@ PTDEFF const char *pt_strerr (int errnum);
 /**
  *  stack version
  *  you can use this library also as stack
- *  push, pop functions
  */
+/* @return: same as the pt_append function */
 #define pt_push(pt, val) pt_append (pt, val)
-/* returns NULL after the top is poped */
 /* only get the top of the stack, type: void pointer */
 #define pt_top(pt) (pt->mem[pt->__lastocc])
+/**
+ *  removes the top of stack and return it
+ *  returns NULL when the stack is empty
+ */
 PTDEFF void *pt_pop (PTable *pt);
 
 #endif /* PTABLE__H__ */
