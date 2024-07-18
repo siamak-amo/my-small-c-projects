@@ -441,6 +441,23 @@ typedef struct mem_test_case_t mt_case;
 #define lenof(carray) \
   ((sizeof (carray) != 0) ? (sizeof (carray) / sizeof ((carray)[0])) : 0)
 
+int
+__do_test__ (PTable *pt, const mt_case tests[], int len)
+{
+  void **mem = pt->mem;
+  for (const mt_case *t = &tests[0]; len != 0; --len, ++t)
+    {
+      if (mem[t->index] != t->exp_value)
+        {
+          printf ("[test idx:%lu] failed! %p != %p\n",
+                  t->index, mem[t->index], t->exp_value);
+          return -1;
+        }
+    }
+  return 0;
+}
+#define __do_test(pt, arr) __do_test__ (pt, arr, lenof (arr))
+
 #endif /* PTABLE_TEST */
 
 
