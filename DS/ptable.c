@@ -25,6 +25,7 @@
  *  indices, making it remap and realloc safe
  *  It can be used as a dynamic table (see the CLI program)
  *  with O(1) amortized time and memory complexity
+ *  It also can be used as an stack (see pt_push and pt_pop)
  *
  *  In 64bit machines, always has memory protection feature
  *  In 32bit machines, with memory protection, the maximum length
