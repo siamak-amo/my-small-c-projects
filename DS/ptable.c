@@ -589,6 +589,15 @@ main_loop (PTable *pt)
               pt->mem[idx] = readline_gethex ("value in hex: ");
             }
           break;
+
+        case '<':
+          pt_push (pt, readline_gethex ("value in hex: "));
+          break;
+
+        case '>':
+          printf ("pop: %p\n", pt_pop (pt));
+          break;
+
         case 'q':
           return 0;
 
@@ -693,6 +702,7 @@ main (void)
         "  d        to delete by index\n"
         "  p,P      to print the table\n"
         "  r,w      to read / write on memory\n"
+        "  <,>      to push / pop like an stack\n"
         "  q        to exit\n");
   main_loop (&pt);
 #else
