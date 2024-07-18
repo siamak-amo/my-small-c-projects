@@ -286,13 +286,16 @@ pt_delete_byidx (PTable *pt, idx_t idx)
     return PT_IDX_OUTOF_BOUND;
 
 #ifdef HAVE_DFREE_PROTECTION
-  /* have double free protection */
+  /**
+   *  we cannot detect doable free or memory corruption here
+   *  only we can prevent it from happening
+   */
   ptr_t value = pt->__freeidx - idx;
   value = MEMPROTO_TO (value);
 
   if (MEMPROTO_FLAG ((ptr_t)pt->mem[idx]) == SLOT_GUARD_H)
     {
-      /* double free detected */
+      /* prevent double free */
       return PT_ALREADY_FREED;
     }
   pt->mem[idx] = (void *)value;
@@ -482,7 +485,7 @@ main_loop (PTable *pt)
                           (val >= 0) ? ' ' : '-', val);
 
                   if ('*' == slot_type)
-                    printf ("  \t<- memory smashing");
+                    printf ("  \t<- memory corruption");
                   else
                     {
                       if (i == pt_last_idx(pt))
