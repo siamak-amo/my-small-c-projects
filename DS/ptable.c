@@ -536,8 +536,6 @@ main_loop (PTable *pt)
           return 0;
 
         default:
-          if (__errno != 0)
-            break;
           continue;
         }
     }
