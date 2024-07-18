@@ -97,7 +97,15 @@ typedef struct ptable_t PTable;
       .__freeidx = 0, .__lastocc = 0,                   \
       .mem = NULL                                       \
       }
-/* alloc, free, realloc */
+
+/**
+ *  alloc, realloc, free macros
+ *  within @funcall of these macros, you have access
+ *  to mem, and cap, for instance:
+ *    with malloc:   pt_realloc (&pt, realloc (cap));
+ *                   pt_alloc (&pt, malloc (cap));
+ *    with mmap:     pt_free (&pt, munmap (mem, cap));
+ */
 #define pt_alloc(ptable, funcall) do {          \
     idx_t cap = ptmem_sizeof ((ptable)->cap);   \
     (ptable)->mem = funcall;                    \
