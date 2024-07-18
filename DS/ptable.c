@@ -677,6 +677,7 @@ run_tests (PTable *pt)
         MT(9, SLOT_GUARD), /* memory guard */
         MT(10, 0)); /* after guard must be 0 */
 
+#if __SIZEOF_POINTER__ == 8
   TEST (pt, "test 2 (64bit only)  --  delete by index",
         {
           /* it must succeed */
@@ -698,6 +699,7 @@ run_tests (PTable *pt)
         MT(2, MEMPROTO_TO(-1)),
         MT(5, MEMPROTO_TO(-3)) /* offset to index 2 = -3 */
         );
+#endif
 }
 
 #endif /* PTABLE_TEST */
