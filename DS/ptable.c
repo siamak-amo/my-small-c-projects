@@ -27,8 +27,8 @@
  *  with O(1) amortized time and memory complexity
  *  It also can be used as an stack (see pt_push and pt_pop)
  *
- *  In 64bit machines, always has memory protection feature
- *  In 32bit machines, with memory protection, the maximum length
+ *  In 64-bit machines, always has memory protection feature
+ *  In 32-bit machines, with memory protection, the maximum length
  *  of table <= 0xffff=65535  ~512Mb
  *  you can define _NO_DFREE_PROTECTION to disable
  *  memory protection and get full table size
