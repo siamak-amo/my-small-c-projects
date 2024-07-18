@@ -428,6 +428,16 @@ readline_getnumber (const char *prompt)
   return ret;
 }
 
+void *
+readline_gethex (const char *prompt)
+{
+  void *ret;
+  char *s = readline (prompt);
+  sscanf (s, "%p", &ret);
+  free (s);
+  return ret;
+}
+
 int
 main_loop (PTable *pt)
 {
@@ -560,11 +570,7 @@ main_loop (PTable *pt)
         case 'w':
           if ((idx = readline_getnumber ("index: ")) >= 0)
             {
-              void *p;
-              char *s = readline ("value in hex: ");
-              sscanf (s, "%p", &p);
-              free (s);
-              pt->mem[idx] = p;
+              pt->mem[idx] = readline_gethex ("value in hex: ");
             }
           break;
         case 'q':
