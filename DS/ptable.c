@@ -220,6 +220,14 @@ PTDEFF int pt_delete_byidx (PTable *pt, idx_t idx);
 /* @return: error message */
 PTDEFF const char *pt_strerr (int errnum);
 
+/**
+ *  stack version
+ *  you can use this library also as stack
+ *  push, pop functions
+ */
+#define pt_push(pt, val) pt_append (pt, val)
+PTDEFF void *pt_pop (PTable *pt);
+
 #endif /* PTABLE__H__ */
 
 #ifdef PTABLE_IMPLEMENTATION
@@ -250,6 +258,14 @@ pt_strerr (int errnum)
       return "Unknown Error";
     }
   return NULL;
+}
+
+PTDEFF void *
+pt_pop (PTable *pt)
+{
+  void *ret = pt->mem[pt->__lastocc];
+  pt_delete_byidx (pt, pt->__lastocc);
+  return ret;
 }
 
 PTDEFF int
