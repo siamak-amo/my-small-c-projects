@@ -93,6 +93,7 @@ typedef struct ptable_t PTable;
 
 /* sizeof mem of capacity @cap (in bytes) */
 #define ptmem_sizeof(cap) ((cap) * sizeof (void *))
+#define pt_sizeof(pt) ptmem_sizeof ((pt)->cap)
 #define new_ptable(c) (PTable){.cap = c,                \
       .__freeidx = 0, .__lastocc = 0,                   \
       .mem = NULL                                       \
@@ -111,12 +112,12 @@ typedef struct ptable_t PTable;
     (ptable)->mem = funcall;                    \
   } while (0)
 #define pt_realloc(ptable, funcall) do {        \
-    idx_t cap = ptmem_sizeof ((ptable)->cap);   \
+    idx_t cap = pt_sizeof (ptable);             \
     void *mem = (ptable)->mem;                  \
     if (mem) {(ptable)->mem = funcall;}         \
   } while (0)
 #define pt_free(ptable, funcall) do {           \
-    idx_t cap = ptmem_sizeof ((ptable)->cap);   \
+    idx_t cap = pt_sizeof (ptable);             \
     void *mem = (ptable)->mem;                  \
     if (mem && cap > 0) {funcall;}              \
     (ptable)->mem = NULL;                       \
