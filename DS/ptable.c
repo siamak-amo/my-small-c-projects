@@ -677,8 +677,8 @@ run_tests (PTable *pt)
         MT(9, SLOT_GUARD), /* memory guard */
         MT(10, 0)); /* after guard must be 0 */
 
-#if __SIZEOF_POINTER__ == 8
-  TEST (pt, "test 2 (64bit only)  --  delete by index",
+#if __SIZEOF_POINTER__ >= 4
+  TEST (pt, "test 2 (32-bit and 64-bit only) --  delete by index",
         {
           /* it must succeed */
           __errno |= pt_delete_byidx (pt, 1);
@@ -692,14 +692,18 @@ run_tests (PTable *pt)
         },
         /* before and after delete must be intact */
         MT(0, 0), MT(3, 0x333),
+
+#  ifdef HAVE_DFREE_PROTECTION
         /* we had 9 elements, if we delete the first one ==>
          *  offset to the previous free index = 8 */
         MT(1, MEMPROTO_TO(8)),
         /* last deleted index = 1  ==>  offset = -1 */
         MT(2, MEMPROTO_TO(-1)),
-        MT(5, MEMPROTO_TO(-3)) /* offset to index 2 = -3 */
-        );
-#endif
+        MT(5, MEMPROTO_TO(-3))); /* offset to index 2 = -3 */
+#  else
+        MT(1, 8), MT(2, -1), MT(5, -3));
+#  endif /* HAVE_DFREE_PROTECTION */
+#endif /* __SIZEOF_POINTER__ >= 4 */
 }
 
 #endif /* PTABLE_TEST */
