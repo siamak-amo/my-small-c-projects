@@ -471,6 +471,43 @@ __do_test__ (PTable *pt, const mt_case tests[], int len)
     else puts ("fail");                                 \
   } while (0)
 
+void
+run_tests (PTable *pt)
+{
+  /* memset to zero, for testing purposes */
+  pt_mem (pt, memset (mem, 0, cap));
+
+  TEST (pt, "test 1  --  append to table",
+        {
+          for (void *i = NULL; i < (void*)0x999; i += 0x111)
+            pt_append (pt, i);
+        },
+        MT(0, 0), MT(1, 0x111), MT(2, 0x222), /* beginning */
+        MT(9, 0), MT(10, 0)); /* boundary values */
+
+  TEST (pt, "test 2 (64bit only)  --  delete by index",
+        {
+          /* it must succeed */
+          __errno |= pt_delete_byidx (pt, 1);
+          __errno |= pt_delete_byidx (pt, 2);
+
+          /* double free, it must fail */
+          __errno |= PT_ALREADY_FREED != pt_delete_byidx (pt, 1);
+          __errno |= PT_ALREADY_FREED != pt_delete_byidx (pt, 2);
+
+          __errno |= pt_delete_byidx (pt, 5);
+        },
+        /* before and after delete must be intact */
+        MT(0, 0), MT(3, 0x333),
+        /* we had 9 elements, if we delete the first one ==>
+         *  offset to the previous free index = 8 */
+        MT(1, MEMPROTO_TO(8)),
+        /* last deleted index = 1  ==>  offset = -1 */
+        MT(2, MEMPROTO_TO(-1)),
+        MT(5, MEMPROTO_TO(-3)) /* offset to index 2 = -3 */
+        );
+}
+
 #endif /* PTABLE_TEST */
 
 
