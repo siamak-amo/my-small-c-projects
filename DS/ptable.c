@@ -343,6 +343,7 @@ pt_prev_free_idx (PTable *pt, idx_t idx)
 #include <stdlib.h>
 
 #define BASE_TABLE_SIZE 16
+#define ROW_CHUNK 13
 
 #define pt_error(code) \
   printf ("[error:l%d]  %s\n", __LINE__, pt_strerr (code))
@@ -429,7 +430,7 @@ main_loop (PTable *pt)
           PrintCommand:
             ptr_t i = 0;
             do {
-              for (ptr_t __j = 0; __j < 10; __j++, ++i)
+              for (ptr_t __j = 0; __j < ROW_CHUNK; __j++, ++i)
                 {
                   char slot_type =
                     (i<= pt_last_idx(pt) && i != pt_ffree_idx (pt)) ? 'o' : ' ';
