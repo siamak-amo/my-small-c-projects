@@ -267,12 +267,12 @@ pt_append (PTable *pt, void *value)
               pt->mem[pt->__lastocc + 1] != (void *)SLOT_GUARD)
             return PT_MEM_SMASHING;
         }
-      if (pt->__freeidx == pt->cap)
-        return PT_OVERFLOW;
       /* write on unused indices */
       pt->__lastocc = pt->__freeidx;
       pt->mem[pt->__freeidx] = value;
       pt->__freeidx++;
+      if (pt->__lastocc + 1 >= pt->cap)
+        return PT_OVERFLOW;
     }
   else
     {
@@ -300,6 +300,8 @@ pt_append (PTable *pt, void *value)
   /* write the gaurd */
   if (pt->__lastocc < pt->cap)
     pt->mem[pt->__lastocc + 1] = (void *)SLOT_GUARD;
+  if (pt->__lastocc + 1 >= pt->cap)
+    return PT_OVERFLOW;
 
   return 0;
 }
