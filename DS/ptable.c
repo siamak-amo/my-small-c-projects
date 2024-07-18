@@ -321,6 +321,11 @@ pt_prev_free_idx (PTable *pt, idx_t idx)
   off_t _offset = (off_t)pt->mem[idx];
 
 #ifdef HAVE_DFREE_PROTECTION
+  if (SLOT_GUARD_H != MEMPROTO_FLAG (_offset))
+    {
+      /* double free or memory smashing */
+      return -1;
+    }
   _offset = MEMPROTO_OF (_offset);
 #endif
 
