@@ -458,6 +458,19 @@ __do_test__ (PTable *pt, const mt_case tests[], int len)
 }
 #define __do_test(pt, arr) __do_test__ (pt, arr, lenof (arr))
 
+#define TEST(pt, msg, actions, ...) do {                \
+    int __errno = 0;                                    \
+    puts (" * "msg);                                    \
+    actions;                                            \
+    if (__errno) pt_error (__errno);                    \
+    if (0 == sizeof ((mt_case[]){__VA_ARGS__}))         \
+      { puts ("no test"); break; }                      \
+    const mt_case tests[] = {__VA_ARGS__};              \
+    if (0 == __do_test (pt, tests))                     \
+      puts ("pass\n");                                  \
+    else puts ("fail");                                 \
+  } while (0)
+
 #endif /* PTABLE_TEST */
 
 
