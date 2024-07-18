@@ -402,10 +402,14 @@ main_loop (PTable *pt)
           break;
         case 'd':
           {
-            int idx;
-            scanf ("%d", &idx);
-            if ((__errno = pt_delete_byidx (pt, idx)))
-              pt_error (__errno);
+            char *s = readline ("index: ");
+            if (s && *s != '\0')
+              {
+                int idx = atoi (s);
+                if ((__errno = pt_delete_byidx (pt, idx)))
+                  pt_error (__errno);
+              }
+            if (s) free (s);
           }
           break;
         case 'q':
@@ -432,7 +436,7 @@ main (void)
   /* CLI program */
   puts ("Pointer Table!\n"
         "  a,A      to append to the table (0x111, 0x222, ...)\n"
-        "  dn       to delete index n\n"
+        "  d        to delete by index\n"
         "  p,P      to print the table\n"
         "  q        to exit\n");
   main_loop (&pt);
