@@ -607,6 +607,10 @@ main_loop (PTable *pt)
           printf ("pop: %p\n", pt_pop (pt));
           break;
 
+        case 't':
+          printf ("top: %p\n", pt_top (pt));
+          break;
+
         case 'q':
           return 0;
 
@@ -710,8 +714,8 @@ main (void)
         "  a,A      to append to the table (0x111, 0x222, ...)\n"
         "  d        to delete by index\n"
         "  p,P      to print the table\n"
-        "  r,w      to read / write on memory\n"
-        "  <,>      to push / pop like an stack\n"
+        "  <,>,t    to push/pop/top (like stack)\n"
+        "  r,w      to read/write on memory\n"
         "  q        to exit\n");
   main_loop (&pt);
 #else
