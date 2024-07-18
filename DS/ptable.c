@@ -430,7 +430,9 @@ main_loop (PTable *pt)
           PrintCommand:
             ptr_t i = 0;
             do {
-              for (ptr_t __j = 0; __j < ROW_CHUNK; __j++, ++i)
+              for (ptr_t __j = 0;
+                   __j < ROW_CHUNK && i <= pt->cap;
+                   __j++, ++i)
                 {
                   char slot_type =
                     (i<= pt_last_idx(pt) && i != pt_ffree_idx (pt)) ? 'o' : ' ';
