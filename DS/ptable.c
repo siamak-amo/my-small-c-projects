@@ -88,7 +88,7 @@ struct ptable_t {
   idx_t __lastocc; /* last occupied index */
 };
 typedef struct ptable_t PTable;
-#define pt_last_idxof(pt) ((pt)->__lastocc) /* last occupied index */
+#define pt_last_idx(pt) ((pt)->__lastocc) /* last occupied index */
 #define pt_ffree_idx(pt) ((pt)->__freeidx) /* first free index */
 
 /* sizeof mem of capacity @cap (in bytes) */
