@@ -228,6 +228,8 @@ PTDEFF const char *pt_strerr (int errnum);
  */
 #define pt_push(pt, val) pt_append (pt, val)
 /* returns NULL after the top is poped */
+/* only get the top of the stack, type: void pointer */
+#define pt_top(pt) (pt->mem[pt->__lastocc])
 PTDEFF void *pt_pop (PTable *pt);
 
 #endif /* PTABLE__H__ */
