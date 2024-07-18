@@ -227,6 +227,7 @@ PTDEFF const char *pt_strerr (int errnum);
  *  push, pop functions
  */
 #define pt_push(pt, val) pt_append (pt, val)
+/* returns NULL after the top is poped */
 PTDEFF void *pt_pop (PTable *pt);
 
 #endif /* PTABLE__H__ */
@@ -264,6 +265,8 @@ pt_strerr (int errnum)
 PTDEFF void *
 pt_pop (PTable *pt)
 {
+  if (pt->__lastocc == 0 && pt->__freeidx == 0)
+    return NULL;
   void *ret = pt->mem[pt->__lastocc];
   pt_delete_byidx (pt, pt->__lastocc);
   return ret;
