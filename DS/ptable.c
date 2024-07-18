@@ -107,8 +107,14 @@ typedef struct ptable_t PTable;
  *                   pt_alloc (&pt, malloc (cap));
  *    with mmap:     pt_free (&pt, munmap (mem, cap));
  */
-#define pt_alloc(ptable, funcall) do {          \
+
+#define pt_mem(ptable, funcall) do {            \
     idx_t cap = ptmem_sizeof ((ptable)->cap);   \
+    void *mem = (ptable)->mem;                  \
+    funcall;                                    \
+  } while (0)
+#define pt_alloc(ptable, funcall) do {          \
+    idx_t cap = pt_sizeof (ptable);             \
     (ptable)->mem = funcall;                    \
   } while (0)
 #define pt_realloc(ptable, funcall) do {        \
