@@ -274,15 +274,170 @@ pt_prev_free_idx (PTable *pt, idx_t idx)
 #include <stdio.h>
 #include <stdlib.h>
 
+#define BASE_TABLE_SIZE 16
+
+#define pt_error(code) \
+  printf ("[error:l%d]  %s\n", __LINE__, pt_strerr (code))
+
+/* the cli program */
+#ifdef PTABLE_CLI
+#include <unistd.h>
+#include <termios.h>
+#include <readline/readline.h>
+
+void
+__toggle_ICANON ()
+{
+  struct termios term;
+  tcgetattr (fileno (stdin), &term);
+  term.c_lflag ^= (ICANON | ECHO);
+  tcsetattr (fileno (stdin), TCSANOW, &term);
+}
+
+char
+__do_more ()
+{
+  __toggle_ICANON ();
+  printf ("--More-- press any key to see more, q to exit ");
+  fflush (stdout);
+  char c = getchar();
+  printf ("\r\e[K");
+  __toggle_ICANON ();
+  return c;
+}
+
+int
+test_loop (PTable *pt)
+{
+  int __errno;
+  void *ptr = NULL;
+  char c = '\0';
+  char *tmp, *tmp_H = NULL;
+
+  while (1)
+    {
+      if (NULL == tmp_H)
+        {
+          tmp_H = readline (">>> ");
+          if (NULL == tmp_H)
+            break;
+          tmp = tmp_H;
+          c = '\n';
+        }
+      else
+        {
+          c = *(tmp++);
+          if (c == '\0')
+            {
+              free (tmp_H);
+              tmp_H = NULL;
+            }
+        }
+      /* execute command c */
+      switch (c)
+        {
+        case 'a':
+        case 'A':
+          {
+            if ((__errno = pt_append (pt, ptr += 0x1111)))
+              pt_error (__errno);
+            if (PT_OVERFLOW == __errno)
+              {
+                pt->cap += BASE_TABLE_SIZE;
+                pt_realloc (pt, realloc (mem, cap));
+                printf ("table has extended, capacity: %lu", pt->cap);
+              }
+          }
+          break;
+        case 'P':
+          {
+            printf("idx   type   pointer value \n"
+                   "--------------------------------\n");
+            goto PrintCommand;
+          }
+          break;
+        case 'p':
+          {
+          PrintCommand:
+            ptr_t i = 0;
+            do {
+              for (ptr_t __j = 0; __j < 10; __j++, ++i)
+                {
+                  char slot_type =
+                    (i<= pt_last_idx(pt) && i != pt_ffree_idx (pt)) ? 'o' : ' ';
+
+                  for (idx_t idx = pt_ffree_idx(pt);
+                       idx != (idx_t)-1 && idx < pt_last_idx(pt);
+                       idx = pt_prev_free_idx (pt, idx))
+                    {
+                      if (i == idx)
+                        slot_type = 'f';
+                    }
+
+                  off_t val = (off_t)pt->mem[i];
+                  if (0 == val && 'f' == slot_type)
+                    {
+                      slot_type = '*'; /* double free! */
+                    }
+
+                  printf ("%-4lu  [%c]-> %c0x%.16lx", i, slot_type,
+                          (val >= 0) ? ' ' : '-', val);
+
+                  if ('*' == slot_type)
+                    printf (" <- double free!");
+                  else
+                    {
+                      if (i == pt_last_idx(pt))
+                        printf ("  \t<- last");
+                      if (i == pt_ffree_idx(pt))
+                        printf ("  \t<- free");
+                    }
+                  puts ("");
+                }
+              if (i <= pt_last_idx(pt))
+                c = __do_more ();
+            } while (i <= pt_last_idx(pt) && 'q' != c);
+          }
+          break;
+        case 'd':
+          {
+            int idx;
+            scanf ("%d", &idx);
+            if ((__errno = pt_delete_byidx (pt, idx)))
+              pt_error (__errno);
+          }
+          break;
+        case 'q':
+          return 0;
+
+        default:
+          if (__errno != 0)
+            break;
+          continue;
+        }
+    }
+  return __errno;
+}
+#endif /* PTABLE_TEST */
+
+
 int
 main (void)
 {
-  PTable pt = new_ptable (64); /* 64 entries */
+  PTable pt = new_ptable (BASE_TABLE_SIZE); /* 16 entries */
   pt_alloc (&pt, malloc (cap));
 
-  {
-    // main
-  }
+#ifdef PTABLE_CLI
+  /* CLI program */
+  puts ("Pointer Table!\n"
+        "  a,A      to append to the table (0x111, 0x222, ...)\n"
+        "  dn       to delete index n\n"
+        "  p,P      to print the table\n"
+        "  q        to exit\n");
+  test_loop (&pt);
+#else
+  /* normal test */
+#endif
   
   pt_free (&pt, free (mem));
   return 0;
