@@ -140,6 +140,7 @@ enum pt_errnum_t {
   PT_BROKEN_LOGIC,
   PT_IDX_OUTOF_BOUND,
   PT_NULLPTR,
+  PT_MEM_SMASHING,
 };
 
 struct ptable_t {
@@ -242,6 +243,8 @@ pt_strerr (int errnum)
       return "Index out of range";
     case PT_NULLPTR:
       return "Null Pointer";
+    case PT_MEM_SMASHING:
+      return "Memory Smashing detected";
 
     default:
       return "Unknown Error";
@@ -258,13 +261,18 @@ pt_append (PTable *pt, void *value)
 
   if (pt->__freeidx >= pt->__lastocc)
     {
+      if (pt->__lastocc > 0 && pt->__lastocc > pt->__freeidx)
+        {
+          if (pt->__lastocc + 1 < pt->cap &&
+              pt->mem[pt->__lastocc + 1] != (void *)SLOT_GUARD)
+            return PT_MEM_SMASHING;
+        }
       if (pt->__freeidx == pt->cap)
         return PT_OVERFLOW;
       /* write on unused indices */
       pt->__lastocc = pt->__freeidx;
       pt->mem[pt->__freeidx] = value;
       pt->__freeidx++;
-      return 0;
     }
   else
     {
@@ -289,6 +297,9 @@ pt_append (PTable *pt, void *value)
         pt->__lastocc = pt->__freeidx;
       pt->__freeidx += _offset;
     }
+  /* write the gaurd */
+  if (pt->__lastocc < pt->cap)
+    pt->mem[pt->__lastocc + 1] = (void *)SLOT_GUARD;
 
   return 0;
 }
