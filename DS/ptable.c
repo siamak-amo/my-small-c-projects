@@ -193,7 +193,7 @@ typedef struct ptable_t PTable;
 #define pt_addrof(ptable, index) ((ptable)->mem + index)
 #define pt_GET(pt, idx, T) ((T *)pt_addrof (pt, idx))
 
-PTDEFF idx_t pt_prev_free_idx (PTable *pt, size_t idx);
+PTDEFF idx_t pt_prev_free_idx (PTable *pt, idx_t idx);
 
 /**
  *  append to the table
