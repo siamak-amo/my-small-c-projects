@@ -45,13 +45,17 @@
  *
  *    to include in c files:
  *    ```{c}
+ *    #include <stdio.h>
  *    #include <stdlib.h>
+ *
  *    #define PTABLE_IMPLEMENTATION
+ *    #include "ptable.c"
  *
  *    int
  *    main (void)
  *    {
  *      PTable pt = new_ptable (32); // length 32
+ *      // using malloc, you can use mmap instead
  *      pt_alloc (&pt, malloc (cap));
  *
  *      {
