@@ -139,6 +139,7 @@ enum pt_errnum_t {
   PT_DOUBLEFREE,
   PT_BROKEN_LOGIC,
   PT_IDX_OUTOF_BOUND,
+  PT_NULLPTR,
 };
 
 struct ptable_t {
@@ -239,6 +240,8 @@ pt_strerr (int errnum)
       return "Broken Logic";
     case PT_IDX_OUTOF_BOUND:
       return "Index out of range";
+    case PT_NULLPTR:
+      return "Null Pointer";
 
     default:
       return "Unknown Error";
@@ -249,6 +252,8 @@ pt_strerr (int errnum)
 PTDEFF int
 pt_append (PTable *pt, void *value)
 {
+  if (!pt || !pt->mem)
+    return PT_NULLPTR;
   assert (pt->__lastocc <= pt->cap && pt->__freeidx <= pt->cap);
 
   if (pt->__freeidx >= pt->__lastocc)
@@ -292,6 +297,8 @@ pt_append (PTable *pt, void *value)
 PTDEFF int
 pt_delete_byidx (PTable *pt, idx_t idx)
 {
+  if (!pt || !pt->mem)
+    return PT_NULLPTR;
   if (idx > pt->__lastocc)
     return PT_IDX_OUTOF_BOUND;
 
@@ -323,6 +330,8 @@ pt_delete_byidx (PTable *pt, idx_t idx)
 PTDEFF idx_t
 pt_prev_free_idx (PTable *pt, idx_t idx)
 {
+  if (!pt || !pt->mem)
+    return PT_NULLPTR;
   if (idx == (idx_t)-1)
     return -1;
   if (pt->__freeidx >= pt->__lastocc)
