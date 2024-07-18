@@ -462,6 +462,7 @@ main_loop (PTable *pt)
         case 'a':
         case 'A':
           {
+          AppendCMD:
             if ((__errno = pt_append (pt, ptr += 0x1111)))
               pt_error (__errno);
             if (PT_OVERFLOW == __errno)
@@ -469,6 +470,8 @@ main_loop (PTable *pt)
                 pt->cap += BASE_TABLE_SIZE;
                 pt_realloc (pt, realloc (mem, cap));
                 printf ("table has extended, capacity: %lu\n", pt->cap);
+                ptr -= 0x1111;
+                goto AppendCMD;
               }
           }
           break;
