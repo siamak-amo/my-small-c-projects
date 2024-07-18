@@ -502,7 +502,7 @@ main_loop (PTable *pt)
           break;
         case 'd':
           {
-            if ((idx = readline_index ()) > 0)
+            if ((idx = readline_index ()) >= 0)
               if ((__errno = pt_delete_byidx (pt, idx)))
                 pt_error (__errno);
           }
