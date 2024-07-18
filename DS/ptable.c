@@ -500,6 +500,17 @@ main_loop (PTable *pt)
               }
           }
           break;
+
+        case 'w':
+          if ((idx = readline_index ()) >= 0)
+            {
+              void *p;
+              char *s = readline ("value in hex: ");
+              sscanf (s, "%p", &p);
+              free (s);
+              pt->mem[idx] = p;
+            }
+          break;
         case 'q':
           return 0;
 
@@ -605,6 +616,7 @@ main (void)
         "  a,A      to append to the table (0x111, 0x222, ...)\n"
         "  d        to delete by index\n"
         "  p,P      to print the table\n"
+        "  r,w      to read / write on memory\n"
         "  q        to exit\n");
   main_loop (&pt);
 #else
