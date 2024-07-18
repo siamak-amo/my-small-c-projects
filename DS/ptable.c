@@ -376,9 +376,23 @@ __do_more ()
 }
 
 int
+readline_index ()
+{
+  char *s = readline ("index: ");
+  if (!s)
+    return -1;
+  if ('\0' == *s)
+    return 0;
+  int ret = atoi (s);
+  free (s);
+  return ret;
+}
+
+int
 main_loop (PTable *pt)
 {
   int __errno;
+  int idx;
   void *ptr = NULL;
   char c = '\0';
   char *tmp, *tmp_H = NULL;
@@ -472,14 +486,18 @@ main_loop (PTable *pt)
           break;
         case 'd':
           {
-            char *s = readline ("index: ");
-            if (s && *s != '\0')
+            if ((idx = readline_index ()) > 0)
+              if ((__errno = pt_delete_byidx (pt, idx)))
+                pt_error (__errno);
+          }
+          break;
+
+        case 'r':
+          {
+            if ((idx = readline_index ()) >= 0)
               {
-                int idx = atoi (s);
-                if ((__errno = pt_delete_byidx (pt, idx)))
-                  pt_error (__errno);
+                printf (" table[%d] = %p\n", idx, pt->mem[idx]);
               }
-            if (s) free (s);
           }
           break;
         case 'q':
