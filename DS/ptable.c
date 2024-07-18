@@ -308,7 +308,7 @@ __do_more ()
 }
 
 int
-test_loop (PTable *pt)
+main_loop (PTable *pt)
 {
   int __errno;
   void *ptr = NULL;
