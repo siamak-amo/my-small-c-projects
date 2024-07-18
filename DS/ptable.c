@@ -193,19 +193,29 @@ typedef struct ptable_t PTable;
 #define pt_addrof(ptable, index) ((ptable)->mem + index)
 #define pt_GET(pt, idx, T) ((T *)pt_addrof (pt, idx))
 
+/**
+ *  find the previous freed index, starting from @idx
+ *  not necessarily < @idx
+ *  @return: on success    -> previous index
+ *           on error/end  -> max value of idx_t (-1)
+ */
 PTDEFF idx_t pt_prev_free_idx (PTable *pt, idx_t idx);
 
 /**
  *  append to the table
- *  @return: pointer to the @value on success
- *           NULL on table overflow
+ *  @return: on success   -> 0
+ *           on failure   -> error codes in pt_errornum_t
  */
 PTDEFF int pt_append (PTable *pt, void *value);
 
-/* delete by index, @return: same as pt_delete */
+/**
+ *  delete an element by index
+ *  @return: on success  -> 0
+ *           on failure  -> -1
+ */
 PTDEFF int pt_delete_byidx (PTable *pt, idx_t idx);
-/* delete by value, @return: same as pt_delete */
 
+/* @return: error message */
 PTDEFF const char *pt_strerr (int errnum);
 
 #endif /* PTABLE__H__ */
