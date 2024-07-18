@@ -471,11 +471,12 @@ main_loop (PTable *pt)
                         }
                       val = MEMPROTO_OF (val);
                     }
-#endif
+#else
                   if (0 == val && 'f' == slot_type)
                     {
                       slot_type = '*'; /* double free! */
                     }
+#endif
 
                   printf ("%-4lu  [%c]-> %c0x%.16lx", i, slot_type,
                           (val >= 0) ? ' ' : '-', val);
