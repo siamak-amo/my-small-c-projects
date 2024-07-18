@@ -413,15 +413,15 @@ __do_more ()
   return c;
 }
 
-int
-readline_index ()
+ssize_t
+readline_getnumber (const char *prompt)
 {
-  char *s = readline ("index: ");
+  char *s = readline (prompt);
   if (!s)
     return -1;
   if ('\0' == *s)
     return 0;
-  int ret = atoi (s);
+  ssize_t ret = atoll (s);
   free (s);
   return ret;
 }
@@ -430,7 +430,7 @@ int
 main_loop (PTable *pt)
 {
   int __errno;
-  int idx;
+  ssize_t idx;
   void *ptr = NULL;
   char c = '\0';
   char *tmp, *tmp_H = NULL;
@@ -537,7 +537,7 @@ main_loop (PTable *pt)
           break;
         case 'd':
           {
-            if ((idx = readline_index ()) >= 0)
+            if ((idx = readline_getnumber ("index: ")) >= 0)
               if ((__errno = pt_delete_byidx (pt, idx)))
                 pt_error (__errno);
           }
@@ -545,15 +545,15 @@ main_loop (PTable *pt)
 
         case 'r':
           {
-            if ((idx = readline_index ()) >= 0)
+            if ((idx = readline_getnumber ("index: ")) >= 0)
               {
-                printf (" table[%d] = %p\n", idx, pt->mem[idx]);
+                printf (" table[%ld] = %p\n", idx, pt->mem[idx]);
               }
           }
           break;
 
         case 'w':
-          if ((idx = readline_index ()) >= 0)
+          if ((idx = readline_getnumber ("index: ")) >= 0)
             {
               void *p;
               char *s = readline ("value in hex: ");
