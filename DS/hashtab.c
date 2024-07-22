@@ -80,6 +80,8 @@
  *      ht_set_funs (&t, simple_hash, __getter, __lenof, __isequal);
  *
  *      idx_t *mem = malloc (ht_sizeof (&t));
+ *      // or use nmap to map a file or memory
+ *
  *      if (0 != ht_init (&t, mem))
  *        {
  *          puts ("hashtab initialization failed.");
@@ -91,6 +93,7 @@
  *      // to the table or access data by key both in O(1) time complexity
  *
  *      ht_free (&t, free (mem));
+ *      // in case of nmap:  ht_free (&t, munmap (mem, cap_bytes));
  *      return 0;
  *    }
  *    ```
