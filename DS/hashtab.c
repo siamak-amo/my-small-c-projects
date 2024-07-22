@@ -108,7 +108,16 @@ ht_idxof (HashTable *ht, const char *key, size_t key_len, idx_t *result);
 HASHTABDEFF hash_t
 hash_FNV_1a (const char *data, idx_t len)
 {
-  return 0;
+  const hash_t FNV_PRIME = 0x01000193;
+  hash_t hash = 0x811c9dc5;
+
+  for (; len > 0; --len, ++data)
+    {
+      hash = (hash ^ *data) * FNV_PRIME;
+    }
+
+  return hash;
+}
 }
 
 HASHTABDEFF int
