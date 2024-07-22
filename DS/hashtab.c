@@ -78,7 +78,7 @@ HASHTABDEFF int ht_init (HashTable *ht, idx_t *buf);
 HASHTABDEFF int ht_insert (HashTable *ht, idx_t data_idx);
 
 HASHTABDEFF int
-ht_idxof (HashTable *ht, const char *key, size_t key_len, idx_t *result);
+ht_idxof (HashTable *ht, char *key, size_t key_len, idx_t *result);
 
 #define ht_idxofs(ht, key, result) \
   ht_idxof (ht, key, strlen (key), result)
@@ -109,6 +109,26 @@ hash_FNV_1a (const char *data, idx_t len)
 
   return hash;
 }
+
+/* internal - default getter, lenof, isequal */
+static inline DATA_T *
+__default_getter (DATA_T **head, idx_t index)
+{
+  return head[index];
+}
+
+static inline size_t
+__default_lenof (DATA_T **head, idx_t index)
+{
+  return strlen (head[index]);
+}
+
+static inline bool
+__default_isequal (DATA_T *v1, DATA_T *v2)
+{
+  if (!v1 || !v2)
+    return false;
+  return 0 == strcmp(v1, v2);
 }
 
 HASHTABDEFF int
@@ -123,6 +143,12 @@ ht_init (HashTable *ht, hash_t *buf)
 
   if (NULL == ht->hasher)
     ht->hasher = &hash_FNV_1a;
+  if (NULL == ht->Getter)
+    ht->Getter = &__default_getter;
+  if (NULL == ht->Lenof)
+    ht->Lenof = &__default_lenof;
+  if (NULL == ht->isEqual)
+    ht->isEqual = &__default_isequal;
 
   return 0;
 }
