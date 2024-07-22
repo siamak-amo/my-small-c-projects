@@ -138,7 +138,7 @@ typedef bool (*ht_isequal)(DATA_T *v1, DATA_T *v2);
 HASHTABDEFF hash_t hash_FNV_1a (const char *data, idx_t len);
 
 struct hashtab_t {
-  idx_t *hash_buf;
+  idx_t *table;
   idx_t cap;
   idx_t dl; /* delta_l */
 
@@ -180,7 +180,7 @@ ht_idxof (HashTable *ht, char *key, size_t key_len, idx_t *result);
 
 #define ht_free(ht, free_fun) do {                \
   size_t cap_bytes = ht_sizeof (ht);              \
-  void *mem = (ht)->hash_buf;                     \
+  void *mem = (ht)->table;                     \
   if (mem && cap_bytes > 0) {                     \
     free_fun;                                     \
   }} while (0)
@@ -233,7 +233,7 @@ ht_init (HashTable *ht, hash_t *buf)
     return -1;
 
   memset (buf, 0xFF, ht_sizeof (ht));
-  ht->hash_buf = buf;
+  ht->table = buf;
 
   if (NULL == ht->Hasher)
     ht->Hasher = &hash_FNV_1a;
@@ -263,7 +263,7 @@ ht_insert (HashTable *ht, idx_t data_idx)
 {
   hash_t hash = __do_hash (ht, data_idx) % ht->cap;
   
-  idx_t *ptr = ht->hash_buf + hash;
+  idx_t *ptr = ht->table + hash;
   if ((idx_t)-1 == *ptr)
     {
       *ptr = data_idx;
@@ -275,7 +275,7 @@ ht_insert (HashTable *ht, idx_t data_idx)
       hash_t occ_h = __do_hash (ht, *ptr);
       if (occ_h == hash &&
           ht->isEqual (ht->Getter (ht->data, data_idx),
-                         ht->Getter (ht->data, ht->hash_buf[hash])))
+                         ht->Getter (ht->data, ht->table[hash])))
         {
           /* duplicated data */
           return HT_DUPLICATED;
@@ -290,7 +290,7 @@ ht_insert (HashTable *ht, idx_t data_idx)
                    i <= (hash + ht->dl) % ht->cap;
                    i = (i + 1) % ht->cap)
                 {
-                  ptr = ht->hash_buf + i;
+                  ptr = ht->table + i;
                   if ((idx_t)-1 == *ptr)
                     {
                       *ptr = data_idx;
@@ -312,7 +312,7 @@ HASHTABDEFF int
 ht_idxof (HashTable *ht, char *key, size_t key_len, idx_t *result)
 {
   hash_t hash = ht->Hasher (key, key_len) % ht->cap;
-  idx_t *ptr = ht->hash_buf + hash;
+  idx_t *ptr = ht->table + hash;
 
   if ((idx_t)-1 == *ptr)
     {
@@ -331,7 +331,7 @@ ht_idxof (HashTable *ht, char *key, size_t key_len, idx_t *result)
                i <= (hash + ht->dl) % ht->cap;
                i = (i + 1) % ht->cap)
             {
-              ptr = ht->hash_buf + i;
+              ptr = ht->table + i;
               if ((idx_t)-1 != *ptr &&
                   ht->isEqual (ht->Getter (ht->data, *ptr), key))
                 {
