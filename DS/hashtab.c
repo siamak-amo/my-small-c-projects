@@ -76,7 +76,11 @@
  *    {
  *      int *data[] = {...};
  *
- *      HashTable t = new_hashtab (26, data, 1);
+ *      // we insert and search data around the hash of it
+ *      // in a interval of length delta_l (here delta_l = 1)
+ *      // and as our simple_hash function values are in [0, 255]
+ *      // we make a table of length 256
+ *      HashTable t = new_hashtab (256, data, 1);
  *      ht_set_funs (&t, simple_hash, __getter, __lenof, __isequal);
  *
  *      idx_t *mem = malloc (ht_sizeof (&t));
@@ -89,8 +93,8 @@
  *        }
  *
  *      // do something here
- *      // use ht_insert and ht_indexof functions to insert new data
- *      // to the table or access data by key both in O(1) time complexity
+ *      // use ht_insert, ht_indexof functions to insert new data
+ *      // or access data by key, both in O(delta_l) time complexity
  *
  *      ht_free (&t, free (mem));
  *      // in case of nmap:  ht_free (&t, munmap (mem, cap_bytes));
