@@ -38,7 +38,7 @@ enum ht_error_t {
   HT_NO_EMPTYSLOT
 };
 
-typedef hash_t (*Hasher)(const char *data, idx_t len);
+typedef hash_t (*ht_hasher)(const char *data, idx_t len);
 typedef DATA_T *(*ht_get)(DATA_T **head, idx_t index);
 typedef size_t (*ht_len)(DATA_T **head, idx_t index);
 typedef bool (*ht_isequal)(DATA_T *v1, DATA_T *v2);
@@ -58,16 +58,22 @@ struct hashtab_t {
   ht_get Getter;
   ht_len Lenof;
   ht_isequal isEqual;
-
-  Hasher hasher;
+  ht_hasher Hasher;
 };
 typedef struct hashtab_t HashTable;
 /* 8 * cap  in the default configuration */
 #define ht_sizeof(ht) ((ht)->cap * sizeof (idx_t))
 
-#define new_hashtab(table_len, data_ptr, delta_l, hasher_fun)            \
+#define new_hashtab(table_len, data_ptr, delta_l)                       \
   (HashTable){.cap=(idx_t)(table_len), .dl=(idx_t)(delta_l),            \
-      .data=(DATA_T**)data_ptr, .hasher=hasher_fun}
+      .data=(DATA_T**)data_ptr}
+
+#define ht_set_funs(ht, hasher, getter, lenof, isequal) do {    \
+    (ht)->Hasher= hasher;                                       \
+    (ht)->Getter = getter;                                      \
+    (ht)->Lenof = lenof;                                        \
+    (ht)->isEqual = isequal;                                    \
+  } while (0)
 
 HASHTABDEFF int ht_init (HashTable *ht, idx_t *buf);
 
@@ -141,8 +147,8 @@ ht_init (HashTable *ht, hash_t *buf)
   memset (buf, 0xFF, ht_sizeof (ht));
   ht->hash_buf = buf;
 
-  if (NULL == ht->hasher)
-    ht->hasher = &hash_FNV_1a;
+  if (NULL == ht->Hasher)
+    ht->Hasher = &hash_FNV_1a;
   if (NULL == ht->Getter)
     ht->Getter = &__default_getter;
   if (NULL == ht->Lenof)
@@ -160,7 +166,7 @@ __do_hash (HashTable *t, idx_t i)
   if ((idx_t)-1 == i)
     return -1;
 
-  return t->hasher (t->Getter (t->data, i),
+  return t->Hasher (t->Getter (t->data, i),
                     t->Lenof (t->data, i));
 }
 
@@ -217,7 +223,7 @@ ht_insert (HashTable *ht, idx_t data_idx)
 HASHTABDEFF int
 ht_idxof (HashTable *ht, char *key, size_t key_len, idx_t *result)
 {
-  hash_t hash = ht->hasher (key, key_len) % ht->cap;
+  hash_t hash = ht->Hasher (key, key_len) % ht->cap;
   idx_t *ptr = ht->hash_buf + hash;
 
   if ((idx_t)-1 == *ptr)
@@ -290,7 +296,9 @@ main (void)
     "Hello", "hello", "World", "world", "test", "Hi", "WWW", "Www", "WXYZ"
   };
   
-  HashTable t = new_hashtab (26, data, 1, simple_hash);
+  HashTable t = new_hashtab (26, data, 1);
+  ht_set_funs (&t, simple_hash, NULL, NULL, NULL);
+
   idx_t *mem = malloc (ht_sizeof (&t));
   
   if (0 != ht_init (&t, mem))
