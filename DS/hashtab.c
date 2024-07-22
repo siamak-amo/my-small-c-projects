@@ -26,23 +26,8 @@
 #  define UNUSED(x) (void)(x)
 #endif
 
-/**
- *  you must define these macros to make us
- *  capable of accessing you data
- *  GET_DATA_T:  pointer type
- *  GET_DATA_AT: getter macro (see the test example)
- */
 #ifndef GET_DATA_T
-#  define GET_DATA_T char
-#endif
-#ifndef GET_DATA_AT
-#  define GET_DATA_AT(ht, idx) ((ht)->data[idx])
-#endif
-#ifndef GET_DATALEN_AT
-#  define GET_DATALEN_AT(ht, idx) strlen (GET_DATA_AT (ht, idx)) 
-#endif
-#ifndef DATA_IS_EQUAL
-#  define DATA_IS_EQUAL(v1, v2) (v1 && v2 && 0 == strcmp (v1, v2))
+#  define DATA_T char
 #endif
 
 enum ht_error_t {
@@ -53,8 +38,10 @@ enum ht_error_t {
   HT_NO_EMPTYSLOT
 };
 
-/* hasher function definition */
 typedef hash_t (*Hasher)(const char *data, idx_t len);
+typedef DATA_T *(*ht_get)(DATA_T **head, idx_t index);
+typedef size_t (*ht_len)(DATA_T **head, idx_t index);
+typedef bool (*ht_isequal)(DATA_T *v1, DATA_T *v2);
 
 /**
  *  FNV-1a: a simple hash function
@@ -67,7 +54,11 @@ struct hashtab_t {
   idx_t cap;
   idx_t dl; /* delta_l */
 
-  GET_DATA_T **data;
+  DATA_T **data;
+  ht_get Getter;
+  ht_len Lenof;
+  ht_isequal isEqual;
+
   Hasher hasher;
 };
 typedef struct hashtab_t HashTable;
@@ -76,7 +67,7 @@ typedef struct hashtab_t HashTable;
 
 #define new_hashtab(table_len, data_ptr, delta_l, hasher_fun)            \
   (HashTable){.cap=(idx_t)(table_len), .dl=(idx_t)(delta_l),            \
-      .data=(GET_DATA_T**)data_ptr, .hasher=hasher_fun}
+      .data=(DATA_T**)data_ptr, .hasher=hasher_fun}
 
 HASHTABDEFF int ht_init (HashTable *ht, idx_t *buf);
 
