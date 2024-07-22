@@ -160,8 +160,8 @@ __do_hash (HashTable *t, idx_t i)
   if ((idx_t)-1 == i)
     return -1;
 
-  return t->hasher (GET_DATA_AT (t, i),
-                    GET_DATALEN_AT (t, i));
+  return t->hasher (t->Getter (t->data, i),
+                    t->Lenof (t->data, i));
 }
 
 HASHTABDEFF int
@@ -180,8 +180,8 @@ ht_insert (HashTable *ht, idx_t data_idx)
       /* hash of occupied slot */
       hash_t occ_h = __do_hash (ht, *ptr);
       if (occ_h == hash &&
-          DATA_IS_EQUAL (GET_DATA_AT (ht, data_idx),
-                         GET_DATA_AT (ht, ht->hash_buf[hash])))
+          ht->isEqual (ht->Getter (ht->data, data_idx),
+                         ht->Getter (ht->data, ht->hash_buf[hash])))
         {
           /* duplicated data */
           return HT_DUPLICATED;
@@ -202,8 +202,8 @@ ht_insert (HashTable *ht, idx_t data_idx)
                       *ptr = data_idx;
                       return HT_FOUND;
                     }
-                  if (DATA_IS_EQUAL (GET_DATA_AT (ht, data_idx),
-                                     GET_DATA_AT (ht, *ptr)))
+                  if (ht->isEqual (ht->Getter (ht->data, data_idx),
+                                     ht->Getter (ht->data, *ptr)))
                     return HT_DUPLICATED;
                 }
               return HT_NO_EMPTYSLOT;
@@ -215,7 +215,7 @@ ht_insert (HashTable *ht, idx_t data_idx)
 }
 
 HASHTABDEFF int
-ht_idxof (HashTable *ht, const char *key, size_t key_len, idx_t *result)
+ht_idxof (HashTable *ht, char *key, size_t key_len, idx_t *result)
 {
   hash_t hash = ht->hasher (key, key_len) % ht->cap;
   idx_t *ptr = ht->hash_buf + hash;
@@ -226,7 +226,7 @@ ht_idxof (HashTable *ht, const char *key, size_t key_len, idx_t *result)
     }
   else
     {
-      if (DATA_IS_EQUAL (GET_DATA_AT (ht, *ptr), key))
+      if (ht->isEqual (ht->Getter (ht->data, *ptr), key))
         {
           *result = *ptr;
           return HT_FOUND;
@@ -239,7 +239,7 @@ ht_idxof (HashTable *ht, const char *key, size_t key_len, idx_t *result)
             {
               ptr = ht->hash_buf + i;
               if ((idx_t)-1 != *ptr &&
-                  DATA_IS_EQUAL (GET_DATA_AT (ht, *ptr), key))
+                  ht->isEqual (ht->Getter (ht->data, *ptr), key))
                 {
                   *result = *ptr;
                   return HT_FOUND;
