@@ -68,6 +68,8 @@
  *    #include "hashtab.c"
  *
  *    // implementation of __getter, __lenof, __isequal
+ *    // also you hash function (pass it null to use the default)
+ *    size_t simple_hash (const char *data, idx_t len) {...}
  *
  *    int
  *    main (void)
