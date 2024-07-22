@@ -1,9 +1,97 @@
+/* This file is part of my-small-c-projects <https://gitlab.com/SI.AMO/>
+
+  Hashtab is free software: you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License,
+  or (at your option) any later version.
+
+  Hashtab is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  See the GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 /**
  *  file: hashtab.c
  *  created on: 25 Jun 2024
  *
  *  A Simple Hash Table Implementation
  *
+ *  by default it uses uint32_t for indices and hash values
+ *
+ *  you need to provide these 3 wrapper functions below
+ *  based on the data structure that you use
+ *  otherwise it uses the defaults (see implementation)
+ *
+ *  @head points to the head of your data structure,
+ *  it's **char to make using arrays easier:
+ *
+ *    DATA_T *__getter (DATA_T **head, idx_t index);
+ *    size_t __lenof (DATA_T **head, idx_t index);
+ *    bool __isequal (DATA_T *v1, DATA_T *v2);
+ *
+ *
+ *  here is a simple example with int array:
+ *  ```c
+ *  DATA_T *
+ *  __getter (DATA_T **head, idx_t index)
+ *  {
+ *    return data[index * sizeof (int)];
+ *  }
+ *
+ *  size_t
+ *  __lenof (DATA_T **head, idx_t index)
+ *  {
+ *    return sizeof (int);  // int is always 4 bytes
+ *  }
+ *
+ *  bool
+ *  __isequal (DATA_T *v1, DATA_T *v2)
+ *  {
+ *    return *v1 == *v2;
+ *  }
+ *  ```
+ *
+ *
+ *  Compilation:
+ *    to compile the test program:
+ *    cc -ggdb -Wall -Wextra -Werror \
+ *       -D HASHTAB_IMPLEMENTATION \
+ *       -D HASHTAB_TEST hashtab.c -o test.out
+ *
+ *    to include in c files (based on the above example):
+ *    ```c
+ *    #define HASHTAB_IMPLEMENTATION
+ *    #include "hashtab.c"
+ *
+ *    // implementation of __getter, __lenof, __isequal
+ *
+ *    int
+ *    main (void)
+ *    {
+ *      int *data[] = {...};
+ *
+ *      HashTable t = new_hashtab (26, data, 1);
+ *      ht_set_funs (&t, simple_hash, __getter, __lenof, __isequal);
+ *
+ *      idx_t *mem = malloc (ht_sizeof (&t));
+ *      if (0 != ht_init (&t, mem))
+ *        {
+ *          puts ("hashtab initialization failed.");
+ *          return -1;
+ *        }
+ *
+ *      // do something here
+ *      // use ht_insert and ht_indexof functions to insert new data
+ *      // to the table or access data by key both in O(1) time complexity
+ *
+ *      ht_free (&t, free (mem));
+ *      return 0;
+ *    }
+ *    ```
  **/
 #ifndef HASHTAB__H__
 #define HASHTAB__H__
