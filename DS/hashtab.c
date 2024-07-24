@@ -266,6 +266,9 @@ ht_init (HashTable *ht, hash_t *buf)
   if (NULL == ht->isEqual)
     ht->isEqual = &__default_isequal;
 
+  if (ht->dl > ht->cap)
+    ht->dl = ht->cap;
+
   return 0;
 }
 
