@@ -284,7 +284,7 @@ ht_insert (HashTable *ht, idx_t data_idx)
       hash_t occ_h = __do_hash (ht, *ptr);
       if (occ_h == hash &&
           ht->isEqual (ht->Getter (ht->data, data_idx),
-                         ht->Getter (ht->data, ht->table[hash])))
+                       ht->Getter (ht->data, *ptr)))
         {
           /* duplicated data */
           return HT_DUPLICATED;
