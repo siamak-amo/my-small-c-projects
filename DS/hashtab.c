@@ -295,11 +295,9 @@ ht_insert (HashTable *ht, idx_t data_idx)
           if (ht->dl > 0)
             {
               /* find the first empty slot in length delta_l */
-              for (idx_t i = (hash - ht->dl) % ht->cap;
-                   i <= (hash + ht->dl) % ht->cap;
-                   i = (i + 1) % ht->cap)
+              for (int i = -1 * ht->dl; i <= (int)ht->dl; ++i)
                 {
-                  ptr = ht->table + i;
+                  ptr = ht->table + ((hash + i + ht->cap) % ht->cap);
                   if ((idx_t)-1 == *ptr)
                     {
                       *ptr = data_idx;
@@ -336,11 +334,9 @@ ht_idxof (HashTable *ht, char *key, size_t key_len, idx_t *result)
         }
       else if (ht->dl > 0)
         {
-          for (idx_t i = (hash - ht->dl) % ht->cap;
-               i <= (hash + ht->dl) % ht->cap;
-               i = (i + 1) % ht->cap)
+          for (int i = -1 * ht->dl; i <= (int)ht->dl; ++i)
             {
-              ptr = ht->table + i;
+              ptr = ht->table + ((hash + i + ht->cap) % ht->cap);
               if ((idx_t)-1 != *ptr &&
                   ht->isEqual (ht->Getter (ht->data, *ptr), key))
                 {
