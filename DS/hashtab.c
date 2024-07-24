@@ -189,7 +189,7 @@ ht_idxof (HashTable *ht, char *key, size_t key_len, idx_t *result);
 
 #define ht_free(ht, free_fun) do {                \
   size_t cap_bytes = ht_sizeof (ht);              \
-  void *mem = (ht)->table;                     \
+  void *mem = (ht)->table;                        \
   if (mem && cap_bytes > 0) {                     \
     free_fun;                                     \
   }} while (0)
@@ -364,6 +364,7 @@ ht_idxof (HashTable *ht, char *key, size_t key_len, idx_t *result)
 hash_t
 simple_hash (const char *data, idx_t len)
 {
+  UNUSED (len);
   hash_t h = data[0];
   if (h >= 0x61 && h <= 0x3A)
     return h - 0x61; /* map a-z -> 0-26 */
