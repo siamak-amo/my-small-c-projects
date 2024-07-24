@@ -39,7 +39,7 @@
  *  DATA_T *
  *  __getter (DATA_T **head, idx_t index)
  *  {
- *    return data[index * sizeof (int)];
+ *    return *(head + (index * sizeof (int)));
  *  }
  *
  *  size_t
