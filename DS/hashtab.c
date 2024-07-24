@@ -39,7 +39,7 @@
  *  DATA_T *
  *  __getter (DATA_T **head, idx_t index)
  *  {
- *    return *head + (index * sizeof (int));
+ *    return *head + index * sizeof (int);
  *  }
  *
  *  size_t
@@ -68,19 +68,24 @@
  *    #include "hashtab.c"
  *
  *    // implementation of __getter, __lenof, __isequal
- *    // also you hash function (pass it null to use the default)
- *    size_t simple_hash (const char *data, idx_t len) {...}
+ *    // also your hash function (pass it null to use the default)
+ *    hash_t
+ *    simple_hash (const char *data, idx_t len)
+ *    {
+ *      return data[0] % 10;
+ *    }
  *
  *    int
  *    main (void)
  *    {
- *      int *data[] = {...};
+ *      int __data[] = {10,12,13,15,10,22,65};
+ *      int *data[] = {__data, __data+1, __data+2, __data+3, __data+4, __data+5};
  *
  *      // we insert and search data around the hash of it
  *      // in a interval of length delta_l (here delta_l = 1)
- *      // and as our simple_hash function values are in [0, 255]
- *      // we make a table of length 256
- *      HashTable t = new_hashtab (256, data, 1);
+ *      // and as our simple_hash function values are in [0, 9]
+ *      // we make a table of length 10
+ *      HashTable t = new_hashtab (10, data, 1);
  *      ht_set_funs (&t, simple_hash, __getter, __lenof, __isequal);
  *
  *      idx_t *mem = malloc (ht_sizeof (&t));
@@ -95,6 +100,14 @@
  *      // do something here
  *      // use ht_insert, ht_indexof functions to insert new data
  *      // or access data by key, both in O(delta_l) time complexity
+ *
+ *      // insert @data[0] to the table (=42)
+ *      ht_insert (&t, 0);
+ *
+ *      // get data by key
+ *      idx_t result;
+ *      int key = 42;
+ *      ht_idxof (&t, (char*)&key, sizeof (int), &result);
  *
  *      ht_free (&t, free (mem));
  *      // in case of nmap:  ht_free (&t, munmap (mem, cap_bytes));
