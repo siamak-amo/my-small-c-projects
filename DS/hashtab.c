@@ -21,40 +21,9 @@
  *  A Simple Hash Table Implementation
  *
  *  by default it uses uint32_t for indices and hash values
- *
- *  you need to provide these 3 wrapper functions below
- *  based on the data structure that you use
- *  otherwise it uses the defaults (see implementation)
- *
- *  @head points to the head of your data structure,
- *  it's **char to make using arrays easier:
- *
- *    DATA_T *__getter (DATA_T **head, idx_t index);
- *    size_t __lenof (DATA_T **head, idx_t index);
- *    bool __isequal (DATA_T *v1, DATA_T *v2);
- *
- *
- *  here is a simple example with int array:
- *  ```c
- *  DATA_T *
- *  __getter (DATA_T **head, idx_t index)
- *  {
- *    return *head + index * sizeof (int);
- *  }
- *
- *  size_t
- *  __lenof (DATA_T **head, idx_t index)
- *  {
- *    return sizeof (int);  // int is always 4 bytes
- *  }
- *
- *  bool
- *  __isequal (DATA_T *v1, DATA_T *v2)
- *  {
- *    return *v1 == *v2;
- *  }
- *  ```
- *
+ *  insert and lookup keys, by index, in O(1) time and memory
+ *  or make a hash table of an arbitrary struct, then
+ *  access their indices via key (see the example program)
  *
  *  Compilation:
  *    to compile the test program:
@@ -62,35 +31,35 @@
  *       -D HASHTAB_IMPLEMENTATION \
  *       -D HASHTAB_TEST hashtab.c -o test.out
  *
- *    to include in c files (based on the above example):
+ *    to compile the example program:
+ *    cc -ggdb -Wall -Wextra -Werror \
+ *       -D HASHTAB_IMPLEMENTATION \
+ *       -D HASHTAB_EXAMPLE hashtab.c -o test.out -lreadline
+ *
+ *    to include in c files:
+ *    (see the example program for more advanced usage)
  *    ```c
  *    #define HASHTAB_IMPLEMENTATION
  *    #include "hashtab.c"
  *
- *    // implementation of __getter, __lenof, __isequal
- *    // also your hash function (pass it null to use the default)
- *    hash_t
- *    simple_hash (const char *data, idx_t len)
- *    {
- *      return data[0] % 10;
- *    }
- *
  *    int
  *    main (void)
  *    {
- *      int __data[] = {10,12,13,15,10,22,65};
- *      int *data[] = {__data, __data+1, __data+2, __data+3, __data+4, __data+5};
+ *      // allocate your data structure
+ *      // see examples
+ *      Type data = ...;
  *
- *      // we insert and search data around the hash of it
- *      // in a interval of length delta_l (here delta_l = 1)
- *      // and as our simple_hash function values are in [0, 9]
- *      // we make a table of length 10
+ *      // allocate hashtab
+ *      // where: capacity=10, delta_l=1
  *      HashTable t = new_hashtab (10, data, 1);
- *      ht_set_funs (&t, simple_hash, __getter, __lenof, __isequal);
  *
+ *      // set hasher and is_equal functions
+ *      // pass them NULL to use defaults
+ *      ht_set_funs (&t, NULL, NULL);
+ *
+ *      // allocate main memory to store hashes
+ *      // you might use mmap
  *      idx_t *mem = malloc (ht_sizeof (&t));
- *      // or use nmap to map a file or memory
- *
  *      if (0 != ht_init (&t, mem))
  *        {
  *          puts ("hashtab initialization failed.");
@@ -101,16 +70,8 @@
  *      // use ht_insert, ht_indexof functions to insert new data
  *      // or access data by key, both in O(delta_l) time complexity
  *
- *      // insert @data[0] to the table (=42)
- *      ht_insert (&t, 0);
- *
- *      // get data by key
- *      idx_t result;
- *      int key = 42;
- *      ht_idxof (&t, (char*)&key, sizeof (int), &result);
- *
+ *      // free the hash table
  *      ht_free (&t, free (mem));
- *      // in case of nmap:  ht_free (&t, munmap (mem, cap_bytes));
  *      return 0;
  *    }
  *    ```
@@ -389,6 +350,7 @@ ht_idxof (HashTable *ht, char *key, size_t key_len, idx_t *result)
 #endif /* HASHTAB_IMPLEMENTATION */
 
 
+/* the test program */
 #ifdef HASHTAB_TEST
 #include <stdio.h>
 #include <stdlib.h>
@@ -490,6 +452,8 @@ main (void)
 
 #endif /* HASHTAB_TEST */
 
+
+/* the example program */
 #ifdef HASHTAB_EXAMPLE
 #include <stdio.h>
 #include <stdlib.h>
