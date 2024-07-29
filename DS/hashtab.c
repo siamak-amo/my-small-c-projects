@@ -184,6 +184,12 @@ typedef struct hashtab_t HashTable;
       .__data_size=sizeof (data_ptr[0]),                                \
       .__key_offset=0                                                   \
     }
+#define new_hashtab_t(table_len, data_ptr, delta_l, T, memb)            \
+  (HashTable){.cap=(idx_t)(table_len), .dl=(idx_t)(delta_l),            \
+      .head=(DATA_T*)data_ptr,                                          \
+      .__data_size=sizeof (data_ptr[0]),                                \
+      .__key_offset=offsetof (T, member)                                \
+    }
 
 #define ht_set_funs(ht, hasher, isequal) do {                   \
     (ht)->Hasher= hasher;                                       \
