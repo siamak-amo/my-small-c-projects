@@ -279,7 +279,7 @@ __do_hash (HashTable *t, idx_t i)
   if ((idx_t)-1 == i)
     return -1;
 
-  return t->Hasher (__GET__(t, i), t->__data_size);
+  return t->Hasher (__GET__(t, i), t->__data_size) % t->cap;
 }
 
 HASHTABDEFF int
