@@ -158,6 +158,8 @@ struct keytab_t {
   DATA_T *key;
   idx_t len;
 };
+#define NEW_KEY(k,l) (struct keytab_t){.key=k, .len=l}
+#define KEYS(str) NEW_KEY (str, strlen (str))
 
 typedef hash_t (*ht_hasher)(const char *data, idx_t len);
 typedef int (*ht_isequal)(const DATA_T *v1, const DATA_T *v2);
@@ -398,9 +400,9 @@ int
 main (void)
 {
   struct keytab_t data[] = {
-    {.key="Hello", .len=5}, {.key="hello", .len=5}, {.key="World", .len=5},
-    {.key="world", .len=5}, {.key="test", .len=4}, {.key="Hi", .len=2},
-    {.key="WWW", .len=3}, {.key="Www", .len=3}, {.key="WXYZ", .len=4},
+    KEYS ("Hello"), KEYS ("hello"), KEYS ("World"),
+    KEYS ("world"), KEYS ("test"),  KEYS ("Hi"),
+    KEYS ("WWW"),   KEYS ("Www"),   KEYS ("WXYZ"),
   };
   
   HashTable t = new_hashtab (26, data, 1);
