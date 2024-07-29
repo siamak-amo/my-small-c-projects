@@ -245,7 +245,7 @@ HASHTABDEFF int
 ht_init (HashTable *ht, hash_t *buf)
 {
   if (NULL == ht || NULL == buf
-      || NULL == ht->data || ht->cap == 0)
+      || NULL == ht->head || ht->cap == 0)
     return -1;
 
   memset (buf, 0xFF, ht_sizeof (ht));
