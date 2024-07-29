@@ -470,3 +470,112 @@ main (void)
 }
 
 #endif /* HASHTAB_TEST */
+
+#ifdef HASHTAB_EXAMPLE
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <readline/readline.h>
+#include <readline/history.h>
+
+#define MAX_WCOUNT 42 /* maximum word count */
+
+typedef struct {
+  char *word;
+  int count;
+
+  /* to make a hash table */
+  struct keytab_t k;
+} WordCounter;
+
+static inline int
+wcounter_isequal (const DATA_T *v1, const DATA_T *v2)
+{
+  if (!v1 || !v2)
+    return false;
+
+  /* v1 and v2 are WordCounter->k->key */
+  return 0 == strcmp(v1, v2);
+}
+
+int
+main (void)
+{
+  WordCounter *data = malloc (MAX_WCOUNT * sizeof (WordCounter));
+  /**
+   *  new hashtab induced from WordCounter type
+   *  @k is the name of `struct keytab_t` in WordCounter
+   */
+  HashTable t = new_hashtab_t (32, data, 1, WordCounter, k);
+
+  ht_set_funs (&t, NULL, wcounter_isequal);
+  idx_t *mem = malloc (ht_sizeof (&t));
+  if (0 != ht_init (&t, mem))
+    {
+      puts ("hashtab initialization failed.");
+      return -1;
+    }
+
+  /* the last added word to the data array */
+  int end_idx = 0;
+  WordCounter *end = data;
+
+  char *__p;
+  puts ("HashTab example program!\n"
+        "enter words to be added, press C-d to break");
+  while ((__p = readline (">>> ")))
+    { 
+      if (strlen (__p) == 0)
+        {
+          free (__p);
+          continue;
+        }
+
+      int ret;
+      idx_t i;
+      if ((ret = ht_idxofs (&t, __p, &i)) == HT_NOT_FOUND)
+        {
+          if (end_idx >= MAX_WCOUNT)
+            {
+              puts ("end of memory!");
+              free (__p);
+            }
+          else
+            {
+              /* create a new word counter at the end of the array */
+              *(end++) = (WordCounter){
+                .word = __p,
+                .count = 1,
+                .k = {.key=__p, .len=strlen (__p)}
+              };
+              /* insret it to the table */
+              if (ht_insert (&t, end_idx++) != 0)
+                puts ("insertion failed");
+              else
+                printf ("Key %s was added\n", __p);
+            }
+        }
+      else if (ret == HT_FOUND)
+        {
+          /* a word counter has been found by this key */
+          WordCounter *w = data + i;
+          printf ("Key %s incremented, count=%d\n", w->word, ++w->count);
+          free (__p);
+        }
+    }
+  
+  printf ("Statistics: %d word\n", end_idx);
+  for (; end_idx != 0; --end_idx)
+    {
+      WordCounter *w = data++;
+      if (w->word)
+        {
+          printf ("Key: `%s` \t Count: %d\n", w->word, w->count);
+          free (w->word);
+        }
+    }
+  ht_free (&t, free (mem));
+  return 0;
+}
+
+#endif /* HASHTAB_EXAMPLE */
