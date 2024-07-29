@@ -568,8 +568,8 @@ main (void)
                 .k = {.key=__p, .len=strlen (__p)}
               };
               /* insret it to the table */
-              if (ht_insert (&t, end_idx++) != 0)
-                puts ("insertion failed");
+              if ((ret = ht_insert (&t, end_idx++)) != 0)
+                printf ("insertion failed -- %s", ht_strerr (ret));
               else
                 printf ("Key %s was added\n", __p);
             }
@@ -578,12 +578,12 @@ main (void)
         {
           /* a word counter has been found by this key */
           WordCounter *w = data + i;
-          printf ("Key %s incremented, count=%d\n", w->word, ++w->count);
+          printf ("Key %s incremented, count: %d\n", w->word, ++w->count);
           free (__p);
         }
     }
   
-  printf ("Statistics: %d word\n", end_idx);
+  puts ("Statistics:");
   for (; end_idx != 0; --end_idx)
     {
       WordCounter *w = data++;
