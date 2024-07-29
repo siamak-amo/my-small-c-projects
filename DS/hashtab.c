@@ -145,9 +145,9 @@ enum ht_error_t {
   HT_FOUND = 0,
   HT_NOT_FOUND,
   HT_DUPLICATED,
-  HT_INSERTION_FAILED,
   HT_NO_EMPTYSLOT
 };
+HASHTABDEFF const char *ht_strerr (enum ht_error_t err);
 
 /**
  *  FNV-1a: a simple hash function
@@ -232,6 +232,25 @@ ht_idxof (HashTable *ht, char *key, size_t key_len, idx_t *result);
 #define __LEN_K(ht, i)                                                  \
   (*(idx_t *)((ht)->head + (i)*(ht)->__data_size                        \
               + (ht)->__key_offset + offsetof (struct keytab_t, len)))
+
+HASHTABDEFF const char *
+ht_strerr (enum ht_error_t err)
+{
+  switch (err)
+    {
+    case HT_NOT_FOUND:
+      return "Not Found";
+    case HT_NO_EMPTYSLOT:
+      return "No empty slot left";
+    case HT_DUPLICATED:
+      return "Duplicate Key";
+
+    case HT_FOUND:
+      return NULL;
+    default:
+      return "unknown error code";
+    }
+}
 
 HASHTABDEFF hash_t
 hash_FNV_1a (const char *data, idx_t len)
