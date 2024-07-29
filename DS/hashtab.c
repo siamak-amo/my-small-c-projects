@@ -235,6 +235,8 @@ hash_FNV_1a (const char *data, idx_t len)
 }
 
 /* internal - default getter, lenof, isequal */
+static inline int
+__default_isequal (const DATA_T *v1, const DATA_T *v2)
 {
   if (!v1 || !v2)
     return false;
