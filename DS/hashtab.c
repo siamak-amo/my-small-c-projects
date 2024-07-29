@@ -66,9 +66,10 @@
  *          return -1;
  *        }
  *
- *      // do something here
- *      // use ht_insert, ht_indexof functions to insert new data
- *      // or access data by key, both in O(delta_l) time complexity
+ *      {
+ *        // do something here
+ *        // use ht_insert, ht_idxof functions
+ *      }
  *
  *      // free the hash table
  *      ht_free (&t, free (mem));
@@ -546,8 +547,11 @@ main (void)
           free (__p);
         }
     }
-  
-  puts ("Statistics:");
+
+  if (end_idx)
+    puts ("Statistics:");
+  else
+    puts ("empty table.");
   for (; end_idx != 0; --end_idx)
     {
       WordCounter *w = data++;
