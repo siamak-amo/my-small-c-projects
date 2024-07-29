@@ -148,25 +148,29 @@ enum ht_error_t {
   HT_NO_EMPTYSLOT
 };
 
-typedef hash_t (*ht_hasher)(const char *data, idx_t len);
-typedef DATA_T *(*ht_get)(DATA_T **head, idx_t index);
-typedef size_t (*ht_len)(DATA_T **head, idx_t index);
-typedef bool (*ht_isequal)(DATA_T *v1, DATA_T *v2);
-
 /**
  *  FNV-1a: a simple hash function
  *  used as the default hasher
  */
 HASHTABDEFF hash_t hash_FNV_1a (const char *data, idx_t len);
 
+struct keytab_t {
+  DATA_T *key;
+  idx_t len;
+};
+
+typedef hash_t (*ht_hasher)(const char *data, idx_t len);
+typedef int (*ht_isequal)(const DATA_T *v1, const DATA_T *v2);
+
 struct hashtab_t {
   idx_t *table;
   idx_t cap;
   idx_t dl; /* delta_l */
 
-  DATA_T **data;
-  ht_get Getter;
-  ht_len Lenof;
+  DATA_T *head; /* pointer to data */
+  int __data_size; /* length of pointers in head */
+  int __key_offset; /* offset of keytab_t in each head[index] */
+
   ht_isequal isEqual;
   ht_hasher Hasher;
 };
