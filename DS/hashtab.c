@@ -175,17 +175,18 @@ struct hashtab_t {
   ht_hasher Hasher;
 };
 typedef struct hashtab_t HashTable;
-/* 8 * cap  in the default configuration */
+
 #define ht_sizeof(ht) ((ht)->cap * sizeof (idx_t))
 
 #define new_hashtab(table_len, data_ptr, delta_l)                       \
   (HashTable){.cap=(idx_t)(table_len), .dl=(idx_t)(delta_l),            \
-      .data=(DATA_T**)data_ptr}
+      .head=(DATA_T*)data_ptr,                                          \
+      .__data_size=sizeof (data_ptr[0]),                                \
+      .__key_offset=0                                                   \
+    }
 
-#define ht_set_funs(ht, hasher, getter, lenof, isequal) do {    \
+#define ht_set_funs(ht, hasher, isequal) do {                   \
     (ht)->Hasher= hasher;                                       \
-    (ht)->Getter = getter;                                      \
-    (ht)->Lenof = lenof;                                        \
     (ht)->isEqual = isequal;                                    \
   } while (0)
 
