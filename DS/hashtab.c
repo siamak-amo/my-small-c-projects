@@ -232,20 +232,6 @@ hash_FNV_1a (const char *data, idx_t len)
 }
 
 /* internal - default getter, lenof, isequal */
-static inline DATA_T *
-__default_getter (DATA_T **head, idx_t index)
-{
-  return head[index];
-}
-
-static inline size_t
-__default_lenof (DATA_T **head, idx_t index)
-{
-  return strlen (head[index]);
-}
-
-static inline bool
-__default_isequal (DATA_T *v1, DATA_T *v2)
 {
   if (!v1 || !v2)
     return false;
@@ -264,10 +250,6 @@ ht_init (HashTable *ht, hash_t *buf)
 
   if (NULL == ht->Hasher)
     ht->Hasher = &hash_FNV_1a;
-  if (NULL == ht->Getter)
-    ht->Getter = &__default_getter;
-  if (NULL == ht->Lenof)
-    ht->Lenof = &__default_lenof;
   if (NULL == ht->isEqual)
     ht->isEqual = &__default_isequal;
 
