@@ -119,6 +119,7 @@
 #define HASHTAB__H__
 #include <string.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 
 #ifndef hash_t
@@ -190,7 +191,7 @@ typedef struct hashtab_t HashTable;
   (HashTable){.cap=(idx_t)(table_len), .dl=(idx_t)(delta_l),            \
       .head=(DATA_T*)data_ptr,                                          \
       .__data_size=sizeof (data_ptr[0]),                                \
-      .__key_offset=offsetof (T, member)                                \
+      .__key_offset=offsetof (T, memb)                                  \
     }
 
 #define ht_set_funs(ht, hasher, isequal) do {                   \
