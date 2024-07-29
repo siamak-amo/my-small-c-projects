@@ -367,7 +367,7 @@ simple_hash (const char *data, idx_t len)
 {
   UNUSED (len);
   hash_t h = data[0];
-  if (h >= 0x61 && h <= 0x3A)
+  if (h >= 0x61 && h <= 0x7A)
     return h - 0x61; /* map a-z -> 0-26 */
   if (h >= 0x41 && h <= 0x5A)
     return h - 0x41; /* map A-Z -> 0-26 */
