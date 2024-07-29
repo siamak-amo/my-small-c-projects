@@ -391,12 +391,14 @@ simple_hash (const char *data, idx_t len)
 int
 main (void)
 {
-  static char *data[] = {
-    "Hello", "hello", "World", "world", "test", "Hi", "WWW", "Www", "WXYZ"
+  struct keytab_t data[] = {
+    {.key="Hello", .len=5}, {.key="hello", .len=5}, {.key="World", .len=5},
+    {.key="world", .len=5}, {.key="test", .len=4}, {.key="Hi", .len=2},
+    {.key="WWW", .len=3}, {.key="Www", .len=3}, {.key="WXYZ", .len=4},
   };
   
   HashTable t = new_hashtab (26, data, 1);
-  ht_set_funs (&t, simple_hash, NULL, NULL, NULL);
+  ht_set_funs (&t, simple_hash, NULL);
 
   idx_t *mem = malloc (ht_sizeof (&t));
   
