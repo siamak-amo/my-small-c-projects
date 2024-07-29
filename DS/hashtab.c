@@ -216,6 +216,9 @@ ht_idxof (HashTable *ht, char *key, size_t key_len, idx_t *result);
 
 /* hash table implementation */
 #ifdef HASHTAB_IMPLEMENTATION
+/* internal macro to get data at index @i */
+#define __GET__(ht, i) \
+  (*(char **)((ht)->head + (i)*(ht)->__data_size + (ht)->__key_offset))
 
 HASHTABDEFF hash_t
 hash_FNV_1a (const char *data, idx_t len)
@@ -266,8 +269,7 @@ __do_hash (HashTable *t, idx_t i)
   if ((idx_t)-1 == i)
     return -1;
 
-  return t->Hasher (t->Getter (t->data, i),
-                    t->Lenof (t->data, i));
+  return t->Hasher (__GET__(t, i), t->__data_size);
 }
 
 HASHTABDEFF int
@@ -286,8 +288,7 @@ ht_insert (HashTable *ht, idx_t data_idx)
       /* hash of occupied slot */
       hash_t occ_h = __do_hash (ht, *ptr);
       if (occ_h == hash &&
-          ht->isEqual (ht->Getter (ht->data, data_idx),
-                       ht->Getter (ht->data, *ptr)))
+          ht->isEqual (__GET__(ht, data_idx), __GET__(ht, *ptr)))
         {
           /* duplicated data */
           return HT_DUPLICATED;
@@ -306,8 +307,7 @@ ht_insert (HashTable *ht, idx_t data_idx)
                       *ptr = data_idx;
                       return HT_FOUND;
                     }
-                  if (ht->isEqual (ht->Getter (ht->data, data_idx),
-                                     ht->Getter (ht->data, *ptr)))
+                  if (ht->isEqual (__GET__(ht, data_idx), __GET__(ht, *ptr)))
                     return HT_DUPLICATED;
                 }
               return HT_NO_EMPTYSLOT;
@@ -330,7 +330,7 @@ ht_idxof (HashTable *ht, char *key, size_t key_len, idx_t *result)
     }
   else
     {
-      if (ht->isEqual (ht->Getter (ht->data, *ptr), key))
+      if (ht->isEqual (__GET__(ht, *ptr), key))
         {
           *result = *ptr;
           return HT_FOUND;
@@ -341,7 +341,7 @@ ht_idxof (HashTable *ht, char *key, size_t key_len, idx_t *result)
             {
               ptr = ht->table + ((hash + i + ht->cap) % ht->cap);
               if ((idx_t)-1 != *ptr &&
-                  ht->isEqual (ht->Getter (ht->data, *ptr), key))
+                  ht->isEqual (__GET__(ht, *ptr), key))
                 {
                   *result = *ptr;
                   return HT_FOUND;
