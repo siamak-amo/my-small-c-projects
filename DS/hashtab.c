@@ -478,14 +478,14 @@ wcounter_isequal (const DATA_T *restrict k1, idx_t l1,
   return 0 == strncmp (k1, k2, (l1<l2) ? l1 : l2);
 }
 
-#ifdef _DUMMY_HASHER
+#ifdef _USE_DUMMY_HASH
 hash_t
 dummy_hasher (const char *data, idx_t len)
 {
   UNUSED (len);
   return (hash_t) data[0];
 }
-#endif /* _DUMMY_HASHER */
+#endif /* _USE_DUMMY_HASH */
 
 int
 main (void)
@@ -497,11 +497,11 @@ main (void)
    */
   HashTable t = new_hashtab_t (32, data, 1, WordCounter, k);
 
-#ifndef _DUMMY_HASHER
+#ifndef _USE_DUMMY_HASH
   ht_set_funs (&t, NULL, wcounter_isequal);
 #else
   ht_set_funs (&t, dummy_hasher, wcounter_isequal);
-#endif /* _DUMMY_HASHER */
+#endif /* _USE_DUMMY_HASH */
 
   idx_t *mem = malloc (ht_sizeof (&t));
   if (0 != ht_init (&t, mem))
