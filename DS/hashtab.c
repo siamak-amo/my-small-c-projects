@@ -377,14 +377,7 @@ simple_hash (const char *data, idx_t len)
     puts ("PASS");                              \
   } while (0)
 
-/**
- *  we can only use default definitions of GET_DATA_xx here, because
- *  they are already defined when we reach this point in compilation
- *  see documentation for more advanced usage
- *
- *  we make a hash table of length 26 (a-z) with the `simple_hash`
- *  function which maps arbitrary data into {0, ..., 26}
- */
+
 int
 main (void)
 {
