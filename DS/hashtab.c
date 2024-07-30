@@ -494,7 +494,7 @@ dummy_hasher (const char *data, idx_t len)
   UNUSED (len);
   return (hash_t) data[0];
 }
-#endif
+#endif /* _DUMMY_HASHER */
 
 int
 main (void)
@@ -510,7 +510,7 @@ main (void)
   ht_set_funs (&t, NULL, wcounter_isequal);
 #else
   ht_set_funs (&t, dummy_hasher, wcounter_isequal);
-#endif
+#endif /* _DUMMY_HASHER */
 
   idx_t *mem = malloc (ht_sizeof (&t));
   if (0 != ht_init (&t, mem))
@@ -525,7 +525,7 @@ main (void)
 
   char *__p;
   puts ("HashTab example program!\n"
-        "enter words to be added, press C-d to break");
+        "enter words to be added, press C-d to break\n");
  MAIN_LOOP:
   while ((__p = readline ("Key> ")))
     { 
@@ -541,7 +541,7 @@ main (void)
         {
           if (end_idx >= MAX_WCOUNT)
             {
-              puts ("end of memory!");
+              puts ("End Of Memory!");
               free (__p);
             }
           else
@@ -555,7 +555,7 @@ main (void)
               /* insret it to the table */
               if ((ret = ht_insert (&t, end_idx++)) != 0)
                 {
-                  printf ("insertion failed -- %s\n", ht_strerr (ret));
+                  printf ("Insertion Failed -- %s\n", ht_strerr (ret));
                   end--;
                   end_idx--;
                 }
@@ -567,7 +567,7 @@ main (void)
         {
           /* a word counter has been found by this key */
           WordCounter *w = data + i;
-          printf ("Key `%s` incremented, count: %d\n", w->word, ++w->count);
+          printf ("Key `%s` was incremented, count: %d\n", w->word, ++w->count);
           free (__p);
         }
     }
