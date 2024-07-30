@@ -526,6 +526,7 @@ main (void)
   char *__p;
   puts ("HashTab example program!\n"
         "enter words to be added, press C-d to break");
+ MAIN_LOOP:
   while ((__p = readline ("Key> ")))
     { 
       if (strlen (__p) == 0)
@@ -575,14 +576,30 @@ main (void)
     puts ("Statistics:");
   else
     puts ("empty table.");
-  for (; end_idx != 0; --end_idx)
+  for (int i = 0; i < end_idx; ++i)
     {
-      WordCounter *w = data++;
+      WordCounter *w = data + i;
       if (w->word)
+        printf ("Key: `%s` \t Count: %d\n", w->word, w->count);
+    }
+
+  __p = readline ("continue (Y/n)? ");
+  if (__p)
+    {
+      if (__p[0] != 'n' && __p[0] != 'N')
         {
-          printf ("Key: `%s` \t Count: %d\n", w->word, w->count);
-          free (w->word);
+          free(__p);
+          goto MAIN_LOOP;
         }
+      else
+        free (__p);
+    }
+
+  /* free allocated memory by readline */
+  for (WordCounter *w = data; end_idx != 0; --end_idx, ++w)
+    {
+      if (w->word)
+        free (w->word);
     }
   ht_free (&t, free (mem));
   return 0;
