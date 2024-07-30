@@ -125,7 +125,8 @@ struct keytab_t {
 #define KEYS(str) NEW_KEY (str, strlen (str))
 
 typedef hash_t (*ht_hasher)(const char *data, idx_t len);
-typedef int (*ht_isequal)(const DATA_T *v1, const DATA_T *v2);
+typedef int (*ht_isequal)(const DATA_T *restrict k1, idx_t l1,
+                          const DATA_T *restrict k2, idx_t l2);
 
 struct hashtab_t {
   idx_t *table;
@@ -230,11 +231,12 @@ hash_FNV_1a (const char *data, idx_t len)
 
 /* internal - default isequal function */
 static inline int
-__default_isequal (const DATA_T *v1, const DATA_T *v2)
+__default_isequal(const DATA_T *restrict k1, idx_t l1,
+                  const DATA_T *restrict k2, idx_t l2)
 {
-  if (!v1 || !v2)
+  if (!k1 || !k2 || l1 != l2)
     return false;
-  return 0 == strcmp(v1, v2);
+  return 0 == strcmp(k1, k2);
 }
 
 HASHTABDEFF int
@@ -284,7 +286,8 @@ ht_insert (HashTable *ht, idx_t data_idx)
       /* hash of occupied slot */
       hash_t occ_h = __do_hash (ht, *ptr);
       if (occ_h == hash &&
-          ht->isEqual (__GET_K(ht, data_idx), __GET_K(ht, *ptr)))
+          ht->isEqual (__GET_K(ht, data_idx), __LEN_K(ht, data_idx),
+                       __GET_K(ht, *ptr),  __LEN_K(ht, *ptr)))
         {
           /* duplicated data */
           return HT_DUPLICATED;
@@ -303,7 +306,8 @@ ht_insert (HashTable *ht, idx_t data_idx)
                       *ptr = data_idx;
                       return HT_FOUND;
                     }
-                  if (ht->isEqual (__GET_K(ht, data_idx), __GET_K(ht, *ptr)))
+                  if (ht->isEqual (__GET_K(ht, data_idx), __LEN_K(ht, data_idx),
+                                   __GET_K(ht, *ptr),  __LEN_K(ht, *ptr)))
                     return HT_DUPLICATED;
                 }
               return HT_NO_EMPTYSLOT;
@@ -326,7 +330,7 @@ ht_idxof (HashTable *ht, char *key, size_t key_len, idx_t *result)
     }
   else
     {
-      if (ht->isEqual (__GET_K(ht, *ptr), key))
+      if (ht->isEqual (__GET_K(ht, *ptr), __LEN_K(ht, *ptr), key, key_len))
         {
           *result = *ptr;
           return HT_FOUND;
@@ -337,7 +341,7 @@ ht_idxof (HashTable *ht, char *key, size_t key_len, idx_t *result)
             {
               ptr = ht->table + ((hash + i + ht->cap) % ht->cap);
               if ((idx_t)-1 != *ptr &&
-                  ht->isEqual (__GET_K(ht, *ptr), key))
+                  ht->isEqual (__GET_K(ht, *ptr), __LEN_K(ht, *ptr), key, key_len))
                 {
                   *result = *ptr;
                   return HT_FOUND;
@@ -473,13 +477,14 @@ typedef struct {
 } WordCounter;
 
 static inline int
-wcounter_isequal (const DATA_T *v1, const DATA_T *v2)
+wcounter_isequal (const DATA_T *restrict k1, idx_t l1,
+                  const DATA_T *restrict k2, idx_t l2)
 {
-  if (!v1 || !v2)
+  if (!k1 || !k2 || l1 != l2)
     return false;
 
-  /* v1 and v2 are WordCounter->k->key */
-  return 0 == strcmp(v1, v2);
+  /* k1 and k2 are WordCounter->k->key */
+  return 0 == strncmp (k1, k2, (l1<l2) ? l1 : l2);
 }
 
 int
