@@ -118,8 +118,8 @@ HASHTABDEFF const char *ht_strerr (enum ht_error_t err);
 HASHTABDEFF hash_t hash_FNV_1a (const char *data, idx_t len);
 
 struct keytab_t {
-  DATA_T *key;
-  idx_t len;
+  DATA_T *key; /* does not have to be string */
+  idx_t len; /* length of key */
 };
 #define NEW_KEY(k,l) (struct keytab_t){.key=k, .len=l}
 #define KEYS(str) NEW_KEY (str, strlen (str))
@@ -228,7 +228,7 @@ hash_FNV_1a (const char *data, idx_t len)
   return hash;
 }
 
-/* internal - default getter, lenof, isequal */
+/* internal - default isequal function */
 static inline int
 __default_isequal (const DATA_T *v1, const DATA_T *v2)
 {
