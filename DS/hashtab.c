@@ -253,7 +253,6 @@ ht_init (HashTable *ht, hash_t *buf)
     ht->Hasher = &hash_FNV_1a;
   if (NULL == ht->isEqual)
     ht->isEqual = &__default_isequal;
-
   if (ht->dl > ht->cap)
     ht->dl = ht->cap;
 
@@ -266,7 +265,6 @@ __do_hash (HashTable *t, idx_t i)
 {
   if ((idx_t)-1 == i)
     return -1;
-
   return t->Hasher (__GET_K(t, i), __LEN_K(t, i)) % t->cap;
 }
 
