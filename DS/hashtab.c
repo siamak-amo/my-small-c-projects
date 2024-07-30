@@ -553,7 +553,11 @@ main (void)
               };
               /* insret it to the table */
               if ((ret = ht_insert (&t, end_idx++)) != 0)
-                printf ("insertion failed -- %s", ht_strerr (ret));
+                {
+                  printf ("insertion failed -- %s\n", ht_strerr (ret));
+                  end--;
+                  end_idx--;
+                }
               else
                 printf ("Key %s was added\n", __p);
             }
