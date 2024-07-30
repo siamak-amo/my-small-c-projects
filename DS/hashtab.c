@@ -526,7 +526,7 @@ main (void)
   char *__p;
   puts ("HashTab example program!\n"
         "enter words to be added, press C-d to break");
-  while ((__p = readline (">>> ")))
+  while ((__p = readline ("Key> ")))
     { 
       if (strlen (__p) == 0)
         {
@@ -559,14 +559,14 @@ main (void)
                   end_idx--;
                 }
               else
-                printf ("Key %s was added\n", __p);
+                printf ("Key `%s` was added\n", __p);
             }
         }
       else if (ret == HT_FOUND)
         {
           /* a word counter has been found by this key */
           WordCounter *w = data + i;
-          printf ("Key %s incremented, count: %d\n", w->word, ++w->count);
+          printf ("Key `%s` incremented, count: %d\n", w->word, ++w->count);
           free (__p);
         }
     }
