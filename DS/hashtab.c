@@ -414,7 +414,7 @@ main (void)
         assert (2 == i);
       });
 
-    DO_ASSERT ("- testing simple collision... ", {
+    DO_ASSERT ("- testing simple insertion collision... ", {
         // Hash(WWW) = Hash(World)
         assert (0 == ht_insert (&t, 6));
         assert (0 == ht_idxofs (&t, "WWW", &i));
@@ -428,7 +428,7 @@ main (void)
         assert (6 == i);
       });
     
-    DO_ASSERT ("- testing last possible collision insertion... ", {
+    DO_ASSERT ("- testing last possible insertion collision... ", {
         /**
          *  we inserted `World`   -> at 22
          *  then inserted `WWW`   -> 22 is full      => at 21
