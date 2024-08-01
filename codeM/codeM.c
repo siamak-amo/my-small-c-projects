@@ -22,7 +22,7 @@
  *   A shell (CLI) and a test program are included
  *
  *   The term `codem` in the following refers to `code-e-melli`
- *   The library validates and generates random codems
+ *   This library validates and generates random codems
  *
  *   to use this library in python, see `codeM_py.c`
  *   also see `example.cm`, an example of the CLI program's script
