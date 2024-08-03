@@ -64,32 +64,6 @@ v_headerof (const void *ptr)
 #define headerof(ptr, T) ((T *) v_headerof (ptr))
 #define arr_headerof(ptr) headerof (ptr, _Vheader_arr)
 
-/**
- *  a simple dynamic array implementation
- */
-#define arr_setlen(ptr, val) arr_headerof(ptr)->len = val
-#define arr_lenof(ptr) (arr_headerof(ptr)->len)
-#define arr_lenpp(ptr) (arr_lenof(ptr)++)
-#define arr_pplen(ptr) (++arr_lenof(ptr))
-
-#define arr_append(ptr, val) do {                               \
-    typeof(ptr[0]) *__ptr = arr_expand (ptr, sizeof (ptr[0]));  \
-    __ptr[arr_lenpp (__ptr)] = val;                             \
-  } while (0)
-
-void *
-arr_expand (void *ptr, size_t type_size)
-{
-  _Vheader_arr *__ptr = arr_headerof (ptr);
-  if (!ptr || __ptr->len >= __ptr->cap)
-    {
-      __ptr->cap = __ptr->cap * 2 + 1;
-      __ptr = VREALLOC (__ptr, __ptr->cap * type_size);
-      return __ptr->data;
-    }
-  return ptr;
-}
-
 /* only for _Vheader_arr */
 uint
 v_sizeof (const void *ptr)
@@ -122,6 +96,33 @@ v_new (uint cap)
   __result->cap = cap;
 
   return __result->data;
+}
+
+
+/**
+ *  a simple dynamic array implementation
+ */
+#define arr_setlen(ptr, val) arr_headerof(ptr)->len = val
+#define arr_lenof(ptr) (arr_headerof(ptr)->len)
+#define arr_lenpp(ptr) (arr_lenof(ptr)++)
+#define arr_pplen(ptr) (++arr_lenof(ptr))
+
+#define arr_append(ptr, val) do {                               \
+    typeof(ptr[0]) *__ptr = arr_expand (ptr, sizeof (ptr[0]));  \
+    __ptr[arr_lenpp (__ptr)] = val;                             \
+  } while (0)
+
+void *
+arr_expand (void *ptr, size_t type_size)
+{
+  _Vheader_arr *__ptr = arr_headerof (ptr);
+  if (!ptr || __ptr->len >= __ptr->cap)
+    {
+      __ptr->cap = __ptr->cap * 2 + 1;
+      __ptr = VREALLOC (__ptr, __ptr->cap * type_size);
+      return __ptr->data;
+    }
+  return ptr;
 }
 
 
