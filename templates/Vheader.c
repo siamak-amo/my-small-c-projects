@@ -64,6 +64,10 @@ v_headerof (const void *ptr)
 #define headerof(ptr, T) ((T *) v_headerof (ptr))
 #define arr_headerof(ptr) headerof (ptr, _Vheader_arr)
 
+/* only for generic version */
+#define g_headerof(ptr, header_T) \
+  ((header_T *) (headerof (ptr, _Vheader_t)->header))
+
 /* only for _Vheader_arr */
 uint
 v_sizeof (const void *ptr)
