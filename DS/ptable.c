@@ -37,14 +37,14 @@
  *
  *  Compilation:
  *    to compile the CLI program:
- *    cc -ggdb -Wall -Wextea -Werror ptable.c \
+ *    cc -ggdb -Wall -Wextra -Werror ptable.c \
  *       $(pkg-config --cflags readline)
  *       -D PTABLE_IMPLEMENTATION \
  *       -D PTABLE_CLI -D PTABLE_TEST \
- *       -o test.out pkg-config --libs readline
+ *       -o test.out $(pkg-config --libs readline)
  *
  *    to compile the test program:
- *    cc -ggdb -Wall -Wextea -Werror ptable.c \
+ *    cc -ggdb -Wall -Wextra -Werror ptable.c \
  *       -D PTABLE_IMPLEMENTATION \
  *       -D PTABLE_TEST \
  *       -o test.out
