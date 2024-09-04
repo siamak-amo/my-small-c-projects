@@ -1,3 +1,36 @@
+/**
+ *  file: permugen.c
+ *  created on: 4 Sep 2024
+ *
+ *  Permutation Generator
+ *
+ *  Usage:
+ *    - [a-z] [0-9] permutations (default depth is 3):
+ *    $ ./permugen
+ *
+ *    - from depth 2 to 5:
+ *    $ ./permugen -fd 2 -td 5
+ *
+ *    - for depths 1, 2, 3, 4:
+ *    $ ./permugen -D 4
+ *
+ *    - to specify seed, use `-s`:
+ *      `-s a`      ->  for [a-z]
+ *      `-s A`      ->  for [A-Z]
+ *      `-s n`      ->  for [0-9]
+ *      `-s wXYZ`   ->  for [X,Y,Z]
+ *
+ *      also using word(s) in permutations is possible:
+ *      `-s Wdev`         ->  for using `dev`
+ *      `-s Wdev,test,m`  ->  for `dev`, `test`, `m`
+ *
+ *
+ *  Compilation:
+ *    cc -Wall -Wextra -Werror \
+ *       -ggdb -O3 \
+ *       -o permugen permugen.c
+ *
+ **/
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -197,25 +230,13 @@ init_opt (int argc, char **argv, struct Opt *opt)
                 }
               else if (val[0] == 'w')
                 {
-                  /**
-                   *  to make a custom seed
-                   *  usage:
-                   *    `-s wabcd67`:
-                   *       will make a seed containing {a,b,c,d,6,7}
-                   */
+                  /* to make a custom seed */
                   __seed_init();
                   __p = memupcpy (__p, val + 1, strlen (val + 1));
                 }
               else if (val[0] == 'W')
                 {
-                  /**
-                   *  to use word(s) as seed
-                   *  usage:
-                   *    `-s Wdev`:
-                   *       will use `dev` in permutations
-                   *    `-s Wdev,sec,test`:
-                   *       will use `dev`, `sec`, `test`
-                   */
+                  /* to use word(s) as seed */
                   char *sep = val + 1;
                   while (*sep)
                     {
