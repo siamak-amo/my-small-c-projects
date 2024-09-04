@@ -21,13 +21,16 @@ static int SOUT_FILE_FLAGS = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH;
    strcmp ((s1), (s2)) == 0)
 
 struct Opt {
-  int outfd;
+  /* seed chars */
   char *seed;
   int seed_len;
+
   /* word seed */
   const char **wseed;
   int wseed_len;
 
+  /* output conf */
+  int outfd;
   int from_depth;
   int to_depth;
 };
