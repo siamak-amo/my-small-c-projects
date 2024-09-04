@@ -209,9 +209,16 @@ init_opt (int argc, char **argv, struct Opt *opt)
                 {
                   /* add word to seed */
                   char *sep = val + 1;
-                  opt->wseed = realloc (opt->wseed,
-                          (opt->wseed_len + 1) * sizeof (char *));
-                  opt->wseed[opt->wseed_len++] = sep;
+                  while (*sep)
+                    {
+                      opt->wseed = realloc (opt->wseed,
+                              (opt->wseed_len + 1) * sizeof (char *));
+                      opt->wseed[opt->wseed_len++] = sep;
+
+                      for (; *sep != ',' && *sep != '\0'; ++sep);
+                      if (*sep == ',')
+                        *(sep++) = '\0';
+                    }
                 }
             });
         }
