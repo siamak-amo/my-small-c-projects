@@ -198,8 +198,9 @@ init_opt (int argc, char **argv, struct Opt *opt)
               else if (val[0] == 'w')
                 {
                   /**
-                   *  make a custom seed
-                   *  usage:  `-s wabcd67`
+                   *  to make a custom seed
+                   *  usage:
+                   *    `-s wabcd67`:
                    *       will make a seed containing {a,b,c,d,6,7}
                    */
                   __seed_init();
@@ -207,7 +208,14 @@ init_opt (int argc, char **argv, struct Opt *opt)
                 }
               else if (val[0] == 'W')
                 {
-                  /* add word to seed */
+                  /**
+                   *  to use word(s) as seed
+                   *  usage:
+                   *    `-s Wdev`:
+                   *       will use `dev` in permutations
+                   *    `-s Wdev,sec,test`:
+                   *       will use `dev`, `sec`, `test`
+                   */
                   char *sep = val + 1;
                   while (*sep)
                     {
