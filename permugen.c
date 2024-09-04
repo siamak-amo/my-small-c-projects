@@ -96,6 +96,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
     opt->seed = malloc (cap);                   \
     __p = opt->seed;                            \
   }
+#define __seed_init(cap)                        \
+  if (opt->seed == NULL) { seed_init (257); }
 
 #define next_opt(argc, argv) {argc--; argv++;}
 #define getp(action) if (argc > 1) {            \
@@ -154,27 +156,28 @@ init_opt (int argc, char **argv, struct Opt *opt)
       if_opt ("-s", "--seed")
         {
           getp({
-              if (opt->seed == NULL)
-                seed_init (257); 
-
               if (val[0] == 'a')
                 {
                   /* add a-z */
+                  __seed_init();
                   __p = memupcpy (__p, AZ.c, AZ.len);
                 }
               else if (val[0] == 'A')
                 {
                   /* add A-Z */
+                  __seed_init();
                   __p = memupcpy (__p, AZ.c, AZ.len);
                 }
               else if (val[0] == 'N' || val[0] == 'n')
                 {
                   /* add numbers */
+                  __seed_init();
                   __p = memupcpy (__p, NUMS.c, NUMS.len);
                 }
               else if (val[0] == 'S' || val[0] == 's')
                 {
                   /* add some special characters */
+                  __seed_init();
                   __p = memupcpy (__p, ESP.c, ESP.len);
                 }
               else if (val[0] == 'w')
@@ -184,6 +187,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                    *  usage:  `-s wabcd67`
                    *       will make a seed containing {a,b,c,d,6,7}
                    */
+                  __seed_init();
                   __p = memupcpy (__p, val + 1, strlen (val + 1));
                 }
               else if (val[0] == 'W')
