@@ -181,7 +181,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                 {
                   /* add A-Z */
                   __seed_init();
-                  __p = memupcpy (__p, AZ.c, AZ.len);
+                  __p = memupcpy (__p, AZCAP.c, AZ.len);
                 }
               else if (val[0] == 'N' || val[0] == 'n')
                 {
