@@ -20,9 +20,12 @@
  *      `-s n`      ->  for [0-9]
  *      `-s wXYZ`   ->  for [X,Y,Z]
  *
- *      also using word(s) in permutations is possible:
+ *      also to inject word(s) in permutations, use:
  *      `-s Wdev`         ->  for using `dev`
  *      `-s Wdev,test,m`  ->  for `dev`, `test`, `m`
+ *
+ *    # permutations of `1`, `2`, `test`, `dev`
+ *    $ ./permugen -D 2 -s w12 -s Wtest,dev
  *
  *
  *  Compilation:
@@ -46,8 +49,8 @@ static const struct seed_part AZCAP = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 static const struct seed_part NUMS = {"0123456789", 10};
 static const struct seed_part ESP = {"-_", 2};
 
-static int OOUT_FILE_OPTS = O_WRONLY | O_CREAT | O_TRUNC;
-static int SOUT_FILE_FLAGS = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH;
+static const int OOUT_FILE_OPTS = O_WRONLY | O_CREAT | O_TRUNC;
+static const int SOUT_FILE_FLAGS = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH;
 
 #define if_str(s1, s2)                          \
   ((s1) != NULL && (s2) != NULL &&              \
