@@ -105,7 +105,7 @@ memupcpy (char *dest, const char *src, int len)
 int
 init_opt (int argc, char **argv, struct Opt *opt)
 {
-  char *__p;
+  char *__p = NULL;
 
 #define seed_init(cap) {                        \
     opt->seed = malloc (cap);                   \
@@ -150,21 +150,21 @@ init_opt (int argc, char **argv, struct Opt *opt)
         {
           getp({
               opt->from_depth = 1;
-              opt->to_depth = atoi(*argv);
+              opt->to_depth = atoi(val);
             });
         }
 
       if_opt3 ("-df", "-fd", "--from-depth")
         {
           getp({
-              opt->from_depth = atoi(*argv);
+              opt->from_depth = atoi(val);
             });
         }
 
       if_opt3 ("-tf", "-td", "--to-depth")
         {
           getp({
-              opt->to_depth = atoi(*argv);
+              opt->to_depth = atoi(val);
             });
         }
 
@@ -253,6 +253,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
     }
 
   opt->seed_len = (int)(__p - opt->seed);
+  return 0;
 }
 
 
