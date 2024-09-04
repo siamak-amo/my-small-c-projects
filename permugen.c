@@ -24,6 +24,10 @@ struct Opt {
   int outfd;
   char *seed;
   int seed_len;
+  /* word seed */
+  const char **wseed;
+  int wseed_len;
+
   int from_depth;
   int to_depth;
 };
@@ -35,24 +39,32 @@ w_wl (const int depth, const struct Opt *opt) {
   int idxs[depth];
   memset (idxs, 0, depth * sizeof (int));
 
-  char buff[depth + 1];
-  buff[depth] = '\n';
-
  WL_Loop:
   for (int i = 0; i < depth; ++i)
     {
-      buff[i] = opt->seed[idxs[i]];
-    }
+      int idx = idxs[i];
+      if (idx < opt->seed_len)
+        rw = write (opt->outfd, opt->seed + idx, 1);
+      else
+        {
+          idx -= opt->seed_len;
+          const char *__w = opt->wseed[idx];
+          rw = write (opt->outfd, __w, strlen (__w));
+        }
 
-  if ((rw = write (opt->outfd, buff, depth + 1)) < 0)
-    {
-      /* write error */
-      return rw;
+      if (rw < 0)
+        return rw;
     }
+  write (opt->outfd, "\n", 1);
 
   int pos;
-  for (pos = depth - 1; pos >= 0 && idxs[pos] == opt->seed_len - 1; pos--)
-    idxs[pos] = 0;
+  for (pos = depth - 1;
+       pos >= 0 &&
+         idxs[pos] == opt->seed_len - 1 + opt->wseed_len;
+       pos--)
+    {
+      idxs[pos] = 0;
+    }
 
   if (pos < 0)
     return 0;
@@ -102,7 +114,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
 #define next_opt(argc, argv) {argc--; argv++;}
 #define getp(action) if (argc > 1) {            \
     next_opt(argc, argv);                       \
-    const char *val = *argv;                    \
+    char *val = *argv;                          \
     action;                                     \
   }
   
@@ -192,8 +204,11 @@ init_opt (int argc, char **argv, struct Opt *opt)
                 }
               else if (val[0] == 'W')
                 {
-                  // not implemented yet
-                  // add a word in permutation
+                  /* add word to seed */
+                  char *sep = val + 1;
+                  opt->wseed = realloc (opt->wseed,
+                          (opt->wseed_len + 1) * sizeof (char *));
+                  opt->wseed[opt->wseed_len++] = sep;
                 }
             });
         }
