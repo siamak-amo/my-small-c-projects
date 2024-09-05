@@ -27,6 +27,10 @@
  *    # permutations of `1`, `2`, `test`, `dev`
  *    $ ./permugen -D 2 -s w12 -s Wtest,dev
  *
+ *    - to add prefix and suffix to the output, use `-f`:
+ *    $ ./permugen -f ".com"         ->      xyz.com
+ *    $ ./permugen -f "www.:.com"    ->  www.xyz.com
+ *    $ ./permugen -f "www.:"        ->  www.xyz
  *
  *  Compilation:
  *    cc -Wall -Wextra -Werror \
@@ -263,6 +267,30 @@ init_opt (int argc, char **argv, struct Opt *opt)
           getp({
               opt->to_depth = atoi(val);
             });
+        }
+
+      if_opt ("-f", "--format")
+        {
+          getp({
+              opt->__suff = val;
+              for (char *p = val; *p != '\0'; ++p)
+                if (*p == ':')
+                  {
+                    *p = '\0';
+
+                    if (strlen (opt->__suff) != 0)
+                      opt->__pref = opt->__suff;
+                    else
+                      opt->__pref = NULL;
+
+                    if (strlen (p + 1) != 0)
+                      opt->__suff = p + 1;
+                    else
+                      opt->__suff = NULL;
+
+                    break;
+                  }
+            })
         }
 
       if_opt ("-s", "--seed")
