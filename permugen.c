@@ -77,6 +77,10 @@ struct Opt {
   const char **wseed;
   int wseed_len;
 
+  /* prefix and suffix of output */
+  const char *__pref;
+  const char *__suff;
+
   /* output conf */
   int outfd;
   int from_depth;
@@ -97,6 +101,10 @@ w_wl (const int depth, const struct Opt *opt) {
 
  WL_Loop:
 #ifndef _PERMUGEN_USE_BIO
+  /* print the prefix */
+  if (opt->__pref)
+    write (opt->outfd, opt->__pref, strlen (opt->__pref));
+  /* print the permutation */
   for (int i = 0; i < depth; ++i)
     {
       int idx = idxs[i];
@@ -109,9 +117,16 @@ w_wl (const int depth, const struct Opt *opt) {
           write (opt->outfd, __w, strlen (__w));
         }
     }
+  if (opt->__suff)
+    write (opt->outfd, opt->__suff, strlen (opt->__suff));
   write (opt->outfd, "\n", 1);
+  if (errno != 0)
+    return errno;
+
 #else /* using buffered_io */
-    for (int i = 0; i < depth; ++i)
+  if (opt->__pref)
+    bio_fputs (opt->bio, opt->__pref);
+  for (int i = 0; i < depth; ++i)
     {
       int idx = idxs[i];
       if (idx < opt->seed_len)
@@ -125,7 +140,10 @@ w_wl (const int depth, const struct Opt *opt) {
       if (bio_err (opt->bio))
         return bio_errno (opt->bio);
     }
-    bio_ln(opt->bio);
+    if (opt->__suff)
+      bio_puts (opt->bio, opt->__suff);
+    else
+      bio_ln(opt->bio);
 #endif
 
   int pos;
