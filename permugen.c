@@ -103,8 +103,9 @@ struct Opt {
   int seed_len;
 
   /* word seed */
-  const char **wseed;
+  char **wseed;
   int wseed_len;
+  int __wseed_l; /* used for dynamic array */
 
   /* prefix and suffix of output */
   const char *__pref;
@@ -122,6 +123,27 @@ struct Opt {
 
 };
 
+
+// this will duplicate @ptr and append it to @opt->wseed
+void
+wseed_append (struct Opt *opt, const char *ptr)
+{
+  if (opt->wseed_len >= opt->__wseed_l)
+    {
+      opt->__wseed_l = (opt->__wseed_l + 2) * 2;
+      opt->wseed = realloc (opt->wseed,
+                            opt->__wseed_l * sizeof (char *));
+    }
+  opt->wseed[opt->wseed_len++] = strdup (ptr);
+}
+
+void
+wseed_free (struct Opt *opt)
+{
+  for (int i=0; i<opt->wseed_len; ++i)
+    free (opt->wseed[i]);
+  free(opt->wseed);
+}
 
 int
 w_wl (const int depth, const struct Opt *opt) {
@@ -354,16 +376,24 @@ init_opt (int argc, char **argv, struct Opt *opt)
               else if (val[0] == 'W')
                 {
                   /* to use word(s) as seed */
-                  char *sep = val + 1;
-                  while (*sep)
+                  for (char *sep = val + 1, *prev_sep = sep;; ++sep)
                     {
-                      opt->wseed = realloc (opt->wseed,
-                              (opt->wseed_len + 1) * sizeof (char *));
-                      opt->wseed[opt->wseed_len++] = sep;
-
-                      for (; *sep != ',' && *sep != '\0'; ++sep);
                       if (*sep == ',')
-                        *(sep++) = '\0';
+                        {
+                          *(sep++) = '\0';
+                          wseed_append (opt, prev_sep);
+                          prev_sep = sep;
+                        }
+                      else if (*sep == '\0')
+                        {
+                          if (prev_sep != sep)
+                            wseed_append (opt, prev_sep);
+                          break;
+                        }
+                    }
+                }
+            });
+        }
                     }
                 }
             });
