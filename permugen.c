@@ -164,7 +164,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
   opt->outfd = 1; // stdout
 
-  for (argc--, argv++; argc >= 0; argc--, argv++)
+  for (argc--, argv++; argc > 0; argc--, argv++)
     {
       if_opt ("-o", "--output")
         {
