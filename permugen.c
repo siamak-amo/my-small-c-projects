@@ -190,6 +190,17 @@ init_opt (int argc, char **argv, struct Opt *opt)
             });
         }
 
+      /* -dx and -Dx where x must be a number */
+      if (strncmp (*argv, "-d", 2) == 0)
+        {
+          opt->from_depth = atoi(*argv + 2);
+        }
+      if (strncmp (*argv, "-D", 2) == 0)
+        {
+          opt->from_depth = 1;
+          opt->to_depth = atoi(*argv + 2);
+        }
+
       if_opt3 ("-df", "-fd", "--from-depth")
         {
           getp({
