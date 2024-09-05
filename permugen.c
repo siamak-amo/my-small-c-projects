@@ -91,11 +91,12 @@ struct Opt {
 
 int
 w_wl (const int depth, const struct Opt *opt) {
-  int rw;
   int idxs[depth];
   memset (idxs, 0, depth * sizeof (int));
 
  WL_Loop:
+#ifndef _PERMUGEN_USE_BIO
+  int rw;
   for (int i = 0; i < depth; ++i)
     {
       int idx = idxs[i];
@@ -112,6 +113,23 @@ w_wl (const int depth, const struct Opt *opt) {
         return rw;
     }
   write (opt->outfd, "\n", 1);
+#else /* using buffered_io */
+    for (int i = 0; i < depth; ++i)
+    {
+      int idx = idxs[i];
+      if (idx < opt->seed_len)
+        bio_putc (opt->bio, opt->seed[idx]);
+      else
+        {
+          idx -= opt->seed_len;
+          bio_fputs (opt->bio, opt->wseed[idx]);
+        }
+
+      if (bio_err (opt->bio))
+        return bio_errno (opt->bio);
+    }
+    bio_ln(opt->bio);
+#endif
 
   int pos;
   for (pos = depth - 1;
