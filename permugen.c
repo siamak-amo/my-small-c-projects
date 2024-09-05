@@ -68,7 +68,9 @@
  *  this file should be available in this repo
  */
 #ifdef _PERMUGEN_USE_BIO
-#  define BMAX 1024
+#  ifndef BMAX
+#    define BMAX 1024
+#  endif
 #  define BIO_IMPLEMENTATION
 #  include "buffered_io.h"
 #endif
