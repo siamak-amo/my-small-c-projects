@@ -62,6 +62,7 @@
  *      buffered IO buffer length
  *
  **/
+#include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -467,6 +468,8 @@ main (int argc, char **argv)
         
   if (opt.seed)
     free (opt.seed);
+  if (opt.wseed)
+    wseed_free (&opt);
   close (opt.outfd);
   return 0;
 }
