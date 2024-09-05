@@ -43,6 +43,14 @@
  *    # permutations of `1`, `2`, `test`, `dev`
  *    $ ./permugen -D 2 -s w12 -s Wtest,dev
  *
+ *    - to read these seed words from a file use `-S`:
+ *    # wlist.txt is a newline-separated word list
+ *    # lines starting with `#` will be ignored
+ *    $ ./permugen -S /path/to/wlist.txt
+ *
+ *    # to see only permutations of the wordlist
+ *    $ ./permugen -s w -S /path/to/wlist.txt
+ *
  *    - to add prefix and suffix to the output, use `-f`:
  *    $ ./permugen -f ".com"         ->      xyz.com
  *    $ ./permugen -f "www.:.com"    ->  www.xyz.com
