@@ -35,6 +35,7 @@
  *
  **/
 #include <unistd.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
@@ -96,21 +97,17 @@ w_wl (const int depth, const struct Opt *opt) {
 
  WL_Loop:
 #ifndef _PERMUGEN_USE_BIO
-  int rw;
   for (int i = 0; i < depth; ++i)
     {
       int idx = idxs[i];
       if (idx < opt->seed_len)
-        rw = write (opt->outfd, opt->seed + idx, 1);
+        write (opt->outfd, opt->seed + idx, 1);
       else
         {
           idx -= opt->seed_len;
           const char *__w = opt->wseed[idx];
-          rw = write (opt->outfd, __w, strlen (__w));
+          write (opt->outfd, __w, strlen (__w));
         }
-
-      if (rw < 0)
-        return rw;
     }
   write (opt->outfd, "\n", 1);
 #else /* using buffered_io */
