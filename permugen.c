@@ -74,7 +74,7 @@
  */
 #ifdef _PERMUGEN_USE_BIO
 #  ifndef _BMAX
-#    define _BMAX 1024
+#    define _BMAX (sysconf (_SC_PAGESIZE) / 2)
 #  endif
 #  define BIO_IMPLEMENTATION
 #  include "buffered_io.h"
@@ -402,7 +402,8 @@ main (int argc, char **argv)
   init_opt (argc, argv, &opt);
 
 #ifdef _PERMUGEN_USE_BIO
-  BIO_t __bio = bio_new (_BMAX, malloc (_BMAX), opt.outfd);
+  int cap = _BMAX;
+  BIO_t __bio = bio_new (cap, malloc (cap), opt.outfd);
   opt.bio = &__bio;
 #endif
 
