@@ -58,7 +58,7 @@
  *    - to compile without buffered IO (less performance)
  *      remove `-D_PERMUGEN_USE_BIO`
  *
- *    - define `-D BMAX="1024*1"` to change the default
+ *    - define `-D_BMAX="1024 * 1"` to change the default
  *      buffered IO buffer length
  *
  **/
@@ -73,8 +73,8 @@
  *  this file should be available in this repo
  */
 #ifdef _PERMUGEN_USE_BIO
-#  ifndef BMAX
-#    define BMAX 1024
+#  ifndef _BMAX
+#    define _BMAX 1024
 #  endif
 #  define BIO_IMPLEMENTATION
 #  include "buffered_io.h"
@@ -402,7 +402,7 @@ main (int argc, char **argv)
   init_opt (argc, argv, &opt);
 
 #ifdef _PERMUGEN_USE_BIO
-  BIO_t __bio = bio_new (BMAX, malloc (BMAX), opt.outfd);
+  BIO_t __bio = bio_new (_BMAX, malloc (_BMAX), opt.outfd);
   opt.bio = &__bio;
 #endif
 
