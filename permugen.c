@@ -99,9 +99,6 @@ static const struct seed_part AZCAP = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 static const struct seed_part NUMS = {"0123456789", 10};
 static const struct seed_part ESP = {"-_", 2};
 
-static const int OOUT_FILE_OPTS = O_WRONLY | O_CREAT | O_TRUNC;
-static const int SOUT_FILE_FLAGS = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH;
-
 #define if_str(s1, s2)                          \
   ((s1) != NULL && (s2) != NULL &&              \
    strcmp ((s1), (s2)) == 0)
@@ -280,9 +277,9 @@ init_opt (int argc, char **argv, struct Opt *opt)
       if_opt ("-o", "--output")
         {
           getp({
-              int fd;
-              if ((fd = open (val, OOUT_FILE_OPTS, SOUT_FILE_FLAGS)) > 0)
-                opt->outfd = fd;
+              FILE *o = fopen (val, "w");
+              if (o)
+                opt->outfd = fileno (o);
             });
         }
       
