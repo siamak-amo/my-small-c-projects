@@ -33,10 +33,13 @@
  *    $ ./permugen -f "www.:"        ->  www.xyz
  *
  *  Compilation:
- *    cc -Wall -Wextra -Werror \
- *       -ggdb -O3 \
- *       -o permugen permugen.c
+ *    provide the `buffered_io.h` file (or use `-I`):
+ *      cc -ggdb -O3 -Wall -Wextra -Werror \
+ *         -D_PERMUGEN_USE_BIO \
+ *         -o permugen permugen.c
  *
+ *    to compile without buffered IO (less performance)
+ *    remove `-D_PERMUGEN_USE_BIO`
  **/
 #include <unistd.h>
 #include <errno.h>
