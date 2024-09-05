@@ -90,7 +90,7 @@ BIODEFF int bio_flushln(BIO_t *bio);
       bio_flush(bio);                           \
     }} while (0)
 
-#define bio_errno(bio) ((bio)->__errno == 0)
+#define bio_err(bio) ((bio)->__errno != 0)
 
 // function version of bio_putc macro
 // returns errno on failure and 0 on success
