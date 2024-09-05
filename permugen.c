@@ -394,8 +394,26 @@ init_opt (int argc, char **argv, struct Opt *opt)
                 }
             });
         }
+
+      if_opt3 ("-S", "--wseed-path", "--seed-path")
+        {
+          getp({
+              FILE *wseed_f = fopen (val, "r");
+              char *__line = NULL;
+              size_t __len;
+              while (1)
+                {
+                  if (getline (&__line, &__len, wseed_f) < 0)
+                    break;
+                  if (strlen (__line) > 1 &&
+                      __line[0] != '#') // commented line
+                    {
+                      __line[strlen (__line) - 1] = '\0';
+                      wseed_append (opt, __line);
                     }
                 }
+              free (__line);
+              fclose (wseed_f);
             });
         }
     }
