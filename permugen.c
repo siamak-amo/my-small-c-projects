@@ -39,6 +39,17 @@
 #include <string.h>
 #include <fcntl.h>
 
+/**
+ *  using buffered_io.h for performance
+ *  this file should be available in this repo
+ */
+#ifdef _PERMUGEN_USE_BIO
+#  define BMAX 1024
+#  define BIO_IMPLEMENTATION
+#  include "buffered_io.h"
+#  include <stdlib.h>
+#endif
+
 struct seed_part {
   const char *c;
   int len;
@@ -69,6 +80,12 @@ struct Opt {
   int outfd;
   int from_depth;
   int to_depth;
+
+  /* buffered_io */
+#ifdef _PERMUGEN_USE_BIO
+  BIO_t *bio;
+#endif
+
 };
 
 
@@ -298,10 +315,20 @@ main (int argc, char **argv)
   struct Opt opt = {0};
   init_opt (argc, argv, &opt);
 
+#ifdef _PERMUGEN_USE_BIO
+  BIO_t __bio = bio_new (BMAX, malloc (BMAX), opt.outfd);
+  opt.bio = &__bio;
+#endif
+
   int rw_err = 0;
   for (int d = opt.from_depth; d <= opt.to_depth; ++d)
     if ((rw_err = w_wl (d, &opt)) < 0)
       break;
+
+#ifdef _PERMUGEN_USE_BIO
+  bio_flush (opt.bio);
+  free (opt.bio->buffer);
+#endif
         
   if (opt.seed)
     free (opt.seed);
