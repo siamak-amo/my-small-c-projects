@@ -22,10 +22,12 @@
  *
  *    // do something here
  *    // like calling bio_putxx in a loop
- *    // at the end flush the buffer and then free it
+ *    // and check for errors via bio_errxx
  *
+ *    // at the end flush the buffer and then free it
  *    bio_flushln (&bio);
  *    free (bio.buffer);
+ *
  *    return 0;
  *  }
  *  ```
@@ -91,6 +93,7 @@ BIODEFF int bio_flushln(BIO_t *bio);
     }} while (0)
 
 #define bio_err(bio) ((bio)->__errno != 0)
+#define bio_errno(bio) ((bio)->__errno)
 
 // function version of bio_putc macro
 // returns errno on failure and 0 on success
