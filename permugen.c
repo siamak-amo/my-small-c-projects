@@ -147,7 +147,8 @@ wseed_free (struct Opt *opt)
 }
 
 int
-w_wl (const int depth, const struct Opt *opt) {
+w_wl (const int depth, const struct Opt *opt)
+{
   int idxs[depth];
   memset (idxs, 0, depth * sizeof (int));
 
@@ -421,7 +422,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
   if (opt->seed == NULL)
     {
-      /* seed has not specified by the user */
+      /* seed not specified by the user */
       seed_init (38);
       __p = mempcpy (__p, AZ.c, 26);
       __p = mempcpy (__p, NUMS.c, 10);
@@ -429,13 +430,13 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
   if (opt->from_depth <= 0)
     {
-      /* depth has not specified by the user */
+      /* depth not specified by the user */
       opt->from_depth = 3;
       opt->to_depth = 3;
     }
   else if (opt->to_depth <= 0)
     {
-      /* only from_depth has specified OR `-D` is being used */
+      /* only from_depth is specified OR `-D` is being used */
       opt->to_depth = opt->from_depth;
     }
 
