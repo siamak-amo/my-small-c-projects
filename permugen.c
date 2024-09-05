@@ -54,8 +54,13 @@
  *         -D_PERMUGEN_USE_BIO \
  *         -o permugen permugen.c
  *
- *    to compile without buffered IO (less performance)
- *    remove `-D_PERMUGEN_USE_BIO`
+ *  compilation options:
+ *    - to compile without buffered IO (less performance)
+ *      remove `-D_PERMUGEN_USE_BIO`
+ *
+ *    - define `-D BMAX="1024*1"` to change the default
+ *      buffered IO buffer length
+ *
  **/
 #include <unistd.h>
 #include <errno.h>
