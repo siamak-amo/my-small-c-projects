@@ -71,7 +71,6 @@
 #  define BMAX 1024
 #  define BIO_IMPLEMENTATION
 #  include "buffered_io.h"
-#  include <stdlib.h>
 #endif
 
 struct seed_part {
