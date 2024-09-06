@@ -259,9 +259,9 @@ init_opt (int argc, char **argv, struct Opt *opt)
   if (opt->seed == NULL) { seed_init (257); }
 
 #define next_opt(argc, argv) {argc--; argv++;}
-#define getp(action) if (argc > 1) {            \
+#define getARG(action) if (argc > 1) {          \
     next_opt(argc, argv);                       \
-    char *val = *argv;                          \
+    char *ARG = *argv;                          \
     action;                                     \
   }
   
@@ -276,8 +276,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
     {
       if_opt ("-o", "--output")
         {
-          getp({
-              FILE *o = fopen (val, "w");
+          getARG({
+              FILE *o = fopen (ARG, "w");
               if (o)
                 opt->outfd = fileno (o);
             });
@@ -285,16 +285,16 @@ init_opt (int argc, char **argv, struct Opt *opt)
       
       if_opt ("-d", "--depth")
         {
-          getp({
-              opt->from_depth = atoi(val);
+          getARG({
+              opt->from_depth = atoi(ARG);
             });
         }
 
       if_opt ("-D", "--all-depth")
         {
-          getp({
+          getARG({
               opt->from_depth = 1;
-              opt->to_depth = atoi(val);
+              opt->to_depth = atoi(ARG);
             });
         }
 
@@ -311,23 +311,23 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
       if_opt3 ("-df", "-fd", "--from-depth")
         {
-          getp({
-              opt->from_depth = atoi(val);
+          getARG({
+              opt->from_depth = atoi(ARG);
             });
         }
 
       if_opt3 ("-tf", "-td", "--to-depth")
         {
-          getp({
-              opt->to_depth = atoi(val);
+          getARG({
+              opt->to_depth = atoi(ARG);
             });
         }
 
       if_opt ("-f", "--format")
         {
-          getp({
-              opt->__suff = val;
-              for (char *p = val; *p != '\0'; ++p)
+          getARG({
+              opt->__suff = ARG;
+              for (char *p = ARG; *p != '\0'; ++p)
                 if (*p == ':')
                   {
                     *p = '\0';
@@ -349,41 +349,41 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
       if_opt ("-s", "--seed")
         {
-          getp({
-              if (val[0] == 'a')
+          getARG({
+              if (ARG[0] == 'a')
                 {
                   /* add a-z */
                   __seed_init();
                   __p = memupcpy (__p, AZ.c, AZ.len);
                 }
-              else if (val[0] == 'A')
+              else if (ARG[0] == 'A')
                 {
                   /* add A-Z */
                   __seed_init();
                   __p = memupcpy (__p, AZCAP.c, AZ.len);
                 }
-              else if (val[0] == 'N' || val[0] == 'n')
+              else if (ARG[0] == 'N' || ARG[0] == 'n')
                 {
                   /* add numbers */
                   __seed_init();
                   __p = memupcpy (__p, NUMS.c, NUMS.len);
                 }
-              else if (val[0] == 'S' || val[0] == 's')
+              else if (ARG[0] == 'S' || ARG[0] == 's')
                 {
                   /* add some special characters */
                   __seed_init();
                   __p = memupcpy (__p, ESP.c, ESP.len);
                 }
-              else if (val[0] == 'w')
+              else if (ARG[0] == 'w')
                 {
                   /* to make a custom seed */
                   __seed_init();
-                  __p = memupcpy (__p, val + 1, strlen (val + 1));
+                  __p = memupcpy (__p, ARG + 1, strlen (ARG + 1));
                 }
-              else if (val[0] == 'W')
+              else if (ARG[0] == 'W')
                 {
                   /* to use word(s) as seed */
-                  for (char *sep = val + 1, *prev_sep = sep;; ++sep)
+                  for (char *sep = ARG + 1, *prev_sep = sep;; ++sep)
                     {
                       if (*sep == ',')
                         {
@@ -404,8 +404,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
       if_opt3 ("-S", "--wseed-path", "--seed-path")
         {
-          getp({
-              FILE *wseed_f = fopen (val, "r");
+          getARG({
+              FILE *wseed_f = fopen (ARG, "r");
               char *__line = NULL;
               size_t __len;
               while (1)
