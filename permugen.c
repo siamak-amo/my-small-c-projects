@@ -24,45 +24,49 @@
  *    - [a-z] [0-9] permutations (default depth is 3):
  *    $ ./permugen
  *
- *    - from depth 2 to 5:
+ *    - From depth 2 to 5:
  *    $ ./permugen -fd 2 -td 5
  *
- *    - for depths 1, 2, 3, 4:
+ *    - For depths 1, 2, 3, 4:
  *    $ ./permugen -D 4
  *
- *    - to specify seed, use `-s`:
+ *    - To specify seed, (`-s` option):
  *      `-s a`      ->  for [a-z]
  *      `-s A`      ->  for [A-Z]
  *      `-s n`      ->  for [0-9]
  *      `-s wXYZ`   ->  for [X,Y,Z]
  *
- *      also to inject word(s) in permutations, use:
+ *    - To inject word(s) in permutations (word seed):
  *      `-s Wdev`         ->  for using `dev`
  *      `-s Wdev,test,m`  ->  for `dev`, `test`, `m`
  *
+ *    - Example:
  *    # permutations of `1`, `2`, `test`, `dev`
  *    $ ./permugen -D 2 -s w12 -s Wtest,dev
  *
- *    - to read these seed words from a file use `-S`:
+ *    - To read these seed words from a file, (`-S` option):
  *    # wlist.txt is a newline-separated word list
  *    # lines starting with `#` will be ignored
  *    $ ./permugen -S /path/to/wlist.txt
  *
+ *    - Example:
  *    # to see only permutations of the wordlist
  *    $ ./permugen -s w -S /path/to/wlist.txt
+ *    # to also include `-` and `_`
+ *    $ ./permugen -s s -S /path/to/wlist.txt
  *
- *    - to add prefix and suffix to the output, use `-f`:
+ *    - To add prefix and suffix to the output, (`-f` option):
  *    $ ./permugen -f ".com"         ->      xyz.com
  *    $ ./permugen -f "www.:.com"    ->  www.xyz.com
  *    $ ./permugen -f "www.:"        ->  www.xyz
  *
  *  Compilation:
- *    provide the `buffered_io.h` file (or use `-I`):
+ *    provide the `buffered_io.h` file (or use `-I/path/to/buffered_io.h`):
  *      cc -ggdb -O3 -Wall -Wextra -Werror \
  *         -D_PERMUGEN_USE_BIO \
  *         -o permugen permugen.c
  *
- *  compilation options:
+ *  Other compilation options:
  *    - to compile without buffered IO (less performance)
  *      remove `-D_PERMUGEN_USE_BIO`
  *
