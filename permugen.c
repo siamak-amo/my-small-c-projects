@@ -410,9 +410,11 @@ init_opt (int argc, char **argv, struct Opt *opt)
       if_opt3 ("-S", "--wseed-path", "--seed-path")
         {
           getARG({
-              FILE *wseed_f = fopen (ARG, "r");
-              char *__line = NULL;
               size_t __len;
+              char *__line = NULL;
+              FILE *wseed_f = fopen (ARG, "r");
+              if (!wseed_f)
+                continue;
               while (1)
                 {
                   if (getline (&__line, &__len, wseed_f) < 0)
@@ -424,7 +426,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
                       wseed_append (opt, __line);
                     }
                 }
-              free (__line);
+              if (__line)
+                free (__line);
               fclose (wseed_f);
             });
         }
