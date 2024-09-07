@@ -82,7 +82,7 @@
 #include <fcntl.h>
 
 /**
- *  using buffered_io.h for performance
+ *  using buffered_io.h for better performance
  *  this file should be available in this repo
  */
 #ifdef _PERMUGEN_USE_BIO
