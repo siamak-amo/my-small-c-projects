@@ -1,6 +1,5 @@
 # My Small C Projects
 
----
 
 ### GNU Recreation
 rewriting some of the GUN utils (coreutils)
@@ -39,7 +38,7 @@ this file is a dependency for `permugen.c`
 
 
 ### leven.c
-Levenshtein Distance algorithm 
+Levenshtein Distance algorithm
 
 this file is a dependency for the `codeM` project
 
@@ -52,7 +51,7 @@ also includes:
 
 
 ### graphics
-graphic programs
+graphical programs
 
 
 ### xor_encrypt.c
