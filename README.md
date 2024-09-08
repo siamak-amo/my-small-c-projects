@@ -7,12 +7,14 @@ rewriting some of the GUN utils (coreutils)
 2. `tr_ng.c`
 3. `yes.c`
 
+---
 
 ### Templates
 some templates to help write C programs
 1. `defer.c`  Golang defer in C
 2. `Vheader.c`  header (metadata) before pointers
 
+---
 
 ### DS
 Data structure and Memory management
@@ -24,18 +26,22 @@ Data structure and Memory management
 6. `ring_buffer.c`  Ring Buffer
 7. `tape_mem.c`  Tape like memory allocator
 
+---
 
 ### permugen.c
 Permutation Generator
-to generate word lists for fuzzing based on given seeds
+
+to generate word lists for fuzzing based on some given seeds
 
 
 ### buffered_io.h
 Helps to buffer the IO calls like `putc`, `puts`, etc.
+
 to reduce number of `write` syscall so having better performance.
 
 this file is a dependency for `permugen.c`
 
+---
 
 ### leven.c
 Levenshtein Distance algorithm
@@ -49,6 +55,7 @@ also includes:
 1. a shell program
 2. python module (to use codeM through python)
 
+---
 
 ### graphics
 graphical programs
