@@ -53,7 +53,7 @@ this file is a dependency for the `codeM` project
 Common Iranian ID number (code-e-melli)
 also includes:
 1. a shell program
-2. python module (to use codeM through python)
+2. python C extension module (to use codeM through python)
 
 ---
 
