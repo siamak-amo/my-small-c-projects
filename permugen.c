@@ -355,53 +355,58 @@ init_opt (int argc, char **argv, struct Opt *opt)
       if_opt ("-s", "--seed")
         {
           getARG({
-              if (ARG[0] == 'a')
+              for (char *c = ARG; *c != '\0'; ++c)
                 {
-                  /* add a-z */
-                  seed_init();
-                  __p = memupcpy (__p, AZ.c, AZ.len);
-                }
-              else if (ARG[0] == 'A')
-                {
-                  /* add A-Z */
-                  seed_init();
-                  __p = memupcpy (__p, AZCAP.c, AZ.len);
-                }
-              else if (ARG[0] == 'N' || ARG[0] == 'n')
-                {
-                  /* add numbers */
-                  seed_init();
-                  __p = memupcpy (__p, NUMS.c, NUMS.len);
-                }
-              else if (ARG[0] == 'S' || ARG[0] == 's')
-                {
-                  /* add some special characters */
-                  seed_init();
-                  __p = memupcpy (__p, ESP.c, ESP.len);
-                }
-              else if (ARG[0] == 'w')
-                {
-                  /* to make a custom seed */
-                  seed_init();
-                  __p = memupcpy (__p, ARG + 1, strlen (ARG + 1));
-                }
-              else if (ARG[0] == 'W')
-                {
-                  /* to use word(s) as seed */
-                  for (char *sep = ARG + 1, *prev_sep = sep;; ++sep)
+                  if (*c == 'a' || *c == 'A' || *c == 'n'
+                      || *c == 's' || *c == 'w')
                     {
-                      if (*sep == ',')
+                      if (opt->seed == NULL)
+                        __seed_init (256);
+                    }
+                  switch (*c)
+                    {
+                    case 'W': /* add word seed(s) */
+                      {
+                        for (char *prev_sep = ++c;; ++c)
+                          {
+                            if (*c == ',')
+                              {
+                                *(c++) = '\0';
+                                wseed_append (opt, prev_sep);
+                                prev_sep = c;
+                              }
+                            else if (*c == '\0' || *c == ' ')
+                              {
+                                if (prev_sep != c)
+                                  {
+                                    *c = '\0';
+                                    wseed_append (opt, prev_sep);
+                                  }
+                                break;
+                              }
+                          }
+                        break;
+                      }
+
+                    case 'a':
+                      __p = memupcpy (__p, AZ.c, AZ.len);
+                      break;
+                      
+                    case 'A':
+                      __p = memupcpy (__p, AZCAP.c, AZ.len);
+                      break;
+                    case 'n':
+                      __p = memupcpy (__p, NUMS.c, NUMS.len);
+                      break;
+                    case 's':
+                      __p = memupcpy (__p, ESP.c, ESP.len);
+                      break;
+                    case 'w':
+                      for (++c; *c != '\0' && *c != ' '; ++c)
                         {
-                          *(sep++) = '\0';
-                          wseed_append (opt, prev_sep);
-                          prev_sep = sep;
+                          __p = memupcpy (__p, c, 1);
                         }
-                      else if (*sep == '\0')
-                        {
-                          if (prev_sep != sep)
-                            wseed_append (opt, prev_sep);
-                          break;
-                        }
+                      break;
                     }
                 }
             });
