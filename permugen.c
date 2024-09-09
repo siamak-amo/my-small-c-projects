@@ -101,7 +101,6 @@ struct seed_part {
 static const struct seed_part AZ = {"abcdefghijklmnopqrstuvwxyz", 26};
 static const struct seed_part AZCAP = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 static const struct seed_part NUMS = {"0123456789", 10};
-static const struct seed_part ESP = {"-_", 2};
 
 #define if_str(s1, s2)                          \
   ((s1) != NULL && (s2) != NULL &&              \
@@ -399,9 +398,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
                       __p = memupcpy (__p, NUMS.c, NUMS.len);
                       break;
                     case 's':
-                      __p = memupcpy (__p, ESP.c, ESP.len);
-                      break;
-                    case 'w':
                       for (++c; *c != '\0' && *c != ' '; ++c)
                         {
                           __p = memupcpy (__p, c, 1);
