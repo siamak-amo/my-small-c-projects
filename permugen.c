@@ -30,19 +30,24 @@
  *    - For depths 1, 2, 3, 4:
  *    $ ./permugen -D 4
  *
- *    - To specify seed, (`-s` option):
- *      `-s a`      ->  for [a-z]
- *      `-s A`      ->  for [A-Z]
- *      `-s n`      ->  for [0-9]
- *      `-s wXYZ`   ->  for [X,Y,Z]
+ *    - To configure seeds, these can be used together:
+ *      `-s a`            ->  [a-z]
+ *      `-s A`            ->  [A-Z]
+ *      `-s n`            ->  [0-9]
+ *      `-s sXYZ`         ->  [X,Y,Z]  (custom seed)
+ *                            for non-space characters
  *
  *    - To inject word(s) in permutations (word seed):
- *      `-s Wdev`         ->  for using `dev`
- *      `-s Wdev,test,m`  ->  for `dev`, `test`, `m`
+ *      `-s Wdev`         ->  `dev`
+ *      `-s Wdev,test,m`  ->  `dev`, `test`, `m`
  *
- *    - Example:
- *    # permutations of `1`, `2`, `test`, `dev`
- *    $ ./permugen -D 2 -s w12 -s Wtest,dev
+ *    - Examples:
+ *    # permutations of `-`, `.`, `test`, `dev`
+ *    $ ./permugen -s "s-. Wtest,dev"
+ *
+ *    # to also include numbers and [A-Z]
+ *    $ ./permugen -s "s-. Wtest,dev nA"
+ *
  *
  *    - To read these seed words from a file, (`-S` option):
  *    # wlist.txt is a newline-separated word list
@@ -51,9 +56,11 @@
  *
  *    - Example:
  *    # to see only permutations of the wordlist
- *    $ ./permugen -s w -S /path/to/wlist.txt
- *    # to also include `-` and `_`
  *    $ ./permugen -s s -S /path/to/wlist.txt
+ *
+ *    # to also include `-` and `_`
+ *    $ ./permugen -s "s-_" -S /path/to/wlist.txt
+ *
  *
  *    - To add prefix and suffix to the output, (`-f` option):
  *    $ ./permugen -f ".com"         ->      xyz.com
