@@ -152,7 +152,10 @@ main (int argc, char **argv)
             case 'o':
             case 'O':
               if (argc < 2)
-                return 1;
+                {
+                  fprintf (stderr, "`-o` needs an argument\n");
+                  return 1;
+                }
               FILE *__f = fopen (argv[1], "w");
               puts(argv[1]);
               if (__f)
@@ -168,6 +171,7 @@ main (int argc, char **argv)
               break;
 
             default:
+              fprintf (stderr, "unknown option `%s`\n", argv[0]);
               return 1;
             }
         }
