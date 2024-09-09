@@ -21,13 +21,14 @@
  *  Permutation Generator
  *
  *  Usage:
- *    - [a-z] [0-9] permutations (default depth is 3):
- *    $ ./permugen
+ *    - basic usage, default depth (length) is 3
+ *    # permutation of [a-z] [0-9], with depth 2
+ *    $ ./permugen -d 2
  *
  *    - From depth 2 to 5:
  *    $ ./permugen -fd 2 -td 5
  *
- *    - For depths 1, 2, 3, 4:
+ *    - For depths <= 4
  *    $ ./permugen -D 4
  *
  *    - To configure seeds, these can be used together:
