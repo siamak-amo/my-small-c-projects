@@ -47,20 +47,19 @@ It helps to buffer IO-required calls such as `putc` and `puts` to reduce the num
 this file is a dependency for `permugen.c`, `tokenizeIt.c` and `tr_ng.c`
 
 ---
-
-### leven.c
-Levenshtein Distance algorithm
-
-this file is a dependency for the `codeM` project
-
-
 ### codeM
 Common Iranian ID number (code-e-melli)
 also includes:
 1. a shell program
 2. python C extension module (to use codeM through python)
 
----
+
+### leven.c
+Levenshtein Distance  
+this file is a dependency for `codeM`
+
+
+## Others
 
 ### graphics
 graphical programs
