@@ -36,7 +36,7 @@
  *      `-s A`            ->  [A-Z]
  *      `-s n`            ->  [0-9]
  *      `-s sXYZ`         ->  [X,Y,Z]  (custom seed)
- *                            for non-space characters
+ *                            for non-whitespace characters
  *
  *    - To inject word(s) in permutations (word seed):
  *      `-s Wdev`         ->  `dev`
@@ -267,8 +267,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
     opt->seed = malloc (cap);                   \
     __p = opt->seed;                            \
   }
-#define seed_init(cap)                          \
-  if (opt->seed == NULL) { __seed_init (257); }
 
 #define next_opt(argc, argv) {argc--; argv++;}
 #define getARG(action) if (argc > 1) {          \
@@ -395,17 +393,17 @@ init_opt (int argc, char **argv, struct Opt *opt)
                         break;
                       }
 
-                    case 'a':
+                    case 'a': /* add [a-z] */
                       __p = memupcpy (__p, AZ.c, AZ.len);
                       break;
                       
-                    case 'A':
+                    case 'A': /* add [A-Z] */
                       __p = memupcpy (__p, AZCAP.c, AZ.len);
                       break;
-                    case 'n':
+                    case 'n': /* add [0-9] */
                       __p = memupcpy (__p, NUMS.c, NUMS.len);
                       break;
-                    case 's':
+                    case 's': /* add custom seed(s) */
                       for (++c; *c != '\0' && *c != ' '; ++c)
                         {
                           __p = memupcpy (__p, c, 1);
@@ -488,11 +486,15 @@ main (int argc, char **argv)
   bio_flush (opt.bio);
   free (opt.bio->buffer);
 #endif
-        
+
   if (opt.seed)
     free (opt.seed);
   if (opt.wseed)
     wseed_free (&opt);
-  close (opt.outfd);
+
+  /* close any non-stdout file descriptors */
+  if (opt.outfd != 1)
+    close (opt.outfd);
+
   return 0;
 }
