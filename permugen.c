@@ -256,12 +256,12 @@ init_opt (int argc, char **argv, struct Opt *opt)
 {
   char *__p = NULL;
 
-#define seed_init(cap) {                        \
+#define __seed_init(cap) {                      \
     opt->seed = malloc (cap);                   \
     __p = opt->seed;                            \
   }
-#define __seed_init(cap)                        \
-  if (opt->seed == NULL) { seed_init (257); }
+#define seed_init(cap)                          \
+  if (opt->seed == NULL) { __seed_init (257); }
 
 #define next_opt(argc, argv) {argc--; argv++;}
 #define getARG(action) if (argc > 1) {          \
@@ -358,31 +358,31 @@ init_opt (int argc, char **argv, struct Opt *opt)
               if (ARG[0] == 'a')
                 {
                   /* add a-z */
-                  __seed_init();
+                  seed_init();
                   __p = memupcpy (__p, AZ.c, AZ.len);
                 }
               else if (ARG[0] == 'A')
                 {
                   /* add A-Z */
-                  __seed_init();
+                  seed_init();
                   __p = memupcpy (__p, AZCAP.c, AZ.len);
                 }
               else if (ARG[0] == 'N' || ARG[0] == 'n')
                 {
                   /* add numbers */
-                  __seed_init();
+                  seed_init();
                   __p = memupcpy (__p, NUMS.c, NUMS.len);
                 }
               else if (ARG[0] == 'S' || ARG[0] == 's')
                 {
                   /* add some special characters */
-                  __seed_init();
+                  seed_init();
                   __p = memupcpy (__p, ESP.c, ESP.len);
                 }
               else if (ARG[0] == 'w')
                 {
                   /* to make a custom seed */
-                  __seed_init();
+                  seed_init();
                   __p = memupcpy (__p, ARG + 1, strlen (ARG + 1));
                 }
               else if (ARG[0] == 'W')
@@ -436,7 +436,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
   if (opt->seed == NULL)
     {
       /* seed not specified by the user */
-      seed_init (38);
+      __seed_init (38);
       __p = mempcpy (__p, AZ.c, 26);
       __p = mempcpy (__p, NUMS.c, 10);
     }
