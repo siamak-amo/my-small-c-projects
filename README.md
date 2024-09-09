@@ -34,12 +34,21 @@ Permutation Generator
 to generate word lists for fuzzing based on some given seeds
 
 
+### tokenizeIt.c
+Text Tokenizer
+
+helps to extract words (tokens) from the given input
+
+could be used together with the permugen program to
+generate customized word lists
+
+
 ### buffered_io.h
 Helps to buffer the IO calls like `putc`, `puts`, etc.
 
 to reduce number of `write` syscall so having better performance.
 
-this file is a dependency for `permugen.c`
+this file is a dependency for `permugen.c` and `tokenizeIt.c`
 
 ---
 
