@@ -5,7 +5,7 @@
  *  Text Tokenizer
  *
  *  Usage:
- *    echo input | ./tokenizeIt
+ *    echo 'input' | ./tokenizeIt
  *
  *    input:
  *      'token.token2-6=xyz====token__H\t\n\t  test'
@@ -13,7 +13,7 @@
  *      token, token2-6, xyz, token__H, test  (on each line)
  *
  *    input:
- *      'func abc(int param) {return 'xxxxyz'  +  \"666\" AAA}'
+ *      'func abc(int param) {return 'xyz'  +  \"666\" AAA}'
  *    output:
  *      func, abc, int, param, return, AAA
  *
