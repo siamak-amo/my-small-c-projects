@@ -3,9 +3,9 @@
 
 ### GNU Recreation
 rewriting some of the GUN utils (coreutils)
-1. `cat.c`
-2. `tr_ng.c`
-3. `yes.c`
+1. `cat.c`  concatenate files
+2. `tr_ng.c`  translate or delete characters (new generation)
+3. `yes.c`  print 'y' repeatedly until killed
 
 ---
 
@@ -44,7 +44,7 @@ generate customized word lists
 ### buffered_io.h
 It helps to buffer IO-required calls such as `putc` and `puts` to reduce the number of `write` syscalls, resulting in better performance.
 
-this file is a dependency for `permugen.c` and `tokenizeIt.c`
+this file is a dependency for `permugen.c`, `tokenizeIt.c` and `tr_ng.c`
 
 ---
 
