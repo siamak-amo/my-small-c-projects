@@ -256,14 +256,14 @@ w_wl (const int depth, const struct Opt *opt)
 }
 
 /**
- *  unique memcopy
- *  time: O(src_len * dest_len);
+ *  unique append char(s) from @srt into @dest
  *  @dest with *CAPACITY* 256 is always enough
+ *  time: O(src_len * dest_len);
  *  updates @dest_len and
  *  returns number of bytes written
  */
 int
-memucpy (char *restrict dest, int *dest_len,
+uniappend (char *restrict dest, int *dest_len,
          const char *restrict src, int src_len)
 {
   int rw = 0;
@@ -423,23 +423,23 @@ init_opt (int argc, char **argv, struct Opt *opt)
                       }
 
                     case 'a': /* add [a-z] */
-                      memucpy (opt->seed, &opt->seed_len, AZ.c, AZ.len);
+                      uniappend (opt->seed, &opt->seed_len, AZ.c, AZ.len);
                       break;
                       
                     case 'A': /* add [A-Z] */
-                      memucpy (opt->seed, &opt->seed_len, AZCAP.c, AZ.len);
+                      uniappend (opt->seed, &opt->seed_len, AZCAP.c, AZ.len);
                       break;
                     case 'n': /* add [0-9] */
-                      memucpy (opt->seed, &opt->seed_len, NUMS.c, NUMS.len);
+                      uniappend (opt->seed, &opt->seed_len, NUMS.c, NUMS.len);
                       break;
                     case 's': /* add custom seed(s) */
                       /**
-                       *  we know memucpy will stop coping when
+                       *  we know uniappend will stop coping when
                        *  encounters '\0' and ' ' (space);
                        *  so, this call with 256 as src_len, will not
                        *  corrupt the rest of the user seed options
                        */
-                      c += memucpy (opt->seed, &opt->seed_len, c+1, 256);
+                      c += uniappend (opt->seed, &opt->seed_len, c+1, 256);
                       break;
                     }
                 }
