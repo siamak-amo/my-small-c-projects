@@ -101,6 +101,28 @@
 #  include "buffered_io.h"
 #endif
 
+#ifdef _DEBUG
+#  include <stdio.h>
+/* use printd_arr */
+#  define printd_arr__H(arr, T, len, sep, end)  \
+  for (int __idx = 0; __idx < len; __idx++) {   \
+    printf (T"%s", arr[__idx],                  \
+            (__idx < len-1) ? sep : end);       \
+  }
+/**
+ * debug printf for arrays
+ * pass printf format for each element of @arr with @T
+ * Ex: to print `int arr[7]`  -->  printd_arr (arr, "%d", 7);
+ */
+#  define printd_arr(arr, T, len)               \
+  if (len > 0) {                                \
+    printf ("* "#arr"[%d] = {", len);           \
+    printd_arr__H (arr, T, len, ", ", "}\n");   \
+  } else {                                      \
+    puts ("- "#arr" is empty");                 \
+  }
+#endif
+
 struct seed_part {
   const char *c;
   int len;
@@ -475,6 +497,13 @@ main (int argc, char **argv)
   int cap = _BMAX;
   BIO_t __bio = bio_new (cap, malloc (cap), opt.outfd);
   opt.bio = &__bio;
+#endif
+
+#ifdef _DEBUG
+  printd_arr (opt.seed, "`%c`", opt.seed_len);
+  printd_arr (opt.wseed, "`%s`", opt.wseed_len);
+  printf ("* depth: from %d to %d\n", opt.from_depth, opt.to_depth);
+  puts ("Permutations:");
 #endif
 
   int rw_err = 0;
