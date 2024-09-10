@@ -56,7 +56,8 @@
  *    $ ./permugen -S /path/to/wlist.txt
  *
  *    - Example:
- *    # to see only permutations of the wordlist
+ *    # to get permutations of a wordlist
+ *    # `-s s` means no character seed
  *    $ ./permugen -s s -S /path/to/wlist.txt
  *
  *    # to also include `-` and `_`
