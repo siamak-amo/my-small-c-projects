@@ -257,6 +257,7 @@ w_wl (const int depth, const struct Opt *opt)
 
 /**
  *  unique memcopy
+ *  time: O(src_len * dest_len);
  *  @dest with *CAPACITY* 256 is always enough
  *  updates @dest_len and
  *  returns number of bytes written
@@ -432,6 +433,12 @@ init_opt (int argc, char **argv, struct Opt *opt)
                       memucpy (opt->seed, &opt->seed_len, NUMS.c, NUMS.len);
                       break;
                     case 's': /* add custom seed(s) */
+                      /**
+                       *  we know memucpy will stop coping when
+                       *  encounters '\0' and ' ' (space);
+                       *  so, this call with 256 as src_len, will not
+                       *  corrupt the rest of the use seed options
+                       */
                       c += memucpy (opt->seed, &opt->seed_len, c+1, 256);
                       break;
                     }
