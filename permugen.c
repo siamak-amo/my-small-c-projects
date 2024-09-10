@@ -469,6 +469,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
       __seed_init (38);
       __p = mempcpy (__p, AZ.c, 26);
       __p = mempcpy (__p, NUMS.c, 10);
+
+      opt->seed_len = (int)(__p - opt->seed);
     }
 
   if (opt->from_depth <= 0)
@@ -483,7 +485,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
       opt->to_depth = opt->from_depth;
     }
 
-  opt->seed_len = (int)(__p - opt->seed);
   return 0;
 }
 
