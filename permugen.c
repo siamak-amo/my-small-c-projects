@@ -259,25 +259,29 @@ w_wl (const int depth, const struct Opt *opt)
  *  like mempcpy but @dest elements are unique
  *  dest having *CAPACITY* 257 is always enough
  */
-char *
-memupcpy (char *dest, const char *src, int len)
+int
+memucpy (char *restrict dest, int *dest_len,
+         const char *restrict src, int src_len)
 {
-  char *__p = dest;
-
-  while (len > 0)
+  int rw = 0;
+  while (src_len > 0)
     {
-      for (char *p = dest; *p != '\0'; p++)
-        if (*p == *src)
-          goto EOLoop;
+      if (*src == '\0' || *src == ' ')
+        break;
+      for (int __i = *dest_len - 1; __i >= 0; __i--)
+        {
+          if (*src == dest[__i])
+            goto END_OF_LOOP;
+        }
+      dest[(*dest_len)++] = *src;
+      rw++;
 
-      *(__p++) = *src;
-
-    EOLoop:
+    END_OF_LOOP:
       src++;
-      len--;
+      src_len--;
     }
 
-  return __p;
+  return rw;
 }
 
 int
@@ -416,20 +420,17 @@ init_opt (int argc, char **argv, struct Opt *opt)
                       }
 
                     case 'a': /* add [a-z] */
-                      __p = memupcpy (__p, AZ.c, AZ.len);
+                      memucpy (opt->seed, &opt->seed_len, AZ.c, AZ.len);
                       break;
                       
                     case 'A': /* add [A-Z] */
-                      __p = memupcpy (__p, AZCAP.c, AZ.len);
+                      memucpy (opt->seed, &opt->seed_len, AZCAP.c, AZ.len);
                       break;
                     case 'n': /* add [0-9] */
-                      __p = memupcpy (__p, NUMS.c, NUMS.len);
+                      memucpy (opt->seed, &opt->seed_len, NUMS.c, NUMS.len);
                       break;
                     case 's': /* add custom seed(s) */
-                      for (++c; *c != '\0' && *c != ' '; ++c)
-                        {
-                          __p = memupcpy (__p, c, 1);
-                        }
+                      c += memucpy (opt->seed, &opt->seed_len, c+1, 256);
                       break;
                     }
                 }
