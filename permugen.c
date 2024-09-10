@@ -64,18 +64,18 @@
  *    $ ./permugen -s "s-_" -S /path/to/wlist.txt
  *
  *
- *    - To add prefix and suffix to the output, (`-f` option):
+ *    - To add prefix and suffix to the output:
  *    $ ./permugen -f ".com"         ->      xyz.com
  *    $ ./permugen -f "www.:.com"    ->  www.xyz.com
  *    $ ./permugen -f "www.:"        ->  www.xyz
  *
  *  Compilation:
- *    provide the `buffered_io.h` file (or use `-I/path/to/buffered_io.h`):
+ *    to compile with `buffered_io.h`:
  *      cc -ggdb -O3 -Wall -Wextra -Werror \
- *         -D_PERMUGEN_USE_BIO \
+ *         -D_PERMUGEN_USE_BIO -I/path/to/buffered_io.h \
  *         -o permugen permugen.c
  *
- *  Other compilation options:
+ *  Compilation options:
  *    - to compile without buffered IO (less performance)
  *      remove `-D_PERMUGEN_USE_BIO`
  *
