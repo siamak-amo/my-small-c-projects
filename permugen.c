@@ -437,7 +437,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                        *  we know memucpy will stop coping when
                        *  encounters '\0' and ' ' (space);
                        *  so, this call with 256 as src_len, will not
-                       *  corrupt the rest of the use seed options
+                       *  corrupt the rest of the user seed options
                        */
                       c += memucpy (opt->seed, &opt->seed_len, c+1, 256);
                       break;
