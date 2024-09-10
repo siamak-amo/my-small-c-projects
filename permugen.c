@@ -256,8 +256,10 @@ w_wl (const int depth, const struct Opt *opt)
 }
 
 /**
- *  like mempcpy but @dest elements are unique
- *  dest having *CAPACITY* 257 is always enough
+ *  unique memcopy
+ *  @dest with *CAPACITY* 256 is always enough
+ *  updates @dest_len and
+ *  returns number of bytes written
  */
 int
 memucpy (char *restrict dest, int *dest_len,
