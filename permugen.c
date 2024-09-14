@@ -135,16 +135,15 @@ static const struct seed_part AZCAP = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 static const struct seed_part NUMS = {"0123456789", 10};
 
 struct Opt {
-  /* seed chars */
+  /* seed */
   char *seed;
   int seed_len;
-
   /* word seed */
   char **wseed;
   int wseed_len;
-  int __wseed_l; /* used for dynamic array */
+  int __wseed_l; /* to make wseed dynamic-array */
 
-  /* prefix and suffix of output */
+  /* prefix and suffix of the result */
   const char *__pref;
   const char *__suff;
 
