@@ -69,6 +69,9 @@
  *    $ ./permugen -f "www.:.com"    ->  www.xyz.com
  *    $ ./permugen -f "www.:"        ->  www.xyz
  *
+ *    - To write the output on a file: `-o`, `--output`
+ *      for appending: `-oA`, `-a`, `--append`
+ *
  *  Compilation:
  *    to compile with `buffered_io.h`:
  *      cc -ggdb -O3 -Wall -Wextra -Werror \
@@ -338,7 +341,16 @@ init_opt (int argc, char **argv, struct Opt *opt)
           getARG(2, {
               FILE *o = fopen (ARG, "w");
               if (o)
-                opt->outfd = fileno (o);
+                opt->outf = o;
+            });
+        }
+
+      if_opt3 ("-a", "-oA", "--output")
+        {
+          getARG(0, {
+              FILE *o = fopen (ARG, "a");
+              if (o)
+                opt->outf = o;
             });
         }
       
