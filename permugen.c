@@ -127,7 +127,6 @@ struct seed_part {
   const char *c;
   int len;
 };
-
 static const struct seed_part AZ = {"abcdefghijklmnopqrstuvwxyz", 26};
 static const struct seed_part AZCAP = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 static const struct seed_part NUMS = {"0123456789", 10};
@@ -147,9 +146,9 @@ struct Opt {
   const char *__suff;
 
   /* output conf */
-  int outfd;
-  int from_depth;
-  int to_depth;
+  int outfd; /* output file descriptor */
+  int from_depth; /* min depth */
+  int to_depth; /* max depth */
 
   /* buffered_io */
 #ifdef _PERMUGEN_USE_BIO
