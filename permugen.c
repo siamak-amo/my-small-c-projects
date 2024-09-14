@@ -195,25 +195,26 @@ w_wl (const int depth, const struct Opt *opt)
 
  WL_Loop:
 #ifndef _PERMUGEN_USE_BIO
+  FILE *f_out = fdopen (opt->outfd, "w");
   /* print the prefix */
   if (opt->__pref)
-    write (opt->outfd, opt->__pref, strlen (opt->__pref));
+    fprintf (f_out, opt->__pref);
   /* print the permutation */
   for (int i = 0; i < depth; ++i)
     {
       int idx = idxs[i];
       if (idx < opt->seed_len)
-        write (opt->outfd, opt->seed + idx, 1);
+        putc (opt->seed[idx], f_out);
       else
         {
           idx -= opt->seed_len;
           const char *__w = opt->wseed[idx];
-          write (opt->outfd, __w, strlen (__w));
+          fprintf (f_out, __w);
         }
     }
   if (opt->__suff)
-    write (opt->outfd, opt->__suff, strlen (opt->__suff));
-  write (opt->outfd, "\n", 1);
+    fprintf (f_out, opt->__suff);
+  putc ('\n', f_out);
   if (errno != 0)
     return errno;
 
