@@ -180,6 +180,11 @@ wseed_free (struct Opt *opt)
   free(opt->wseed);
 }
 
+/**
+ *  permutation generator main logic
+ *  you need to call it in a loop from
+ *  depth=min_depth to depth=max_depth
+ */
 int
 w_wl (const int depth, const struct Opt *opt)
 {
@@ -190,6 +195,7 @@ w_wl (const int depth, const struct Opt *opt)
 
  WL_Loop:
 #ifndef _PERMUGEN_USE_BIO
+  /* implementation without using buffered_io */
   FILE *f_out = fdopen (opt->outfd, "w");
   /* print the prefix */
   if (opt->__pref)
@@ -330,14 +336,14 @@ init_opt (int argc, char **argv, struct Opt *opt)
             });
         }
       
-      if_opt ("-d", "--depth")
+      if_opt ("-d", "--depth") // set depth
         {
           getARG(2, {
               opt->from_depth = atoi(ARG);
             });
         }
 
-      if_opt ("-D", "--all-depth")
+      if_opt ("-D", "--all-depth") // depth range
         {
           getARG(2, {
               opt->from_depth = 1;
@@ -345,21 +351,21 @@ init_opt (int argc, char **argv, struct Opt *opt)
             });
         }
 
-      if_opt3 ("-df", "-fd", "--from-depth")
+      if_opt3 ("-df", "-fd", "--from-depth") // min depth
         {
           getARG(3, {
               opt->from_depth = atoi(ARG);
             });
         }
 
-      if_opt3 ("-tf", "-td", "--to-depth")
+      if_opt3 ("-tf", "-td", "--to-depth") // max depth
         {
           getARG(3, {
               opt->to_depth = atoi(ARG);
             });
         }
 
-      if_opt ("-f", "--format")
+      if_opt ("-f", "--format") // output format
         {
           getARG(2, {
               opt->__suff = ARG;
@@ -383,7 +389,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
             })
         }
 
-      if_opt ("-s", "--seed")
+      if_opt ("-s", "--seed") // specify seed
         {
           getARG(2, {
               for (char *c = ARG; *c != '\0'; ++c)
@@ -443,7 +449,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
             });
         }
 
-      if_opt3 ("-S", "--wseed-path", "--seed-path")
+      if_opt3 ("-S", "--wseed-path", "--seed-path") // word seed path
         {
           getARG(2, {
               size_t __len;
@@ -508,6 +514,7 @@ main (int argc, char **argv)
 #endif
 
 #ifdef _DEBUG
+  /* print some debug information */
   printd_arr (opt.seed, "`%c`", opt.seed_len);
   printd_arr (opt.wseed, "`%s`", opt.wseed_len);
   printf ("* depth: from %d to %d\n", opt.from_depth, opt.to_depth);
@@ -517,7 +524,7 @@ main (int argc, char **argv)
   int rw_err = 0;
   for (int d = opt.from_depth; d <= opt.to_depth; ++d)
     if ((rw_err = w_wl (d, &opt)) < 0)
-      break;
+      break; /* END OF Permutations */
 
 #ifdef _PERMUGEN_USE_BIO
   bio_flush (opt.bio);
