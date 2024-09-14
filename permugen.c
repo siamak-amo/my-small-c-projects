@@ -133,10 +133,6 @@ static const struct seed_part AZ = {"abcdefghijklmnopqrstuvwxyz", 26};
 static const struct seed_part AZCAP = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 static const struct seed_part NUMS = {"0123456789", 10};
 
-#define if_str(s1, s2)                          \
-  ((s1) != NULL && (s2) != NULL &&              \
-   strcmp ((s1), (s2)) == 0)
-
 struct Opt {
   /* seed chars */
   char *seed;
@@ -312,10 +308,15 @@ init_opt (int argc, char **argv, struct Opt *opt)
     action;                                     \
   }
   
+#define _strcmp(s1, s2)                         \
+  ((s1) != NULL && (s2) != NULL &&              \
+   strncmp ((s1), (s2), strlen (s2)) == 0)
+
+#define cmp_opt(__name) (_strcmp (*argv, __name))
 #define if_opt(__short, __long) \
-  if (if_str(*argv, __short) || if_str(*argv, __long))
+  if (cmp_opt (__short) || cmp_opt (__long))
 #define if_opt3(__p1, __p2, __p3) \
-  if (if_str(*argv, __p1) || if_str(*argv, __p2) || if_str(*argv, __p3))
+  if (cmp_opt (__p1) || cmp_opt (__p2) || cmp_opt (__p3))
 
   opt->outfd = 1; // stdout
 
