@@ -104,7 +104,7 @@
  */
 #ifdef _PERMUGEN_USE_BIO
 #  ifndef _BMAX
-#    define _BMAX (sysconf (_SC_PAGESIZE) / 2)
+#    define _BMAX (sysconf (_SC_PAGESIZE) / 2) // 2kb
 #  endif
 #  define BIO_IMPLEMENTATION
 #  include "buffered_io.h"
@@ -550,7 +550,10 @@ main (int argc, char **argv)
   printd_arr (opt.seed, "`%c`", opt.seed_len);
   printd_arr (opt.wseed, "`%s`", opt.wseed_len);
   printf ("* depth: from %d to %d\n", opt.from_depth, opt.to_depth);
-  puts ("Permutations:");
+# ifdef _PERMUGEN_USE_BIO
+  printf ("* buffered_io buffer length: %ld bytes\n", _BMAX);
+# endif
+  puts ("* permutations:");
 #endif
 
   int rw_err = 0;
