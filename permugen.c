@@ -300,7 +300,13 @@ init_opt (int argc, char **argv, struct Opt *opt)
   }
 
 #define next_opt(argc, argv) {argc--; argv++;}
-#define getARG(action) if (argc > 1) {          \
+#define getARG(short_len, action)               \
+  /* arg is packed like `-d1` or `-D1` */       \
+  if (argv[0][short_len] != '\0') {             \
+    char *ARG = *argv + short_len;              \
+    action;                                     \
+  } else if (argc > 1) {                        \
+    /* arg is like `-d 1` or `-o /tmp/file` */  \
     next_opt(argc, argv);                       \
     char *ARG = *argv;                          \
     action;                                     \
@@ -317,7 +323,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
     {
       if_opt ("-o", "--output")
         {
-          getARG({
+          getARG(2, {
               FILE *o = fopen (ARG, "w");
               if (o)
                 opt->outfd = fileno (o);
@@ -326,47 +332,36 @@ init_opt (int argc, char **argv, struct Opt *opt)
       
       if_opt ("-d", "--depth")
         {
-          getARG({
+          getARG(2, {
               opt->from_depth = atoi(ARG);
             });
         }
 
       if_opt ("-D", "--all-depth")
         {
-          getARG({
+          getARG(2, {
               opt->from_depth = 1;
               opt->to_depth = atoi(ARG);
             });
         }
 
-      /* -dx and -Dx where x must be a number */
-      if (strncmp (*argv, "-d", 2) == 0 && strlen(*argv) > 2)
-        {
-          opt->from_depth = atoi(*argv + 2);
-        }
-      if (strncmp (*argv, "-D", 2) == 0 && strlen(*argv) > 2)
-        {
-          opt->from_depth = 1;
-          opt->to_depth = atoi(*argv + 2);
-        }
-
       if_opt3 ("-df", "-fd", "--from-depth")
         {
-          getARG({
+          getARG(3, {
               opt->from_depth = atoi(ARG);
             });
         }
 
       if_opt3 ("-tf", "-td", "--to-depth")
         {
-          getARG({
+          getARG(3, {
               opt->to_depth = atoi(ARG);
             });
         }
 
       if_opt ("-f", "--format")
         {
-          getARG({
+          getARG(2, {
               opt->__suff = ARG;
               for (char *p = ARG; *p != '\0'; ++p)
                 if (*p == ':')
@@ -390,7 +385,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
       if_opt ("-s", "--seed")
         {
-          getARG({
+          getARG(2, {
               for (char *c = ARG; *c != '\0'; ++c)
                 {
                   if (*c == 'a' || *c == 'A' || *c == 'n'
@@ -450,7 +445,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
       if_opt3 ("-S", "--wseed-path", "--seed-path")
         {
-          getARG({
+          getARG(2, {
               size_t __len;
               char *__line = NULL;
               FILE *wseed_f = fopen (ARG, "r");
