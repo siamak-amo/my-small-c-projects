@@ -271,7 +271,7 @@ w_wl (const int depth, const struct Opt *opt)
  *  returns number of bytes written
  */
 int
-uniappend (char *restrict dest, int *dest_len,
+uniappd (char *restrict dest, int *dest_len,
          const char *restrict src, int src_len)
 {
   int rw = 0;
@@ -448,23 +448,23 @@ init_opt (int argc, char **argv, struct Opt *opt)
                       }
 
                     case 'a': /* add [a-z] */
-                      uniappend (opt->seed, &opt->seed_len, AZ.c, AZ.len);
+                      uniappd (opt->seed, &opt->seed_len, AZ.c, AZ.len);
                       break;
                       
                     case 'A': /* add [A-Z] */
-                      uniappend (opt->seed, &opt->seed_len, AZCAP.c, AZ.len);
+                      uniappd (opt->seed, &opt->seed_len, AZCAP.c, AZ.len);
                       break;
                     case 'n': /* add [0-9] */
-                      uniappend (opt->seed, &opt->seed_len, NUMS.c, NUMS.len);
+                      uniappd (opt->seed, &opt->seed_len, NUMS.c, NUMS.len);
                       break;
                     case 's': /* add custom seed(s) */
                       /**
-                       *  we know uniappend will stop coping when
+                       *  we know uniappd will stop coping when
                        *  encounters '\0' and ' ' (space);
                        *  so, this call with 256 as src_len, will not
                        *  corrupt the rest of the user seed options
                        */
-                      c += uniappend (opt->seed, &opt->seed_len, c+1, 256);
+                      c += uniappd (opt->seed, &opt->seed_len, c+1, 256);
                       break;
                     }
                 }
