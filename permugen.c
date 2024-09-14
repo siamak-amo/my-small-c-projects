@@ -63,6 +63,8 @@
  *    # to also include `-` and `_`
  *    $ ./permugen -s "s-_" -S /path/to/wlist.txt
  *
+ *    # to get words from stdin, use `-S -`:
+ *    $ cat wlist.txt | ./permugen -S -
  *
  *    - To add prefix and suffix to the output:
  *    $ ./permugen -f ".com"         ->      xyz.com
@@ -471,7 +473,17 @@ init_opt (int argc, char **argv, struct Opt *opt)
           getARG(2, {
               size_t __len;
               char *__line = NULL;
-              FILE *wseed_f = fopen (ARG, "r");
+              FILE *wseed_f;
+              if (_strcmp (ARG, "-"))
+                {
+                  /* using stdin as the wseed file */
+                  wseed_f = stdin;
+                }
+              else
+                {
+                  /* using normal argument value as the file path */
+                  wseed_f = fopen (ARG, "r");
+                }
               if (!wseed_f)
                 continue;
               while (1)
