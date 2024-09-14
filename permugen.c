@@ -300,16 +300,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
   }
 
 #define next_opt(argc, argv) {argc--; argv++;}
-#define getARG(short_len, action)               \
-  /* arg is packed like `-d1` or `-D1` */       \
-    char *ARG = *argv + short_len;              \
-    action;                                     \
-  } else if (argc > 1) {                        \
-    /* arg is like `-d 1` or `-o /tmp/file` */  \
-    next_opt(argc, argv);                       \
-    char *ARG = *argv;                          \
-    action;                                     \
-  }
 /** get argument macro
  *  in the @action `char *ARG` is available and is
  *  pointing to the value of the current argument
@@ -317,8 +307,18 @@ init_opt (int argc, char **argv, struct Opt *opt)
  *    if the short version of --output is `-o` => pass it 2
  *  pass @short_len=0 to disable packed arguments
  *  like `-d1` instead of `-d 1` */
+#define getARG(short_len, action)                       \
+  /* arg is packed like `-d1` or `-D1` */               \
     if (short_len > 0 &&                                \
         argv[0][short_len] != '\0') {                   \
+      char *ARG = *argv + short_len;                    \
+      action;                                           \
+    } else if (argc > 1) {                              \
+      /* arg is like `-d 1` or `-o /tmp/file` */        \
+      next_opt(argc, argv);                             \
+      char *ARG = *argv;                                \
+      action;                                           \
+    }
   
 #define _strcmp(s1, s2)                         \
   ((s1) != NULL && (s2) != NULL &&              \
