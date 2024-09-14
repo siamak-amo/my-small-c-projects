@@ -50,7 +50,8 @@
  *    $ ./permugen -s "s-. Wtest,dev nA"
  *
  *
- *    - To read these seed words from a file, (`-S` option):
+ *    - To read seed words from a file, (`-S` option)
+ *      When file path is `-`, it uses stdin
  *    # wlist.txt is a newline-separated word list
  *    # lines starting with `#` will be ignored
  *    $ ./permugen -S /path/to/wlist.txt
@@ -63,8 +64,10 @@
  *    # to also include `-` and `_`
  *    $ ./permugen -s "s-_" -S /path/to/wlist.txt
  *
- *    # to get words from stdin, use `-S -`:
- *    $ cat wlist.txt | ./permugen -S -
+ *    # to get permutations of words from stdin:
+ *    $ cat wlist.txt | ./permugen -S - -ss
+ *    # to also include `AAA` and `-`
+ *    $ cat wlist.txt | ./permugen -S - -ss- -sWAAA
  *
  *    - To add prefix and suffix to the output:
  *    $ ./permugen -f ".com"         ->      xyz.com
