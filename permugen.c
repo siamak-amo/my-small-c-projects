@@ -103,7 +103,6 @@
 #endif
 
 #ifdef _DEBUG
-#  include <stdio.h>
 /* use printd_arr */
 #  define printd_arr__H(arr, T, len, sep, end)  \
   for (int __idx = 0; __idx < len; __idx++) {   \
