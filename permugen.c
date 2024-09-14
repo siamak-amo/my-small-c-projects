@@ -146,7 +146,7 @@ struct Opt {
   const char *__suff;
 
   /* output conf */
-  int outfd; /* output file descriptor */
+  FILE *outf; /* output file */
   int from_depth; /* min depth */
   int to_depth; /* max depth */
 
@@ -195,26 +195,25 @@ w_wl (const int depth, const struct Opt *opt)
  WL_Loop:
 #ifndef _PERMUGEN_USE_BIO
   /* implementation without using buffered_io */
-  FILE *f_out = fdopen (opt->outfd, "w");
   /* print the prefix */
   if (opt->__pref)
-    fprintf (f_out, opt->__pref);
+    fprintf (opt->outf, opt->__pref);
   /* print the permutation */
   for (int i = 0; i < depth; ++i)
     {
       int idx = idxs[i];
       if (idx < opt->seed_len)
-        putc (opt->seed[idx], f_out);
+        putc (opt->seed[idx], opt->outf);
       else
         {
           idx -= opt->seed_len;
           const char *__w = opt->wseed[idx];
-          fprintf (f_out, __w);
+          fprintf (opt->outf, __w);
         }
     }
   if (opt->__suff)
-    fprintf (f_out, opt->__suff);
-  putc ('\n', f_out);
+    fprintf (opt->outf, opt->__suff);
+  putc ('\n', opt->outf);
   if (errno != 0)
     return errno;
 
@@ -330,7 +329,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
 #define if_opt3(__p1, __p2, __p3) \
   if (cmp_opt (__p1) || cmp_opt (__p2) || cmp_opt (__p3))
 
-  opt->outfd = 1; // stdout
+  opt->outf = stdout; // stdout
 
   for (argc--, argv++; argc > 0; argc--, argv++)
     {
@@ -516,7 +515,7 @@ main (int argc, char **argv)
 
 #ifdef _PERMUGEN_USE_BIO
   int cap = _BMAX;
-  BIO_t __bio = bio_new (cap, malloc (cap), opt.outfd);
+  BIO_t __bio = bio_new (cap, malloc (cap), fileno (opt.outf));
   opt.bio = &__bio;
 #endif
 
@@ -544,8 +543,8 @@ main (int argc, char **argv)
     wseed_free (&opt);
 
   /* close any non-stdout file descriptors */
-  if (opt.outfd != 1)
-    close (opt.outfd);
+  if (fileno (opt.outf) != 1)
+    fclose (opt.outf);
 
   return 0;
 }
