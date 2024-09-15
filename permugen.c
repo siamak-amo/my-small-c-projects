@@ -353,6 +353,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
               FILE *o = fopen (ARG, "w");
               if (o)
                 opt->outf = o;
+              else
+                fopenerr (ARG, "writing");
             });
         }
       else
@@ -362,6 +364,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
               FILE *o = fopen (ARG, "a");
               if (o)
                 opt->outf = o;
+              else
+                fopenerr (ARG, "appending");
             });
         }
       else
@@ -495,7 +499,10 @@ init_opt (int argc, char **argv, struct Opt *opt)
                   wseed_f = fopen (ARG, "r");
                 }
               if (!wseed_f)
-                continue;
+                {
+                  fopenerr (ARG, "reading");
+                  continue;
+                }
               while (1)
                 {
                   if (getline (&__line, &__len, wseed_f) < 0)
