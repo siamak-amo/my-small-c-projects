@@ -135,8 +135,11 @@
   fprintf (stderr, format"\n", ##__VA_ARGS__)
 #define argerr(arg, message) \
   errorf ("(%s) was ignored -- "message".", arg)
-#define fopenerr(filename, mode) \
-  errorf ("Could not open file (%s) for "mode, filename)
+#define fopenerr(filename, mode)                        \
+  errorf ("Could not open file (%s) for %s", filename,  \
+          (mode[0]=='r') ? "reading":                   \
+          (mode[0]=='w') ? "writing":                   \
+          (mode[0]=='a') ? "appending": mode)
 
 struct seed_part {
   const char *c;
