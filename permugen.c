@@ -337,7 +337,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
     __p = opt->seed;                            \
   }
 
-#define next_opt(argc, argv) {argc--; argv++;}
+#define next_opt(n) {argc -= n; argv += n;}
 /** get argument macro
  *  in the @action `char *ARG` is available and is
  *  pointing to the value of the current argument
@@ -353,7 +353,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
       action;                                           \
     } else if (argc > 1) {                              \
       /* arg is like `-d 1` or `-o /tmp/file` */        \
-      next_opt(argc, argv);                             \
+      next_opt (1);                                     \
       char *ARG = *argv;                                \
       action;                                           \
     } else {                                            \
