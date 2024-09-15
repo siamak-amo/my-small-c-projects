@@ -345,20 +345,20 @@ init_opt (int argc, char **argv, struct Opt *opt)
  *    if the short version of --output is `-o` => pass it 2
  *  pass @short_len=0 to disable packed arguments
  *  like `-d1` instead of `-d 1` */
-#define getARG(short_len, action)                       \
-  /* arg is packed like `-d1` or `-D1` */               \
-    if (short_len > 0 &&                                \
-        argv[0][short_len] != '\0') {                   \
-      char *ARG = *argv + short_len;                    \
-      action;                                           \
-    } else if (argc > 1) {                              \
-      /* arg is like `-d 1` or `-o /tmp/file` */        \
-      next_opt (1);                                     \
-      char *ARG = *argv;                                \
-      action;                                           \
-    } else {                                            \
-      argerr (*argv, "needs an argument");              \
-    }
+#define getARG(short_len, action)               \
+  if (short_len > 0 &&                          \
+      argv[0][short_len] != '\0') {             \
+    /* arg is packed like `-d1` or `-D1` */     \
+    char *ARG = *argv + short_len;              \
+    action;                                     \
+  } else if (argc > 1) {                        \
+    /* arg is like `-d 1` or `-o /tmp/file` */  \
+    next_opt (1);                               \
+    char *ARG = *argv;                          \
+    action;                                     \
+  } else {                                      \
+    argerr (*argv, "needs an argument");        \
+  }
   
 #define _strcmp(s1, s2)                         \
   ((s1) != NULL && (s2) != NULL &&              \
