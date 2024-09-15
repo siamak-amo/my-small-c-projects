@@ -329,6 +329,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
       next_opt(argc, argv);                             \
       char *ARG = *argv;                                \
       action;                                           \
+    } else {                                            \
+      argerr (*argv, "needs an argument");              \
     }
   
 #define _strcmp(s1, s2)                         \
@@ -353,7 +355,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                 opt->outf = o;
             });
         }
-
+      else
       if_opt3 ("-a", "-oA", "--output")
         {
           getARG(0, {
@@ -362,14 +364,14 @@ init_opt (int argc, char **argv, struct Opt *opt)
                 opt->outf = o;
             });
         }
-      
+      else
       if_opt ("-d", "--depth") // set depth
         {
           getARG(2, {
               opt->from_depth = atoi(ARG);
             });
         }
-
+      else
       if_opt ("-D", "--all-depth") // depth range
         {
           getARG(2, {
@@ -377,21 +379,21 @@ init_opt (int argc, char **argv, struct Opt *opt)
               opt->to_depth = atoi(ARG);
             });
         }
-
+      else
       if_opt3 ("-df", "-fd", "--from-depth") // min depth
         {
           getARG(3, {
               opt->from_depth = atoi(ARG);
             });
         }
-
+      else
       if_opt3 ("-tf", "-td", "--to-depth") // max depth
         {
           getARG(3, {
               opt->to_depth = atoi(ARG);
             });
         }
-
+      else
       if_opt ("-f", "--format") // output format
         {
           getARG(2, {
@@ -415,7 +417,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                   }
             })
         }
-
+      else
       if_opt ("-s", "--seed") // specify seed
         {
           getARG(2, {
@@ -475,7 +477,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                 }
             });
         }
-
+      else
       if_opt3 ("-S", "--wseed-path", "--seed-path") // word seed path
         {
           getARG(2, {
@@ -509,6 +511,10 @@ init_opt (int argc, char **argv, struct Opt *opt)
                 free (__line);
               fclose (wseed_f);
             });
+        }
+      else
+        {
+          argerr (*argv, "unknown flag");
         }
     }
 
