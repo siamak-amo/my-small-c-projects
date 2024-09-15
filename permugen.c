@@ -377,22 +377,14 @@ init_opt (int argc, char **argv, struct Opt *opt)
       if_opt ("-o", "--output")
         {
           getARG(2, {
-              FILE *o = fopen (ARG, "w");
-              if (o)
-                opt->outf = o;
-              else
-                fopenerr (ARG, "writing");
+              safe_fopen (&opt->outf, ARG, "w");
             });
         }
       else
       if_opt3 ("-a", "-oA", "--output")
         {
           getARG(0, {
-              FILE *o = fopen (ARG, "a");
-              if (o)
-                opt->outf = o;
-              else
-                fopenerr (ARG, "appending");
+              safe_fopen (&opt->outf, ARG, "a");
             });
         }
       else
@@ -514,16 +506,10 @@ init_opt (int argc, char **argv, struct Opt *opt)
           getARG(2, {
               size_t __len;
               char *__line = NULL;
-              FILE *wseed_f;
-              if (_strcmp (ARG, "-"))
-                wseed_f = stdin; /* using stdin as the wseed file */
-              else /* using the argument value as file path */
-                wseed_f = fopen (ARG, "r");
-              if (!wseed_f)
-                {
-                  fopenerr (ARG, "reading");
-                  continue;
-                }
+              FILE *wseed_f = stdin;
+              /* using ARG value as filepath otherwise stdin */
+              if (!_strcmp (ARG, "-"))
+                safe_fopen (&wseed_f, ARG, "r");
               while (1)
                 {
                   if (getline (&__line, &__len, wseed_f) < 0)
