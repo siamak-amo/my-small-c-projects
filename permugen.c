@@ -517,7 +517,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                 {
                   if (getline (&__line, &__len, wseed_f) < 0)
                     break;
-                  if (strlen (__line) > 1 &&
+                  if (__line && strlen (__line) > 1 &&
                       __line[0] != '#') // commented line
                     {
                       __line[strlen (__line) - 1] = '\0';
