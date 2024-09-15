@@ -552,6 +552,8 @@ main (int argc, char **argv)
   printf ("* depth: from %d to %d\n", opt.from_depth, opt.to_depth);
 # ifdef _PERMUGEN_USE_BIO
   printf ("* buffered_io buffer length: %ld bytes\n", _BMAX);
+#else
+  puts ("- compiled without buffered_io");
 # endif
   puts ("* permutations:");
 #endif
