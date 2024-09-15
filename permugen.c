@@ -489,15 +489,9 @@ init_opt (int argc, char **argv, struct Opt *opt)
               char *__line = NULL;
               FILE *wseed_f;
               if (_strcmp (ARG, "-"))
-                {
-                  /* using stdin as the wseed file */
-                  wseed_f = stdin;
-                }
-              else
-                {
-                  /* using normal argument value as the file path */
-                  wseed_f = fopen (ARG, "r");
-                }
+                wseed_f = stdin; /* using stdin as the wseed file */
+              else /* using the argument value as file path */
+                wseed_f = fopen (ARG, "r");
               if (!wseed_f)
                 {
                   fopenerr (ARG, "reading");
