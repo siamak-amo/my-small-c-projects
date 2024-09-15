@@ -565,18 +565,22 @@ main (int argc, char **argv)
   printd_arr (opt.seed, "`%c`", opt.seed_len);
   printd_arr (opt.wseed, "`%s`", opt.wseed_len);
   printf ("* depth: from %d to %d\n", opt.from_depth, opt.to_depth);
+
 # ifdef _USE_BIO
   printf ("* buffered_io buffer length: %ld bytes\n", _BMAX);
-#else
+# else
   puts ("- compiled without buffered_io");
-# endif
+# endif /* _USE_BIO */
+
   puts ("* permutations:");
-#endif
+#endif /* _DEBUG */
 
   int rw_err = 0;
   for (int d = opt.from_depth; d <= opt.to_depth; ++d)
-    if ((rw_err = w_wl (d, &opt)) < 0)
-      break; /* END OF Permutations */
+    {
+      if ((rw_err = w_wl (d, &opt)) < 0)
+        break; /* END OF Permutations */
+    }
 
 #ifdef _USE_BIO
   bio_flush (opt.bio);
@@ -588,7 +592,6 @@ main (int argc, char **argv)
     free (opt.seed);
   if (opt.wseed)
     wseed_free (&opt);
-
   /* close any non-stdout file descriptors */
   if (fileno (opt.outf) != 1)
     fclose (opt.outf);
