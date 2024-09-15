@@ -80,12 +80,12 @@
  *  Compilation:
  *    to compile with `buffered_io.h`:
  *      cc -ggdb -O3 -Wall -Wextra -Werror \
- *         -D_PERMUGEN_USE_BIO -I/path/to/buffered_io.h \
+ *         -D_USE_BIO -I/path/to/buffered_io.h \
  *         -o permugen permugen.c
  *
  *  Compilation options:
  *    - to compile without buffered IO (less performance)
- *      remove `-D_PERMUGEN_USE_BIO`
+ *      remove `-D_USE_BIO`
  *
  *    - define `-D_BMAX="1024 * 1"` to change the default
  *      buffered IO buffer length
@@ -102,7 +102,7 @@
  *  using buffered_io.h for better performance
  *  this file should be available in this repo
  */
-#ifdef _PERMUGEN_USE_BIO
+#ifdef _USE_BIO
 #  ifndef _BMAX
 #    define _BMAX (sysconf (_SC_PAGESIZE) / 2) // 2kb
 #  endif
@@ -158,7 +158,7 @@ struct Opt {
   int to_depth; /* max depth */
 
   /* buffered_io */
-#ifdef _PERMUGEN_USE_BIO
+#ifdef _USE_BIO
   BIO_t *bio;
 #endif
 
@@ -200,7 +200,7 @@ w_wl (const int depth, const struct Opt *opt)
   memset (idxs, 0, depth * sizeof (int));
 
  WL_Loop:
-#ifndef _PERMUGEN_USE_BIO
+#ifndef _USE_BIO
   /* implementation without using buffered_io */
   /* print the prefix */
   if (opt->__pref)
@@ -539,7 +539,7 @@ main (int argc, char **argv)
   struct Opt opt = {0};
   init_opt (argc, argv, &opt);
 
-#ifdef _PERMUGEN_USE_BIO
+#ifdef _USE_BIO
   int cap = _BMAX;
   BIO_t __bio = bio_new (cap, malloc (cap), fileno (opt.outf));
   opt.bio = &__bio;
@@ -550,7 +550,7 @@ main (int argc, char **argv)
   printd_arr (opt.seed, "`%c`", opt.seed_len);
   printd_arr (opt.wseed, "`%s`", opt.wseed_len);
   printf ("* depth: from %d to %d\n", opt.from_depth, opt.to_depth);
-# ifdef _PERMUGEN_USE_BIO
+# ifdef _USE_BIO
   printf ("* buffered_io buffer length: %ld bytes\n", _BMAX);
 #else
   puts ("- compiled without buffered_io");
@@ -563,7 +563,7 @@ main (int argc, char **argv)
     if ((rw_err = w_wl (d, &opt)) < 0)
       break; /* END OF Permutations */
 
-#ifdef _PERMUGEN_USE_BIO
+#ifdef _USE_BIO
   bio_flush (opt.bio);
   free (opt.bio->buffer);
 #endif
