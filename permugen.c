@@ -550,6 +550,12 @@ main (int argc, char **argv)
   struct Opt opt = {0};
   init_opt (argc, argv, &opt);
 
+  if (opt.seed_len == 0 && opt.wseed_len == 0)
+    {
+      errorf ("Warning -- empty permutation!");
+      goto EndOfMain;
+    }
+
 #ifdef _USE_BIO
   int cap = _BMAX;
   BIO_t __bio = bio_new (cap, malloc (cap), fileno (opt.outf));
@@ -579,6 +585,7 @@ main (int argc, char **argv)
   free (opt.bio->buffer);
 #endif
 
+ EndOfMain:
   if (opt.seed)
     free (opt.seed);
   if (opt.wseed)
