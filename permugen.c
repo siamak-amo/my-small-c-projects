@@ -313,13 +313,13 @@ safe_fopen (FILE **dest,
             const char *restrict pathname,
             const char *restrict mode)
 {
+  FILE *__tmp;
   if (!pathname || !mode)
     {
       errorf ("invalud filename");
       return;
     }
-  FILE *__tmp = fopen (pathname, mode);
-  if (!__tmp)
+  if (!(__tmp = fopen (pathname, mode)))
     {
       fopenerr (pathname, mode);
       return;
