@@ -18,10 +18,10 @@
  *  file: permugen.c
  *  created on: 4 Sep 2024
  *
- *  Permutation Generator
+ *  Permugen, permutation generator utility
  *
  *  Usage:
- *    - basic usage, default depth (length) is 3
+ *    - Basic usage, default depth (length) is 3
  *    # permutation of [a-z] [0-9], with depth 2
  *    $ ./permugen -d 2
  *
@@ -84,11 +84,11 @@
  *         -o permugen permugen.c
  *
  *  Compilation options:
- *    - to compile without buffered IO (less performance)
+ *    - To compile without buffered IO (less performance)
  *      remove `-D_USE_BIO`
  *
- *    - define `-D_BMAX="1024 * 1"` to change the default
- *      buffered IO buffer length
+ *    - define `-D_BMAX="1024 * 1"` (in bytes) to change
+ *      the default buffered IO buffer length
  *
  **/
 #include <stdio.h>
