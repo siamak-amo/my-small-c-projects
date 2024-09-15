@@ -131,6 +131,11 @@
   }
 #endif
 
+#define errorf(format, ...) \
+  fprintf (stderr, format"\n", ##__VA_ARGS__)
+#define argerr(arg, message) \
+  errorf ("(%s) was ignored -- "message".", arg)
+
 struct seed_part {
   const char *c;
   int len;
