@@ -303,6 +303,30 @@ uniappd (char *restrict dest, int *dest_len,
   return rw;
 }
 
+/**
+ *  safe file open (fopen)
+ *  only if it could open @pathname changes @dest[0]
+ *  @mode is the same as fopen mode
+ */
+void
+safe_fopen (FILE **dest,
+            const char *restrict pathname,
+            const char *restrict mode)
+{
+  if (!pathname || !mode)
+    {
+      errorf ("invalud filename");
+      return;
+    }
+  FILE *__tmp = fopen (pathname, mode);
+  if (!__tmp)
+    {
+      fopenerr (pathname, mode);
+      return;
+    }
+  *dest = __tmp;
+}
+
 int
 init_opt (int argc, char **argv, struct Opt *opt)
 {
