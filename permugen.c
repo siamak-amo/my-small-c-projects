@@ -200,8 +200,6 @@ int
 w_wl (const int depth, const struct Opt *opt)
 {
   int idxs[depth];
-  if (opt->seed_len == 0 && opt->wseed_len == 0)
-    return 0;
   memset (idxs, 0, depth * sizeof (int));
 
  WL_Loop:
