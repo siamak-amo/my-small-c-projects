@@ -376,7 +376,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
             });
         }
       else
-      if_opt ("-D", "--all-depth") // depth range
+      if_opt3 ("-D", "--depth-range", "--depth-up2") // depth range
         {
           getARG(2, {
               opt->from_depth = 1;
