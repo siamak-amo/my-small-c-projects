@@ -134,7 +134,7 @@
 #define errorf(format, ...) \
   fprintf (stderr, format"\n", ##__VA_ARGS__)
 #define argerr(arg, message) \
-  errorf ("(%s) was ignored -- "message".", arg)
+  errorf ("(%s) was ignored -- "message, arg)
 // prints perror at the end
 #define perrorf(format, ...) \
   (fprintf (stderr, format, ##__VA_ARGS__), perror(NULL))
