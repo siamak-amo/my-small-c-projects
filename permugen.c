@@ -318,7 +318,7 @@ safe_fopen (FILE **dest,
     }
   if (!(__tmp = fopen (pathname, mode)))
     {
-      fopenerr (pathname, mode);
+      perrorf ("Could not open file (%s:%s) -- ", mode, pathname);
       return;
     }
   *dest = __tmp;
