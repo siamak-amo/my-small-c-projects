@@ -313,7 +313,7 @@ safe_fopen (FILE **dest,
   FILE *__tmp;
   if (!pathname || !mode)
     {
-      errorf ("invalud filename");
+      errorf ("Invalud filename");
       return;
     }
   if (!(__tmp = fopen (pathname, mode)))
@@ -528,7 +528,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
         }
       else
         {
-          argerr (*argv, "unknown flag");
+          argerr (*argv, "Unknown flag");
         }
     }
 
@@ -566,7 +566,7 @@ main (int argc, char **argv)
 
   if (opt.seed_len == 0 && opt.wseed_len == 0)
     {
-      errorf ("Warning -- empty permutation!");
+      errorf ("Warning -- Empty permutation!");
       goto EndOfMain;
     }
 
