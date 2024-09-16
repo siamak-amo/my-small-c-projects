@@ -42,7 +42,7 @@ this file is a dependency for `permugen.c`, `tokenizeIt.c` and `tr_ng.c`
 ## Utils
 ### permugen.c  
 Permutation Generator  
-to generate word lists for fuzzing based on some given seeds
+generates word lists for fuzzing based on some given seeds
 
 
 ### tokenizeIt.c
@@ -68,4 +68,4 @@ also includes:
 ## Others
 
 ### graphics
-graphical programs
+some graphical programs
