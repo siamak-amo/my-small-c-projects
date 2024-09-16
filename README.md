@@ -26,8 +26,20 @@ Data structure and Memory management
 6. `ring_buffer.c`  Ring Buffer
 7. `tape_mem.c`  Tape like memory allocator
 
----
 
+## Libs
+### leven.c
+Levenshtein Distance  
+this file is a dependency for `codeM`
+
+
+### buffered_io.h
+It helps to buffer IO-required calls such as `putc` and `puts` to reduce the number of `write` syscalls, resulting in better performance.
+
+this file is a dependency for `permugen.c`, `tokenizeIt.c` and `tr_ng.c`
+
+
+## Utils
 ### permugen.c  
 Permutation Generator  
 to generate word lists for fuzzing based on some given seeds
@@ -41,10 +53,9 @@ could be used together with the permugen program to
 generate customized word lists
 
 
-### buffered_io.h
-It helps to buffer IO-required calls such as `putc` and `puts` to reduce the number of `write` syscalls, resulting in better performance.
+### xor_encrypt.c
+to XOR the entire given file with a fixed value
 
-this file is a dependency for `permugen.c`, `tokenizeIt.c` and `tr_ng.c`
 
 ---
 ### codeM
@@ -54,16 +65,7 @@ also includes:
 2. python C extension module (to use codeM through python)
 
 
-### leven.c
-Levenshtein Distance  
-this file is a dependency for `codeM`
-
-
 ## Others
 
 ### graphics
 graphical programs
-
-
-### xor_encrypt.c
-to XOR the entire given file with a fixed value
