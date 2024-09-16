@@ -272,11 +272,10 @@ w_wl (const int depth, const struct Opt *opt)
 }
 
 /**
- *  unique append char(s) from @srt into @dest
+ *  uniquely appends char(s) from @srt to @dest
  *  @dest with *CAPACITY* 256 is always enough
  *  time: O(src_len * dest_len);
- *  updates @dest_len and
- *  returns number of bytes written
+ *  updates @dest_len and returns number of bytes written
  */
 int
 uniappd (char *restrict dest, int *dest_len,
