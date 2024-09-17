@@ -68,10 +68,10 @@ struct snow_vertex {
 /* number of vertexes */
 static int N = 6;
 /* RF color factor */
-static vec3_t RF = {0.0, 0.65, 0.30};
+static vec3_t RF = {0.05, 0.3, 0.3};
 #define UPDATE_RF(col, p) if (((col)+=p)>=1.0 || col <= 0){ col=0; }
 /* edge's length factor */
-static float D_factor = 2.2;
+static float D_factor = 2.58;
 #define SET_DF(val) do {                                \
     if (D_factor < 6 && D_factor > 1) D_factor += val;  \
     else D_factor = 2;                                  \
