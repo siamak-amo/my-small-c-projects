@@ -31,9 +31,7 @@
 #define MAX_ROUND 6
 
 
-#define GLDO(r,g,b, __DO__)                       \
-  glColor3f (r, g, b);                            \
-  __DO__;
+#define GLDO(r,g,b, __DO__) do {glColor3f (r, g, b); __DO__;} while (0)
 #define NORM(x, xMax) (float)(x) / (float)(xMax)
 #define MAX(a, b) ((a)<(b)) ? (b) : (a)
 #define ABS(x) ((x)>=0) ? (x) : (-x)
@@ -116,7 +114,7 @@ Timer (int)
 }
 
 void
-MousePressed(int btn, int state, int, int)
+MouseHandler (int btn, int state, int, int)
 {
   if (btn == GLUT_LEFT_BUTTON)
     {
@@ -134,7 +132,7 @@ MousePressed(int btn, int state, int, int)
 }
 
 void
-Keyboard (unsigned char key, int, int)
+KeyboardHandler (unsigned char key, int, int)
 {
   switch (key)
     {
@@ -170,16 +168,16 @@ Keyboard (unsigned char key, int, int)
 
 int main( int argc, char** argv )
 {
-  glutInit(&argc, argv);
-  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-  glutInitWindowSize(900, 900);
-  glutInitWindowPosition(0, 0);
-  glutCreateWindow("Simple animation");
+  glutInit (&argc, argv);
+  glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB);
+  glutInitWindowSize (900, 900);
+  glutInitWindowPosition (0, 0);
+  glutCreateWindow ("Polygonal animation");
 
-  glutDisplayFunc(display);
-  glutTimerFunc(40, Timer, 0);
-  glutMouseFunc(MousePressed);
-  glutKeyboardFunc (Keyboard);
+  glutDisplayFunc (display);
+  glutTimerFunc (40, Timer, 0);
+  glutMouseFunc (MouseHandler);
+  glutKeyboardFunc (KeyboardHandler);
   glutMainLoop();
 
   return 0;
