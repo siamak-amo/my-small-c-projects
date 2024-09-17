@@ -141,7 +141,9 @@ sv_update_center (struct snow_vertex *sv)
 void
 sv_draw (struct snow_vertex *sv, int depth)
 {
-  if (depth < 1)
+  if (N > 6 && depth < 2)
+    return;
+  if (depth < 1 || sv->length < 0.001)
     return;
   for (int i=0; i < N; ++i)
     {
