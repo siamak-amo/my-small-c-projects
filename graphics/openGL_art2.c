@@ -182,7 +182,8 @@ Display ()
 }
 
 void
-ScrollHandler (int button, int state, int, int) {
+ScrollHandler (int button, int state, int, int)
+{
   switch (button)
     {
     case 3:
@@ -240,7 +241,6 @@ KeyboardHandler (unsigned char key, int, int)
       if (N > 3) N--;
       break;
 
-      
     case 'q':
     case 'x':
       exit (0);
@@ -249,8 +249,7 @@ KeyboardHandler (unsigned char key, int, int)
       break;
     }
 
-  printf ("RF{r:%f, g:%f, b:%f}, "
-          "D_factor: %f, N: %d\n",
+  printf ("RF{r:%f, g:%f, b:%f}, D_factor: %f, N: %d\n",
           RF.x, RF.y, RF.z, D_factor, N);
   glutPostRedisplay ();
 }
