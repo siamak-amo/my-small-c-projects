@@ -29,7 +29,7 @@
  *      -o glart2.out
  *  Options:
  *    define `-D TRI_FAC=0.2` to make lines (triangles) thicker
- *    default is 0.07
+ *    default is 0.15
  **/
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,7 +43,7 @@
 
 /* isosceles base factor */
 #ifndef TRI_FAC
-#  define TRI_FAC 0.07
+#  define TRI_FAC 0.15
 #endif
 
 /* vectors 2D and 3D */
