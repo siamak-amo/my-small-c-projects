@@ -10,6 +10,8 @@
  *
  *    keyboard events:
  *      d, D           increase / decrease the D factor
+ *      +, -           same as d, but more accurate
+ *      n, N           increase / decrease the N by 1
  *      r, R           increase / decrease the RF Red factor
  *      g, G           increase / decrease the RF Green factor
  *      b, B           increase / decrease the RF Blue factor
@@ -232,6 +234,13 @@ KeyboardHandler (unsigned char key, int, int)
       break;
     case 'D':
       SET_DF (-0.02);
+      break;
+
+    case '+':
+      SET_DF (0.005);
+      break;
+    case '-':
+      SET_DF (-0.005);
       break;
 
     case 'n':
