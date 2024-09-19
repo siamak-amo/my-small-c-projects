@@ -80,18 +80,22 @@ static float D_factor = 2.58;
     else D_factor = 2;                                  \
   } while (0)
 
-// draws a line using one (isoscele) triangle
+/**
+ *  draws the line between @p1, @p2
+ *  using one (isosceles) triangle
+ *  with a base of 2*TRI_FAC
+ */
 static inline void
-glTri2f (const vec2_t *restrict v1,
-         const vec2_t *restrict v2)
+glTri2f (const vec2_t *restrict p1,
+         const vec2_t *restrict p2)
 {
-  vec2_t vt = {
-    .y = (v2->x - v1->x) * TRI_FAC,
-    .x = (v1->y - v2->y) * TRI_FAC,
+  vec2_t pt = {
+    .y = (p2->x - p1->x) * TRI_FAC,
+    .x = (p1->y - p2->y) * TRI_FAC,
   };
-  glVertex2f (v1->x + vt.x, v1->y + vt.y);
-  glVertex2f (v1->x - vt.x, v1->y - vt.y);
-  glVertex2f (v2->x, v2->y);
+  glVertex2f (p1->x + pt.x, p1->y + pt.y);
+  glVertex2f (p1->x - pt.x, p1->y - pt.y);
+  glVertex2f (p2->x, p2->y);
 }
 
 /**
