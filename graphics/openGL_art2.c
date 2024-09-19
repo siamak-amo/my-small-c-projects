@@ -12,11 +12,12 @@
  *      d, D           increase / decrease the D factor
  *      +, -           same as d, but more accurate
  *      n, N           increase / decrease the N by 1
+ *
  *      r, R           increase / decrease the RF Red factor
  *      g, G           increase / decrease the RF Green factor
  *      b, B           increase / decrease the RF Blue factor
- *      n, N           increase / decrease the N by 1
  *      q              quit
+ *
  *    mouse events:
  *      Scroll UP      increade the D factor
  *      Scroll Down    decrease the D factor
