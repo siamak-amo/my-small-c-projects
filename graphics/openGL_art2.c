@@ -16,6 +16,7 @@
  *      r, R           increase / decrease the RF Red factor
  *      g, G           increase / decrease the RF Green factor
  *      b, B           increase / decrease the RF Blue factor
+ *      <space>        to revert to defaults
  *      q              quit
  *
  *    mouse events:
@@ -263,6 +264,12 @@ KeyboardHandler (unsigned char key, int, int)
       break;
     case 'N':
       if (N > 3) N--;
+      break;
+
+    case ' ':
+      N = DEF_N;
+      D_factor = DEF_D;
+      RF = DEF_RF;
       break;
 
     case 'q':
