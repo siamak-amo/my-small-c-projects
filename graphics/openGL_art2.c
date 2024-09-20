@@ -48,6 +48,16 @@
 #ifndef TRI_FAC
 #  define TRI_FAC 0.15
 #endif
+/* default values */
+#ifndef DEF_D
+#  define DEF_D 2.73
+#endif
+#ifndef DEF_N
+#  define DEF_N 6
+#endif
+#ifndef DEF_RF
+#  define DEF_RF (vec3_t){0.05, 0.3, 0.3}
+#endif
 
 /* vectors 2D and 3D */
 typedef struct {
@@ -69,12 +79,12 @@ struct snow_vertex {
 };
 
 /* number of vertexes */
-static int N = 6;
+static int N = DEF_N;
 /* RF color factor */
-static vec3_t RF = {0.05, 0.3, 0.3};
+static vec3_t RF = DEF_RF;
 #define UPDATE_RF(col, p) if (((col)+=p)>=1.0 || col <= 0){ col=0; }
 /* edge's length factor */
-static float D_factor = 2.58;
+static float D_factor = DEF_D;
 #define SET_DF(val) do {                                \
     if (D_factor < 6 && D_factor > 1) D_factor += val;  \
     else D_factor = 2;                                  \
