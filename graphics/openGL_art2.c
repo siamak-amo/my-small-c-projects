@@ -159,17 +159,15 @@ sv_update_center (struct snow_vertex *sv)
 void
 sv_draw (struct snow_vertex *sv, int depth)
 {
-  if (N > 6 && depth < 2)
+  if (depth < 2)
     return;
   if (depth < 1 || sv->length < 0.001)
     return;
   for (int i=0; i < N; ++i)
     {
-      glBegin(GL_TRIANGLES);
       GLDO(sv->color.x, sv->color.y, sv->color.z, {
         glTri2f (&sv->center, &sv->__tmp);
         });
-      glEnd();
       sv_next_vert (sv);
     }
   for (int i=0; i < N; ++i)
@@ -194,7 +192,9 @@ Display ()
   glClear (GL_COLOR_BUFFER_BIT);
 
   /* 7 layer recursion */
+  glBegin(GL_TRIANGLES);
   sv_draw (&sv, 7);
+  glEnd();
 
   glutSwapBuffers ();
 }
