@@ -260,7 +260,7 @@ KeyboardHandler (unsigned char key, int, int)
       break;
 
     case 'n':
-      if (N < 8) N++;
+      if (N < 10) N++;
       break;
     case 'N':
       if (N > 3) N--;
