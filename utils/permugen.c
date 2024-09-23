@@ -524,7 +524,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
                     case 'a': /* add [a-z] */
                       uniappd (opt->seed, &opt->seed_len, AZ.c, AZ.len);
                       break;
-                      
                     case 'A': /* add [A-Z] */
                       uniappd (opt->seed, &opt->seed_len, AZCAP.c, AZ.len);
                       break;
@@ -542,6 +541,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                       break;
                     }
 
+                  /* End of Argument of `-s` */
                   if (*c == '\0')
                     break;
                 }
