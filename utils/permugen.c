@@ -118,11 +118,12 @@
 #endif
 
 #ifdef _DEBUG
+#define dprintf(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
 /* use printd_arr */
 #  define printd_arr__H(arr, T, len, sep, end)  \
   for (int __idx = 0; __idx < len; __idx++) {   \
-    printf (T"%s", arr[__idx],                  \
-            (__idx < len-1) ? sep : end);       \
+    dprintf (T"%s", arr[__idx],                 \
+             (__idx < len-1) ? sep : end);      \
   }
 /**
  * debug printf for arrays
@@ -131,12 +132,13 @@
  */
 #  define printd_arr(arr, T, len)               \
   if (len > 0) {                                \
-    printf ("* "#arr"[.%d] = {", len);          \
+    dprintf ("* "#arr"[.%d] = {", len);         \
     printd_arr__H (arr, T, len, ", ", "}\n");   \
   } else {                                      \
-    puts ("- "#arr" is empty");                 \
+    dprintf ("- "#arr" is empty\n");            \
   }
-#endif
+#endif /* _DEBUG */
+
 
 #define errorf(format, ...) \
   fprintf (stderr, format"\n", ##__VA_ARGS__)
@@ -617,16 +619,15 @@ main (int argc, char **argv)
   printd_arr (opt.seed, "`%c`", opt.seed_len);
   printd_arr (opt.wseed, "`%s`", opt.wseed_len);
   if (opt.__sep)
-    printf ("* delimiter: `%s`\n", opt.__sep);
-  printf ("* depth: from %d to %d\n", opt.from_depth, opt.to_depth);
+    dprintf ("* delimiter: `%s`\n", opt.__sep);
+  dprintf ("* depth: from %d to %d\n", opt.from_depth, opt.to_depth);
 
 # ifdef _USE_BIO
-  printf ("* buffered_io buffer length: %ld bytes\n", _BMAX);
+  dprintf ("* buffered_io buffer length: %ld bytes\n", _BMAX);
 # else
-  puts ("- compiled without buffered_io");
+  dprintf ("- compiled without buffered_io\n");
 # endif /* _USE_BIO */
-
-  puts ("* permutations:");
+  dprintf ("* permutations:\n");
 #endif /* _DEBUG */
 
   int rw_err = 0;
