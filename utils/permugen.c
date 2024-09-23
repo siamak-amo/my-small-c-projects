@@ -372,7 +372,12 @@ init_opt (int argc, char **argv, struct Opt *opt)
  *  pass @short_len=0 to disable packed arguments
  *  like `-d1` instead of `-d 1` */
 #define getARG(short_len, action)               \
-  if (short_len > 0 &&                          \
+  if (argv[0][1] == '-') {                      \
+    /* long format --XXX */                     \
+    next_opt (1);                               \
+    char *ARG = *argv;                          \
+    action;                                     \
+  } else if (short_len > 0 &&                   \
       argv[0][short_len] != '\0') {             \
     /* arg is packed like `-d1` or `-D1` */     \
     char *ARG = *argv + short_len;              \
@@ -400,6 +405,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
   for (argc--, argv++; argc > 0; argc--, argv++)
     {
+      if (*argv[0] != '-')
+        continue;
       if_opt ("-o", "--output")
         {
           getARG(2, {
