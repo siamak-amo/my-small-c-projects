@@ -400,19 +400,16 @@ int
 init_opt (int argc, char **argv, struct Opt *opt)
 {
   char *__p = NULL;
-#define getARG(short_len, action)                       \
-  char *ARG;                                            \
-  if ((ARG = __getARG (&argc, argv, short_len))) {      \
-    action;                                             \
-  }
-
 #define cmp_opt(__name) (_strcmp (*argv, __name))
 #define if_opt(__short, __long) \
   if (cmp_opt (__short) || cmp_opt (__long))
 #define if_opt3(__p1, __p2, __p3) \
   if (cmp_opt (__p1) || cmp_opt (__p2) || cmp_opt (__p3))
-
-  opt->outf = stdout; // stdout
+#define getARG(short_len, action)                       \
+  char *ARG;                                            \
+  if ((ARG = __getARG (&argc, argv, short_len))) {      \
+    action;                                             \
+  }
 
   for (argc--, argv++; argc > 0; argc--, argv++)
     {
@@ -633,6 +630,7 @@ int
 main (int argc, char **argv)
 {
   struct Opt opt = {0};
+  opt.outf = stdout;
   init_opt (argc, argv, &opt);
 
   if (opt.seed_len == 0 && opt.wseed_len == 0)
