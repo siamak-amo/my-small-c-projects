@@ -227,52 +227,28 @@ w_wl (const int depth, const struct Opt *opt)
   memset (idxs, 0, depth * sizeof (int));
 
  WL_Loop:
-#ifndef _USE_BIO
-  /* implementation without using buffered_io */
-  /* print the prefix */
   if (opt->__pref)
-    fprintf (opt->outf, opt->__pref);
-  /* print the permutation */
+    Pfputs (opt->__pref, opt);
   for (int i = 0; i < depth; ++i)
     {
       int idx = idxs[i];
       if (idx < opt->seed_len)
-        putc (opt->seed[idx], opt->outf);
+        Pfputc (opt->seed[idx], opt);
       else
         {
           idx -= opt->seed_len;
-          const char *__w = opt->wseed[idx];
-          fprintf (opt->outf, __w);
+          Pfputs (opt->wseed[idx], opt);
         }
-    }
-  if (opt->__suff)
-    fprintf (opt->outf, opt->__suff);
-  putc ('\n', opt->outf);
-  if (errno != 0)
-    return errno;
-
-#else /* using buffered_io */
-  if (opt->__pref)
-    bio_fputs (opt->bio, opt->__pref);
-  for (int i = 0; i < depth; ++i)
-    {
-      int idx = idxs[i];
-      if (idx < opt->seed_len)
-        bio_putc (opt->bio, opt->seed[idx]);
-      else
-        {
-          idx -= opt->seed_len;
-          bio_fputs (opt->bio, opt->wseed[idx]);
-        }
-
+#ifdef _USE_BIO
       if (bio_err (opt->bio))
         return bio_errno (opt->bio);
+#endif
     }
     if (opt->__suff)
-      bio_puts (opt->bio, opt->__suff);
+      Pputs (opt->__suff, opt);
     else
-      bio_ln(opt->bio);
-#endif
+      Pputln (opt);
+
 
   int pos;
   for (pos = depth - 1;
