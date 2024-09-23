@@ -103,7 +103,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
 
 /**
  *  using buffered_io.h for better performance
