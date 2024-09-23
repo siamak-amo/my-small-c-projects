@@ -77,9 +77,13 @@
  *    $ cat wlist.txt | ./permugen -S - -ss- -sWAAA
  *
  *    - To add prefix and suffix to the output:
- *    $ ./permugen -f ".com"         ->      xyz.com
- *    $ ./permugen -f "www.:.com"    ->  www.xyz.com
- *    $ ./permugen -f "www.:"        ->  www.xyz
+ *    $ ./permugen -f "www."         ->  www.xyz
+ *    $ ./permugen -f "www. .com"    ->  www.xyz.com
+ *    $ ./permugen -f " .com"        ->      xyz.com
+ *    - if you need to use space character:
+ *      `--prefix aaa`               ->  aaa.xyz
+ *      `--suffix bbb`               ->      xyz.bbb
+ *      where `aaa`, `bbb` might have space character
  *
  *    - To write the output on a file: `-o`, `--output`
  *      for appending: `-oA`, `-a`, `--append`
@@ -443,27 +447,36 @@ init_opt (int argc, char **argv, struct Opt *opt)
             });
         }
       else
+      if_opt ("--pref", "--prefix") // prefix
+        {
+          getARG(0, {
+              opt->__pref = ARG;
+            });
+        }
+      else
+      if_opt ("--suff", "--suffix") // suffix
+        {
+          getARG(0, {
+              opt->__suff = ARG;
+            });
+        }
+      else
       if_opt ("-f", "--format") // output format
         {
           getARG(2, {
-              opt->__suff = ARG;
+              opt->__pref = ARG;
               for (char *p = ARG; *p != '\0'; ++p)
-                if (*p == ':')
-                  {
-                    *p = '\0';
-
-                    if (strlen (opt->__suff) != 0)
-                      opt->__pref = opt->__suff;
-                    else
-                      opt->__pref = NULL;
-
-                    if (strlen (p + 1) != 0)
-                      opt->__suff = p + 1;
-                    else
-                      opt->__suff = NULL;
-
-                    break;
+                {
+                  if (*p == ' ')
+                    {
+                      *(p++) = '\0';
+                      if (*p != '\0')
+                        opt->__suff = p;
+                      break;
                   }
+                }
+              if (opt->__pref[0] == '\0')
+                opt->__pref = NULL;
             })
         }
       else
