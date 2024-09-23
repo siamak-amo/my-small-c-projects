@@ -129,7 +129,7 @@
  */
 #  define printd_arr(arr, T, len)               \
   if (len > 0) {                                \
-    printf ("* "#arr"[%d] = {", len);           \
+    printf ("* "#arr"[.%d] = {", len);          \
     printd_arr__H (arr, T, len, ", ", "}\n");   \
   } else {                                      \
     puts ("- "#arr" is empty");                 \
