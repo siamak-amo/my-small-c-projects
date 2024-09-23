@@ -361,38 +361,49 @@ safe_fopen (FILE **dest,
   *dest = __tmp;
 }
 
+/**
+ *  get argument
+ *  @short_len: strlen of the short option (name)
+ *    if the short version of `--depth` is `-d`,
+ *    pass it 2 to handle both of `-d 1` and `-d1`
+ *    pass it 0 to disable packed options
+ */
+char *
+__getARG (int *argc, char **argv, int short_len)
+{
+#define next_opt(n) {*argc -= n; argv += n;}
+  if (argv[0][1] == '-')
+    {
+      /* long format --XXX */
+      next_opt (1);
+      return *argv;
+    }
+  else if (short_len > 0 && argv[0][short_len] != '\0')
+    {
+      return *argv + short_len;
+    }
+  else if (*argc > 0)
+    {
+      /* arg is packed like `-d1` or `-D1` */
+      next_opt (1);
+      return *argv;
+    }
+  else
+    {
+      /* arg is like `-d 1` or `-o /tmp/file` */
+      argerr (*argv, "needs an argument");
+      return NULL;
+    }
+}
+
 int
 init_opt (int argc, char **argv, struct Opt *opt)
 {
   char *__p = NULL;
-
-
-#define next_opt(n) {argc -= n; argv += n;}
-/** get argument macro
- *  in the @action `char *ARG` is available and is
- *  pointing to the value of the current argument
- *  @short_len: strlen of the name of argument
- *    if the short version of --output is `-o` => pass it 2
- *  pass @short_len=0 to disable packed arguments
- *  like `-d1` instead of `-d 1` */
-#define getARG(short_len, action)               \
-  if (argv[0][1] == '-') {                      \
-    /* long format --XXX */                     \
-    next_opt (1);                               \
-    char *ARG = *argv;                          \
-    action;                                     \
-  } else if (short_len > 0 &&                   \
-      argv[0][short_len] != '\0') {             \
-    /* arg is packed like `-d1` or `-D1` */     \
-    char *ARG = *argv + short_len;              \
-    action;                                     \
-  } else if (argc > 1) {                        \
-    /* arg is like `-d 1` or `-o /tmp/file` */  \
-    next_opt (1);                               \
-    char *ARG = *argv;                          \
-    action;                                     \
-  } else {                                      \
-    argerr (*argv, "needs an argument");        \
+#define getARG(short_len, action)                       \
+  char *ARG;                                            \
+  if ((ARG = __getARG (&argc, argv, short_len))) {      \
+    action;                                             \
   }
 
 #define cmp_opt(__name) (_strcmp (*argv, __name))
