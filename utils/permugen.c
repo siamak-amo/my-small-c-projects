@@ -413,7 +413,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
   for (argc--, argv++; argc >= 0; argc--, argv++)
     {
-      if (*argv[0] != '-')
+      if (!*argv || *argv[0] != '-')
         continue;
       if_opt ("-o", "--output")
         {
