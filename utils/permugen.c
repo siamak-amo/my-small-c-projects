@@ -234,7 +234,7 @@ wseed_free (struct Opt *opt)
  *  depth=min_depth to depth=max_depth
  */
 int
-w_wl (const int depth, const struct Opt *opt)
+perm (const int depth, const struct Opt *opt)
 {
   int idxs[depth];
   memset (idxs, 0, depth * sizeof (int));
@@ -645,7 +645,7 @@ main (int argc, char **argv)
   int rw_err = 0;
   for (int d = opt.from_depth; d <= opt.to_depth; ++d)
     {
-      if ((rw_err = w_wl (d, &opt)) != 0)
+      if ((rw_err = perm (d, &opt)) != 0)
         break;
     }
 
