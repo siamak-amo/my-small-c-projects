@@ -172,6 +172,27 @@ struct Opt {
 
 };
 
+/**
+ *  output of characters and strings
+ *  these functions write on the corresponding
+ *  output stream given in @opt->outf
+ *
+ *  Pfputs:  writes @str without its terminating null byte
+ *  Pputs:   writes @str like @Pfputs and a trailing newline
+ *  Pputc:   writes a character @c (as unsigned char)
+ *  Pputln:  writes a newline
+ */
+#ifndef _USE_BIO
+#  define Pfputs(str, opt) fputs (str, opt->outf)
+#  define Pfputc(c, opt) putc (c, opt->outf)
+#  define Pputln(opt) Pfputc ('\n', opt)
+#  define Pputs(str, opt) (Pfputs (str, opt), Pputln(opt))
+#else
+#  define Pfputs(str, opt) bio_fputs (opt->bio, str)
+#  define Pfputc(c, opt) bio_putc (opt->bio, c)
+#  define Pputln(opt) bio_ln (opt->bio);
+#  define Pputs(str, opt) bio_puts (opt->bio, str)
+#endif
 
 // this will duplicate @ptr and append it to @opt->wseed
 void
