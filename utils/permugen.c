@@ -239,10 +239,6 @@ w_wl (const int depth, const struct Opt *opt)
           idx -= opt->seed_len;
           Pfputs (opt->wseed[idx], opt);
         }
-#ifdef _USE_BIO
-      if (bio_err (opt->bio))
-        return bio_errno (opt->bio);
-#endif
     }
     if (opt->__suff)
       Pputs (opt->__suff, opt);
@@ -259,8 +255,20 @@ w_wl (const int depth, const struct Opt *opt)
       idxs[pos] = 0;
     }
 
-  if (pos < 0)
-    return 0;
+  if (pos < 0) /* End of Permutations */
+    {
+#ifdef _USE_BIO
+      if (bio_err (opt->bio))
+        {
+          /* buffered_io write error */
+          return bio_errno (opt->bio);
+        }
+      else
+        return 0;
+#else
+      return 0;
+#endif
+    }
 
   idxs[pos]++;
   goto WL_Loop;
