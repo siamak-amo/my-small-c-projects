@@ -237,17 +237,21 @@ perm (const int depth, const struct Opt *opt)
   int idxs[depth];
   memset (idxs, 0, depth * sizeof (int));
 
- WL_Loop:
+ Perm_Loop: /* O((seeds^depth) * depth) */
+  int i = 0;
   if (opt->__pref)
     Pfputs (opt->__pref, opt);
-  int i = 0;
- Print_Loop:
+ Print_Loop: /* O(depth) */
   {
     int idx = idxs[i];
     if (idx < opt->seed_len)
-      Pfputc (opt->seed[idx], opt);
+      {
+        /* range of character seeds */
+        Pfputc (opt->seed[idx], opt);
+      }
     else
       {
+        /* range of word seeds */
         idx -= opt->seed_len;
         Pfputs (opt->wseed[idx], opt);
       }
@@ -259,6 +263,7 @@ perm (const int depth, const struct Opt *opt)
         Pfputs (opt->__sep, opt);
       goto Print_Loop;
     }
+  /* End of Printing the current permutation */
   if (opt->__suff)
     Pputs (opt->__suff, opt);
   else
@@ -290,7 +295,7 @@ perm (const int depth, const struct Opt *opt)
     }
 
   idxs[pos]++;
-  goto WL_Loop;
+  goto Perm_Loop;
 }
 
 /**
