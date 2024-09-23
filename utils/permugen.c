@@ -438,7 +438,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
       if_opt ("-s", "--seed") // specify seed
         {
           getARG(2, {
-              for (char *c = ARG; *c != '\0'; ++c)
+              for (char *c = ARG;; ++c)
                 {
                   if (*c == 'a' || *c == 'A' || *c == 'n'
                       || *c == 's' || *c == 'w')
@@ -448,6 +448,9 @@ init_opt (int argc, char **argv, struct Opt *opt)
                     }
                   switch (*c)
                     {
+                    case ' ':
+                      break; /* separator */
+
                     case 'W': /* add word seed(s) */
                       {
                         for (char *prev_sep = ++c;; ++c)
@@ -457,6 +460,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
                                 *(c++) = '\0';
                                 wseed_append (opt, prev_sep);
                                 prev_sep = c;
+                                if (*c == '\0' || *c == ' ')
+                                  break;
                               }
                             else if (*c == '\0' || *c == ' ')
                               {
@@ -491,6 +496,9 @@ init_opt (int argc, char **argv, struct Opt *opt)
                       c += uniappd (opt->seed, &opt->seed_len, c+1, 256);
                       break;
                     }
+
+                  if (*c == '\0')
+                    break;
                 }
             });
         }
