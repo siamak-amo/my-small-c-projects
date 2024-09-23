@@ -159,6 +159,7 @@ struct Opt {
   /* prefix and suffix of the result */
   const char *__pref;
   const char *__suff;
+  const char *__sep; /* separator */
 
   /* output conf */
   FILE *outf; /* output file */
@@ -229,21 +230,29 @@ w_wl (const int depth, const struct Opt *opt)
  WL_Loop:
   if (opt->__pref)
     Pfputs (opt->__pref, opt);
-  for (int i = 0; i < depth; ++i)
-    {
-      int idx = idxs[i];
-      if (idx < opt->seed_len)
-        Pfputc (opt->seed[idx], opt);
-      else
-        {
-          idx -= opt->seed_len;
-          Pfputs (opt->wseed[idx], opt);
-        }
-    }
-    if (opt->__suff)
-      Pputs (opt->__suff, opt);
+  int i = 0;
+ Print_Loop:
+  {
+    int idx = idxs[i];
+    if (idx < opt->seed_len)
+      Pfputc (opt->seed[idx], opt);
     else
-      Pputln (opt);
+      {
+        idx -= opt->seed_len;
+        Pfputs (opt->wseed[idx], opt);
+      }
+    i++;
+  }
+  if (i < depth)
+    {
+      if (opt->__sep)
+        Pfputs (opt->__sep, opt);
+      goto Print_Loop;
+    }
+  if (opt->__suff)
+    Pputs (opt->__suff, opt);
+  else
+    Pputln (opt);
 
 
   int pos;
