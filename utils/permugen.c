@@ -622,6 +622,9 @@ init_opt (int argc, char **argv, struct Opt *opt)
       opt->to_depth = opt->from_depth;
     }
 
+  if (opt->outf == NULL)
+    opt->outf = stdout;
+
   return 0;
 }
 
@@ -630,7 +633,6 @@ int
 main (int argc, char **argv)
 {
   struct Opt opt = {0};
-  opt.outf = stdout;
   init_opt (argc, argv, &opt);
 
   if (opt.seed_len == 0 && opt.wseed_len == 0)
