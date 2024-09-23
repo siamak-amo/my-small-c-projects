@@ -32,7 +32,7 @@
  *       cc -ggdb -Wall -Wextra -Werror \
  *          -D_READLINE $(pkg-config --cflags readline) \
  *          -D CODEM_IMPLEMENTATION \
- *          -D CODEM_FUZZY_SEARCH_CITYNAME \
+ *          -D CODEM_FUZZY_SEARCH_CITYNAME -I../libs \
  *          -D CODEM_CLI -o codeM codeM.c \
  *          $(pkg-config --libs readline)
  *

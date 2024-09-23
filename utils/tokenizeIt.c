@@ -26,7 +26,7 @@
  *
  *  Compilation:
  *    cc -ggdb -O3 -Wall -Wextra -Werror \
- *       -D_USE_BIO -I /path/to/buffered_io.h \
+ *       -D_USE_BIO -I../libs \
  *       -o tokenizeIt tokenizeIt.c
  **/
 #include <stdio.h>
