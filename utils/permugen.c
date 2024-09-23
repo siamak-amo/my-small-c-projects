@@ -39,9 +39,11 @@
  *                            for non-whitespace characters
  *
  *    - To put delimiter `xxx` between each components of
- *      permutations (-p, --delimiter option):
- *      `-p xxx           ->  (c1)xxx(x2)xxx(x3)`
- *                            xxx might have white space
+ *      permutations (-p, --delimiter option),
+ *      xxx might have white space:
+ *      `-p xxx`          ->  [c1]xxx[c2]xxx[c3]
+ *      `-p.`             ->  for subdomains, separate by `.`
+ *      `-p ', '`         ->  to separate by a `,` and space
  *
  *    - To inject word(s) in permutations (word seed):
  *      `-s Wdev`         ->  `dev`
