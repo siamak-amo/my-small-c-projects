@@ -183,6 +183,14 @@ struct Opt {
 
 };
 
+#define __seed_init(cap) {                      \
+    opt->seed = malloc (cap);                   \
+    __p = opt->seed;                            \
+  }
+#define _strcmp(s1, s2)                         \
+  ((s1) != NULL && (s2) != NULL &&              \
+   strncmp ((s1), (s2), strlen (s2)) == 0)
+
 /**
  *  output of characters and strings
  *  these functions write on the corresponding
@@ -358,10 +366,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
 {
   char *__p = NULL;
 
-#define __seed_init(cap) {                      \
-    opt->seed = malloc (cap);                   \
-    __p = opt->seed;                            \
-  }
 
 #define next_opt(n) {argc -= n; argv += n;}
 /** get argument macro
@@ -390,10 +394,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
   } else {                                      \
     argerr (*argv, "needs an argument");        \
   }
-  
-#define _strcmp(s1, s2)                         \
-  ((s1) != NULL && (s2) != NULL &&              \
-   strncmp ((s1), (s2), strlen (s2)) == 0)
 
 #define cmp_opt(__name) (_strcmp (*argv, __name))
 #define if_opt(__short, __long) \
