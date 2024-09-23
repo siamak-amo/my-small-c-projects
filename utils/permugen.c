@@ -38,6 +38,11 @@
  *      `-s sXYZ`         ->  [X,Y,Z]  (custom seed)
  *                            for non-whitespace characters
  *
+ *    - To put delimiter `xxx` between each components of
+ *      permutations (-p, --delimiter option):
+ *      `-p xxx           ->  (c1)xxx(x2)xxx(x3)`
+ *                            xxx might have white space
+ *
  *    - To inject word(s) in permutations (word seed):
  *      `-s Wdev`         ->  `dev`
  *      `-s Wdev,test,m`  ->  `dev`, `test`, `m`
@@ -406,7 +411,14 @@ init_opt (int argc, char **argv, struct Opt *opt)
             });
         }
       else
-      if_opt3 ("-D", "--depth-range", "--depth-up2") // depth range
+        if_opt3 ("-p", "--delim", "--delimiter") // set delimiter (separator)
+          {
+            getARG(2, {
+                opt->__sep = ARG;
+              });
+          }
+      else
+        if_opt3 ("-D", "--depth-range", "--depth-up2") // depth range
         {
           getARG(2, {
               opt->from_depth = 1;
