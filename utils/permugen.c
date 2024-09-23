@@ -645,8 +645,8 @@ main (int argc, char **argv)
   int rw_err = 0;
   for (int d = opt.from_depth; d <= opt.to_depth; ++d)
     {
-      if ((rw_err = w_wl (d, &opt)) < 0)
-        break; /* END OF Permutations */
+      if ((rw_err = w_wl (d, &opt)) != 0)
+        break;
     }
 
 #ifdef _USE_BIO
