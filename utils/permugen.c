@@ -38,12 +38,12 @@
  *      `-s sXYZ`         ->  [X,Y,Z]  (custom seed)
  *                            for non-whitespace characters
  *
- *    - To put delimiter `xxx` between each components of
- *      permutations (-p, --delimiter option),
+ *    - To put delimiter `xxx` between each component of
+ *      the permutations (`-p`, `--delimiter` option),
  *      xxx might have white space:
  *      `-p xxx`          ->  [c1]xxx[c2]xxx[c3]
- *      `-p.`             ->  for subdomains, separate by `.`
- *      `-p ', '`         ->  to separate by a `,` and space
+ *      `-p.`             ->  `c1.c2.c3`  (suitable for subdomains)
+ *      `-p ', '`         ->  `c1, c2, c3`
  *
  *    - To inject word(s) in permutations (word seed):
  *      `-s Wdev`         ->  `dev`
@@ -52,7 +52,6 @@
  *    - Examples:
  *    # permutations of `-`, `.`, `test`, `dev`
  *    $ ./permugen -s "s-. Wtest,dev"
- *
  *    # to also include numbers and [A-Z]
  *    $ ./permugen -s "s-. Wtest,dev nA"
  *
@@ -67,7 +66,6 @@
  *    # to get permutations of a wordlist
  *    # `-s s` means no character seed
  *    $ ./permugen -s s -S /path/to/wlist.txt
- *
  *    # to also include `-` and `_`
  *    $ ./permugen -s "s-_" -S /path/to/wlist.txt
  *
