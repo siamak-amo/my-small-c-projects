@@ -407,7 +407,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
             });
         }
       else
-      if_opt3 ("-a", "-oA", "--output")
+      if_opt3 ("-a", "-oA", "--append")
         {
           getARG(0, {
               safe_fopen (&opt->outf, ARG, "a");
