@@ -411,7 +411,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
     action;                                             \
   }
 
-  for (argc--, argv++; argc > 0; argc--, argv++)
+  for (argc--, argv++; argc >= 0; argc--, argv++)
     {
       if (*argv[0] != '-')
         continue;
