@@ -616,6 +616,8 @@ main (int argc, char **argv)
   /* print some debug information */
   printd_arr (opt.seed, "`%c`", opt.seed_len);
   printd_arr (opt.wseed, "`%s`", opt.wseed_len);
+  if (opt.__sep)
+    printf ("* delimiter: `%s`\n", opt.__sep);
   printf ("* depth: from %d to %d\n", opt.from_depth, opt.to_depth);
 
 # ifdef _USE_BIO
