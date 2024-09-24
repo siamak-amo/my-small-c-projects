@@ -38,8 +38,12 @@
 #include <errno.h>
 #include <string.h>
 
+#ifndef uchar
+#  define uchar unsigned char
+#endif
+
 struct BIO {
-  char *buffer;
+  uchar *buffer;
   int len; /* @buffer length */
   int __len; /* occupied length */
   int __errno; /* write syscall errno */
@@ -97,7 +101,7 @@ BIODEFF int bio_flushln(BIO_t *bio);
 
 // function version of bio_putc macro
 // returns errno on failure and 0 on success
-BIODEFF int bio_fputc (BIO_t *bio, char c);
+BIODEFF int bio_fputc (BIO_t *bio, uchar c);
 
 #define bio_ln(bio) bio_putc (bio, '\n')
 
@@ -115,7 +119,7 @@ BIODEFF int bio_putln (BIO_t *bio, const char *ptr, int ptr_len);
 #ifdef BIO_IMPLEMENTATION
 
 BIODEFF int
-bio_fputc (BIO_t *bio, char c)
+bio_fputc (BIO_t *bio, uchar c)
 {
   bio_putc (bio, c);
   return bio->__errno;
