@@ -575,7 +575,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
               /* using ARG value as filepath otherwise stdin */
               if (!_strcmp (ARG, "-"))
                 safe_fopen (&wseed_f, ARG, "r");
-              if (wseed_f == stdin)
+              if (wseed_f == stdin && isatty (fileno (stdin)))
                 fprintf (stderr, "reading words from stdin:\n");
 
               while (1)
