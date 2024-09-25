@@ -54,7 +54,7 @@ generate customized word lists
 
 
 ### xor_encrypt.c
-to XOR the entire given file with a fixed value
+performs a bitwise XOR operation on the entire given file with a fixed value
 
 
 ---
