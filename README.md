@@ -30,19 +30,19 @@ Data structure and Memory management
 ## Libs
 ### leven.c
 Levenshtein Distance  
-this file is a dependency for `codeM`
+dependency of: `codeM`
 
 
 ### buffered_io.h
 It helps to buffer IO-required calls such as `putc` and `puts` to reduce the number of `write` syscalls, resulting in better performance.
 
-this file is a dependency for `permugen.c`, `tokenizeIt.c` and `tr_ng.c`
+dependency of: `permugen.c`, `tokenizeIt.c` and `tr_ng.c`
 
 
 ### unescape.h
 Interpreters backslash characters in the given input, both in-place and out-of-place
 
-this file is a dependency for `permugen.c`
+dependency of: `permugen.c`
 
 
 ## Utils
