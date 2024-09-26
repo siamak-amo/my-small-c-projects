@@ -1,3 +1,50 @@
+/**
+ *  file: unescape.h
+ *  created on: 26 Sep 2024
+ *
+ *  Interpretation of backslash escapes
+ *  see `ascii` and `echo` man pages for more information
+ *
+ *  Features :
+ *    backslash itself:
+ *      '\\'
+ *    elementary escapes:
+ *      '\a', '\b', '\e', '\t', '\n', '\v', '\f', '\r'
+ *    hex:
+ *      '\xHH'  ->  0xHH   where: HH is a 2 hexadecimal value
+ *                                from 00 to FF (or ff)
+ *    octal:
+ *      '\0NNN' ->  0oNNN  where: NNN is a 3 octal value
+ *                                from 000 to 777
+ *
+ *     * invalid HH and NNN will be considered as 0 *
+ *
+ *
+ *  Usage:
+ *  ```{c}
+ *    #define UNESCAPE_IMPLEMENTATION
+ *    #include "unescape.h"
+ *
+ *    // when you need to interpret backslash:
+ *    {
+ *      // in-place with no extra memory
+ *      unescape (buffer);
+ *      // using the buffer
+ *      ...
+ *
+ *      // with extra memory
+ *      char dest[strlen (buffer)];
+ *      unescape2 (dest, buffer);
+ *
+ *      // with duplicate or malloc
+ *      char *dest = malloc (strlen (buffer));
+ *      unescape2 (dest, buffer);
+ *      // using dest buffer
+ *      ...
+ *      free (dest);
+ *    }
+ *  ```
+ **/
 #ifndef UNESCAPE__H__
 #define UNESCAPE__H__
 
@@ -22,15 +69,25 @@
 #define __next_eqn(ptr, val, n) *((ptr) += n) = val
 
 /**
+ *  Interprets the backslash `\` character(s)
+ *  of the @buff in-place until Null character or error
  *
+ *  @return:
+ *    on success:  number of byte(s) written
+ *    on failure:  -1 * number of bytes(s) written
+ *                 ==> returns -1 * strlen of the output
  *
- *
+ *  Failure reasons:
+ *    `\?` where `?` is not supported
+ *    empty `\` with no following value
+ *    invalid hex and octal like:
+ *      `\xH` is invalid  --> we expect 2 characters \xHH
+ *      `\0N` is invalid  --> we expect 3 characters \0NNN
+ *    wrong hex and octal values like \xzz will be considered
+ *    as `\0` character but NOT INVALID
  */
 ssize_t unescape (char *buff);
-/**
- *
- *
- */
+/* The same as `unescape` */
 ssize_t unescape2 (char *restrict dest, const char *restrict src);
 
 
