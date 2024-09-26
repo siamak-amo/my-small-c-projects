@@ -118,6 +118,10 @@
 #  include "buffered_io.h"
 #endif
 
+/* for using unescape function */
+#define UNESCAPE_IMPLEMENTATION
+#include "unescape.h"
+
 #ifdef _DEBUG
 #define dprintf(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
 /* use printd_arr */
@@ -167,9 +171,9 @@ struct Opt {
   int __wseed_l; /* to make wseed dynamic-array */
 
   /* prefix and suffix of the result */
-  const char *__pref;
-  const char *__suff;
-  const char *__sep; /* separator */
+  char *__pref;
+  char *__suff;
+  char *__sep; /* separator */
 
   /* output conf */
   FILE *outf; /* output file */
@@ -624,6 +628,15 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
   if (opt->outf == NULL)
     opt->outf = stdout;
+  /* interpreting backslash character(s) */
+  {
+    if (opt->__pref != NULL)
+      unescape (opt->__pref);
+    if (opt->__suff != NULL)
+      unescape (opt->__suff);
+    if (opt->__sep != NULL)
+      unescape (opt->__sep);
+  }
 
   return 0;
 }
