@@ -440,14 +440,14 @@ init_opt (int argc, char **argv, struct Opt *opt)
             });
         }
       else
-        if_opt3 ("-p", "--delim", "--delimiter") // set delimiter (separator)
-          {
-            getARG(2, {
-                opt->__sep = ARG;
-              });
-          }
+      if_opt3 ("-p", "--delim", "--delimiter") // set delimiter (separator)
+        {
+          getARG(2, {
+              opt->__sep = ARG;
+            });
+        }
       else
-        if_opt3 ("-D", "--depth-range", "--depth-up2") // depth range
+      if_opt3 ("-D", "--depth-range", "--depth-up2") // depth range
         {
           getARG(2, {
               opt->from_depth = 1;
@@ -604,30 +604,36 @@ init_opt (int argc, char **argv, struct Opt *opt)
         }
     }
 
-  if (opt->seed == NULL)
-    {
-      /* seed not specified by the user */
-      __seed_init (38);
-      __p = mempcpy (__p, AZ.c, 26);
-      __p = mempcpy (__p, NUMS.c, 10);
 
-      opt->seed_len = (int)(__p - opt->seed);
-    }
+  /**
+   *  Initializing the default values
+   *  when their not specified by the user
+   */
+  {
+    if (opt->outf == NULL)
+      opt->outf = stdout;
 
-  if (opt->from_depth <= 0)
-    {
-      /* depth not specified by the user */
-      opt->from_depth = 3;
-      opt->to_depth = 3;
-    }
-  else if (opt->to_depth <= 0)
-    {
-      /* only from_depth is specified OR `-D` is being used */
-      opt->to_depth = opt->from_depth;
-    }
+    if (opt->seed == NULL)
+      {
+        __seed_init (38);
+        __p = mempcpy (__p, AZ.c, 26);
+        __p = mempcpy (__p, NUMS.c, 10);
 
-  if (opt->outf == NULL)
-    opt->outf = stdout;
+        opt->seed_len = (int)(__p - opt->seed);
+      }
+
+    if (opt->from_depth <= 0)
+      {
+        opt->from_depth = 3;
+        opt->to_depth = 3;
+      }
+    else if (opt->to_depth <= 0)
+      {
+        /* only from_depth is specified OR `-D` is being used */
+        opt->to_depth = opt->from_depth;
+      }
+  }
+
   /* interpreting backslash character(s) */
   {
     if (opt->__pref != NULL)
