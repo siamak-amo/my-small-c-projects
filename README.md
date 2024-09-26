@@ -39,6 +39,12 @@ It helps to buffer IO-required calls such as `putc` and `puts` to reduce the num
 this file is a dependency for `permugen.c`, `tokenizeIt.c` and `tr_ng.c`
 
 
+### unescape.h
+Interpreters backslash characters in the given input, both in-place and out-of-place
+
+this file is a dependency for `permugen.c`
+
+
 ## Utils
 ### permugen.c  
 Permutation Generator  
