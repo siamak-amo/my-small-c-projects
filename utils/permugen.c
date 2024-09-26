@@ -105,6 +105,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
 
 /**
  *  using buffered_io.h for better performance
@@ -400,210 +401,195 @@ __getARG (int *argc, char **argv, int short_len)
     }
 }
 
-int
+const struct option lopts[] = {
+  /* seeds */
+  {"seed", required_argument, NULL, 's'},
+  {"seed-path", required_argument, NULL, 'S'},
+  {"wseed-path", required_argument, NULL, 'S'},
+  /* output file */
+  {"output", required_argument, NULL, 'o'},
+  {"append", required_argument, NULL, 'a'},
+  {"oA", required_argument, NULL, 'a'},
+  /* delimiter */
+  {"delim", required_argument, NULL, 'p'},
+  {"delimiter", required_argument, NULL, 'p'},
+  /* depth */
+  {"depth", required_argument, NULL, 'd'},
+  {"depth-range", required_argument, NULL, 'D'},
+  {"df", required_argument, NULL, '1'},
+  {"depth-from", required_argument, NULL, '1'},
+  {"dt", required_argument, NULL, '2'},
+  {"depth-to", required_argument, NULL, '2'},
+  /* format */
+  {"format", required_argument, NULL, 'f'},
+  {"pref", required_argument, NULL, '3'},
+  {"prefix", required_argument, NULL, '3'},
+  {"suff", required_argument, NULL, '4'},
+  {"suffix", required_argument, NULL, '4'},
+  {NULL, 0, NULL, 0} // End of Options
+};
+
+void
 init_opt (int argc, char **argv, struct Opt *opt)
 {
   char *__p = NULL;
-#define cmp_opt(__name) (_strcmp (*argv, __name))
-#define if_opt(__short, __long) \
-  if (cmp_opt (__short) || cmp_opt (__long))
-#define if_opt3(__p1, __p2, __p3) \
-  if (cmp_opt (__p1) || cmp_opt (__p2) || cmp_opt (__p3))
-#define getARG(short_len, action)                       \
-  char *ARG;                                            \
-  if ((ARG = __getARG (&argc, argv, short_len))) {      \
-    action;                                             \
-  }
+  int idx = 0, flag;
 
-  for (argc--, argv++; argc >= 0; argc--, argv++)
+  while (1)
     {
-      if (!*argv || *argv[0] != '-' || strlen (*argv) < 2)
-        continue;
-      if_opt ("-o", "--output")
+      /* we use 1,2,3,4 as `helper` options and only to use getopt */
+      if ((flag = getopt_long (argc, argv,
+                               "s:S:o:a:p:d:f:D:1:2:3:4", lopts, &idx)) == -1)
         {
-          getARG(2, {
-              safe_fopen (&opt->outf, ARG, "w");
-            });
+          /* End of Options */
+          break;
         }
-      else
-      if_opt3 ("-a", "-oA", "--append")
+
+      switch (flag)
         {
-          getARG(0, {
-              safe_fopen (&opt->outf, ARG, "a");
-            });
-        }
-      else
-      if_opt ("-d", "--depth") // set depth
-        {
-          getARG(2, {
-              opt->from_depth = atoi(ARG);
-            });
-        }
-      else
-      if_opt3 ("-p", "--delim", "--delimiter") // set delimiter (separator)
-        {
-          getARG(2, {
-              opt->__sep = ARG;
-            });
-        }
-      else
-      if_opt3 ("-D", "--depth-range", "--depth-up2") // depth range
-        {
-          getARG(2, {
-              opt->from_depth = 1;
-              opt->to_depth = atoi(ARG);
-            });
-        }
-      else
-      if_opt3 ("-df", "-fd", "--from-depth") // min depth
-        {
-          getARG(3, {
-              opt->from_depth = atoi(ARG);
-            });
-        }
-      else
-      if_opt3 ("-tf", "-td", "--to-depth") // max depth
-        {
-          getARG(3, {
-              opt->to_depth = atoi(ARG);
-            });
-        }
-      else
-      if_opt ("--pref", "--prefix") // prefix
-        {
-          getARG(0, {
-              opt->__pref = ARG;
-            });
-        }
-      else
-      if_opt ("--suff", "--suffix") // suffix
-        {
-          getARG(0, {
-              opt->__suff = ARG;
-            });
-        }
-      else
-      if_opt ("-f", "--format") // output format
-        {
-          getARG(2, {
-              opt->__pref = ARG;
-              for (char *p = ARG; *p != '\0'; ++p)
-                {
-                  if (*p == ' ')
-                    {
-                      *(p++) = '\0';
-                      if (*p != '\0')
-                        opt->__suff = p;
-                      break;
+        case 'o': /* outout */
+          safe_fopen (&opt->outf, optarg, "w");
+          break;
+        case 'a': /* append */
+          safe_fopen (&opt->outf, optarg, "a");
+          break;
+        case 'd': /* depth */
+          opt->from_depth = atoi (optarg);
+          break;
+        case 'D': /* depth range */
+          opt->from_depth = 1;
+          opt->to_depth = atoi (optarg);
+          break;
+        case 'p': /* delimiter */
+          opt->__sep = optarg;
+          break;
+        case '3': /* prefix */
+          opt->__pref = optarg;
+          break;
+        case '4': /* suffix */
+          opt->__suff = optarg;
+          break;
+        case '1': /* depth from */
+          opt->from_depth = atoi (optarg);
+          break;
+        case '2': /* depth to */
+          opt->to_depth = atoi (optarg);
+          break;
+        case 'f': /* format */
+          {
+            for (char *p = optarg; *p != '\0'; ++p)
+              {
+                if (*p == ' ')
+                  {
+                    *(p++) = '\0';
+                    if (*p != '\0')
+                      opt->__suff = p;
+                    break;
                   }
-                }
-              if (opt->__pref[0] == '\0')
-                opt->__pref = NULL;
-            })
-        }
-      else
-      if_opt ("-s", "--seed") // specify seed
-        {
-          getARG(2, {
-              for (char *c = ARG;; ++c)
-                {
-                  if (*c == 'a' || *c == 'A' || *c == 'n'
-                      || *c == 's' || *c == 'w')
-                    {
-                      if (opt->seed == NULL)
-                        __seed_init (256);
-                    }
-                  switch (*c)
-                    {
-                    case ' ':
-                      break; /* separator */
+              }
+            if (opt->__pref[0] == '\0')
+              opt->__pref = NULL;
 
-                    case 'W': /* add word seed(s) */
-                      {
-                        for (char *prev_sep = ++c;; ++c)
-                          {
-                            if (*c == ',')
-                              {
-                                *(c++) = '\0';
-                                wseed_append (opt, prev_sep);
-                                prev_sep = c;
-                                if (*c == '\0' || *c == ' ')
-                                  break;
-                              }
-                            else if (*c == '\0' || *c == ' ')
-                              {
-                                if (prev_sep != c)
-                                  {
-                                    *c = '\0';
-                                    wseed_append (opt, prev_sep);
-                                  }
+          }
+          break;
+        case 'S': /* wseed file / stdin */
+          {
+            size_t __len;
+            char *__line = NULL;
+            FILE *wseed_f = stdin;
+            /* using ARG value as filepath otherwise stdin */
+            if (!_strcmp (optarg, "-"))
+              safe_fopen (&wseed_f, optarg, "r");
+            if (wseed_f == stdin && isatty (fileno (stdin)))
+              fprintf (stderr, "reading words from stdin:\n");
+
+            while (1)
+              {
+                if (getline (&__line, &__len, wseed_f) < 0)
+                  break;
+                if (__line && strlen (__line) > 1 &&
+                    __line[0] != '#') // commented line
+                  {
+                    __line[strlen (__line) - 1] = '\0';
+                    wseed_append (opt, __line);
+                  }
+              }
+            if (__line)
+              free (__line);
+            fclose (wseed_f);
+          }
+          break;
+        case 's': /* seeds */
+          {
+            for (char *c = optarg;; ++c)
+              {
+                if (*c == 'a' || *c == 'A' || *c == 'n'
+                    || *c == 's' || *c == 'w')
+                  {
+                    if (opt->seed == NULL)
+                      __seed_init (256);
+                  }
+                switch (*c)
+                  {
+                  case ' ':
+                    break; /* separator */
+
+                  case 'W': /* add word seed(s) */
+                    {
+                      for (char *prev_sep = ++c;; ++c)
+                        {
+                          if (*c == ',')
+                            {
+                              *(c++) = '\0';
+                              wseed_append (opt, prev_sep);
+                              prev_sep = c;
+                              if (*c == '\0' || *c == ' ')
                                 break;
-                              }
-                          }
-                        break;
-                      }
-
-                    case 'a': /* add [a-z] */
-                      uniappd (opt->seed, &opt->seed_len, AZ.c, AZ.len);
-                      break;
-                    case 'A': /* add [A-Z] */
-                      uniappd (opt->seed, &opt->seed_len, AZCAP.c, AZ.len);
-                      break;
-                    case 'n': /* add [0-9] */
-                      uniappd (opt->seed, &opt->seed_len, NUMS.c, NUMS.len);
-                      break;
-                    case 's': /* add custom seed(s) */
-                      /**
-                       *  we know uniappd will stop coping when
-                       *  encounters '\0' and ' ' (space);
-                       *  so, this call with 256 as src_len, will not
-                       *  corrupt the rest of the user seed options
-                       */
-                      c += uniappd (opt->seed, &opt->seed_len, c+1, 256);
+                            }
+                          else if (*c == '\0' || *c == ' ')
+                            {
+                              if (prev_sep != c)
+                                {
+                                  *c = '\0';
+                                  wseed_append (opt, prev_sep);
+                                }
+                              break;
+                            }
+                        }
                       break;
                     }
 
-                  /* End of Argument of `-s` */
-                  if (*c == '\0')
+                  case 'a': /* add [a-z] */
+                    uniappd (opt->seed, &opt->seed_len, AZ.c, AZ.len);
                     break;
-                }
-            });
-        }
-      else
-      if_opt3 ("-S", "--wseed-path", "--seed-path") // word seed path
-        {
-          getARG(2, {
-              size_t __len;
-              char *__line = NULL;
-              FILE *wseed_f = stdin;
-              /* using ARG value as filepath otherwise stdin */
-              if (!_strcmp (ARG, "-"))
-                safe_fopen (&wseed_f, ARG, "r");
-              if (wseed_f == stdin && isatty (fileno (stdin)))
-                fprintf (stderr, "reading words from stdin:\n");
+                  case 'A': /* add [A-Z] */
+                    uniappd (opt->seed, &opt->seed_len, AZCAP.c, AZ.len);
+                    break;
+                  case 'n': /* add [0-9] */
+                    uniappd (opt->seed, &opt->seed_len, NUMS.c, NUMS.len);
+                    break;
+                  case 's': /* add custom seed(s) */
+                    /**
+                     *  we know uniappd will stop coping when
+                     *  encounters '\0' and ' ' (space);
+                     *  so, this call with 256 as src_len, will not
+                     *  corrupt the rest of the user seed options
+                     */
+                    c += uniappd (opt->seed, &opt->seed_len, c+1, 256);
+                    break;
+                  }
 
-              while (1)
-                {
-                  if (getline (&__line, &__len, wseed_f) < 0)
-                    break;
-                  if (__line && strlen (__line) > 1 &&
-                      __line[0] != '#') // commented line
-                    {
-                      __line[strlen (__line) - 1] = '\0';
-                      wseed_append (opt, __line);
-                    }
-                }
-              if (__line)
-                free (__line);
-              fclose (wseed_f);
-            });
-        }
-      else
-        {
-          argerr (*argv, "Unknown flag");
+                /* End of Argument of `-s` */
+                if (*c == '\0')
+                  break;
+              }
+          }
+          break;
+
+        default:
+          break;
         }
     }
-
 
   /**
    *  Initializing the default values
@@ -625,7 +611,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
     if (opt->from_depth <= 0)
       {
         opt->from_depth = 3;
-        opt->to_depth = 3;
       }
     else if (opt->to_depth <= 0)
       {
@@ -643,10 +628,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
     if (opt->__sep != NULL)
       unescape (opt->__sep);
   }
-
-  return 0;
 }
-
 
 int
 main (int argc, char **argv)
