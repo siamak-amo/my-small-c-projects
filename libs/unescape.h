@@ -165,6 +165,9 @@ unescape2 (char *restrict dest, const char *restrict src)
             nextw_b (x);
             break;
           }
+
+        default:
+          goto reterr;
         }
     }
 
@@ -247,6 +250,9 @@ unescape (char *buff)
 
             nextw_b (x);
             break;
+
+        default:
+          goto reterr;
           }
         }
     }
