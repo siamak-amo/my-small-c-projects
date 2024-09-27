@@ -438,7 +438,7 @@ const struct option lopts[] = {
   {NULL, 0, NULL, 0} // End of Options
 };
 
-void
+int
 init_opt (int argc, char **argv, struct Opt *opt)
 {
   char *__p = NULL;
@@ -458,7 +458,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
         {
         case 'h':
           usage ();
-          exit (0);
+          return 1;
         case 'o': /* outout */
           safe_fopen (&opt->outf, optarg, "w");
           break;
@@ -640,6 +640,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
     if (opt->__sep != NULL)
       unescape (opt->__sep);
   }
+
+  return 0;
 }
 
 int
@@ -647,7 +649,8 @@ main (int argc, char **argv)
 {
   struct Opt opt = {0};
   __progname__ = *argv;
-  init_opt (argc, argv, &opt);
+  if (init_opt (argc, argv, &opt))
+    goto EndOfMain;
 
   if (opt.seed_len == 0 && opt.wseed_len == 0)
     {
@@ -695,7 +698,7 @@ main (int argc, char **argv)
   if (opt.wseed)
     wseed_free (&opt);
   /* close any non-stdout file descriptors */
-  if (fileno (opt.outf) != 1)
+  if (opt.outf && fileno (opt.outf) != 1)
     fclose (opt.outf);
 
   return 0;
