@@ -457,11 +457,10 @@ init_opt (int argc, char **argv, struct Opt *opt)
                     break;
                   }
               }
-            if (opt->__pref[0] == '\0')
+            if (opt->__pref && opt->__pref[0] == '\0')
               opt->__pref = NULL;
-
+            break;
           }
-          break;
         case 'S': /* wseed file / stdin */
           {
             size_t __len;
