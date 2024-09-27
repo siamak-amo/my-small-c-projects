@@ -1,8 +1,9 @@
 /**
- *  file: Vheader.c
+ *  file: slice.c
  *  created on: 3 Aug 2024
  *
- *  This is Virtual Header template
+ *  This is slice template
+ *  for having some headers (like size and capacity) before pointers
  *
  *  Adding header before pointers/arrays
  *  define DATA_PTR_T to specify the pointer type
@@ -38,63 +39,63 @@ typedef struct {
   uint len; /* occupied length */
   uint cap; /* capacity */
 
-  /* end of _Vheader_arr */
+  /* end of _slice */
   DATA_PTR_T data[]; /* actual data */
-} _Vheader_arr;
+} _slice;
 
 
 /* generic version */
 typedef struct {
   void *header; /* generic header */
 
-  /* end of _Vheader_t */
+  /* end of _Slice_t */
   DATA_PTR_T data[];
-} _Vheader_t;
+} _Slice_t;
 
-const _Vheader_t *
-v_headerof (const void *ptr)
+const _Slice_t *
+slice_headerof (const void *ptr)
 {
-  const _Vheader_t *__ptr = NULL;
+  const _Slice_t *__ptr = NULL;
   if (!ptr)
     return NULL;
 
-  __ptr = (_Vheader_t *)ptr;
+  __ptr = (_Slice_t *)ptr;
   return __ptr - 1;
 }
-#define headerof(ptr, T) ((T *) v_headerof (ptr))
-#define arr_headerof(ptr) headerof (ptr, _Vheader_arr)
+#define headerof(ptr, T) ((T *) slice_headerof (ptr))
+#define arr_headerof(ptr) headerof (ptr, _slice)
 
 /* only for generic version */
 #define g_headerof(ptr, header_T) \
-  ((header_T *) (headerof (ptr, _Vheader_t)->header))
+  ((header_T *) (headerof (ptr, _Slice_t)->header))
 
-/* only for _Vheader_arr */
+/* only for _slice */
 uint
-v_sizeof (const void *ptr)
+slice_sizeof (const void *ptr)
 {
-  _Vheader_arr *header = arr_headerof (ptr);
+  _slice *header = arr_headerof (ptr);
   return header->len;
 }
 uint
-v_cap (const void *ptr)
+slice_cap (const void *ptr)
 {
-  _Vheader_arr *header = arr_headerof (ptr);
+  _slice *header = arr_headerof (ptr);
   return header->cap;
 }
 
 void *
-v_gnew (uint cap, void *header)
+slice_gnew (uint cap, void *header)
 {
-  _Vheader_t *__result = VALLOC (cap + sizeof (_Vheader_t));
+  _Slice_t *__result = VALLOC (cap + sizeof (_Slice_t));
   __result->header = header;
 
   return __result->data;
 }
 
 void *
-v_new (uint cap)
+slice_new (uint cap)
 {
-  _Vheader_arr *__result = VALLOC (cap + sizeof (_Vheader_arr));
+  _slice *__result = VALLOC (cap + sizeof (_slice));
 
   __result->len = 0;
   __result->cap = cap;
@@ -119,7 +120,7 @@ v_new (uint cap)
 void *
 arr_expand (void *ptr, size_t type_size)
 {
-  _Vheader_arr *__ptr = arr_headerof (ptr);
+  _slice *__ptr = arr_headerof (ptr);
   if (!ptr || __ptr->len >= __ptr->cap)
     {
       __ptr->cap = __ptr->cap * 2 + 1;
@@ -134,13 +135,13 @@ int
 main (void)
 {
   puts ("* pointer example *");
-  char *str = v_new (13);
-  strncpy (str, "Hello World\n", v_cap (str));
-  printf ("str: %scapacity: %u\n", str, v_cap (str));
+  char *str = slice_new (13);
+  strncpy (str, "Hello World\n", slice_cap (str));
+  printf ("str: %scapacity: %u\n", str, slice_cap (str));
 
   
   puts ("\n* dynamic array example *");
-  int *arr = v_new (2);
+  int *arr = slice_new (2);
 
   arr_append (arr, 1);
   for (int i=0; i<5; ++i)
