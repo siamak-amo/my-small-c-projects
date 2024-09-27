@@ -165,6 +165,7 @@ struct seed_part {
 static const struct seed_part AZ = {"abcdefghijklmnopqrstuvwxyz", 26};
 static const struct seed_part AZCAP = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 static const struct seed_part NUMS = {"0123456789", 10};
+static const char *__progname__;
 
 struct Opt {
   /* char seed(s) */
@@ -199,6 +200,42 @@ struct Opt {
 #define _strcmp(s1, s2)                         \
   ((s1) != NULL && (s2) != NULL &&              \
    strncmp ((s1), (s2), strlen (s2)) == 0)
+
+void
+usage ()
+{
+  fprintf (stdout,
+           "Permugen, permutation generator utility\n"
+           "Usage: %s [OPTIONS]\n\n"
+           "OPTIONS:\n"
+           "      -d, --depth             specify depth\n"
+           "      -D, --depth-range       depth range\n"
+           "     -df, --depth-from        specify min depth\n"
+           "     -dt, --depth-to          specify max depth\n"
+           "      -o, --output            output file\n"
+           "  -a,-oA, --append            append to file\n"
+           "      -p, --delimiter         permutations component separator\n"
+           "      -S, --seed-path         word seed path\n"
+           "                              pass - to read from stdin\n"
+           "      -s, --seed              specify character seeds\n"
+           "      -f, --format            output format\n"
+           "          --prefix            output prefix\n"
+           "          --suffix            output suffix\n\n"
+           "ARGUMENTS:\n"
+           "  Argument values of --format, --prefix, --suffix and --delim (-p)\n"
+           "  will be backslash-interpreted by default\n\n"
+           "  format:\n"
+           "          `AAA`:     to use AAA as the output prefix\n"
+           "          `AAA BBB`  to use AAA as prefix and BBB as suffix\n"
+           "          ` BBB`     to use BBB as suffix\n"
+           "          BBB might contain white-space character(s)\n"
+           "          to have white-space in AAA, either use `\\x20` or --prefix\n\n"
+           "    seed: there are three types of seeds available\n"
+           "          built-in:     `sa` ~ [a-z],  `sA` ~ [A-Z],  `sn` ~ [0-9]\n"
+           "          custom seeds: `ssXYZ...` for X,Y,Z,... characters\n"
+           "          word seeds:   `sWxxx,yyy,zzz` for words xxx, yyy, zzz\n",
+           __progname__);
+}
 
 /**
  *  output of characters and strings
@@ -380,6 +417,7 @@ const struct option lopts[] = {
   {"output", required_argument, NULL, 'o'},
   {"append", required_argument, NULL, 'a'},
   {"oA", required_argument, NULL, 'a'},
+  {"help", no_argument, NULL, 'h'},
   /* delimiter */
   {"delim", required_argument, NULL, 'p'},
   {"delimiter", required_argument, NULL, 'p'},
@@ -409,7 +447,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
     {
       /* we use 1,2,3,4 as `helper` options and only to use getopt */
       if ((flag = getopt_long (argc, argv,
-                               "s:S:o:a:p:d:f:D:1:2:3:4", lopts, &idx)) == -1)
+                               "s:S:o:a:p:d:f:D:1:2:3:4:h", lopts, &idx)) == -1)
         {
           /* End of Options */
           break;
@@ -417,6 +455,9 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
       switch (flag)
         {
+        case 'h':
+          usage ();
+          exit (0);
         case 'o': /* outout */
           safe_fopen (&opt->outf, optarg, "w");
           break;
@@ -447,6 +488,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
         case 'f': /* format */
           {
+            opt->__pref = optarg;
             for (char *p = optarg; *p != '\0'; ++p)
               {
                 if (*p == ' ')
@@ -603,6 +645,7 @@ int
 main (int argc, char **argv)
 {
   struct Opt opt = {0};
+  __progname__ = *argv;
   init_opt (argc, argv, &opt);
 
   if (opt.seed_len == 0 && opt.wseed_len == 0)
