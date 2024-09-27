@@ -19,17 +19,21 @@
  *  created on: 4 Sep 2024
  *
  *  Permugen, permutation generator utility
+ *  to generate customizable permutations of given seeds
  *
  *  Usage:
- *    - Basic usage, default depth (length) is 3
- *    # permutation of [a-z] [0-9], with depth 2
+ *    - Basic usage
+ *    # permutations of [a-z] and [0-9], of depth 3
+ *    $ ./permugen
+ *
+ *    # of depth 2
  *    $ ./permugen -d 2
  *
- *    - From depth 2 to 5:
- *    $ ./permugen -fd 2 -td 5
- *
- *    - For depths <= 4
+ *    # with a depth less than 4
  *    $ ./permugen -D 4
+ *
+ *    # with a depth between 2 and 5:
+ *    $ ./permugen -fd 2 -td 5
  *
  *    - To configure seeds, these can be used together:
  *      `-s a`            ->  [a-z]
