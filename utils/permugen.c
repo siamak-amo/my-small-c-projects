@@ -167,17 +167,17 @@ static const struct seed_part AZCAP = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 static const struct seed_part NUMS = {"0123456789", 10};
 
 struct Opt {
-  /* seed */
+  /* char seed(s) */
   char *seed;
   int seed_len;
-  /* word seed */
+  /* word seed(s) */
   char **wseed;
-  int wseed_len;
-  int __wseed_l; /* to make wseed dynamic-array */
+  int wseed_len; /* count of word seeds (wseed) */
+  int __wseed_l; /* internal, dynamic-array wseed */
 
-  /* prefix and suffix of the result */
-  char *__pref;
-  char *__suff;
+  /* output format */
+  char *__pref; /* prefix */
+  char *__suff; /* suffix */
   char *__sep; /* separator */
 
   /* output conf */
@@ -254,7 +254,7 @@ perm (const int depth, const struct Opt *opt)
   int idxs[depth];
   memset (idxs, 0, depth * sizeof (int));
 
- Perm_Loop: /* O((seeds^depth) * depth) */
+ Perm_Loop: /* O(seeds^depth) */
   int i = 0;
   if (opt->__pref)
     Pfputs (opt->__pref, opt);
@@ -370,41 +370,7 @@ safe_fopen (FILE **dest,
   *dest = __tmp;
 }
 
-/**
- *  get argument
- *  @short_len: strlen of the short option (name)
- *    if the short version of `--depth` is `-d`,
- *    pass it 2 to handle both of `-d 1` and `-d1`
- *    pass it 0 to disable packed options
- */
-char *
-__getARG (int *argc, char **argv, int short_len)
-{
-#define next_opt(n) {*argc -= n; argv += n;}
-  if (argv[0][1] == '-')
-    {
-      /* long format --XXX */
-      next_opt (1);
-      return *argv;
-    }
-  else if (short_len > 0 && argv[0][short_len] != '\0')
-    {
-      return *argv + short_len;
-    }
-  else if (*argc > 0)
-    {
-      /* arg is packed like `-d1` or `-D1` */
-      next_opt (1);
-      return *argv;
-    }
-  else
-    {
-      /* arg is like `-d 1` or `-o /tmp/file` */
-      argerr (*argv, "needs an argument");
-      return NULL;
-    }
-}
-
+/* CLI options, getopt */
 const struct option lopts[] = {
   /* seeds */
   {"seed", required_argument, NULL, 's'},
@@ -501,7 +467,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
             size_t __len;
             char *__line = NULL;
             FILE *wseed_f = stdin;
-            /* using ARG value as filepath otherwise stdin */
+            /* using optarg value as filepath otherwise stdin */
             if (!_strcmp (optarg, "-"))
               safe_fopen (&wseed_f, optarg, "r");
             if (wseed_f == stdin && isatty (fileno (stdin)))
