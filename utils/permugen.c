@@ -82,9 +82,10 @@
  *    $ ./permugen -f "www."         ->  www.xyz
  *    $ ./permugen -f "www. .com"    ->  www.xyz.com
  *    $ ./permugen -f " .com"        ->      xyz.com
- *    - if you need to use space character:
- *      `--prefix aaa`               ->  aaa.xyz
- *      `--suffix bbb`               ->      xyz.bbb
+ *    - if you need to use space character, either use
+ *      `\x20` in the prefix or use --prefix:
+ *      `--prefix "aaa"`             ->  aaa.xyz
+ *      `--suffix "bbb"`             ->      xyz.bbb
  *      where `aaa`, `bbb` might have space character
  *
  *    - To write the output on a file: `-o`, `--output`
