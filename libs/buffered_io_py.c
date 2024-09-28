@@ -1,3 +1,36 @@
+/**
+ *  file: buffered_io_py.c
+ *  created on: 28 Sep 2024
+ *
+ *  Buffered_io library python C API extension
+ *
+ *  Compilation:
+ *    replace xx with your python version:
+ *      cc -Wall -Wextra -Werror -shared -fPIC \
+ *        $(pkg-config --cflags python-3.xx) \
+ *        buffered_io_py.c -o buffered_io.so
+ *
+ *    compilation options:
+ *      `-D_DEBUG`:  to print some extra debug information
+ *      `-D BMAX=`:  to change the default buffer length (1kb)
+ *
+ *  Usage:
+ *  ```{py}
+ *    import buffered_io
+ *
+ *    # initialization
+ *    # optionally pass buffer length in bytes
+ *    b = buffered_io.new()
+ *
+ *    # use library functions here
+ *    # see `help(buffered_io)`
+ *    b.putc("!")
+ *    b.puts("hi")
+ *
+ *    # flush the buffer at the end
+ *    b.flush()
+ *  ```
+ **/
 #include <stdlib.h>
 
 #define PY_SSIZE_T_CLEAN
