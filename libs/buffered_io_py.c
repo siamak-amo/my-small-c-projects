@@ -53,7 +53,7 @@
 #  include <stdio.h>
 #  define __printf(format, ...) printf (format, ##__VA_ARGS__)
 #  define printd(format, ...) \
-  fprintf (stderr, "[debug %s:%-4d] "format, __FILE__, __LINE__, ##__VA_ARGS__)
+  fprintf (stderr, "[debug %s:%d]\t "format, __func__, __LINE__, ##__VA_ARGS__)
 #else
 #  define __printf(format, ...)
 #  define printd(format, ...)
