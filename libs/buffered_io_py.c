@@ -25,6 +25,9 @@
 #  define printd(format, ...)
 #endif
 
+#undef UNUSED
+#define UNUSED(x) (void)(x)
+
 /* PyObject compatible */
 typedef struct {
   PyObject_HEAD
@@ -94,6 +97,7 @@ static struct PyModuleDef bio_def = {
 PYBIODEFF
 pybio_flush (BIO_Object *self, PyObject *args)
 {
+  UNUSED (args);
   bio_flush (self->bio);
   printd ("bio flush\n");
   Py_RETURN_NONE;
@@ -102,6 +106,7 @@ pybio_flush (BIO_Object *self, PyObject *args)
 PYBIODEFF
 pybio_flushln (BIO_Object *self, PyObject *args)
 {
+  UNUSED (args);
   bio_flushln (self->bio);
   printd ("bio flush with newline\n");
   Py_RETURN_NONE;
@@ -185,36 +190,39 @@ pybio_putln (BIO_Object *self, PyObject *args)
 }
 
 PYBIODEFF
-BIO_Object_alloc (PyTypeObject *type, PyObject *args, PyObject *kwds) {
-    BIO_Object *self;
-    long cap;
-    if (PyTuple_Size(args) == 0 || /* no arg */
-        !PyArg_ParseTuple(args, "l", &cap) || /* invalid arg */
-        cap >= MAX_ALLOC) /* too big */
-      {
-        cap = BMAX;
-      }
+BIO_Object_alloc (PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+  BIO_Object *self;
+  long cap;
+  UNUSED (kwds);
+  if (PyTuple_Size(args) == 0 || /* no arg */
+      !PyArg_ParseTuple(args, "l", &cap) || /* invalid arg */
+      cap >= MAX_ALLOC) /* too big */
+    {
+      cap = BMAX;
+    }
 
-    if ((self = (BIO_Object *)type->tp_alloc (type, 0)))
-      {
-        self->bio = malloc (sizeof (BIO_t));
-        self->mem = malloc (cap);
-        if (!self->bio || !self->mem)
-          {
-            Py_DECREF (self);
-            return NULL; /* allocation failure */
-          }
-        *self->bio = bio_new (cap, self->mem, 1);
-        printd ("bio @%p was allocated with mem[.%d] @%p\n",
-                self->bio, self->bio->len, self->bio->buffer);
-      }
-    return (PyObject *)self;
+  if ((self = (BIO_Object *)type->tp_alloc (type, 0)))
+    {
+      self->bio = malloc (sizeof (BIO_t));
+      self->mem = malloc (cap);
+      if (!self->bio || !self->mem)
+        {
+          Py_DECREF (self);
+          return NULL; /* allocation failure */
+        }
+      *self->bio = bio_new (cap, self->mem, 1);
+      printd ("bio @%p was allocated with mem[.%d] @%p\n",
+              self->bio, self->bio->len, self->bio->buffer);
+    }
+  return (PyObject *)self;
 }
 
 
 PYBIODEFF
 pybio_new (PyObject *self, PyObject *args)
 {
+  UNUSED (self);
   return BIO_Object_alloc (&BIO_Type, args, NULL);
 }
 
