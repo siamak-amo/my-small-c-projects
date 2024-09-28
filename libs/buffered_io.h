@@ -69,6 +69,9 @@ typedef struct BIO BIO_t;
 #define bio_newf(cap, mem, out_f) \
   bio_new(cap, mem, fileno (out_f)) 
 
+#define bio_has_more(bio) ((bio)->__len > 0)
+#define bio_is_empty(bio) ((bio)->__len == 0)
+
 // to flush the buffer and zero out __len
 #define bio_flush(bio) do {                             \
     if (write ((bio)->outfd,                            \
