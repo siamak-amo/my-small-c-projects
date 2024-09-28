@@ -170,7 +170,6 @@ pybio_putc (BIO_Object *self, PyObject *args)
   if (self && self->bio)
     {
       const char* str;
-      // Parse the input tuple to get a string
       if (!PyArg_ParseTuple (args, "s", &str))
         Py_RETURN_NONE;
 
@@ -185,7 +184,6 @@ pybio_fputs (BIO_Object *self, PyObject *args)
   if (self && self->bio)
     {
       const char* str;
-      // Parse the input tuple to get a string
       if (!PyArg_ParseTuple (args, "s", &str))
         Py_RETURN_NONE;
 
@@ -200,7 +198,6 @@ pybio_puts (BIO_Object *self, PyObject *args)
   if (self && self->bio)
     {
       const char* str;
-      // Parse the input tuple to get a string
       if (!PyArg_ParseTuple (args, "s", &str))
         Py_RETURN_NONE;
 
