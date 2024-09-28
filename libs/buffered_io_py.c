@@ -101,22 +101,40 @@ static PyMethodDef funs[] = {
 static PyMethodDef bio_funs[] = {
     {
       "set_out_fd", (PyCFunction)pybio_setofd, METH_VARARGS,
-      "to change the output file descriptor"
+      "set_out_fd(int fd)\n"
+      "to change the output file descriptor\n"
+      "\nParameters:  \n"
+      "  fd (int): file descriptor\n"
     },{
       "putc", (PyCFunction)pybio_putc, METH_VARARGS,
-      "to put a single character"
+      "putc(string str)\n"
+      "to put a single character\n"
+      "\nParameters:\n"
+      "  str (string): it only uses it's first byte\n"
     },{
       "puts", (PyCFunction)pybio_puts, METH_VARARGS,
-      "to put a string and a trailing newline at the end"
+      "puts(string str)\n"
+      "to put a string and a trailing newline at the end\n"
+      "\nParameters:\n"
+      "  str (string): input string"
     },{
       "fputs", (PyCFunction)pybio_fputs, METH_VARARGS,
-      "to put the given string"
+      "fputs(string str)\n"
+      "to put the given string\n"
+      "\nParameters:\n"
+      "  str (string): input string"
     },{
       "put", (PyCFunction)pybio_put, METH_VARARGS,
-      "to put the given bytes (b'xxx')"
+      "put(bytes b)\n"
+      "to put the given bytes array\n"
+      "\nParameters:\n"
+      "  b (bytes): input bytes b'xxx'"
     },{
       "putln", (PyCFunction)pybio_putln, METH_VARARGS,
-      "like put function, also puts a newline"
+      "put(bytes b)\n"
+      "like put function, also puts a newline\n"
+      "\nParameters:\n"
+      "  b (bytes): input bytes"
     },{
       "flush", (PyCFunction)pybio_flush, METH_NOARGS,
       "flush the buffer"
