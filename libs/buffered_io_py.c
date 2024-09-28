@@ -28,6 +28,8 @@
  *    b.puts("hi")
  *
  *    # flush the buffer at the end
+ *    # it gets flushed automatically at the end of your program
+ *    # and when you deference `b` variable
  *    b.flush()
  *  ```
  **/
@@ -88,17 +90,19 @@ PYBIODEFF pybio_fputs (BIO_Object *self, PyObject *args); // no newline
 PYBIODEFF pybio_puts (BIO_Object *self, PyObject *args); // extra trailing newline
 
 /* main module */
-static PyMethodDef funs[] = {
+static PyMethodDef funs[] =
   {
-    "new", pybio_new, METH_VARARGS,
-   "Initialization\n"
-   "  optionally pass buffer length"
-  },
-  {NULL}
-};
+    {
+      "new", pybio_new, METH_VARARGS,
+      "Initialization\n"
+      "  optionally pass buffer length"
+    },
+    {NULL}
+  };
 
 /* bio object */
-static PyMethodDef bio_funs[] = {
+static PyMethodDef bio_funs[] =
+  {
     {
       "set_out_fd", (PyCFunction)pybio_setofd, METH_VARARGS,
       "set_out_fd(int fd)\n"
@@ -332,7 +336,7 @@ BIO_Object_free (BIO_Object *self)
 {
   if (bio_has_more (self->bio))
     {
-      printd ("bio flush before destroying");
+      printd ("bio flush before destroying\n");
       bio_flush (self->bio);
     }
   printd ("bio @%p was destroyed\n", self->bio);
