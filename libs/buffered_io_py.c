@@ -39,9 +39,9 @@
 #define BIO_IMPLEMENTATION
 #include "buffered_io.h"
 
+#define MAX_ALLOC 1024*1024*1024 // 1G
 #ifndef BMAX
 #  define BMAX 1024 // 1k
-#  define MAX_ALLOC 1024*1024*1024 // 1G
 #endif
 
 #ifndef PYBIODEFF
