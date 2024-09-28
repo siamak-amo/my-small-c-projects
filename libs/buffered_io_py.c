@@ -262,6 +262,11 @@ pybio_new (PyObject *self, PyObject *args)
 static void
 BIO_Object_free (BIO_Object *self)
 {
+  if (self->bio->__len)
+    {
+      printd ("bio flush before destroying");
+      bio_flush (self->bio);
+    }
   printd ("bio @%p was destroyed\n", self->bio);
   free (self->bio);
   (Py_TYPE (self))->tp_free ((PyObject *) self);
