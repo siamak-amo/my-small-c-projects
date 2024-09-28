@@ -42,13 +42,6 @@
  *      `-s sXYZ`         ->  [X,Y,Z]  (custom seed)
  *                            for non-whitespace characters
  *
- *    - To put delimiter `xxx` between each component of
- *      the permutations (`-p`, `--delimiter` option),
- *      xxx might have white space:
- *      `-p xxx`          ->  [c1]xxx[c2]xxx[c3]
- *      `-p.`             ->  `c1.c2.c3`  (suitable for subdomains)
- *      `-p ', '`         ->  `c1, c2, c3`
- *
  *    - To inject word(s) in permutations (word seed):
  *      `-s Wdev`         ->  `dev`
  *      `-s Wdev,test,m`  ->  `dev`, `test`, `m`
@@ -59,15 +52,14 @@
  *    # to also include numbers and [A-Z]
  *    $ ./permugen -s "s-. Wtest,dev nA"
  *
- *
- *    - To read seed words from a file, (`-S` option)
+ *    - To read seed words from file, (`-S` option)
  *      When file path is `-`, it uses stdin
  *    # wlist.txt is a newline-separated word list
  *    # lines starting with `#` will be ignored
  *    $ ./permugen -S /path/to/wlist.txt
  *
  *    - Example:
- *    # to get permutations of a wordlist
+ *    # to make permutations of a wordlist
  *    # `-s s` means no character seed
  *    $ ./permugen -s s -S /path/to/wlist.txt
  *    # to also include `-` and `_`
@@ -77,6 +69,13 @@
  *    $ cat wlist.txt | ./permugen -S - -ss
  *    # to also include `AAA` and `-`
  *    $ cat wlist.txt | ./permugen -S - -ss- -sWAAA
+ *
+ *    - To put delimiter `xxx` between each component of
+ *      the permutations (`-p`, `--delimiter` option),
+ *      xxx might have white space:
+ *      `-p xxx`          ->  [c1]xxx[c2]xxx[c3]
+ *      `-p.`             ->  `c1.c2.c3`  (suitable for subdomains)
+ *      `-p ', '`         ->  `c1, c2, c3`
  *
  *    - To add prefix and suffix to the output:
  *    $ ./permugen -f "www."         ->  www.xyz
