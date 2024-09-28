@@ -214,13 +214,17 @@ pybio_put (BIO_Object *self, PyObject *args)
 {
   if (self && self->bio)
     {
-      const char *ptr;
-      long len;
-      // Parse the input tuple to get a string
-      if (!PyArg_ParseTuple (args, "sl", &ptr, &len))
+      const char *bytes_ptr;
+      PyObject *bytes_obj;
+      Py_ssize_t bytes_len;
+      if (!PyArg_ParseTuple (args, "O!", &PyBytes_Type, &bytes_obj))
         Py_RETURN_NONE;
+      bytes_ptr = PyBytes_AsString (bytes_obj);
+      if (!bytes_ptr)
+        Py_RETURN_NONE;
+      bytes_len = PyBytes_Size(bytes_obj);
 
-      bio_put (self->bio, ptr, len);
+      bio_put (self->bio, bytes_ptr, bytes_len);
     }
   Py_RETURN_NONE;
 }
@@ -230,13 +234,17 @@ pybio_putln (BIO_Object *self, PyObject *args)
 {
   if (self && self->bio)
     {
-      const char *ptr;
-      long len;
-      // Parse the input tuple to get a string
-      if (!PyArg_ParseTuple (args, "sl", &ptr, &len))
+      const char *bytes_ptr;
+      PyObject *bytes_obj;
+      Py_ssize_t bytes_len;
+      if (!PyArg_ParseTuple (args, "O!", &PyBytes_Type, &bytes_obj))
         Py_RETURN_NONE;
+      bytes_ptr = PyBytes_AsString (bytes_obj);
+      if (!bytes_ptr)
+        Py_RETURN_NONE;
+      bytes_len = PyBytes_Size(bytes_obj);
 
-      bio_putln (self->bio, ptr, len);
+      bio_putln (self->bio, bytes_ptr, bytes_len);
     }
   Py_RETURN_NONE;
 }
