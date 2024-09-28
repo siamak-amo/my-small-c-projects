@@ -330,7 +330,7 @@ pybio_setofd (BIO_Object *self, PyObject *args)
 static void
 BIO_Object_free (BIO_Object *self)
 {
-  if (self->bio->__len)
+  if (bio_has_more (self->bio))
     {
       printd ("bio flush before destroying");
       bio_flush (self->bio);
