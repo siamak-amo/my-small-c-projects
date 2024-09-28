@@ -53,11 +53,14 @@
 
 #ifdef _DEBUG
 #  include <stdio.h>
-#  define __printf(format, ...) printf (format, ##__VA_ARGS__)
+#  ifndef _DEBUG_FD
+#    define _DEBUG_F stderr /* debug output file */
+#  endif
+#  define __printd(format, ...) fprintf (_DEBUG_F, format, ##__VA_ARGS__)
 #  define printd(format, ...) \
-  fprintf (stderr, "[debug %s:%d]\t "format, __func__, __LINE__, ##__VA_ARGS__)
+  __printd ("[debug %s:%d]\t "format, __func__, __LINE__, ##__VA_ARGS__)
 #else
-#  define __printf(format, ...)
+#  define __printd(format, ...)
 #  define printd(format, ...)
 #endif
 
