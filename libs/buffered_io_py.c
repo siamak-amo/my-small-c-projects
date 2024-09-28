@@ -87,19 +87,38 @@ PYBIODEFF pybio_puts (BIO_Object *self, PyObject *args); // extra trailing newli
 
 /* main module */
 static PyMethodDef funs[] = {
-  {"new", pybio_new, METH_VARARGS, ""},
+  {
+    "new", pybio_new, METH_VARARGS,
+   "Initialization\n"
+   "  optionally pass buffer length"
+  },
   {NULL}
 };
 
 /* bio object */
 static PyMethodDef bio_funs[] = {
-    {"putc", (PyCFunction)pybio_putc, METH_VARARGS, ""},
-    {"puts", (PyCFunction)pybio_puts, METH_VARARGS, ""},
-    {"fputs", (PyCFunction)pybio_fputs, METH_VARARGS, ""},
-    {"put", (PyCFunction)pybio_put, METH_VARARGS, ""},
-    {"putln", (PyCFunction)pybio_putln, METH_VARARGS, ""},
-    {"flush", (PyCFunction)pybio_flush, METH_NOARGS, ""},
-    {"flushln", (PyCFunction)pybio_flushln, METH_NOARGS, ""},
+    {
+      "putc", (PyCFunction)pybio_putc, METH_VARARGS,
+      "to put a single character"
+    },{
+      "puts", (PyCFunction)pybio_puts, METH_VARARGS,
+      "to put a string and a trailing newline at the end"
+    },{
+      "fputs", (PyCFunction)pybio_fputs, METH_VARARGS,
+      "to put the given string"
+    },{
+      "put", (PyCFunction)pybio_put, METH_VARARGS,
+      "to put the given bytes (b'xxx')"
+    },{
+      "putln", (PyCFunction)pybio_putln, METH_VARARGS,
+      "like put function, also puts a newline"
+    },{
+      "flush", (PyCFunction)pybio_flush, METH_NOARGS,
+      "flush the buffer"
+    },{
+      "flushln", (PyCFunction)pybio_flushln, METH_NOARGS,
+      "like flush, also puts a newline"
+    },
     {NULL}
 };
 
