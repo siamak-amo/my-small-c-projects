@@ -32,6 +32,7 @@
  *  ```
  **/
 #include <stdlib.h>
+#include <fcntl.h>
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
@@ -73,6 +74,7 @@ PYBIODEFF BIO_Object_alloc (PyTypeObject *type, PyObject *args, PyObject *kwds);
 static void BIO_Object_free (BIO_Object *self);
 /* new BIO_Type */
 PYBIODEFF pybio_new(PyObject *self, PyObject *args);
+PYBIODEFF pybio_setofd (BIO_Object *self, PyObject *args);
 /* flush */
 PYBIODEFF pybio_flush (BIO_Object *self, PyObject *args);
 PYBIODEFF pybio_flushln (BIO_Object *self, PyObject *args);
@@ -98,6 +100,9 @@ static PyMethodDef funs[] = {
 /* bio object */
 static PyMethodDef bio_funs[] = {
     {
+      "set_out_fd", (PyCFunction)pybio_setofd, METH_VARARGS,
+      "to change the output file descriptor"
+    },{
       "putc", (PyCFunction)pybio_putc, METH_VARARGS,
       "to put a single character"
     },{
@@ -281,6 +286,27 @@ pybio_new (PyObject *self, PyObject *args)
 {
   UNUSED (self);
   return BIO_Object_alloc (&BIO_Type, args, NULL);
+}
+
+PYBIODEFF
+pybio_setofd (BIO_Object *self, PyObject *args)
+{
+  if (self && self->bio)
+    {
+      int fd;
+      if (!PyArg_ParseTuple (args, "i", &fd))
+        Py_RETURN_NONE;
+
+      if (fcntl(fd, F_GETFD) == -1)
+        {
+          printd ("fd %d is not open\n", fd);
+          Py_RETURN_NONE;
+        }
+
+      bio_out (self->bio, fd);
+      printd ("bip output fd was changed to %d\n", fd);
+    }
+  Py_RETURN_NONE;
 }
 
 static void
