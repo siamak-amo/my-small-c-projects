@@ -36,6 +36,8 @@ dependency of: `codeM`
 ### buffered_io.h
 It helps to buffer IO-required calls such as `putc` and `puts` to reduce the number of `write` syscalls, resulting in better performance.
 
+Additionally, it's python C extension, `buffered_io_py.c` is available.
+
 dependency of: `permugen.c`, `tokenizeIt.c` and `tr_ng.c`
 
 
