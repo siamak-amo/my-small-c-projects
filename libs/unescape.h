@@ -19,7 +19,8 @@
  *  created on: 26 Sep 2024
  *
  *  Interpretation of backslash escapes
- *  see `ascii` and `echo` man pages for more information
+ *  shell `echo` command compatible
+ *  see `ascii` and `echo` manual pages for more information
  *
  *  Features :
  *    backslash itself:
@@ -27,13 +28,11 @@
  *    elementary escapes:
  *      '\a', '\b', '\e', '\t', '\n', '\v', '\f', '\r'
  *    hex:
- *      '\xHH'  ->  0xHH   where: HH is a 2 hexadecimal value
+ *      '\xHH'  ->  0xHH   where: HH is 1 or 2 hexadecimal value
  *                                from 00 to FF (or ff)
  *    octal:
- *      '\0NNN' ->  0oNNN  where: NNN is a 3 octal value
+ *      '\0NNN' ->  0oNNN  where: NNN is 1 or 2 or 3 octal value
  *                                from 000 to 777
- *
- *     * invalid HH and NNN will be considered as 0 *
  *
  *
  *  Usage:
@@ -44,13 +43,16 @@
  *    // when you need to interpret backslash:
  *    {
  *      // in-place with no extra memory
- *      unescape (buffer);
- *      // using the buffer
- *      ...
- *
- *      // with extra memory
- *      char dest[strlen (buffer)];
- *      unescape2 (dest, buffer);
+ *      ssize_t new_len = unescape (buffer);
+ *      // new_len is always <= length of buffer
+ *      if (new_len < 0)
+ *        {
+ *          // error, invalid input
+ *        }
+ *      else
+ *        {
+ *          // using the buffer
+ *        }
  *
  *      // with duplicate or malloc
  *      char *dest = malloc (strlen (buffer));
