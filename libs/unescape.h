@@ -69,11 +69,17 @@
   (  (HH >= '0' && HH <= '9') ? (HH - '0')   \
    : (HH >= 'A' && HH <= 'F') ? (HH - 'A')   \
    : (HH >= 'a' && HH <= 'f') ? (HH - 'a')   \
-   : 0  )
+   : -1  )
 /* Octal */
 #define nchr2num(NNN)                           \
   (  (NNN >= '0' && NNN <= '7') ? (NNN - '0')   \
-     : 0  )
+     : -1  )
+
+/* internal helper functions */
+// @return:  length of hex \xHH in @ptr after x
+static inline int __scanhex(const char *restrict ptr, unsigned char *restrict result);
+// @return:  length of octal \0NNN in @ptr after 0
+static inline int __scanoct(const char *restrict ptr, unsigned char *restrict result);
 
 /**
  *  Macros to set value of @ptr equal to @val
@@ -139,38 +145,72 @@ ssize_t unescape2 (char *restrict dest, const char *restrict src);
   case 'r': nextw_b ('\r');                     \
   case '\'': nextw_b ('\'');                    \
   case '\"': nextw_b ('\"');                    \
-  /* advanced escapes */                        \
-  case 'x': /* HEX \xHH */                      \
-  {                                             \
-  unsigned char x = 0;                          \
-  if (*(++r_ptr) == 0)                          \
-    goto reterr;                                \
-  x += hchr2num (*r_ptr) * 16;                  \
-  if (*(++r_ptr) == 0)                          \
-    goto reterr;                                \
-  x += hchr2num (*r_ptr) * 1;                   \
-  nextw_b (x);                                  \
-  break;                                        \
-  }                                             \
-   case '0': /* Octal \0NNN */                  \
-   {                                            \
-     unsigned char x = 0;                       \
-     if (*(++r_ptr) == 0)                       \
-       goto reterr;                             \
-     x += nchr2num (*r_ptr) * 8 * 8;            \
-     if (*(++r_ptr) == 0)                       \
-       goto reterr;                             \
-     x += nchr2num (*r_ptr) * 1 * 8;            \
-     if (*(++r_ptr) == 0)                       \
-       goto reterr;                             \
-     x += nchr2num (*r_ptr) * 1 * 1;            \
-     nextw_b (x);                               \
-     break;                                     \
-   }                                            \
-   default:                                     \
-   goto reterr;                                 \
-   }                                            \
+  /* advanced escapes */                                \
+  case 'x': /* HEX \xHH */                              \
+  {                                                     \
+  int hex_len;                                          \
+  unsigned char x = 0;                                  \
+  if ((hex_len = __scanhex (r_ptr+1, &x)) != 0) {       \
+    r_ptr += hex_len;                                   \
+    nextw_b (x);                                        \
+  }                                                     \
+  break;                                                \
+  }                                                     \
+   case '0': /* Octal \0NNN */                          \
+   {                                                    \
+     int oct_len;                                       \
+     unsigned char x = 0;                               \
+     if ((oct_len = __scanoct (r_ptr+1, &x)) != 0) {    \
+       r_ptr += oct_len;                                \
+       nextw_b (x);                                     \
+     }                                                  \
+     break;                                             \
+   }                                                    \
+   }                                                    \
 }
+
+static inline int
+__scanhex (const char *restrict ptr, unsigned char *restrict result)
+{
+  int h1 = 0, h2 = 0;
+  if (*ptr == '\0' || (h1 = hchr2num (*ptr)) == -1)
+    {
+      return 0;
+    }
+  ptr++;
+  if (*ptr == '\0' || (h2 = hchr2num (*ptr)) == -1)
+    {
+      *result = h1;
+      return 1;
+    }
+  *result = h1 * 16 + h2 * 1;
+  return 2;
+}
+
+static inline int
+__scanoct(const char *restrict ptr, unsigned char *restrict result)
+{
+  int n1 = 0, n2 = 0, n3 = 0;
+  if (*ptr == '\0' || (n1 = nchr2num (*ptr)) == -1)
+    {
+      return 0;
+    }
+  ptr++;
+  if (*ptr == '\0' || (n2 = nchr2num (*ptr)) == -1)
+    {
+      *result = n1;
+      return 1;
+    }
+  ptr++;
+  if (*ptr == '\0' || (n3 = nchr2num (*ptr)) == -1)
+    {
+      *result = n1 * 8 + n2 * 1;
+      return 2;
+    }
+  *result = n1 * 8*8 + n2 * 8*1 + n1;
+  return 3;
+}
+
 
 /* implementation */
 #ifdef UNESCAPE_IMPLEMENTATION
