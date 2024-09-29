@@ -79,9 +79,11 @@
 
 /* internal helper functions */
 // @return:  length of hex \xHH in @ptr after x
-static inline int __scanhex(const char *restrict ptr, unsigned char *restrict result);
+static inline int __scanhex (const char *restrict ptr,
+                          unsigned char *restrict result);
 // @return:  length of octal \0NNN in @ptr after 0
-static inline int __scanoct(const char *restrict ptr, unsigned char *restrict result);
+static inline int __scanoct (const char *restrict ptr,
+                          unsigned char *restrict result);
 
 /**
  *  Macros to set value of @ptr equal to @val
@@ -173,8 +175,15 @@ ssize_t unescape2 (char *restrict dest, const char *restrict src);
     }                                                           \
   }
 
+/**
+ *  internal functions to read hex and octal
+ *  values from @ptr and store it into @result
+ *  these functions return the strlen of the read number
+ *  for `\xab`  ->  @ptr must be pointing to `a`
+ */
 static inline int
-__scanhex (const char *restrict ptr, unsigned char *restrict result)
+__scanhex (const char *restrict ptr,
+        unsigned char *restrict result)
 {
   int h1 = 0, h2 = 0;
   if (*ptr == '\0' || (h1 = hchr2num (*ptr)) == -1)
@@ -192,7 +201,8 @@ __scanhex (const char *restrict ptr, unsigned char *restrict result)
 }
 
 static inline int
-__scanoct(const char *restrict ptr, unsigned char *restrict result)
+__scanoct (const char *restrict ptr,
+        unsigned char *restrict result)
 {
   int n1 = 0, n2 = 0, n3 = 0;
   if (*ptr == '\0' || (n1 = nchr2num (*ptr)) == -1)
