@@ -119,56 +119,56 @@ ssize_t unescape2 (char *restrict dest, const char *restrict src);
     break;                                      \
   }
 
-#define __unscape(w_ptr, r_ptr)                         \
-  for ( ;; ++r_ptr) {                                   \
-    if (*r_ptr == '\0') {                               \
-      *w_ptr = '\0';                                    \
-      break;                                            \
-    }                                                   \
-    if (*r_ptr != '\\') {                               \
-      __next_eq (w_ptr, *r_ptr);                        \
-      continue;                                         \
-    }                                                   \
-    switch (*(++r_ptr)) {                               \
-    case '\0':                                          \
-      goto reterr; /* invalid string */                 \
-      /* case of `\\x` --> `\\` and `x` */              \
-    case '\\': nextw_b ('\\');                          \
-      /* simple escapes */                              \
-    case 'a': nextw_b ('\a');                           \
-    case 'b': nextw_b ('\b');                           \
-    case 'e': nextw_b ('\e');                           \
-    case 't': nextw_b ('\t');                           \
-    case 'n': nextw_b ('\n');                           \
-    case 'v': nextw_b ('\v');                           \
-    case 'f': nextw_b ('\f');                           \
-    case 'r': nextw_b ('\r');                           \
-    case '\'': nextw_b ('\'');                          \
-    case '\"': nextw_b ('\"');                          \
-      /* advanced escapes */                            \
-    case 'x': /* HEX \xHH */                            \
-      {                                                 \
-        int hex_len;                                    \
-        unsigned char x = 0;                            \
-        if ((hex_len = __scanhex (r_ptr+1, &x)) != 0)   \
-          {                                             \
-            r_ptr += hex_len;                           \
-            nextw_b (x);                                \
-          }                                             \
-        break;                                          \
-      }                                                 \
-    case '0': /* Octal \0NNN */                         \
-      {                                                 \
-        int oct_len;                                    \
-        unsigned char x = 0;                            \
-        if ((oct_len = __scanoct (r_ptr+1, &x)) != 0)   \
-          {                                             \
-            r_ptr += oct_len;                           \
-            nextw_b (x);                                \
-          }                                             \
-        break;                                          \
-      }                                                 \
-    }                                                   \
+#define __unscape(w_ptr, r_ptr)                                 \
+  for ( ;; ++(r_ptr)) {                                         \
+    if (*(r_ptr) == '\0') {                                     \
+      *(w_ptr) = '\0';                                          \
+      break;                                                    \
+    }                                                           \
+    if (*(r_ptr) != '\\') {                                     \
+      __next_eq ((w_ptr), *(r_ptr));                            \
+      continue;                                                 \
+    }                                                           \
+    switch (*(++(r_ptr))) {                                     \
+    case '\0':                                                  \
+      goto reterr; /* invalid string */                         \
+      /* case of `\\x` --> `\\` and `x` */                      \
+    case '\\': nextw_b ('\\');                                  \
+      /* simple escapes */                                      \
+    case 'a': nextw_b ('\a');                                   \
+    case 'b': nextw_b ('\b');                                   \
+    case 'e': nextw_b ('\e');                                   \
+    case 't': nextw_b ('\t');                                   \
+    case 'n': nextw_b ('\n');                                   \
+    case 'v': nextw_b ('\v');                                   \
+    case 'f': nextw_b ('\f');                                   \
+    case 'r': nextw_b ('\r');                                   \
+    case '\'': nextw_b ('\'');                                  \
+    case '\"': nextw_b ('\"');                                  \
+      /* advanced escapes */                                    \
+    case 'x': /* HEX \xHH */                                    \
+      {                                                         \
+        int hex_len;                                            \
+        unsigned char x = 0;                                    \
+        if ((hex_len = __scanhex ((r_ptr) + 1, &x)) != 0)       \
+          {                                                     \
+            (r_ptr) += hex_len;                                 \
+            nextw_b (x);                                        \
+          }                                                     \
+        break;                                                  \
+      }                                                         \
+    case '0': /* Octal \0NNN */                                 \
+      {                                                         \
+        int oct_len;                                            \
+        unsigned char x = 0;                                    \
+        if ((oct_len = __scanoct ((r_ptr) + 1, &x)) != 0)       \
+          {                                                     \
+            (r_ptr) += oct_len;                                 \
+            nextw_b (x);                                        \
+          }                                                     \
+        break;                                                  \
+      }                                                         \
+    }                                                           \
   }
 
 static inline int
