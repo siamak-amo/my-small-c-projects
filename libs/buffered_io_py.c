@@ -94,7 +94,7 @@ typedef struct {
 PYBIODEFF BIO_Object_alloc (PyTypeObject *type, PyObject *args, PyObject *kwds);
 static void BIO_Object_free (BIO_Object *self);
 /* new BIO_Type */
-PYBIODEFF pybio_new(PyObject *self, PyObject *args);
+PYBIODEFF pybio_new (PyObject *self, PyObject *args);
 PYBIODEFF pybio_setofd (BIO_Object *self, PyObject *args);
 /* flush */
 PYBIODEFF pybio_flush (BIO_Object *self, PyObject *args);
@@ -265,7 +265,7 @@ pybio_put (BIO_Object *self, PyObject *args)
       bytes_ptr = PyBytes_AsString (bytes_obj);
       if (!bytes_ptr)
         Py_RETURN_NONE;
-      bytes_len = PyBytes_Size(bytes_obj);
+      bytes_len = PyBytes_Size (bytes_obj);
 
       bio_put (self->bio, bytes_ptr, bytes_len);
     }
@@ -285,7 +285,7 @@ pybio_putln (BIO_Object *self, PyObject *args)
       bytes_ptr = PyBytes_AsString (bytes_obj);
       if (!bytes_ptr)
         Py_RETURN_NONE;
-      bytes_len = PyBytes_Size(bytes_obj);
+      bytes_len = PyBytes_Size (bytes_obj);
 
       bio_putln (self->bio, bytes_ptr, bytes_len);
     }
@@ -298,8 +298,8 @@ BIO_Object_alloc (PyTypeObject *type, PyObject *args, PyObject *kwds)
   BIO_Object *self;
   long cap;
   UNUSED (kwds);
-  if (PyTuple_Size(args) == 0 || /* no arg */
-      !PyArg_ParseTuple(args, "l", &cap) || /* invalid arg */
+  if (PyTuple_Size (args) == 0 || /* no arg */
+      !PyArg_ParseTuple (args, "l", &cap) || /* invalid arg */
       cap >= MAX_ALLOC) /* too big */
     {
       cap = BMAX;
@@ -338,7 +338,7 @@ pybio_setofd (BIO_Object *self, PyObject *args)
       if (!PyArg_ParseTuple (args, "i", &fd))
         Py_RETURN_NONE;
 
-      if (fcntl(fd, F_GETFD) == -1)
+      if (fcntl (fd, F_GETFD) == -1)
         {
           printd ("fd %d is not open\n", fd);
           Py_RETURN_NONE;
@@ -369,11 +369,11 @@ PyInit_buffered_io ()
   PyObject *module = PyModule_Create (&bio_def);
   if (!module)
     return NULL;
-  if (PyType_Ready(&BIO_Type) < 0)
+  if (PyType_Ready (&BIO_Type) < 0)
     return NULL;
 
-  Py_INCREF(&BIO_Type);
-  PyModule_AddObject(module, "bio", (PyObject *)&BIO_Type);
+  Py_INCREF (&BIO_Type);
+  PyModule_AddObject (module, "bio", (PyObject *)&BIO_Type);
 
   return module;
 }
