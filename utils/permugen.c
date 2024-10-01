@@ -177,6 +177,7 @@ struct Opt {
   int __wseed_l; /* internal, dynamic-array wseed */
 
   /* output format */
+  int escape_disabled; /* to disable backslash interpretation */
   char *__pref; /* prefix */
   char *__suff; /* suffix */
   char *__sep; /* separator */
@@ -208,6 +209,8 @@ usage ()
            "Permugen, permutation generator utility\n"
            "Usage: %s [OPTIONS]\n\n"
            "OPTIONS:\n"
+           "      -E                      disable backslash interpretation\n"
+           "      -e                      enable backslash interpretation (default)\n"
            "      -d, --depth             specify depth\n"
            "      -D, --depth-range       depth range\n"
            "     -df, --depth-from        specify min depth\n"
@@ -223,7 +226,7 @@ usage ()
            "          --suffix            output suffix\n\n"
            "ARGUMENTS:\n"
            "  Argument values of --format, --prefix, --suffix and --delim (-p)\n"
-           "  will be backslash-interpreted by default\n\n"
+           "  will be backslash-interpreted by default, (disable it by `-E`)\n\n"
            "  format:\n"
            "          `AAA`:     to use AAA as the output prefix\n"
            "          `AAA BBB`  to use AAA as prefix and BBB as suffix\n"
@@ -447,7 +450,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
     {
       /* we use 1,2,3,4 as `helper` options and only to use getopt */
       if ((flag = getopt_long (argc, argv,
-                               "s:S:o:a:p:d:f:D:1:2:3:4:h", lopts, &idx)) == -1)
+                               "s:S:o:a:p:d:f:D:1:2:3:4:hEe", lopts, &idx)) == -1)
         {
           /* End of Options */
           break;
@@ -458,6 +461,12 @@ init_opt (int argc, char **argv, struct Opt *opt)
         case 'h':
           usage ();
           return 1;
+        case 'E':
+          opt->escape_disabled = 1;
+          break;
+        case 'e':
+          opt->escape_disabled = 0;
+          break;
         case 'o': /* outout */
           safe_fopen (&opt->outf, optarg, "w");
           break;
@@ -631,14 +640,15 @@ init_opt (int argc, char **argv, struct Opt *opt)
   }
 
   /* interpreting backslash character(s) */
-  {
-    if (opt->__pref != NULL)
-      unescape (opt->__pref);
-    if (opt->__suff != NULL)
-      unescape (opt->__suff);
-    if (opt->__sep != NULL)
-      unescape (opt->__sep);
-  }
+  if (!opt->escape_disabled)
+    {
+      if (opt->__pref != NULL)
+        unescape (opt->__pref);
+      if (opt->__suff != NULL)
+        unescape (opt->__suff);
+      if (opt->__sep != NULL)
+        unescape (opt->__sep);
+    }
 
   return 0;
 }
@@ -667,6 +677,8 @@ main (int argc, char **argv)
   /* print some debug information */
   printd_arr (opt.seed, "`%c`", opt.seed_len);
   printd_arr (opt.wseed, "`%s`", opt.wseed_len);
+  if (opt.escape_disabled)
+    dprintf ("- backslash interpretation is disabled\n");
   if (opt.__sep)
     dprintf ("* delimiter: `%s`\n", opt.__sep);
   dprintf ("* depth: from %d to %d\n", opt.from_depth, opt.to_depth);
