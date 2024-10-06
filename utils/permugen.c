@@ -202,6 +202,9 @@ struct Opt {
   ((s1) != NULL && (s2) != NULL &&              \
    strncmp ((s1), (s2), strlen (s2)) == 0)
 
+/* is non white-space ascii-printable */
+#define IS_ASCII_PR(c) (c >= 0x21 && c <= 0x7E)
+
 void
 usage ()
 {
@@ -366,9 +369,9 @@ uniappd (char *restrict dest, int *dest_len,
          const char *restrict src, int src_len)
 {
   int rw = 0;
-  while (src_len > 0)
+  while (src_len > 0 && *src)
     {
-      if (*src == '\0' || *src == ' ')
+      if (!IS_ASCII_PR (*src))
         break;
       for (int __i = *dest_len - 1; __i >= 0; __i--)
         {
