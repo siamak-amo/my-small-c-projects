@@ -90,23 +90,31 @@ typedef struct {
   BIO_t *bio;
 } BIO_Object;
 
+
+/* external PyMethod definitions */
+#define PyDECLARE(name) \
+  PYBIODEFF name (PyObject *self, PyObject *args)
+#define PyBIO_DECLARE(name) \
+  PYBIODEFF name (BIO_Object *self, PyObject *args)
+
+/* new BIO_Type */
+PyDECLARE (pybio_new);
+PyBIO_DECLARE (pybio_setofd);
+/* flush */
+PyBIO_DECLARE (pybio_flush);
+PyBIO_DECLARE (pybio_flushln);
+/* putc */
+PyBIO_DECLARE (pybio_putc);
+/* put requires buffer length */
+PyBIO_DECLARE (pybio_put);
+PyBIO_DECLARE (pybio_putln);
+/* put str */
+PyBIO_DECLARE (pybio_fputs);
+PyBIO_DECLARE (pybio_puts);
+
 /* BIO_Object allocator and destructor */
 PYBIODEFF BIO_Object_alloc (PyTypeObject *type, PyObject *args, PyObject *kwds);
 static void BIO_Object_free (BIO_Object *self);
-/* new BIO_Type */
-PYBIODEFF pybio_new (PyObject *self, PyObject *args);
-PYBIODEFF pybio_setofd (BIO_Object *self, PyObject *args);
-/* flush */
-PYBIODEFF pybio_flush (BIO_Object *self, PyObject *args);
-PYBIODEFF pybio_flushln (BIO_Object *self, PyObject *args);
-/* putc */
-PYBIODEFF pybio_putc (BIO_Object *self, PyObject *args);
-/* put requires buffer length */
-PYBIODEFF pybio_put (BIO_Object *self, PyObject *args);
-PYBIODEFF pybio_putln (BIO_Object *self, PyObject *args);
-/* put str */
-PYBIODEFF pybio_fputs (BIO_Object *self, PyObject *args); // no newline
-PYBIODEFF pybio_puts (BIO_Object *self, PyObject *args); // extra trailing newline
 
 /* main module */
 static PyMethodDef funs[] =

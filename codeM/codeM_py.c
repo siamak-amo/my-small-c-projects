@@ -105,21 +105,25 @@ static PyObject *srand_fun = NULL;
 
 /* internal function definitions */
 static size_t default_srand (void);
+
 /* external PyMethod definitions */
-PYCODEMDEF py_rand2 (PyObject *self, PyObject *args);
-PYCODEMDEF py_rand (PyObject *self, PyObject *args);
-PYCODEMDEF py_rand_prefix (PyObject *self, PyObject *args);
-PYCODEMDEF py_rand_suffix (PyObject *self, PyObject *args);
-PYCODEMDEF py_isvalid (PyObject *self, PyObject *args);
-PYCODEMDEF py_validate (PyObject *self, PyObject *args);
-PYCODEMDEF py_validate2 (PyObject *self, PyObject *args);
-PYCODEMDEF py_mkvalid (PyObject *self, PyObject *args);
-PYCODEMDEF py_rand_ccode (PyObject *self, PyObject *args);
-PYCODEMDEF py_cname_by_codem (PyObject *self, PyObject *args);
-PYCODEMDEF py_cname_by_code (PyObject *self, PyObject *args);
-PYCODEMDEF py_ccode_by_cname (PyObject *self, PyObject *args);
-PYCODEMDEF py_search_cname (PyObject *self, PyObject *args);
-PYCODEMDEF py_set_srand (PyObject *self, PyObject *arg);
+#define PyDECLARE(name) \
+  PYCODEMDEF name (PyObject *self, PyObject *args)
+
+PyDECLARE (py_rand2);
+PyDECLARE (py_rand);
+PyDECLARE (py_rand_prefix);
+PyDECLARE (py_rand_suffix);
+PyDECLARE (py_isvalid);
+PyDECLARE (py_validate);
+PyDECLARE (py_validate2);
+PyDECLARE (py_mkvalid);
+PyDECLARE (py_rand_ccode);
+PyDECLARE (py_cname_by_codem);
+PyDECLARE (py_cname_by_code);
+PyDECLARE (py_ccode_by_cname);
+PyDECLARE (py_search_cname);
+PyDECLARE (py_set_srand);
 
 static struct PyMethodDef funs[] = {
   {
