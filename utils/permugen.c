@@ -632,7 +632,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
       {
         opt->from_depth = 3;
       }
-    else if (opt->to_depth <= 0)
+    if (opt->to_depth <= 0)
       {
         /* only from_depth is specified OR `-D` is being used */
         opt->to_depth = opt->from_depth;
