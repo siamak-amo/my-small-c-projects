@@ -431,10 +431,16 @@ const struct option lopts[] = {
   /* depth */
   {"depth", required_argument, NULL, 'd'},
   {"depth-range", required_argument, NULL, 'D'},
+  {"range-depth", required_argument, NULL, 'D'},
+  {"range", required_argument, NULL, 'D'},
   {"df", required_argument, NULL, '1'},
   {"depth-from", required_argument, NULL, '1'},
+  {"from-depth", required_argument, NULL, '1'},
+  {"min-depth", required_argument, NULL, '1'},
   {"dt", required_argument, NULL, '2'},
   {"depth-to", required_argument, NULL, '2'},
+  {"to-depth", required_argument, NULL, '2'},
+  {"max-depth", required_argument, NULL, '2'},
   /* format */
   {"format", required_argument, NULL, 'f'},
   {"pref", required_argument, NULL, '3'},
