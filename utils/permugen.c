@@ -127,6 +127,11 @@
 #define UNESCAPE_IMPLEMENTATION
 #include "unescape.h"
 
+/* default permutaiton depth */
+#ifndef DEF_DEPTH
+#  define DEF_DEPTH 3
+#endif
+
 #ifdef _DEBUG
 #define dprintf(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
 /* use printd_arr */
@@ -638,11 +643,13 @@ init_opt (int argc, char **argv, struct Opt *opt)
         opt->seed_len = (int)(__p - opt->seed);
       }
 
-    if (opt->from_depth <= 0)
+    if (opt->from_depth <= 0 && opt->to_depth <= 0)
       {
-        opt->from_depth = 3;
+        /* using the default values when not specified */
+        opt->from_depth = DEF_DEPTH;
+        opt->to_depth = DEF_DEPTH;
       }
-    if (opt->to_depth <= 0)
+    else if (opt->to_depth <= 0)
       {
         /* only from_depth is specified OR `-D` is being used */
         opt->to_depth = opt->from_depth;
