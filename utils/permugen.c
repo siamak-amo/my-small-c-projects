@@ -359,7 +359,8 @@ perm (const int depth, const struct Opt *opt)
 }
 
 /**
- *  uniquely appends char(s) from @srt to @dest
+ *  uniquely appends char(s) from @src to @dest
+ *  until reaches \0 or non-alphanumeric characters
  *  @dest with *CAPACITY* 256 is always enough
  *  time: O(src_len * dest_len);
  *  updates @dest_len and returns number of bytes written
@@ -616,7 +617,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
   /**
    *  Initializing the default values
-   *  when their not specified by the user
+   *  when they are not specified by the user
    */
   {
     if (opt->outf == NULL)
