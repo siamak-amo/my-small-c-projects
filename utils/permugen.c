@@ -360,7 +360,7 @@ perm (const int depth, const struct Opt *opt)
 
 /**
  *  uniquely appends char(s) from @src to @dest
- *  until reaches \0 or non-alphanumeric characters
+ *  until reaches \0 or non-printable characters
  *  @dest with *CAPACITY* 256 is always enough
  *  time: O(src_len * dest_len);
  *  updates @dest_len and returns number of bytes written
