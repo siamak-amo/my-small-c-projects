@@ -647,6 +647,11 @@ init_opt (int argc, char **argv, struct Opt *opt)
         /* only from_depth is specified OR `-D` is being used */
         opt->to_depth = opt->from_depth;
       }
+    if (opt->from_depth > opt->to_depth)
+      {
+        /* invalid min and max depths */
+        opt->to_depth = opt->from_depth;
+      }
   }
 
   /* interpreting backslash character(s) */
