@@ -163,14 +163,15 @@
 #define perrorf(format, ...) \
   (fprintf (stderr, format, ##__VA_ARGS__), perror(NULL))
 
-struct seed_part {
+struct char_seed
+{
   const char *c;
   int len;
 };
-static const struct seed_part AZ = {"abcdefghijklmnopqrstuvwxyz", 26};
-static const struct seed_part AZCAP = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
-static const struct seed_part NUMS = {"0123456789", 10};
 static const char *__progname__;
+static const struct char_seed Cseed_az = {"abcdefghijklmnopqrstuvwxyz", 26};
+static const struct char_seed Cseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
+static const struct char_seed Cseed_09 = {"0123456789", 10};
 
 struct Opt {
   /* char seed(s) */
@@ -459,6 +460,10 @@ const struct option lopts[] = {
 int
 init_opt (int argc, char **argv, struct Opt *opt)
 {
+  /* to append char seed */
+#define CHARSEED_UNIAPPD(seed_array) \
+  uniappd (opt->seed, &opt->seed_len, seed_array.c, seed_array.len)
+
   char *__p = NULL;
   int idx = 0, flag;
 
@@ -596,13 +601,13 @@ init_opt (int argc, char **argv, struct Opt *opt)
                     }
 
                   case 'a': /* add [a-z] */
-                    uniappd (opt->seed, &opt->seed_len, AZ.c, AZ.len);
+                    CHARSEED_UNIAPPD (Cseed_az);
                     break;
                   case 'A': /* add [A-Z] */
-                    uniappd (opt->seed, &opt->seed_len, AZCAP.c, AZ.len);
+                    CHARSEED_UNIAPPD (Cseed_AZ);
                     break;
                   case 'n': /* add [0-9] */
-                    uniappd (opt->seed, &opt->seed_len, NUMS.c, NUMS.len);
+                    CHARSEED_UNIAPPD (Cseed_09);
                     break;
                   case 's': /* add custom seed(s) */
                     /**
@@ -638,8 +643,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
     if (opt->seed == NULL)
       {
         __seed_init (38);
-        __p = mempcpy (__p, AZ.c, 26);
-        __p = mempcpy (__p, NUMS.c, 10);
+        __p = mempcpy (__p, Cseed_az.c, Cseed_az.len);
+        __p = mempcpy (__p, Cseed_09.c, Cseed_09.len);
 
         opt->seed_len = (int)(__p - opt->seed);
       }
