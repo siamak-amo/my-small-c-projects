@@ -170,9 +170,9 @@ struct char_seed
   const char *c;
   int len;
 };
-static const struct char_seed Cseed_az = {"abcdefghijklmnopqrstuvwxyz", 26};
-static const struct char_seed Cseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
-static const struct char_seed Cseed_09 = {"0123456789", 10};
+static const struct char_seed charseed_az = {"abcdefghijklmnopqrstuvwxyz", 26};
+static const struct char_seed charseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
+static const struct char_seed charseed_09 = {"0123456789", 10};
 
 struct Opt
 {
@@ -603,13 +603,13 @@ init_opt (int argc, char **argv, struct Opt *opt)
                     }
 
                   case 'a': /* add [a-z] */
-                    CHARSEED_UNIAPPD (Cseed_az);
+                    CHARSEED_UNIAPPD (charseed_az);
                     break;
                   case 'A': /* add [A-Z] */
-                    CHARSEED_UNIAPPD (Cseed_AZ);
+                    CHARSEED_UNIAPPD (charseed_AZ);
                     break;
                   case 'n': /* add [0-9] */
-                    CHARSEED_UNIAPPD (Cseed_09);
+                    CHARSEED_UNIAPPD (charseed_09);
                     break;
                   case 's': /* add custom seed(s) */
                     /**
@@ -645,8 +645,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
     if (opt->seed == NULL)
       {
         __seed_init (38);
-        __p = mempcpy (__p, Cseed_az.c, Cseed_az.len);
-        __p = mempcpy (__p, Cseed_09.c, Cseed_09.len);
+        __p = mempcpy (__p, charseed_az.c, charseed_az.len);
+        __p = mempcpy (__p, charseed_09.c, charseed_09.len);
 
         opt->seed_len = (int)(__p - opt->seed);
       }
