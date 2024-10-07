@@ -29,20 +29,20 @@
  *    # of depth 2
  *    $ ./permugen -d 2
  *
- *    # with a depth less than 4
+ *    # with a depth between 1 and 4
  *    $ ./permugen -D 4
  *
- *    # with a depth between 2 and 5:
- *    $ ./permugen -fd 2 -td 5
+ *    # with a depth between 2 and 5
+ *    $ ./permugen --min-depth 2 --max-depth 5
  *
- *    - To configure seeds, these can be used together:
+ *    - To configure seeds, these can be used together
  *      `-s a`            ->  [a-z]
  *      `-s A`            ->  [A-Z]
  *      `-s n`            ->  [0-9]
  *      `-s sXYZ`         ->  [X,Y,Z]  (custom seed)
  *                            for non-whitespace characters
  *
- *    - To inject word(s) in permutations (word seed):
+ *    - To inject word(s) in permutations (word seed)
  *      `-s Wdev`         ->  `dev`
  *      `-s Wdev,test,m`  ->  `dev`, `test`, `m`
  *
@@ -222,7 +222,9 @@ usage ()
            "      -d, --depth             specify depth\n"
            "      -D, --depth-range       depth range\n"
            "     -df, --depth-from        specify min depth\n"
+           "          --min-depth\n"
            "     -dt, --depth-to          specify max depth\n"
+           "          --max-depth\n"
            "      -o, --output            output file\n"
            "  -a,-oA, --append            append to file\n"
            "      -p, --delimiter         permutations component separator\n"
@@ -235,13 +237,12 @@ usage ()
            "ARGUMENTS:\n"
            "  Argument values of --format, --prefix, --suffix and --delim (-p)\n"
            "  will be backslash-interpreted by default, (disable it by `-E`)\n\n"
-           "  format:\n"
-           "          `AAA`:     to use AAA as the output prefix\n"
+           "  format: `AAA`:     to use AAA as the output prefix\n"
            "          `AAA BBB`  to use AAA as prefix and BBB as suffix\n"
            "          ` BBB`     to use BBB as suffix\n"
            "          BBB might contain white-space character(s)\n"
            "          to have white-space in AAA, either use `\\x20` or --prefix\n\n"
-           "    seed: there are three types of seeds available\n"
+           "   seeds: there are three types of seeds available\n"
            "          built-in:     `sa` ~ [a-z],  `sA` ~ [A-Z],  `sn` ~ [0-9]\n"
            "          custom seeds: `ssXYZ...` for X,Y,Z,... characters\n"
            "          word seeds:   `sWxxx,yyy,zzz` for words xxx, yyy, zzz\n",
