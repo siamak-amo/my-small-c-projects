@@ -111,6 +111,8 @@
 #include <string.h>
 #include <getopt.h>
 
+static const char *__progname__;
+
 /**
  *  using buffered_io.h for better performance
  *  this file should be available in this repo
@@ -168,12 +170,12 @@ struct char_seed
   const char *c;
   int len;
 };
-static const char *__progname__;
 static const struct char_seed Cseed_az = {"abcdefghijklmnopqrstuvwxyz", 26};
 static const struct char_seed Cseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 static const struct char_seed Cseed_09 = {"0123456789", 10};
 
-struct Opt {
+struct Opt
+{
   /* char seed(s) */
   char *seed;
   int seed_len;
