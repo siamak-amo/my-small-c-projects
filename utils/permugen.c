@@ -199,7 +199,6 @@ struct Opt
 #ifdef _USE_BIO
   BIO_t *bio;
 #endif
-
 };
 
 #define __seed_init(cap) {                      \
@@ -456,7 +455,9 @@ const struct option lopts[] = {
   {"prefix", required_argument, NULL, '3'},
   {"suff", required_argument, NULL, '4'},
   {"suffix", required_argument, NULL, '4'},
-  {NULL, 0, NULL, 0} // End of Options
+
+  /* end of options */
+  {NULL, 0, NULL, 0}
 };
 
 int
