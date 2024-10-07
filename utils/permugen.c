@@ -644,7 +644,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
     if (opt->seed == NULL)
       {
-        __seed_init (38);
+        /* initializing with the default seed [a-z0-9] */
+        __seed_init (charseed_az.len + charseed_09.len);
         __p = mempcpy (__p, charseed_az.c, charseed_az.len);
         __p = mempcpy (__p, charseed_09.c, charseed_09.len);
 
