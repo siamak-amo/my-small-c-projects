@@ -561,7 +561,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
               }
             if (__line)
               free (__line);
-            fclose (wseed_f);
+            if (wseed_f != stdin)
+              fclose (wseed_f);
           }
           break;
         case 's': /* seeds */
