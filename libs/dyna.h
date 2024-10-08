@@ -19,7 +19,7 @@
 # include <stdio.h>
 # define fprintd(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
 # define dprintf(format, ...) \
-  printf ("[debug %s:%d] "format, __func__, __LINE__, ##__VA_ARGS__)
+  fprintd ("[debug %s:%d] "format, __func__, __LINE__, ##__VA_ARGS__)
 #else
 # define fprintd(format, ...)
 # define dprintf(format, ...)
@@ -133,9 +133,8 @@ __da_appd (void **arr)
     return -1;
   if (da->size >= da->cap)
     {
-      dprintf ("Overflow @%p: size:%lu, cap:%lu, arr_byte:%lu --> new size:",
-              da, da->size, da->cap, da->arr_byte);
-      da->cap *= 2;
+      dprintf ("Overflow @%p, size=cap:%-2lu, arr_byte:%-2d --> new size:",
+              da, da->cap, da->arr_byte);
       size_t new_size = sizeof(Darray) + da->cap * da->arr_byte;
       fprintd (" %lu\n", new_size);
       da = realloc (da, new_size);
