@@ -178,6 +178,8 @@ DADECLARE (__da_appd, sidx_t, void**);
 Darray *
 __mk_da(int sizeof_arr, int n)
 {
+  if (0 == n)
+    n = 1; /* prevent 0 capacity initialization */
   size_t ptrlen = sizeof (Darray) + sizeof_arr * n;
   Darray *da = (Darray *) malloc (ptrlen);
   da->cap = n;
