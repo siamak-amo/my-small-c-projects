@@ -1,3 +1,50 @@
+/**
+ *  file: dyna.h
+ *  created on: 8 Oct 2024
+ *
+ *  Dynamic Arrya implementation
+ *  based on `templates/slice.c` within this repository
+ *
+ *  Usage:
+ *  ```{c}
+ *    #define DYNA_IMPLEMENTATION
+ *    #include "dyna.h"
+ *
+ *    int
+ *    main (void)
+ *    {
+ *      // char test
+ *      char *carr = da_new (char);
+ *
+ *      for (char c ='a'; c <= 'z'; ++c)
+ *        da_appd (carr, c);
+ *      da_appd (carr, '\0');
+ *
+ *      puts (carr); // must print ab...z
+ *      da_free (carr);
+ *
+ *
+ *      // C string test
+ *      char **cstr = da_new (char *);
+ *
+ *      da_appd (cstr, "string0");
+ *      da_appd (cstr, "string1");
+ *      da_appd (cstr, "string2");
+ *
+ *      for (idx_t i=0; i < da_sizeof (cstr); ++i)
+ *        printf ("str%lu: {%s}\n", i, cstr[i]);
+ *
+ *      da_free (cstr);
+ *      return 0;
+ *    }
+ *  ```
+ *
+ *  Options:
+ *    `_DA_DEBUG`:  to print some debugging information
+ *    `DA_INICAP`:  the default initial capacity of arrays
+ *    `DA_DO_GRO`:  to define how arrays grow
+ *    `DA_GFACT`:   growth factor (see the source code)
+ **/
 #ifndef DYNAMIC_ARRAY__H__
 #define DYNAMIC_ARRAY__H__
 
