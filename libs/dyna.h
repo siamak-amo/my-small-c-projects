@@ -27,7 +27,22 @@
 
 /* initial capacity */
 #ifndef DA_INICAP
-# define DA_INICAP 1
+# define DA_INICAP 2
+#endif
+
+/* arrays growth factor and method */
+#ifndef DA_GFACT
+# define DA_GFACT 2
+#endif
+#ifndef DA_DO_GROW
+/**
+ *  by default, it doubles the capacity
+ *  you might want to increase the capacity
+ *  like: `cap += DA_GFACT`
+ */
+# define DA_DO_GROW(cap) ((cap) *= DA_GFACT)
+// #define DA_DO_GROW(cap) ((cap) += DA_GFACT)
+// #define DA_DO_GROW(cap) ((cap) = 1 + (cap) * 3 / 2)
 #endif
 
 #ifndef dyna_alloc
@@ -135,6 +150,7 @@ __da_appd (void **arr)
     {
       dprintf ("Overflow @%p, size=cap:%-2lu, arr_byte:%-2d --> new size:",
               da, da->cap, da->arr_byte);
+      DA_DO_GROW (da->cap);
       size_t new_size = sizeof(Darray) + da->cap * da->arr_byte;
       fprintd (" %lu\n", new_size);
       da = realloc (da, new_size);
