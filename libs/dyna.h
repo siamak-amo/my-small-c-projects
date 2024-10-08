@@ -91,7 +91,7 @@ DADECLARE (__da_appd, sidx_t, void**);
  *  to be used by users
  */
 // to free dynamic array @arr
-#define da_free(arr) free (da_headerof (arr))
+#define da_free(arr) free (__da_containerof (arr))
 // to get length and capacity of @arr
 #define da_sizeof(arr) (__da_containerof (arr)->size)
 #define da_capof(arr) (__da_containerof (arr)->cap)
