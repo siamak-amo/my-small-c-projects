@@ -133,17 +133,26 @@ DADECLARE (__mk_da, Darray*, int, int);
 DADECLARE (__da_appd, sidx_t, void**);
 
 
+#define DA_NNULL(arr) (NULL != arr)
 /**
  *  External macros
  *  to be used by users
  */
 // to free dynamic array @arr
-#define da_free(arr) free (__da_containerof (arr))
+#define da_free(arr) do {                       \
+    if (DA_NNULL (arr))                         \
+      free (__da_containerof (arr));            \
+  } while (0)
+
 // to get length and capacity of @arr
-#define da_sizeof(arr) (__da_containerof (arr)->size)
-#define da_capof(arr) (__da_containerof (arr)->cap)
+#define da_sizeof(arr) \
+  (DA_NNULL (arr) ? __da_containerof (arr)->size : 0)
+#define da_capof(arr) \
+  (DA_NNULL (arr) ? __da_containerof (arr)->cap : 0)
+
 // gives how many sells left until the next reallocation (at overflow)
-#define da_leftof(arr) ((sidx_t)da_capof (arr) - (sidx_t)da_sizeof (arr))
+#define da_leftof(arr) \
+  (DA_NNULL (arr) ? (sidx_t)da_capof (arr) - (sidx_t)da_sizeof (arr) : 0)
 
 /** da_new, da_newn
  *  only create `da` dynamic arrays with these macros
