@@ -64,12 +64,12 @@
 
 #ifdef _DA_DEBUG
 # include <stdio.h>
-# define fprintd(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
-# define dprintf(format, ...) \
-  fprintd ("[debug %s:%d] "format, __func__, __LINE__, ##__VA_ARGS__)
+# define da_fprintd(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
+# define da_dprintf(format, ...) \
+  da_fprintd ("[debug %s:%d] "format, __func__, __LINE__, ##__VA_ARGS__)
 #else
-# define fprintd(format, ...)
-# define dprintf(format, ...)
+# define da_fprintd(format, ...)
+# define da_dprintf(format, ...)
 #endif /* _DA_DEBUG */
 
 /* initial capacity */
@@ -185,7 +185,7 @@ __mk_da(int sizeof_arr, int n)
   da->cap = n;
   da->size = 0;
   da->arr_byte = sizeof_arr;
-  dprintf ("Dyna was allocated @%p[.%lu]\n", da, ptrlen);
+  da_dprintf ("Dyna was allocated @%p[.%lu]\n", da, ptrlen);
   return da;
 }
 
@@ -197,11 +197,11 @@ __da_appd (void **arr)
     return -1;
   if (da->size >= da->cap)
     {
-      dprintf ("Overflow @%p, size=cap:%-2lu, arr_byte:%-2d --> new size:",
+      da_dprintf ("Overflow @%p, size=cap:%-2lu, arr_byte:%-2d --> new size:",
               da, da->cap, da->arr_byte);
       DA_DO_GROW (da->cap);
       size_t new_size = sizeof(Darray) + da->cap * da->arr_byte;
-      fprintd (" %lu\n", new_size);
+      da_fprintd (" %lu\n", new_size);
       da = realloc (da, new_size);
       if (!da)
         return -1;
