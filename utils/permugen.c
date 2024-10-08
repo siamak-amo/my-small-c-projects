@@ -129,6 +129,10 @@ static const char *__progname__;
 #define UNESCAPE_IMPLEMENTATION
 #include "unescape.h"
 
+/* for using dynamic array */
+#define DYNA_IMPLEMENTATION
+#include "dyna.h"
+
 /* default permutaiton depth */
 #ifndef DEF_DEPTH
 #  define DEF_DEPTH 3
@@ -179,10 +183,8 @@ struct Opt
   /* char seed(s) */
   char *seed;
   int seed_len;
-  /* word seed(s) */
+  /* word seed(s) - dynamic array */
   char **wseed;
-  int wseed_len; /* count of word seeds (wseed) */
-  int __wseed_l; /* internal, dynamic-array wseed */
 
   /* output format */
   int escape_disabled; /* to disable backslash interpretation */
@@ -273,27 +275,6 @@ usage ()
 #  define Pputs(str, opt) bio_puts (opt->bio, str)
 #endif
 
-// this will duplicate @ptr and append it to @opt->wseed
-void
-wseed_append (struct Opt *opt, const char *ptr)
-{
-  if (opt->wseed_len >= opt->__wseed_l)
-    {
-      opt->__wseed_l = (opt->__wseed_l + 2) * 2;
-      opt->wseed = realloc (opt->wseed,
-                            opt->__wseed_l * sizeof (char *));
-    }
-  opt->wseed[opt->wseed_len++] = strdup (ptr);
-}
-
-void
-wseed_free (struct Opt *opt)
-{
-  for (int i=0; i<opt->wseed_len; ++i)
-    free (opt->wseed[i]);
-  free(opt->wseed);
-}
-
 /**
  *  permutation generator main logic
  *  you need to call it in a loop from
@@ -341,7 +322,7 @@ perm (const int depth, const struct Opt *opt)
   int pos;
   for (pos = depth - 1;
        pos >= 0 &&
-         idxs[pos] == opt->seed_len - 1 + opt->wseed_len;
+         idxs[pos] == opt->seed_len - 1 + (int)da_sizeof (opt->wseed);
        pos--)
     {
       idxs[pos] = 0;
@@ -556,7 +537,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                     __line[0] != '#') // commented line
                   {
                     __line[strlen (__line) - 1] = '\0';
-                    wseed_append (opt, __line);
+                    da_appd (opt->wseed, strdup (__line));
                   }
               }
             if (__line)
@@ -587,7 +568,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                           if (*c == ',')
                             {
                               *(c++) = '\0';
-                              wseed_append (opt, prev_sep);
+                              da_appd (opt->wseed, prev_sep);
                               prev_sep = c;
                               if (*c == '\0' || *c == ' ')
                                 break;
@@ -597,7 +578,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                               if (prev_sep != c)
                                 {
                                   *c = '\0';
-                                  wseed_append (opt, prev_sep);
+                                  da_appd (opt->wseed, prev_sep);
                                 }
                               break;
                             }
@@ -691,11 +672,12 @@ int
 main (int argc, char **argv)
 {
   struct Opt opt = {0};
+  opt.wseed = da_new (char *);
   __progname__ = *argv;
   if (init_opt (argc, argv, &opt))
     goto EndOfMain;
 
-  if (opt.seed_len == 0 && opt.wseed_len == 0)
+  if (opt.seed_len == 0 && da_sizeof (opt.wseed) == 0)
     {
       errorf ("Warning -- Empty permutation!");
       goto EndOfMain;
@@ -710,7 +692,7 @@ main (int argc, char **argv)
 #ifdef _DEBUG
   /* print some debug information */
   printd_arr (opt.seed, "`%c`", opt.seed_len);
-  printd_arr (opt.wseed, "`%s`", opt.wseed_len);
+  printd_arr (opt.wseed, "`%s`", (int) da_sizeof (opt.wseed));
   if (opt.escape_disabled)
     dprintf ("- backslash interpretation is disabled\n");
   if (opt.__sep)
@@ -741,7 +723,7 @@ main (int argc, char **argv)
   if (opt.seed)
     free (opt.seed);
   if (opt.wseed)
-    wseed_free (&opt);
+    da_free (opt.wseed);
   /* close any non-stdout file descriptors */
   if (opt.outf && fileno (opt.outf) != 1)
     fclose (opt.outf);
