@@ -206,10 +206,6 @@ struct Opt
 #endif
 };
 
-#define __seed_init(cap) {                      \
-    opt->seed = malloc (cap);                   \
-    __p = opt->seed;                            \
-  }
 #define _strcmp(s1, s2)                         \
   ((s1) != NULL && (s2) != NULL &&              \
    strncmp ((s1), (s2), strlen (s2)) == 0)
@@ -453,6 +449,11 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
   char *__p = NULL;
   int idx = 0, flag;
+
+#define __seed_init(cap) {                      \
+    opt->seed = malloc (cap);                   \
+    __p = opt->seed;                            \
+  }
 
   while (1)
     {
