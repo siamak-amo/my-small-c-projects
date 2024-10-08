@@ -139,6 +139,7 @@ static const char *__progname__;
 #endif
 
 #ifdef _DEBUG
+#undef dprintf
 #define dprintf(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
 /* use printd_arr */
 #  define printd_arr__H(arr, T, len, sep, end)  \
@@ -161,12 +162,14 @@ static const char *__progname__;
 #endif /* _DEBUG */
 
 
+#undef errorf
 #define errorf(format, ...) \
   fprintf (stderr, format"\n", ##__VA_ARGS__)
 #define argerr(arg, message) \
   errorf ("(%s) was ignored -- "message, arg)
 // prints perror at the end
-#define perrorf(format, ...) \
+#undef perrorf
+#define perrorf(format, ...)                                    \
   (fprintf (stderr, format, ##__VA_ARGS__), perror(NULL))
 
 struct char_seed
