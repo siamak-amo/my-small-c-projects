@@ -179,7 +179,7 @@ struct char_seed
   int len;
 };
 static const struct char_seed charseed_az = {"abcdefghijklmnopqrstuvwxyz", 26};
-static const struct char_seed charseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
+// static const struct char_seed charseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 static const struct char_seed charseed_09 = {"0123456789", 10};
 
 struct Opt
@@ -581,70 +581,12 @@ init_opt (int argc, char **argv, struct Opt *opt)
               fclose (wseed_f);
           }
           break;
-        case 's': /* seeds */
+
+        case 's': /* seed configuration */
           {
-            for (char *c = optarg;; ++c)
-              {
-                if (*c == 'a' || *c == 'A' || *c == 'n'
-                    || *c == 's' || *c == 'w')
-                  {
-                    if (opt->seed == NULL)
-                      __seed_init (256);
-                  }
-                switch (*c)
-                  {
-                  case ' ':
-                    break; /* separator */
-
-                  case 'W': /* add word seed(s) */
-                    {
-                      for (char *prev_sep = ++c;; ++c)
-                        {
-                          if (*c == ',')
-                            {
-                              *(c++) = '\0';
-                              wseed_uniappd (opt, strdup (prev_sep));
-                              prev_sep = c;
-                              if (*c == '\0' || *c == ' ')
-                                break;
-                            }
-                          else if (*c == '\0' || *c == ' ')
-                            {
-                              if (prev_sep != c)
-                                {
-                                  *c = '\0';
-                                  wseed_uniappd (opt, strdup (prev_sep));
-                                }
-                              break;
-                            }
-                        }
-                      break;
-                    }
-
-                  case 'a': /* add [a-z] */
-                    CHARSEED_UNIAPPD (charseed_az);
-                    break;
-                  case 'A': /* add [A-Z] */
-                    CHARSEED_UNIAPPD (charseed_AZ);
-                    break;
-                  case 'n': /* add [0-9] */
-                    CHARSEED_UNIAPPD (charseed_09);
-                    break;
-                  case 's': /* add custom seed(s) */
-                    /**
-                     *  we know uniappd will stop coping when
-                     *  encounters '\0' and ' ' (space);
-                     *  so, this call with 256 as src_len, will not
-                     *  corrupt the rest of the user seed options
-                     */
-                    c += charseed_uniappd (opt, c+1, 256);
-                    break;
-                  }
-
-                /* End of Argument of `-s` */
-                if (*c == '\0')
-                  break;
-              }
+            /* this option disables the default seed config */
+            __seed_init (256);
+            parse_seed_regex (opt, optarg);
           }
           break;
 
