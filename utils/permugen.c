@@ -214,6 +214,9 @@ struct Opt
 /* is non white-space ascii-printable */
 #define IS_ASCII_PR(c) (c >= 0x21 && c <= 0x7E)
 
+/* simple seed regex handler function */
+void parse_seed_regex (struct Opt *opt, const char *input);
+
 void
 usage ()
 {
@@ -772,4 +775,154 @@ main (int argc, char **argv)
     fclose (opt.outf);
 
   return 0;
+}
+
+
+/**
+ *  internal regex functions
+ *  these functions are used to parse `-s` argument
+ *  regex which is used to configure seeds
+ */
+
+/** wseed provider
+ *  inside {...} - comma-separated values
+ *  comma is not allowed in wseeds
+ */
+const char *
+__preg_wseed_provider (struct Opt *opt, const char *p)
+{
+  const char *next_p = p + 1;
+  const char *start = p;
+  size_t len = 0;
+
+#undef __forward
+#define __forward(n) (p += n, next_p += n)
+#define wseed_puts() do {                       \
+    char *str = malloc (++len);                 \
+    memcpy (str, start, len);                   \
+    str[len - 1] = '\0';                        \
+    wseed_uniappd (opt, str);                   \
+  } while (0)
+
+  for (; *p != '\0'; __forward (1))
+    {
+      switch (*p)
+        {
+        case '\0':
+          return p;
+
+        case '}':
+          if (len > 0)
+            wseed_puts ();
+          return p+1;
+
+        case ',':
+          if (len > 0)
+            wseed_puts ();
+          start = p+1, len = 0;
+          break;
+
+        default:
+          len++;
+        }
+    }
+  return p;
+}
+
+/** character seed provider
+ *  inside [...]
+ *  X-Y: means range X to Y
+ *  `\[` and `\]`: means `[`,`]` characters
+ */
+const char *
+__preg_charseed_provider (struct Opt *opt, const char *p)
+{
+  const char *next_p = p + 1;
+  static char seed = 0;
+
+#undef __forward
+#define __forward(n) (p += n, next_p += n)
+#define seed_putc() charseed_uniappd (opt, &seed, 1)
+
+  for (; *p != '\0'; __forward (1))
+    {
+      switch (*p)
+        {
+        case '\0':
+          /* End of Regex */
+          return p;
+
+        case '\\':
+          if (*next_p == ']' || *next_p == '[')
+            {
+              seed = *next_p;
+              __forward (1);
+              goto Put_a_char;
+            }
+          break;
+
+        case ']':
+          return p;
+
+        case '-':
+          if (*(p - 1) != '[')
+            {
+              if (*next_p != ']' && *next_p != '\\')
+                {
+                  for (seed = *(p - 1); seed <= *next_p; ++seed)
+                    {
+                      seed_putc ();
+                    }
+                  __forward (1);
+                }
+              else
+                {
+                  seed = *p;
+                  goto Put_a_char;
+                }
+            }
+          else
+            {
+              seed = *p;
+              goto Put_a_char;
+            }
+          break;
+
+        default:
+          {
+            switch (*next_p)
+              {
+              case '-':
+                break;
+
+              case '\0':
+              case ']':
+              default:
+                seed = *p;
+              Put_a_char:
+                seed_putc ();
+              }
+          }
+        }
+    }
+  return p;
+}
+
+// main seed regex parser function
+void
+parse_seed_regex (struct Opt *opt, const char *input)
+{
+  // input: "  [..\[..]  {..\{..} "
+  char prev_p = 0;
+  for (; *input != '\0'; prev_p = *input, ++input)
+    {
+      if (*input == '[' && prev_p != '\\')
+        {
+          input = __preg_charseed_provider (opt, input + 1);
+        }
+      else if (*input == '{' && prev_p != '\\')
+        {
+          input = __preg_wseed_provider (opt, input + 1);
+        }
+    }
 }
