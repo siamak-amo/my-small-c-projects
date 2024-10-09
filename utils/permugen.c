@@ -25,6 +25,28 @@
  *    for more details see help function via `-h` option:
  *    $ ./permugen -h
  *
+ *  Some usage examples:
+ *    - To make permutations of A,B,C, and a,...,f
+ *    ./permugen -s "[ABC] [a-f]" -d4             # with length 4
+ *    ./permugen -s "[ABCa-f]" -d4                # equivalent
+ *    ./permugen -s "[ABCa-f]" -D4                # with length 1,...,4
+ *    ./permugen --min-depth 3 --max-depth 5      # with length 3,...,5
+ *
+ *    - To include word(s) in permutations
+ *    ./permugen -s "{foo,bar}"
+ *    ./permugen -s "[0-4] {foo,bar,baz}"         # to also include 0,...,4
+ *    ./permugen -s "[xyz0-4] {foo,bar,baz}"      # to also include x,y,z
+ *    ./permugen -s "[0-4] [x-z] {foo,bar,baz}"   # equivalent
+ *
+ *    - Output formatting (separator `-p` and format `-f`)
+ *      to disable backslash interpretation (default) use `-E`
+ *    ./permugen --delim ", "                     # comma separated
+ *    ./permugen --delim "\t"                     # tab separated
+ *    # using `www.` as prefix and `.com` as suffix
+ *    # you may use --prefix, --suffix instead for more control
+ *    ./permugen --format "www. .com"
+ *
+ *
  *  Compilation:
  *    to compile with `buffered_io.h`:
  *      cc -ggdb -O3 -Wall -Wextra -Werror \
