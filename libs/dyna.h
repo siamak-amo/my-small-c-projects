@@ -105,10 +105,9 @@
 #endif
 
 #ifndef dyna_alloc
-# define dyna_alloc malloc
-#endif
-#ifndef dyna_realloc
-# define dyna_realloc realloc
+# define dyna_alloc(s) malloc (s)
+# define dyna_realloc(p, news) realloc (p, news)
+# define dyna_free(p) free (p)
 #endif
 
 /* users don't need to work with this */
@@ -153,7 +152,7 @@ DADECLARE (__da_appd, sidx_t, void**);
 // to free dynamic array @arr
 #define da_free(arr) do {                       \
     if (DA_NNULL (arr))                         \
-      free (__da_containerof (arr));            \
+      dyna_free (__da_containerof (arr));       \
   } while (0)
 
 // to get length and capacity of @arr
@@ -202,7 +201,7 @@ __mk_da(int sizeof_arr, int n)
   if (0 == n)
     n = 1; /* prevent 0 capacity initialization */
   size_t ptrlen = sizeof (Darray) + sizeof_arr * n;
-  Darray *da = (Darray *) malloc (ptrlen);
+  Darray *da = (Darray *) dyna_alloc (ptrlen);
   da->cap = n;
   da->size = 0;
   da->arr_byte = sizeof_arr;
@@ -223,7 +222,7 @@ __da_appd (void **arr)
       DA_DO_GROW (da->cap);
       size_t new_size = sizeof(Darray) + da->cap * da->arr_byte;
       da_fprintd (" %lu\n", new_size);
-      da = realloc (da, new_size);
+      da = dyna_realloc (da, new_size);
       if (!da)
         return -1;
       *arr = da->arr;
