@@ -354,20 +354,20 @@ perm (const int depth, const struct Opt *opt)
  *  updates @dest_len and returns number of bytes written
  */
 int
-uniappd (char *restrict dest, int *dest_len,
-         const char *restrict src, int src_len)
+charseed_uniappd (struct Opt *opt, const char *src, int src_len)
 {
   int rw = 0;
   while (src_len > 0 && *src)
     {
       if (!IS_ASCII_PR (*src))
         break;
-      for (int __i = *dest_len - 1; __i >= 0; __i--)
+      for (int __i = opt->seed_len - 1; __i >= 0; __i--)
         {
-          if (*src == dest[__i])
+          if (*src == opt->seed[__i])
             goto END_OF_LOOP;
         }
-      dest[(*dest_len)++] = *src;
+      opt->seed[opt->seed_len] = *src;
+      opt->seed_len++;
       rw++;
 
     END_OF_LOOP:
@@ -463,7 +463,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
 {
   /* to append char seed */
 #define CHARSEED_UNIAPPD(seed_array) \
-  uniappd (opt->seed, &opt->seed_len, seed_array.c, seed_array.len)
+  charseed_uniappd (opt, seed_array.c, seed_array.len)
 
   char *__p = NULL;
   int idx = 0, flag;
@@ -624,7 +624,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                      *  so, this call with 256 as src_len, will not
                      *  corrupt the rest of the user seed options
                      */
-                    c += uniappd (opt->seed, &opt->seed_len, c+1, 256);
+                    c += charseed_uniappd (opt, c+1, 256);
                     break;
                   }
 
