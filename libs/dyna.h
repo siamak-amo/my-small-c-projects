@@ -44,6 +44,18 @@
  *    `DA_INICAP`:  the default initial capacity of arrays
  *    `DA_DO_GRO`:  to define how arrays grow
  *    `DA_GFACT`:   growth factor (see the source code)
+ *
+ *  WARNING:
+ *    If an instance of this dynamic array, is being stored
+ *    outside of scope of a function (F), you *MUST NOT* call
+ *    `da_appd` inside the F, because if an overflow happens,
+ *    `da_appd` will need to reallocate memory and so the original
+ *    pointer outside of F gets freed and potentially cause
+ *    use after free or SEGFAULT
+ *    A solution would be to store the reference inside
+ *    some struct and pass the reference of it the function F
+ *    so `da_appd` will update the reference properly
+ *
  **/
 #ifndef DYNAMIC_ARRAY__H__
 #define DYNAMIC_ARRAY__H__
