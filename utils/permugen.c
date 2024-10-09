@@ -379,6 +379,22 @@ uniappd (char *restrict dest, int *dest_len,
 }
 
 /**
+ *  uniquely appends @word to dynamic array @da
+ */
+void
+da_uniappd (struct Opt *opt, char *word)
+{
+  if (!opt->wseed || !word)
+    return;
+  for (idx_t i=0; i < da_sizeof (opt->wseed); ++i)
+    {
+      if (_strcmp (opt->wseed[i], word))
+        return;
+    }
+  da_appd (opt->wseed, word);
+}
+
+/**
  *  safe file open (fopen)
  *  only if it could open @pathname changes @dest[0]
  *  @mode is the same as fopen mode
@@ -541,7 +557,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                     __line[0] != '#') // commented line
                   {
                     __line[strlen (__line) - 1] = '\0';
-                    da_appd (opt->wseed, strdup (__line));
+                    da_uniappd (opt, strdup (__line));
                   }
               }
             if (__line)
@@ -572,7 +588,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                           if (*c == ',')
                             {
                               *(c++) = '\0';
-                              da_appd (opt->wseed, prev_sep);
+                              da_uniappd (opt, prev_sep);
                               prev_sep = c;
                               if (*c == '\0' || *c == ' ')
                                 break;
@@ -582,7 +598,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                               if (prev_sep != c)
                                 {
                                   *c = '\0';
-                                  da_appd (opt->wseed, prev_sep);
+                                  da_uniappd (opt, prev_sep);
                                 }
                               break;
                             }
