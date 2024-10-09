@@ -112,6 +112,7 @@
 #include <getopt.h>
 
 static const char *__progname__;
+static const char *__PROGVERSION__ = "v1.0";
 
 /**
  *  using buffered_io.h for better performance
@@ -217,7 +218,7 @@ void
 usage ()
 {
   fprintf (stdout,
-           "Permugen, permutation generator utility\n"
+           "Permugen %s, permutation generator utility\n"
            "Usage: %s [OPTIONS]\n\n"
            "OPTIONS:\n"
            "      -E                      disable backslash interpretation\n"
@@ -250,6 +251,7 @@ usage ()
            "          custom seeds: `ssXYZ...` for X,Y,Z,... characters\n"
            "          word seeds:   `sWxxx,yyy,zzz` for words xxx, yyy, zzz\n",
            __progname__);
+           ,__PROGVERSION__, __progname__);
 }
 
 /**
