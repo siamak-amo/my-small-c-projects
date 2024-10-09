@@ -21,74 +21,9 @@
  *  Permugen, permutation generator utility
  *  to generate customizable permutations of given seeds
  *
- *  Usage:
- *    - Basic usage
- *    # permutations of [a-z] and [0-9], of depth 3
- *    $ ./permugen
- *
- *    # of depth 2
- *    $ ./permugen -d 2
- *
- *    # with a depth between 1 and 4
- *    $ ./permugen -D 4
- *
- *    # with a depth between 2 and 5
- *    $ ./permugen --min-depth 2 --max-depth 5
- *
- *    - To configure seeds, these can be used together
- *      `-s a`            ->  [a-z]
- *      `-s A`            ->  [A-Z]
- *      `-s n`            ->  [0-9]
- *      `-s sXYZ`         ->  [X,Y,Z]  (custom seed)
- *                            for non-whitespace characters
- *
- *    - To inject word(s) in permutations (word seed)
- *      `-s Wdev`         ->  `dev`
- *      `-s Wdev,test,m`  ->  `dev`, `test`, `m`
- *
- *    - Examples:
- *    # permutations of `-`, `.`, `test`, `dev`
- *    $ ./permugen -s "s-. Wtest,dev"
- *    # to also include numbers and [A-Z]
- *    $ ./permugen -s "s-. Wtest,dev nA"
- *
- *    - To read seed words from file, (`-S` option)
- *      When file path is `-`, it uses stdin
- *    # wlist.txt is a newline-separated word list
- *    # lines starting with `#` will be ignored
- *    $ ./permugen -S /path/to/wlist.txt
- *
- *    - Example:
- *    # to make permutations of a wordlist
- *    # `-s s` means no character seed
- *    $ ./permugen -s s -S /path/to/wlist.txt
- *    # to also include `-` and `_`
- *    $ ./permugen -s "s-_" -S /path/to/wlist.txt
- *
- *    # to get permutations of words from stdin:
- *    $ cat wlist.txt | ./permugen -S - -ss
- *    # to also include `AAA` and `-`
- *    $ cat wlist.txt | ./permugen -S - -ss- -sWAAA
- *
- *    - To put delimiter `xxx` between each component of
- *      the permutations (`-p`, `--delimiter` option),
- *      xxx might have white space:
- *      `-p xxx`          ->  [c1]xxx[c2]xxx[c3]
- *      `-p.`             ->  `c1.c2.c3`  (suitable for subdomains)
- *      `-p ', '`         ->  `c1, c2, c3`
- *
- *    - To add prefix and suffix to the output:
- *    $ ./permugen -f "www."         ->  www.xyz
- *    $ ./permugen -f "www. .com"    ->  www.xyz.com
- *    $ ./permugen -f " .com"        ->      xyz.com
- *    - if you need to use space character, either use
- *      `\x20` in the prefix or use --prefix:
- *      `--prefix "aaa"`             ->  aaa.xyz
- *      `--suffix "bbb"`             ->      xyz.bbb
- *      where `aaa`, `bbb` might have space character
- *
- *    - To write the output on a file: `-o`, `--output`
- *      for appending: `-oA`, `-a`, `--append`
+ *  Usage:  ./permugen [OPTIONS] [ARGUMENTS]
+ *    for more details see help function via `-h` option:
+ *    $ ./permugen -h
  *
  *  Compilation:
  *    to compile with `buffered_io.h`:
