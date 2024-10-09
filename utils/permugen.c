@@ -590,7 +590,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                           if (*c == ',')
                             {
                               *(c++) = '\0';
-                              wseed_uniappd (opt, prev_sep);
+                              wseed_uniappd (opt, strdup (prev_sep));
                               prev_sep = c;
                               if (*c == '\0' || *c == ' ')
                                 break;
@@ -600,7 +600,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                               if (prev_sep != c)
                                 {
                                   *c = '\0';
-                                  wseed_uniappd (opt, prev_sep);
+                                  wseed_uniappd (opt, strdup (prev_sep));
                                 }
                               break;
                             }
