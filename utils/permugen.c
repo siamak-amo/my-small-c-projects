@@ -379,10 +379,12 @@ uniappd (char *restrict dest, int *dest_len,
 }
 
 /**
- *  uniquely appends @word to dynamic array @da
+ *  uniquely appends reference of @word
+ *  to @opt->wseed (dynamic array)
+ *  use strdup when @word gets dereferenced
  */
 void
-da_uniappd (struct Opt *opt, char *word)
+wseed_uniappd (struct Opt *opt, char *word)
 {
   if (!opt->wseed || !word)
     return;
@@ -557,7 +559,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                     __line[0] != '#') // commented line
                   {
                     __line[strlen (__line) - 1] = '\0';
-                    da_uniappd (opt, strdup (__line));
+                    wseed_uniappd (opt, strdup (__line));
                   }
               }
             if (__line)
@@ -588,7 +590,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                           if (*c == ',')
                             {
                               *(c++) = '\0';
-                              da_uniappd (opt, prev_sep);
+                              wseed_uniappd (opt, prev_sep);
                               prev_sep = c;
                               if (*c == '\0' || *c == ' ')
                                 break;
@@ -598,7 +600,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                               if (prev_sep != c)
                                 {
                                   *c = '\0';
-                                  da_uniappd (opt, prev_sep);
+                                  wseed_uniappd (opt, prev_sep);
                                 }
                               break;
                             }
