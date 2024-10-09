@@ -112,7 +112,7 @@
 #include <getopt.h>
 
 static const char *__progname__;
-static const char *__PROGVERSION__ = "v1.0";
+static const char *__PROGVERSION__ = "v1.1";
 
 /**
  *  using buffered_io.h for better performance
@@ -248,11 +248,15 @@ usage ()
            "          ` BBB`     to use BBB as suffix\n"
            "          BBB might contain white-space character(s)\n"
            "          to have white-space in AAA, either use `\\x20` or --prefix\n\n"
-           "   seeds: there are three types of seeds available\n"
-           "          built-in:     `sa` ~ [a-z],  `sA` ~ [A-Z],  `sn` ~ [0-9]\n"
-           "          custom seeds: `ssXYZ...` for X,Y,Z,... characters\n"
-           "          word seeds:   `sWxxx,yyy,zzz` for words xxx, yyy, zzz\n",
-           __progname__);
+           "    seed: this option accepts a simple regex as argument\n"
+           "            `[XYZ]`:          to use characters X,Y,Z as character seed\n"
+           "            `[a-f]`:          to use characters a,b,...,f\n"
+           "            `[\\[\\]]`:         to use `[`,`]` characters\n"
+           "            `{word1,word2}`   to include `word1` and `word2` in word seeds\n"
+           "                              if your word contains comma, use --raw-wseed option\n"
+           "          example:\n"
+           "            to include a,b and 0,...,9  also words foo,bar:\n"
+           "             `[ab0-9] {foo,bar}`  or equivalently  `[ab] {foo,bar} [0-9]`\n"
            ,__PROGVERSION__, __progname__);
 }
 
