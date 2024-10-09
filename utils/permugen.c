@@ -426,6 +426,8 @@ safe_fopen (FILE **dest,
 const struct option lopts[] = {
   /* seeds */
   {"seed", required_argument, NULL, 's'},
+  {"raw-seed", required_argument, NULL, '0'},
+  {"raw-wseed", required_argument, NULL, '5'},
   {"seed-path", required_argument, NULL, 'S'},
   {"wseed-path", required_argument, NULL, 'S'},
   /* output file */
@@ -477,9 +479,9 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
   while (1)
     {
-      /* we use 1,2,3,4 as `helper` options and only to use getopt */
+      /* we use 0,1,2,... as `helper` options and only to use getopt */
       if ((flag = getopt_long (argc, argv,
-                               "s:S:o:a:p:d:f:D:1:2:3:4:hEe", lopts, &idx)) == -1)
+                               "s:S:o:a:p:d:f:D:0:1:2:3:4:5:hEe", lopts, &idx)) == -1)
         {
           /* End of Options */
           break;
@@ -636,6 +638,17 @@ init_opt (int argc, char **argv, struct Opt *opt)
               }
           }
           break;
+
+        case '0': /* raw seed */
+          if (!opt->escape_disabled)
+            unescape (optarg);
+          charseed_uniappd (opt, optarg, strlen (optarg));
+          break;
+
+        case '5': /* raw word seed */
+          if (!opt->escape_disabled)
+            unescape (optarg);
+          wseed_uniappd (opt, optarg);
 
         default:
           break;
