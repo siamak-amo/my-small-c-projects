@@ -141,17 +141,17 @@ static const struct char_seed charseed_09 = {"0123456789", 10};
 
 struct Seed
 {
-  /* char seed(s) */
-  char *seed;
-  int seed_len;
-  /* word seed(s) - dynamic array */
+  /* char seed */
+  char *cseed;
+  int cseed_len;
+  /* word seed, dynamic array */
   char **wseed;
 };
 
 struct Opt
 {
   /* main seed configuration */
-  struct Seed *seeds;
+  struct Seed *global_seeds;
 
   /* output format */
   int escape_disabled; /* to disable backslash interpretation */
@@ -266,16 +266,16 @@ perm (const int depth, const struct Opt *opt)
  Print_Loop: /* O(depth) */
   {
     int idx = idxs[i];
-    if (idx < opt->seeds->seed_len)
+    if (idx < opt->global_seeds->cseed_len)
       {
         /* range of character seeds */
-        Pfputc (opt->seeds->seed[idx], opt);
+        Pfputc (opt->global_seeds->cseed[idx], opt);
       }
     else
       {
         /* range of word seeds */
-        idx -= opt->seeds->seed_len;
-        Pfputs (opt->seeds->wseed[idx], opt);
+        idx -= opt->global_seeds->cseed_len;
+        Pfputs (opt->global_seeds->wseed[idx], opt);
       }
     i++;
   }
@@ -295,8 +295,8 @@ perm (const int depth, const struct Opt *opt)
   int pos;
   for (pos = depth - 1;
        pos >= 0 &&
-         idxs[pos] == opt->seeds->seed_len - 1 +
-         (int)da_sizeof (opt->seeds->wseed);
+         idxs[pos] == opt->global_seeds->cseed_len - 1 +
+         (int)da_sizeof (opt->global_seeds->wseed);
        pos--)
     {
       idxs[pos] = 0;
@@ -336,13 +336,13 @@ charseed_uniappd (struct Seed *s, const char *src, int src_len)
     {
       if (!IS_ASCII_PR (*src))
         break;
-      for (int __i = s->seed_len - 1; __i >= 0; __i--)
+      for (int __i = s->cseed_len - 1; __i >= 0; __i--)
         {
-          if (*src == s->seed[__i])
+          if (*src == s->cseed[__i])
             goto END_OF_LOOP;
         }
-      s->seed[s->seed_len] = *src;
-      s->seed_len++;
+      s->cseed[s->cseed_len] = *src;
+      s->cseed_len++;
       rw++;
 
     END_OF_LOOP:
@@ -531,7 +531,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                     __line[0] != '#') // commented line
                   {
                     __line[strlen (__line) - 1] = '\0';
-                    wseed_uniappd (opt->seeds, strdup (__line));
+                    wseed_uniappd (opt->global_seeds, strdup (__line));
                   }
               }
             if (__line)
@@ -544,20 +544,20 @@ init_opt (int argc, char **argv, struct Opt *opt)
         case 's': /* seed configuration */
           {
             /* this option disables the default seed config */
-            parse_seed_regex (opt->seeds, optarg);
+            parse_seed_regex (opt->global_seeds, optarg);
           }
           break;
 
         case '0': /* raw seed */
           if (!opt->escape_disabled)
             unescape (optarg);
-          charseed_uniappd (opt->seeds, optarg, strlen (optarg));
+          charseed_uniappd (opt->global_seeds, optarg, strlen (optarg));
           break;
 
         case '5': /* raw word seed */
           if (!opt->escape_disabled)
             unescape (optarg);
-          wseed_uniappd (opt->seeds, optarg);
+          wseed_uniappd (opt->global_seeds, optarg);
 
         default:
           break;
@@ -572,14 +572,14 @@ init_opt (int argc, char **argv, struct Opt *opt)
     if (opt->outf == NULL)
       opt->outf = stdout;
 
-    if (opt->seeds->seed_len == 0)
+    if (opt->global_seeds->cseed_len == 0)
       {
         /* initializing with the default seed [a-z0-9] */
-        __p = opt->seeds->seed;
+        __p = opt->global_seeds->cseed;
         __p = mempcpy (__p, charseed_az.c, charseed_az.len);
         __p = mempcpy (__p, charseed_09.c, charseed_09.len);
 
-        opt->seeds->seed_len = (int)(__p - opt->seeds->seed);
+        opt->global_seeds->cseed_len = (int)(__p - opt->global_seeds->cseed);
       }
 
     if (opt->from_depth <= 0 && opt->to_depth <= 0)
@@ -621,7 +621,7 @@ mk_seed ()
   if (!s)
     return NULL;
   memset (s, 0, sizeof (struct Seed));
-  s->seed = malloc (256);
+  s->cseed = malloc (256);
   s->wseed = da_new (char *);
   return s;
 }
@@ -633,11 +633,12 @@ main (int argc, char **argv)
   __progname__ = *argv;
 
   { /* initializing options */
-    opt.seeds = mk_seed ();
+    opt.global_seeds = mk_seed ();
     if (init_opt (argc, argv, &opt))
       goto EndOfMain;
 
-    if (opt.seeds->seed_len == 0 && da_sizeof (opt.seeds->wseed) == 0)
+    if (opt.global_seeds->cseed_len == 0 &&
+        da_sizeof (opt.global_seeds->wseed) == 0)
       {
         errorf ("Warning -- Empty permutation!");
         goto EndOfMain;
@@ -652,8 +653,8 @@ main (int argc, char **argv)
 
 #ifdef _DEBUG
   /* print some debug information */
-  printd_arr (opt.seeds->seed, "`%c`", opt.seeds->seed_len);
-  printd_arr (opt.seeds->wseed, "`%s`", (int) da_sizeof (opt.seeds->wseed));
+  printd_arr (opt.global_seeds->cseed, "`%c`", opt.global_seeds->cseed_len);
+  printd_arr (opt.global_seeds->wseed, "`%s`", (int) da_sizeof (opt.global_seeds->wseed));
   if (opt.escape_disabled)
     dprintf ("- backslash interpretation is disabled\n");
   if (opt.__sep)
@@ -686,14 +687,14 @@ main (int argc, char **argv)
 
 
  EndOfMain:
-  if (opt.seeds->seed)
-    free (opt.seeds->seed);
-  if (opt.seeds->wseed)
-    da_free (opt.seeds->wseed);
+  if (opt.global_seeds->cseed)
+    free (opt.global_seeds->cseed);
+  if (opt.global_seeds->wseed)
+    da_free (opt.global_seeds->wseed);
   /* close any non-stdout file descriptors */
   if (opt.outf && fileno (opt.outf) != 1)
     fclose (opt.outf);
-  free (opt.seeds);
+  free (opt.global_seeds);
 
   return 0;
 }
