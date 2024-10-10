@@ -196,7 +196,7 @@ usage ()
 {
   fprintf (stdout,
            "Permugen %s, permutation generator utility\n"
-           "Usage: %s [OPTIONS]\n\n"
+           "Usage: %s [OPTIONS] [ARGUMENTS]\n\n"
            "OPTIONS:\n"
            "      -E                      disable backslash interpretation\n"
            "      -e                      enable backslash interpretation (default)\n"
