@@ -204,8 +204,9 @@ __mk_da(int cell_size, int n)
   Darray *da = (Darray *) dyna_alloc (ptrlen);
   da->cap = n;
   da->size = 0;
-  da_dprintf ("Dyna was allocated @%p[.%lu]\n", da, ptrlen);
   da->cell_bytes = cell_size;
+  da_dprintf ("Dyna @%p was allocated %luB, cell_size: %dB\n",
+              da, ptrlen, cell_size);
   return da;
 }
 
@@ -217,11 +218,11 @@ __da_appd (void **arr)
     return -1;
   if (da->size >= da->cap)
     {
-      da_dprintf ("Overflow @%p, size=cap:%-2lu, arr_byte:%-2d --> new size:",
-              da, da->cap, da->arr_byte);
+      da_dprintf ("Dyna overflow @%p, size=cap:%-2lu, cell_size:%dB, new size:",
+              da, da->cap, da->cell_bytes);
       DA_DO_GROW (da->cap);
-      da_fprintd (" %lu\n", new_size);
       size_t new_size = sizeof(Darray) + da->cap * da->cell_bytes;
+      da_fprintd (" %luB\n", new_size);
       da = dyna_realloc (da, new_size);
       if (!da)
         return -1;
