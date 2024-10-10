@@ -726,7 +726,8 @@ __preg_wseed_provider (struct Seed *s, const char *p)
 
 #undef __forward
 #define __forward(n) (p += n, next_p += n)
-#define wseed_puts() do {                       \
+#undef seedout
+#define seedout() do {                          \
     char *str = malloc (++len);                 \
     memcpy (str, start, len);                   \
     str[len - 1] = '\0';                        \
@@ -742,12 +743,12 @@ __preg_wseed_provider (struct Seed *s, const char *p)
 
         case '}':
           if (len > 0)
-            wseed_puts ();
+            seedout ();
           return p+1;
 
         case ',':
           if (len > 0)
-            wseed_puts ();
+            seedout ();
           start = p+1, len = 0;
           break;
 
@@ -771,7 +772,8 @@ __preg_charseed_provider (struct Seed *s, const char *p)
 
 #undef __forward
 #define __forward(n) (p += n, next_p += n)
-#define seed_putc() cseed_uniappd (s, &seed, 1)
+#undef seedout
+#define seedout() cseed_uniappd (s, &seed, 1)
 
   for (; *p != '\0'; __forward (1))
     {
@@ -800,7 +802,7 @@ __preg_charseed_provider (struct Seed *s, const char *p)
                 {
                   for (seed = *(p - 1); seed <= *next_p; ++seed)
                     {
-                      seed_putc ();
+                      seedout ();
                     }
                   __forward (1);
                 }
@@ -829,7 +831,7 @@ __preg_charseed_provider (struct Seed *s, const char *p)
               default:
                 seed = *p;
               Put_a_char:
-                seed_putc ();
+                seedout ();
               }
           }
         }
