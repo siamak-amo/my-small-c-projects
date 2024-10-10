@@ -115,7 +115,7 @@ typedef struct
 {
   idx_t cap;
   idx_t size;
-  int arr_byte; /* size of a sell */
+  int cell_bytes; /* size of a cell */
 
   char arr[];
 } Darray;
@@ -161,7 +161,7 @@ DADECLARE (__da_appd, sidx_t, void**);
 #define da_capof(arr) \
   (DA_NNULL (arr) ? __da_containerof (arr)->cap : 0)
 
-// gives how many sells left until the next reallocation (at overflow)
+// gives how many cells left until the next reallocation (at overflow)
 #define da_leftof(arr) \
   (DA_NNULL (arr) ? (sidx_t)da_capof (arr) - (sidx_t)da_sizeof (arr) : 0)
 
@@ -192,20 +192,20 @@ DADECLARE (__da_appd, sidx_t, void**);
 #ifdef DYNA_IMPLEMENTATION
 
 /** to make dynamic arrays
- *  with each sell of length @sizeof_arr
+ *  with each cell of length @cell_size
  *  and the initial capacity @n
  */
 Darray *
-__mk_da(int sizeof_arr, int n)
+__mk_da(int cell_size, int n)
 {
   if (0 == n)
     n = 1; /* prevent 0 capacity initialization */
-  size_t ptrlen = sizeof (Darray) + sizeof_arr * n;
+  size_t ptrlen = sizeof (Darray) + cell_size * n;
   Darray *da = (Darray *) dyna_alloc (ptrlen);
   da->cap = n;
   da->size = 0;
-  da->arr_byte = sizeof_arr;
   da_dprintf ("Dyna was allocated @%p[.%lu]\n", da, ptrlen);
+  da->cell_bytes = cell_size;
   return da;
 }
 
@@ -220,8 +220,8 @@ __da_appd (void **arr)
       da_dprintf ("Overflow @%p, size=cap:%-2lu, arr_byte:%-2d --> new size:",
               da, da->cap, da->arr_byte);
       DA_DO_GROW (da->cap);
-      size_t new_size = sizeof(Darray) + da->cap * da->arr_byte;
       da_fprintd (" %lu\n", new_size);
+      size_t new_size = sizeof(Darray) + da->cap * da->cell_bytes;
       da = dyna_realloc (da, new_size);
       if (!da)
         return -1;
