@@ -214,7 +214,7 @@ usage ()
            "      -s, --seed              to configure global seeds (see ARGUMENTS)\n"
            "          --raw-seed          to configure character seeds\n"
            "          --raw-wseed         to add a single word to global seeds\n"
-           "      -f, --format            output format\n"
+           "      -f, --format            output format (see ARGUMENTS)\n"
            "          --prefix            output prefix\n"
            "          --suffix            output suffix\n\n"
            "ARGUMENTS:\n"
