@@ -765,7 +765,7 @@ __preg_wseed_provider (struct Seed *s, const char *p)
  *  `\[` and `\]`: means `[`,`]` characters
  */
 const char *
-__preg_charseed_provider (struct Seed *s, const char *p)
+__preg_cseed_provider (struct Seed *s, const char *p)
 {
   const char *next_p = p + 1;
   static char seed = 0;
@@ -849,11 +849,11 @@ parse_seed_regex (struct Seed *s, const char *input)
     {
       if (*input == '[' && prev_p != '\\')
         {
-          input = __preg_charseed_provider (s, input + 1);
+          input = __preg_cseed_provider (s, ++input);
         }
       else if (*input == '{' && prev_p != '\\')
         {
-          input = __preg_wseed_provider (s, input + 1);
+          input = __preg_wseed_provider (s, ++input);
         }
     }
 }
