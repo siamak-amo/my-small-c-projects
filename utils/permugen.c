@@ -213,7 +213,7 @@ usage ()
            "                              pass - to read from stdin\n"
            "      -s, --seed              regex character seeds (see ARGUMENTS)\n"
            "          --raw-seed          to explicitly determine character seeds\n"
-           "          --raw-wseed         to include one word seed"
+           "          --raw-wseed         to include one word seed\n"
            "      -f, --format            output format\n"
            "          --prefix            output prefix\n"
            "          --suffix            output suffix\n\n"
