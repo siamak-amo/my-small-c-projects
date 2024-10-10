@@ -13,7 +13,7 @@
  *    int
  *    main (void)
  *    {
- *      // char test
+ *      // char array
  *      char *carr = da_new (char);
  *
  *      for (char c ='a'; c <= 'z'; ++c)
@@ -24,7 +24,7 @@
  *      da_free (carr);
  *
  *
- *      // C string test
+ *      // C string array
  *      char **cstr = da_new (char *);
  *
  *      da_appd (cstr, "string0");
@@ -35,6 +35,25 @@
  *        printf ("str%lu: {%s}\n", i, cstr[i]);
  *
  *      da_free (cstr);
+ *
+ *
+ *      // struct array
+ *      struct data {
+ *        int num;
+ *      };
+ *      struct data *arr = da_newn (struct data, 4);
+ *
+ *      for (int i=0; i<7; ++i)
+ *      {
+ *        struct data tmp = {i};
+ *        da_appd (arr, tmp);
+ *      }
+ *
+ *      for (int i=0; i<7; ++i)
+ *        printf ("data[%i] - num: %d\n", i, arr[i].num);
+ *
+ *      da_free (arr);
+ *
  *      return 0;
  *    }
  *  ```
