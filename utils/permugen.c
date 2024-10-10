@@ -147,6 +147,7 @@ struct Seed
   /* word seed, dynamic array */
   char **wseed;
 };
+#define CSEED_MAXLEN 256
 
 struct Opt
 {
@@ -621,7 +622,7 @@ mk_seed ()
   if (!s)
     return NULL;
   memset (s, 0, sizeof (struct Seed));
-  s->cseed = malloc (256);
+  s->cseed = malloc (CSEED_MAXLEN);
   s->wseed = da_new (char *);
   return s;
 }
