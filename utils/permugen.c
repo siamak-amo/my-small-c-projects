@@ -629,17 +629,20 @@ mk_seed ()
 int
 main (int argc, char **argv)
 {
-  struct Opt opt = {0};
-  opt.seeds = mk_seed ();
+    struct Opt opt = {0};
   __progname__ = *argv;
-  if (init_opt (argc, argv, &opt))
-    goto EndOfMain;
 
-  if (opt.seeds->seed_len == 0 && da_sizeof (opt.seeds->wseed) == 0)
-    {
-      errorf ("Warning -- Empty permutation!");
+  { /* initializing options */
+    opt.seeds = mk_seed ();
+    if (init_opt (argc, argv, &opt))
       goto EndOfMain;
-    }
+
+    if (opt.seeds->seed_len == 0 && da_sizeof (opt.seeds->wseed) == 0)
+      {
+        errorf ("Warning -- Empty permutation!");
+        goto EndOfMain;
+      }
+  }
 
 #ifdef _USE_BIO
   int cap = _BMAX;
@@ -665,17 +668,22 @@ main (int argc, char **argv)
   dprintf ("* permutations:\n");
 #endif /* _DEBUG */
 
-  int rw_err = 0;
-  for (int d = opt.from_depth; d <= opt.to_depth; ++d)
-    {
-      if ((rw_err = perm (d, &opt)) != 0)
-        break;
-    }
+
+  { /* organizing permutation loop */
+    int rw_err = 0;
+    for (int d = opt.from_depth; d <= opt.to_depth; ++d)
+      {
+        if ((rw_err = perm (d, &opt)) != 0)
+          break;
+      }
+  }
+
 
 #ifdef _USE_BIO
   bio_flush (opt.bio);
   free (opt.bio->buffer);
 #endif
+
 
  EndOfMain:
   if (opt.seeds->seed)
