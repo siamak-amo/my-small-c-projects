@@ -139,6 +139,13 @@ static const struct char_seed charseed_az = {"abcdefghijklmnopqrstuvwxyz", 26};
 // static const struct char_seed charseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 static const struct char_seed charseed_09 = {"0123456789", 10};
 
+/**
+ *  seeds container
+ *  wseed within this struct is dynamic array
+ *  to handle it properly, only use `xxx_uniappd`
+ *  and regex parser functions
+ *  also to have length of it, use `da_sizeof (wseed)`
+ */
 struct Seed
 {
   /* char seed */
@@ -148,6 +155,11 @@ struct Seed
   char **wseed;
 };
 #define CSEED_MAXLEN 256
+/* simple seed regex handler function */
+void parse_seed_regex (struct Seed *, const char *);
+/* unique append to seed functions */
+int charseed_uniappd (struct Seed *, const char *, int);
+void wseed_uniappd (struct Seed *, char *);
 
 struct Opt
 {
@@ -178,8 +190,6 @@ struct Opt
 /* is non white-space ascii-printable */
 #define IS_ASCII_PR(c) (c >= 0x21 && c <= 0x7E)
 
-/* simple seed regex handler function */
-void parse_seed_regex (struct Seed *s, const char *input);
 
 void
 usage ()
