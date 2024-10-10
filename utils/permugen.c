@@ -453,12 +453,13 @@ init_opt (int argc, char **argv, struct Opt *opt)
   while (1)
     {
       /* we use 0,1,2,... as `helper` options and only to use getopt */
-      if ((flag = getopt_long (argc, argv,
-                               "s:S:o:a:p:d:f:D:0:1:2:3:4:5:hEe", lopts, &idx)) == -1)
-        {
-          /* End of Options */
-          break;
-        }
+      flag = getopt_long (argc, argv,
+                          "s:S:o:a:p:d:f:D:0:1:2:3:4:5:hEe", lopts, &idx);
+        if (flag == -1)
+          {
+            /* End of Options */
+            break;
+          }
 
       switch (flag)
         {
