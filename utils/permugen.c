@@ -439,13 +439,7 @@ const struct option lopts[] = {
 int
 init_opt (int argc, char **argv, struct Opt *opt)
 {
-  /* to append char seed */
-#define CHARSEED_UNIAPPD(seed_array) \
-  charseed_uniappd (opt, seed_array.c, seed_array.len)
-
-  char *__p = NULL;
   int idx = 0, flag;
-
   while (1)
     {
       /* we use 0,1,2,... as `helper` options and only to use getopt */
@@ -576,11 +570,11 @@ init_opt (int argc, char **argv, struct Opt *opt)
     if (opt->global_seeds->cseed_len == 0)
       {
         /* initializing with the default seed [a-z0-9] */
-        __p = opt->global_seeds->cseed;
+        char *__p = opt->global_seeds->cseed;
         __p = mempcpy (__p, charseed_az.c, charseed_az.len);
         __p = mempcpy (__p, charseed_09.c, charseed_09.len);
 
-        opt->global_seeds->cseed_len = (int)(__p - opt->global_seeds->cseed);
+        opt->global_seeds->cseed_len = charseed_az.len + charseed_09.len;
       }
 
     if (opt->from_depth <= 0 && opt->to_depth <= 0)
