@@ -205,8 +205,9 @@ __mk_da(int cell_size, int n)
   da->cap = n;
   da->size = 0;
   da->cell_bytes = cell_size;
-  da_dprintf ("Dyna @%p was allocated %luB, cell_size: %dB\n",
-              da, ptrlen, cell_size);
+  da_dprintf ("Dyna @%p was allocated with cell_size: %dB\n"
+              "\tsize: %luB (metadata) + %luB (data) = %luB\n",
+              da, cell_size, sizeof (Darray), cell_size * n, ptrlen);
   return da;
 }
 
