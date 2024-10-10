@@ -97,7 +97,7 @@
 # include <stdio.h>
 # define da_fprintd(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
 # define da_dprintf(format, ...) \
-  da_fprintd ("[debug %s:%d] "format, __func__, __LINE__, ##__VA_ARGS__)
+  da_fprintd ("[dyna %s:%d] "format, __func__, __LINE__, ##__VA_ARGS__)
 #else
 # define da_fprintd(format, ...)
 # define da_dprintf(format, ...)
@@ -169,10 +169,12 @@ DADECLARE (__da_appd, sidx_t, void**);
  *  to be used by users
  */
 // to free dynamic array @arr
-#define da_free(arr) do {                       \
-    if (DA_NNULL (arr))                         \
-      dyna_free (__da_containerof (arr));       \
-  } while (0)
+#define da_free(arr) do {                         \
+    if (DA_NNULL (arr)) {                         \
+      Darray *__d = __da_containerof (arr);       \
+      dyna_free (__d);                            \
+      da_dprintf ("destroying %p\n", __d);        \
+    }} while (0)
 
 // to get length and capacity of @arr
 #define da_sizeof(arr) \
@@ -224,9 +226,9 @@ __mk_da(int cell_size, int n)
   da->cap = n;
   da->size = 0;
   da->cell_bytes = cell_size;
-  da_dprintf ("Dyna @%p was allocated with cell_size: %dB\n"
-              "\tsize: %luB (metadata) + %luB (data) = %luB\n",
-              da, cell_size, sizeof (Darray), cell_size * n, ptrlen);
+  da_dprintf ("allocated @%p, cell_size: %dB, "
+              "size: %luB (%luB metadata + %luB array)\n",
+              da, cell_size, ptrlen, sizeof (Darray), cell_size * n);
   return da;
 }
 
@@ -238,15 +240,15 @@ __da_appd (void **arr)
     return -1;
   if (da->size >= da->cap)
     {
-      da_dprintf ("Dyna overflow @%p, size=cap:%-2lu, cell_size:%dB, new size:",
+      da_dprintf ("overflow @%p, size=cap:%-2lu, cell_size:%dB\n",
               da, da->cap, da->cell_bytes);
       DA_DO_GROW (da->cap);
       size_t new_size = sizeof(Darray) + da->cap * da->cell_bytes;
-      da_fprintd (" %luB\n", new_size);
       da = dyna_realloc (da, new_size);
       if (!da)
         return -1;
       *arr = da->arr;
+      da_dprintf ("reallocated @%p, new size: %luB\n", da, new_size);
     }
 
   return da->size++;
