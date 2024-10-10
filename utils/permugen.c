@@ -449,7 +449,7 @@ const struct option lopts[] = {
 int
 init_opt (int argc, char **argv, struct Opt *opt)
 {
-  int idx = 0, flag;
+  int idx = 0, flag, using_default_seed = 1;
   while (1)
     {
       /* we use 0,1,2,... as `helper` options and only to use getopt */
@@ -549,6 +549,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
         case 's': /* seed configuration */
           {
+            using_default_seed = 0;
             /* this option disables the default seed config */
             parse_seed_regex (opt->global_seeds, optarg);
           }
@@ -578,7 +579,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
     if (opt->outf == NULL)
       opt->outf = stdout;
 
-    if (opt->global_seeds->cseed_len == 0)
+    if (opt->global_seeds->cseed_len == 0 && using_default_seed)
       {
         /* initializing with the default seed [a-z0-9] */
         char *__p = opt->global_seeds->cseed;
