@@ -155,11 +155,11 @@ struct Seed
   char **wseed;
 };
 #define CSEED_MAXLEN 256
-/* simple seed regex handler function */
-void parse_seed_regex (struct Seed *, const char *);
 /* unique append to seed functions */
-int charseed_uniappd (struct Seed *, const char *, int);
-void wseed_uniappd (struct Seed *, char *);
+int cseed_uniappd (struct Seed *, const char *src, int len);
+void wseed_uniappd (struct Seed *, char *str_word);
+/* simple seed regex handler function */
+void parse_seed_regex (struct Seed *, const char *str_regex);
 
 struct Opt
 {
@@ -340,10 +340,10 @@ perm (const int depth, const struct Opt *opt)
  *  updates @dest_len and returns number of bytes written
  */
 int
-charseed_uniappd (struct Seed *s, const char *src, int src_len)
+cseed_uniappd (struct Seed *s, const char *src, int len)
 {
   int rw = 0;
-  while (src_len > 0 && *src)
+  while (len > 0 && *src)
     {
       if (!IS_ASCII_PR (*src))
         break;
@@ -358,7 +358,7 @@ charseed_uniappd (struct Seed *s, const char *src, int src_len)
 
     END_OF_LOOP:
       src++;
-      src_len--;
+      len--;
     }
 
   return rw;
@@ -370,16 +370,16 @@ charseed_uniappd (struct Seed *s, const char *src, int src_len)
  *  use strdup when @word gets dereferenced
  */
 void
-wseed_uniappd (struct Seed *s, char *word)
+wseed_uniappd (struct Seed *s, char *str_word)
 {
-  if (!s->wseed || !word)
+  if (!s->wseed || !str_word)
     return;
   for (idx_t i=0; i < da_sizeof (s->wseed); ++i)
     {
-      if (_strcmp (s->wseed[i], word))
+      if (_strcmp (s->wseed[i], str_word))
         return;
     }
-  da_appd (s->wseed, word);
+  da_appd (s->wseed, str_word);
 }
 
 /**
@@ -558,7 +558,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
         case '0': /* raw seed */
           if (!opt->escape_disabled)
             unescape (optarg);
-          charseed_uniappd (opt->global_seeds, optarg, strlen (optarg));
+          cseed_uniappd (opt->global_seeds, optarg, strlen (optarg));
           break;
 
         case '5': /* raw word seed */
@@ -771,7 +771,7 @@ __preg_charseed_provider (struct Seed *s, const char *p)
 
 #undef __forward
 #define __forward(n) (p += n, next_p += n)
-#define seed_putc() charseed_uniappd (s, &seed, 1)
+#define seed_putc() cseed_uniappd (s, &seed, 1)
 
   for (; *p != '\0'; __forward (1))
     {
