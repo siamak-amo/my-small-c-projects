@@ -583,11 +583,10 @@ init_opt (int argc, char **argv, struct Opt *opt)
     if (opt->global_seeds->cseed_len == 0 && using_default_seed)
       {
         /* initializing with the default seed [a-z0-9] */
-        char *__p = opt->global_seeds->cseed;
-        __p = mempcpy (__p, charseed_az.c, charseed_az.len);
-        __p = mempcpy (__p, charseed_09.c, charseed_09.len);
-
-        opt->global_seeds->cseed_len = charseed_az.len + charseed_09.len;
+        cseed_uniappd (opt->global_seeds,
+                       charseed_az.c, charseed_az.len);
+        cseed_uniappd (opt->global_seeds,
+                       charseed_09.c, charseed_09.len);
       }
 
     if (opt->from_depth <= 0 && opt->to_depth <= 0)
