@@ -139,13 +139,19 @@ static const struct char_seed charseed_az = {"abcdefghijklmnopqrstuvwxyz", 26};
 // static const struct char_seed charseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 static const struct char_seed charseed_09 = {"0123456789", 10};
 
-struct Opt
+struct Seed
 {
   /* char seed(s) */
   char *seed;
   int seed_len;
   /* word seed(s) - dynamic array */
   char **wseed;
+};
+
+struct Opt
+{
+  /* main seed configuration */
+  struct Seed *seeds;
 
   /* output format */
   int escape_disabled; /* to disable backslash interpretation */
@@ -172,7 +178,7 @@ struct Opt
 #define IS_ASCII_PR(c) (c >= 0x21 && c <= 0x7E)
 
 /* simple seed regex handler function */
-void parse_seed_regex (struct Opt *opt, const char *input);
+void parse_seed_regex (struct Seed *s, const char *input);
 
 void
 usage ()
@@ -260,16 +266,16 @@ perm (const int depth, const struct Opt *opt)
  Print_Loop: /* O(depth) */
   {
     int idx = idxs[i];
-    if (idx < opt->seed_len)
+    if (idx < opt->seeds->seed_len)
       {
         /* range of character seeds */
-        Pfputc (opt->seed[idx], opt);
+        Pfputc (opt->seeds->seed[idx], opt);
       }
     else
       {
         /* range of word seeds */
-        idx -= opt->seed_len;
-        Pfputs (opt->wseed[idx], opt);
+        idx -= opt->seeds->seed_len;
+        Pfputs (opt->seeds->wseed[idx], opt);
       }
     i++;
   }
@@ -289,7 +295,8 @@ perm (const int depth, const struct Opt *opt)
   int pos;
   for (pos = depth - 1;
        pos >= 0 &&
-         idxs[pos] == opt->seed_len - 1 + (int)da_sizeof (opt->wseed);
+         idxs[pos] == opt->seeds->seed_len - 1 +
+         (int)da_sizeof (opt->seeds->wseed);
        pos--)
     {
       idxs[pos] = 0;
@@ -322,20 +329,20 @@ perm (const int depth, const struct Opt *opt)
  *  updates @dest_len and returns number of bytes written
  */
 int
-charseed_uniappd (struct Opt *opt, const char *src, int src_len)
+charseed_uniappd (struct Seed *s, const char *src, int src_len)
 {
   int rw = 0;
   while (src_len > 0 && *src)
     {
       if (!IS_ASCII_PR (*src))
         break;
-      for (int __i = opt->seed_len - 1; __i >= 0; __i--)
+      for (int __i = s->seed_len - 1; __i >= 0; __i--)
         {
-          if (*src == opt->seed[__i])
+          if (*src == s->seed[__i])
             goto END_OF_LOOP;
         }
-      opt->seed[opt->seed_len] = *src;
-      opt->seed_len++;
+      s->seed[s->seed_len] = *src;
+      s->seed_len++;
       rw++;
 
     END_OF_LOOP:
@@ -352,16 +359,16 @@ charseed_uniappd (struct Opt *opt, const char *src, int src_len)
  *  use strdup when @word gets dereferenced
  */
 void
-wseed_uniappd (struct Opt *opt, char *word)
+wseed_uniappd (struct Seed *s, char *word)
 {
-  if (!opt->wseed || !word)
+  if (!s->wseed || !word)
     return;
-  for (idx_t i=0; i < da_sizeof (opt->wseed); ++i)
+  for (idx_t i=0; i < da_sizeof (s->wseed); ++i)
     {
-      if (_strcmp (opt->wseed[i], word))
+      if (_strcmp (s->wseed[i], word))
         return;
     }
-  da_appd (opt->wseed, word);
+  da_appd (s->wseed, word);
 }
 
 /**
@@ -437,11 +444,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
   char *__p = NULL;
   int idx = 0, flag;
-
-#define __seed_init(cap) {                      \
-    opt->seed = malloc (cap);                   \
-    __p = opt->seed;                            \
-  }
 
   while (1)
     {
@@ -529,7 +531,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                     __line[0] != '#') // commented line
                   {
                     __line[strlen (__line) - 1] = '\0';
-                    wseed_uniappd (opt, strdup (__line));
+                    wseed_uniappd (opt->seeds, strdup (__line));
                   }
               }
             if (__line)
@@ -542,21 +544,20 @@ init_opt (int argc, char **argv, struct Opt *opt)
         case 's': /* seed configuration */
           {
             /* this option disables the default seed config */
-            __seed_init (256);
-            parse_seed_regex (opt, optarg);
+            parse_seed_regex (opt->seeds, optarg);
           }
           break;
 
         case '0': /* raw seed */
           if (!opt->escape_disabled)
             unescape (optarg);
-          charseed_uniappd (opt, optarg, strlen (optarg));
+          charseed_uniappd (opt->seeds, optarg, strlen (optarg));
           break;
 
         case '5': /* raw word seed */
           if (!opt->escape_disabled)
             unescape (optarg);
-          wseed_uniappd (opt, optarg);
+          wseed_uniappd (opt->seeds, optarg);
 
         default:
           break;
@@ -571,14 +572,14 @@ init_opt (int argc, char **argv, struct Opt *opt)
     if (opt->outf == NULL)
       opt->outf = stdout;
 
-    if (opt->seed == NULL)
+    if (opt->seeds->seed_len == 0)
       {
         /* initializing with the default seed [a-z0-9] */
-        __seed_init (charseed_az.len + charseed_09.len);
+        __p = opt->seeds->seed;
         __p = mempcpy (__p, charseed_az.c, charseed_az.len);
         __p = mempcpy (__p, charseed_09.c, charseed_09.len);
 
-        opt->seed_len = (int)(__p - opt->seed);
+        opt->seeds->seed_len = (int)(__p - opt->seeds->seed);
       }
 
     if (opt->from_depth <= 0 && opt->to_depth <= 0)
@@ -613,16 +614,28 @@ init_opt (int argc, char **argv, struct Opt *opt)
   return 0;
 }
 
+struct Seed *
+mk_seed ()
+{
+  struct Seed *s = malloc (sizeof (struct Seed));
+  if (!s)
+    return NULL;
+  memset (s, 0, sizeof (struct Seed));
+  s->seed = malloc (256);
+  s->wseed = da_new (char *);
+  return s;
+}
+
 int
 main (int argc, char **argv)
 {
   struct Opt opt = {0};
-  opt.wseed = da_new (char *);
+  opt.seeds = mk_seed ();
   __progname__ = *argv;
   if (init_opt (argc, argv, &opt))
     goto EndOfMain;
 
-  if (opt.seed_len == 0 && da_sizeof (opt.wseed) == 0)
+  if (opt.seeds->seed_len == 0 && da_sizeof (opt.seeds->wseed) == 0)
     {
       errorf ("Warning -- Empty permutation!");
       goto EndOfMain;
@@ -636,8 +649,8 @@ main (int argc, char **argv)
 
 #ifdef _DEBUG
   /* print some debug information */
-  printd_arr (opt.seed, "`%c`", opt.seed_len);
-  printd_arr (opt.wseed, "`%s`", (int) da_sizeof (opt.wseed));
+  printd_arr (opt.seeds->seed, "`%c`", opt.seeds->seed_len);
+  printd_arr (opt.seeds->wseed, "`%s`", (int) da_sizeof (opt.seeds->wseed));
   if (opt.escape_disabled)
     dprintf ("- backslash interpretation is disabled\n");
   if (opt.__sep)
@@ -665,13 +678,14 @@ main (int argc, char **argv)
 #endif
 
  EndOfMain:
-  if (opt.seed)
-    free (opt.seed);
-  if (opt.wseed)
-    da_free (opt.wseed);
+  if (opt.seeds->seed)
+    free (opt.seeds->seed);
+  if (opt.seeds->wseed)
+    da_free (opt.seeds->wseed);
   /* close any non-stdout file descriptors */
   if (opt.outf && fileno (opt.outf) != 1)
     fclose (opt.outf);
+  free (opt.seeds);
 
   return 0;
 }
@@ -688,7 +702,7 @@ main (int argc, char **argv)
  *  comma is not allowed in wseeds
  */
 const char *
-__preg_wseed_provider (struct Opt *opt, const char *p)
+__preg_wseed_provider (struct Seed *s, const char *p)
 {
   const char *next_p = p + 1;
   const char *start = p;
@@ -700,7 +714,7 @@ __preg_wseed_provider (struct Opt *opt, const char *p)
     char *str = malloc (++len);                 \
     memcpy (str, start, len);                   \
     str[len - 1] = '\0';                        \
-    wseed_uniappd (opt, str);                   \
+    wseed_uniappd (s, str);                     \
   } while (0)
 
   for (; *p != '\0'; __forward (1))
@@ -734,14 +748,14 @@ __preg_wseed_provider (struct Opt *opt, const char *p)
  *  `\[` and `\]`: means `[`,`]` characters
  */
 const char *
-__preg_charseed_provider (struct Opt *opt, const char *p)
+__preg_charseed_provider (struct Seed *s, const char *p)
 {
   const char *next_p = p + 1;
   static char seed = 0;
 
 #undef __forward
 #define __forward(n) (p += n, next_p += n)
-#define seed_putc() charseed_uniappd (opt, &seed, 1)
+#define seed_putc() charseed_uniappd (s, &seed, 1)
 
   for (; *p != '\0'; __forward (1))
     {
@@ -809,7 +823,7 @@ __preg_charseed_provider (struct Opt *opt, const char *p)
 
 // main seed regex parser function
 void
-parse_seed_regex (struct Opt *opt, const char *input)
+parse_seed_regex (struct Seed *s, const char *input)
 {
   // input: "  [..\[..]  {..\{..} "
   char prev_p = 0;
@@ -817,11 +831,11 @@ parse_seed_regex (struct Opt *opt, const char *input)
     {
       if (*input == '[' && prev_p != '\\')
         {
-          input = __preg_charseed_provider (opt, input + 1);
+          input = __preg_charseed_provider (s, input + 1);
         }
       else if (*input == '{' && prev_p != '\\')
         {
-          input = __preg_wseed_provider (opt, input + 1);
+          input = __preg_wseed_provider (s, input + 1);
         }
     }
 }
