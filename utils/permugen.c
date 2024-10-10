@@ -556,6 +556,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
 
         case '0': /* raw seed */
+          using_default_seed = 0;
           if (!opt->escape_disabled)
             unescape (optarg);
           cseed_uniappd (opt->global_seeds, optarg, strlen (optarg));
