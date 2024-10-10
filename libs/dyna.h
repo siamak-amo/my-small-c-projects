@@ -240,7 +240,7 @@ __da_appd (void **arr)
     return -1;
   if (da->size >= da->cap)
     {
-      da_dprintf ("overflow @%p, size=cap:%-2lu, cell_size:%dB\n",
+      da_dprintf ("overflow %p, size=cap:%-2lu, cell_size:%dB\n",
               da, da->cap, da->cell_bytes);
       DA_DO_GROW (da->cap);
       size_t new_size = sizeof(Darray) + da->cap * da->cell_bytes;
@@ -248,7 +248,7 @@ __da_appd (void **arr)
       if (!da)
         return -1;
       *arr = da->arr;
-      da_dprintf ("reallocated @%p, new size: %luB\n", da, new_size);
+      da_dprintf ("realloc @%p, new size: %luB\n", da, new_size);
     }
 
   return da->size++;
