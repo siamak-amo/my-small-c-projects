@@ -69,8 +69,8 @@
 
 /* array index types */
 #ifndef idx_t
-# define sidx_t ssize_t
-# define idx_t size_t
+# define sidx_t int
+# define idx_t unsigned int
 #endif
 
 
@@ -115,7 +115,7 @@ typedef struct
 {
   idx_t cap;
   idx_t size;
-  int cell_bytes; /* size of a cell */
+  idx_t cell_bytes; /* size of a cell */
 
   char arr[];
 } Darray;
