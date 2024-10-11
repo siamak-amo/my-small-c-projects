@@ -150,10 +150,11 @@
 /* users don't need to work with this struct */
 typedef struct
 {
-  idx_t cap;
-  idx_t size;
-  idx_t cell_bytes; /* size of a cell */
+  idx_t cap; /* capacity of array */
+  idx_t size; /* length of array */
+  idx_t cell_bytes; /* size of each cell */
 
+  /* actual bytes of array */
   char arr[];
 } dyna_t;
 
