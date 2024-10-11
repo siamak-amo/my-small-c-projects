@@ -272,7 +272,7 @@ __mk_da(sidx_t cell_size, sidx_t n)
   return da;
 }
 
-sidx_t
+DADEFF sidx_t
 __da_appd (void **arr)
 {
   dyna_t *da;
@@ -303,7 +303,7 @@ __da_appd (void **arr)
   return da->size++;
 }
 
-void *
+DADEFF void *
 __da_funappd (void **arr, sidx_t cell_bytes)
 {
   sidx_t idx2append;
