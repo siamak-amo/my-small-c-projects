@@ -155,7 +155,7 @@ typedef struct
   idx_t cell_bytes; /* size of a cell */
 
   char arr[];
-} Darray;
+} DYNA_T;
 
 
 /* internal offsetof macro, to give offset of @member in struct @T */
@@ -168,7 +168,7 @@ typedef struct
  */
 #define __da_containerof(arr_ptr) ({                        \
       const char *__ptr = (const char *)(arr_ptr);          \
-      (Darray *)(__ptr - offsetof (Darray, arr));           \
+      (DYNA_T *)(__ptr - offsetof (DYNA_T, arr));           \
     })
 
 /**
@@ -176,7 +176,7 @@ typedef struct
  *  and instead, use provided macros for
  *  generic type purposes and safety
  */
-DADEFF Darray * __mk_da (sidx_t, sidx_t);
+DADEFF DYNA_T * __mk_da (sidx_t, sidx_t);
 DADEFF sidx_t __da_appd (void **);
 DADEFF void * __da_funappd (void **, sidx_t);
 
@@ -189,7 +189,7 @@ DADEFF void * __da_funappd (void **, sidx_t);
 // to free dynamic array @arr
 #define da_free(arr) do {                         \
     if (DA_NNULL (arr)) {                         \
-      Darray *__d = __da_containerof (arr);       \
+      DYNA_T *__d = __da_containerof (arr);       \
       da_dprintf ("destroying %p\n", __d);        \
       dyna_free (__d);                            \
     }} while (0)
@@ -212,7 +212,7 @@ DADEFF void * __da_funappd (void **, sidx_t);
  */
 #define da_new(T) da_newn (T, DA_INICAP)
 #define da_newn(T, n) ({                         \
-      Darray *__da = __mk_da (sizeof (T), n);    \
+      DYNA_T *__da = __mk_da (sizeof (T), n);    \
       (T *)(__da->arr);                          \
     })
 
@@ -249,13 +249,13 @@ DADEFF void * __da_funappd (void **, sidx_t);
  *  with each cell of length @cell_size
  *  and the initial capacity @n
  */
-Darray *
+DYNA_T *
 __mk_da(sidx_t cell_size, sidx_t n)
 {
   if (0 == n)
     n = 1; /* prevent 0 capacity initialization */
-  size_t ptrlen = sizeof (Darray) + cell_size * n;
-  Darray *da = (Darray *) dyna_alloc (ptrlen);
+  size_t ptrlen = sizeof (DYNA_T) + cell_size * n;
+  DYNA_T *da = (DYNA_T *) dyna_alloc (ptrlen);
   da->cap = n;
   da->size = 0;
   da->cell_bytes = cell_size;
@@ -265,7 +265,7 @@ __mk_da(sidx_t cell_size, sidx_t n)
               da,
               (size_t) cell_size,
               (size_t) ptrlen,
-              (size_t) sizeof (Darray),
+              (size_t) sizeof (DYNA_T),
               (size_t) (cell_size * n));
   return da;
 }
@@ -273,7 +273,7 @@ __mk_da(sidx_t cell_size, sidx_t n)
 sidx_t
 __da_appd (void **arr)
 {
-  Darray *da;
+  DYNA_T *da;
   size_t new_size;
 
   if (!(da = __da_containerof (*arr)))
@@ -287,7 +287,7 @@ __da_appd (void **arr)
                   (size_t) da->cell_bytes);
       {
         DA_DO_GROW (da->cap);
-        new_size = sizeof (Darray) + da->cap * da->cell_bytes;
+        new_size = sizeof (DYNA_T) + da->cap * da->cell_bytes;
         da = dyna_realloc (da, new_size);
         if (!da)
           return -1;
