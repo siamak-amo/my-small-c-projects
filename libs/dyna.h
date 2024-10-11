@@ -209,6 +209,21 @@ DADECLARE (__da_appd, sidx_t, void**);
       arr[i] = val;                                     \
     }} while (0)
 
+/**
+ *  in order to append @val to @arr from
+ *  a different scope (like another function),
+ *  as the primary pointer to @arr, sometimes needs
+ *  to be updated, you can use this macro
+ *  @arr must be (void **) pointing to the address
+ *  of the primary pointer array
+ *  and the type of @val must be known
+ */
+#define da_funappd(arr, val) do {                       \
+    typeof (val) *__arr;                                \
+    if ((__arr = __da_funappd (arr, sizeof (val))))     \
+      *__arr = val;                                     \
+  } while (0)
+
 
 #ifdef DYNA_IMPLEMENTATION
 
@@ -255,6 +270,16 @@ __da_appd (void **arr)
     }
 
   return da->size++;
+}
+
+void *
+__da_funappd (void **arr, int cell_bytes)
+{
+  sidx_t idx2append;
+  if ((idx2append = __da_appd (arr)) == -1)
+    return NULL;
+
+  return *(char **)arr + cell_bytes * (idx2append);
 }
 
 #endif /* DYNA_IMPLEMENTATION */
