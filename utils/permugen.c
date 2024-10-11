@@ -656,7 +656,7 @@ main (int argc, char **argv)
     if (opt.global_seeds->cseed_len == 0 &&
         da_sizeof (opt.global_seeds->wseed) == 0)
       {
-        errorf ("Warning -- Empty permutation!");
+        errorf ("%s: empty permutation", __progname__);
         goto EndOfMain;
       }
   }
