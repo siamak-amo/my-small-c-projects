@@ -257,14 +257,16 @@ __da_appd (void **arr)
     return -1;
   if (da->size >= da->cap)
     {
-      DA_DO_GROW (da->cap);
-      size_t new_size = sizeof(Darray) + da->cap * da->cell_bytes;
-      da = dyna_realloc (da, new_size);
-      if (!da)
-        return -1;
-      *arr = da->arr;
       da_dprintf ("overflow %p, size=cap:%lu, cell_size:%luB\n",
                   da, (size_t)da->cap, (size_t)da->cell_bytes);
+      {
+        DA_DO_GROW (da->cap);
+        size_t new_size = sizeof(Darray) + da->cap * da->cell_bytes;
+        da = dyna_realloc (da, new_size);
+        if (!da)
+          return -1;
+        *arr = da->arr;
+      }
       da_dprintf ("realloc @%p, new size: %luB\n",
                   da, (size_t)new_size);
     }
