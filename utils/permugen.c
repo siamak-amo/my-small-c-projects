@@ -233,7 +233,14 @@ usage ()
            "                            use `--raw-wseed` if your words contain comma\n"
            "          example:\n"
            "            to include a,b and 0,...,9  also words foo,bar:\n"
-           "             `[ab0-9] {foo,bar}`  or equivalently  `[ab] {foo,bar} [0-9]`\n"
+           "             `[ab0-9] {foo,bar}`  or equivalently  `[ab] {foo,bar} [0-9]`\n\n"
+           "     raw: for arguments that need backslash interpretation, these can be used\n"
+           "          note: character seed option, only accepts ASCII printable characters\n"
+           "             \\\\:  to pass a single `\\`, some shells might eliminate them\n"
+           "                  so it is convenient to use single quotes\n"
+           "             \\x:  for \\t, \\v, \\r, \\a, \\b, \\f, \\n \n"
+           "           \\xHH:  to pass a hex value 0xHH\n"
+           "          \\0NNN: to pass a octal value 0oNNN\n"
            ,__PROGVERSION__, __progname__);
 }
 
