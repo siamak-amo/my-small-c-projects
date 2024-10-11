@@ -172,8 +172,8 @@ DADECLARE (__da_appd, sidx_t, void**);
 #define da_free(arr) do {                         \
     if (DA_NNULL (arr)) {                         \
       Darray *__d = __da_containerof (arr);       \
-      dyna_free (__d);                            \
       da_dprintf ("destroying %p\n", __d);        \
+      dyna_free (__d);                            \
     }} while (0)
 
 // to get length and capacity of @arr
