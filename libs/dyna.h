@@ -158,9 +158,9 @@ typedef struct
  *  and instead, use provided macros for
  *  generic type purposes and safety
  */
-#define DADECLARE(name, ret, ...) DADEFF ret name (__VA_ARGS__)
-DADECLARE (__mk_da, Darray*, int, int);
-DADECLARE (__da_appd, sidx_t, void**);
+DADEFF Darray * __mk_da (sidx_t, sidx_t);
+DADEFF sidx_t __da_appd (void **);
+DADEFF void * __da_funappd (void **, sidx_t);
 
 
 #define DA_NNULL(arr) (NULL != arr)
@@ -232,7 +232,7 @@ DADECLARE (__da_appd, sidx_t, void**);
  *  and the initial capacity @n
  */
 Darray *
-__mk_da(int cell_size, int n)
+__mk_da(sidx_t cell_size, sidx_t n)
 {
   if (0 == n)
     n = 1; /* prevent 0 capacity initialization */
@@ -278,7 +278,7 @@ __da_appd (void **arr)
 }
 
 void *
-__da_funappd (void **arr, int cell_bytes)
+__da_funappd (void **arr, sidx_t cell_bytes)
 {
   sidx_t idx2append;
   if ((idx2append = __da_appd (arr)) == -1)
