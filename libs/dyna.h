@@ -262,8 +262,11 @@ __mk_da(sidx_t cell_size, sidx_t n)
 
   da_dprintf ("allocated @%p, cell_size: %luB, "
               "size: %luB (%luB metadata + %luB array)\n",
-              da, (size_t)cell_size, (size_t)ptrlen,
-              sizeof (Darray), (size_t)(cell_size * n));
+              da,
+              (size_t) cell_size,
+              (size_t) ptrlen,
+              (size_t) sizeof (Darray),
+              (size_t) (cell_size * n));
   return da;
 }
 
@@ -279,17 +282,20 @@ __da_appd (void **arr)
   if (da->size >= da->cap)
     {
       da_dprintf ("overflow %p, size=cap:%lu, cell_size:%luB\n",
-                  da, (size_t)da->cap, (size_t)da->cell_bytes);
+                  da,
+                  (size_t) da->cap,
+                  (size_t) da->cell_bytes);
       {
         DA_DO_GROW (da->cap);
-        new_size = sizeof(Darray) + da->cap * da->cell_bytes;
+        new_size = sizeof (Darray) + da->cap * da->cell_bytes;
         da = dyna_realloc (da, new_size);
         if (!da)
           return -1;
         *arr = da->arr;
       }
       da_dprintf ("realloc @%p, new size: %luB\n",
-                  da, (size_t)new_size);
+                  da,
+                  (size_t) new_size);
     }
 
   return da->size++;
