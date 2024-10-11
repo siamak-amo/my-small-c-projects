@@ -345,8 +345,10 @@ cseed_uniappd (struct Seed *s, const char *src, int len)
   int rw = 0;
   while (len > 0 && *src)
     {
-      if (!IS_ASCII_PR (*src))
+      if (*src == '\0')
         break;
+      if (!IS_ASCII_PR (*src))
+        goto END_OF_LOOP;
       for (int __i = s->cseed_len - 1; __i >= 0; __i--)
         {
           if (*src == s->cseed[__i])
