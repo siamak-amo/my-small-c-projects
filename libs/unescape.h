@@ -172,6 +172,9 @@ ssize_t unescape2 (char *restrict dest, const char *restrict src);
           }                                                     \
         break;                                                  \
       }                                                         \
+    default:                                                    \
+      nextw_b (*r_ptr);                                         \
+      break;                                                    \
     }                                                           \
   }
 
