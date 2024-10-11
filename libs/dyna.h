@@ -208,8 +208,9 @@ DADEFF void * __da_funappd (void **, sidx_t);
 /** da_new, da_newn
  *  only create `da` dynamic arrays with these macros
  *  @T: type of array, for example (char) or (char *)
- *  @return: pointer to an @T array (pointer)
- *    which can be used as usual (like: `T array[.]`)
+ *  @return: pointer to @T array which you can read
+ *    from it as a normal `T array[n]`
+ *    only use `da_xxx` macros to append to it or free it
  */
 #define da_new(T) da_newn (T, DA_INICAP)
 #define da_newn(T, n) ({                         \
