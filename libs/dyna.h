@@ -66,15 +66,33 @@
  *
  *  WARNING:
  *    If an instance of this dynamic array, is being stored
- *    outside of scope of a function (F), you *MUST NOT* call
- *    `da_appd` inside the F, because if an overflow happens,
- *    `da_appd` will need to reallocate memory and so the original
- *    pointer outside of F gets freed and potentially cause
- *    use after free or SEGFAULT
+ *    outside of scope of a function (F), you *MUST NOT* use
+ *    `da_appd` inside F, because if an overflow occurs,
+ *    `da_appd` will need to reallocate it's entire memory
+ *    and so the original pointer might get freed and
+ *    potentially causes use after free or SEGFAULT
+ *
  *    A solution would be to store the reference inside
  *    some struct and pass the reference of it the function F
  *    so `da_appd` will update the reference properly
  *
+ *    Another solution would be to use `da_funappd` macro:
+ *    ```{c}
+ *      // scope 1
+ *      {
+ *        T val = {0};
+ *        T *arr = da_new (T);
+ *        my_function ((void **) &arr, val);
+ *      }
+ *
+ *      void
+ *      my_function (void **array, T data)
+ *      {
+ *        // append data to array
+ *        // this might update @arr in scope 1
+ *        da_funappd (array, data);
+ *      }
+ *    ```{c}
  **/
 #ifndef DYNAMIC_ARRAY__H__
 #define DYNAMIC_ARRAY__H__
