@@ -749,6 +749,21 @@ main (int argc, char **argv)
      */
     free_seed (opt.global_seeds);
     free (opt.global_seeds);
+
+    /**
+     *  reg_seeds is a dynamic array
+     *  and each seed of it must be freed
+     *  also they are allocated with `seeddup`
+     */
+    if (opt.reg_seeds)
+      {
+        for (idx_t i=0; i < da_sizeof (opt.reg_seeds); ++i)
+          {
+            free_seed (opt.reg_seeds[i]);
+            free (opt.reg_seeds[i]);
+          }
+        da_free (opt.reg_seeds);
+      }
   }
   /* close any non-stdout file descriptors */
   if (opt.outf && fileno (opt.outf) != 1)
