@@ -158,6 +158,8 @@ struct Seed
   char **wseed;
 };
 #define CSEED_MAXLEN 256
+
+/* to make new seed and dynamic seed array */
 static inline struct Seed * mk_seed (int c_len, int w_len);
 static inline void free_seed (struct Seed *s);
 /* unique append to seed functions */
@@ -635,8 +637,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
   return 0;
 }
 
-struct Seed *
-mk_seed ()
 
 static inline void
 free_seed (struct Seed *s)
@@ -648,13 +648,16 @@ free_seed (struct Seed *s)
   if (s->wseed)
     da_free (s->wseed);
 }
+
+static inline struct Seed *
+mk_seed (int c_len, int w_len)
 {
   struct Seed *s = malloc (sizeof (struct Seed));
   if (!s)
     return NULL;
   memset (s, 0, sizeof (struct Seed));
-  s->cseed = malloc (CSEED_MAXLEN);
-  s->wseed = da_new (char *);
+  s->cseed = malloc (c_len);
+  s->wseed = da_newn (char *, w_len);
   return s;
 }
 
@@ -665,7 +668,7 @@ main (int argc, char **argv)
   __progname__ = *argv;
 
   { /* initializing options */
-    opt.global_seeds = mk_seed ();
+    opt.global_seeds = mk_seed (CSEED_MAXLEN, 1);
     if (init_opt (argc, argv, &opt))
       goto EndOfMain;
 
