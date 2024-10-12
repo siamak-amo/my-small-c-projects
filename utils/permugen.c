@@ -117,6 +117,9 @@ static const char *__PROGVERSION__ = "v1.2";
   } else {                                      \
     dprintf ("- "#arr" is empty\n");            \
   }
+#else
+#  define dprintf(format, ...) (void)(format)
+#  define printd_arr(arr, T, len) (void)(arr)
 #endif /* _DEBUG */
 
 
@@ -665,9 +668,12 @@ main (int argc, char **argv)
   int cap = _BMAX;
   BIO_t __bio = bio_new (cap, malloc (cap), fileno (opt.outf));
   opt.bio = &__bio;
-#endif
+  dprintf ("* buffered_io buffer length: %ld bytes\n", _BMAX);
+#else
+  dprintf ("- compiled without buffered_io\n");
+# endif /* _USE_BIO */
 
-#ifdef _DEBUG
+
   /* print some debug information */
   printd_arr (opt.global_seeds->cseed, "`%c`", opt.global_seeds->cseed_len);
   printd_arr (opt.global_seeds->wseed, "`%s`", (int) da_sizeof (opt.global_seeds->wseed));
@@ -676,14 +682,7 @@ main (int argc, char **argv)
   if (opt.__sep)
     dprintf ("* delimiter: `%s`\n", opt.__sep);
   dprintf ("* depth: from %d to %d\n", opt.from_depth, opt.to_depth);
-
-# ifdef _USE_BIO
-  dprintf ("* buffered_io buffer length: %ld bytes\n", _BMAX);
-# else
-  dprintf ("- compiled without buffered_io\n");
-# endif /* _USE_BIO */
   dprintf ("* permutations:\n");
-#endif /* _DEBUG */
 
 
   { /* organizing permutation loop */
