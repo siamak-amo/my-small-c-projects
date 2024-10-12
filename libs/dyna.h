@@ -237,6 +237,16 @@ DADEFF void * __da_dup (void **);
     }} while (0)
 
 /**
+ *  drop array
+ *  only sets size of @arr to zero
+ */
+#define da_drop(arr) do {                       \
+    if (DA_NNULL (arr)) {                       \
+      dyna_t *da = __da_containerof (arr);      \
+      da->size = 0;                             \
+    }} while (0)
+
+/**
  *  in order to append @val to @arr from
  *  a different scope (like another function),
  *  as the primary pointer to @arr, sometimes needs
