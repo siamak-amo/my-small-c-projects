@@ -274,6 +274,8 @@ usage ()
 int
 perm (const int depth, const struct Opt *opt)
 {
+  int _max_depth = opt->global_seeds->cseed_len - 1 +
+    (int) da_sizeof (opt->global_seeds->wseed);
   int idxs[depth];
   memset (idxs, 0, depth * sizeof (int));
 
@@ -312,9 +314,7 @@ perm (const int depth, const struct Opt *opt)
 
   int pos;
   for (pos = depth - 1;
-       pos >= 0 &&
-         idxs[pos] == opt->global_seeds->cseed_len - 1 +
-         (int)da_sizeof (opt->global_seeds->wseed);
+       pos >= 0 && idxs[pos] == _max_depth;
        pos--)
     {
       idxs[pos] = 0;
