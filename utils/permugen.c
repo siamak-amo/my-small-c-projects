@@ -162,6 +162,12 @@ struct Seed
 /* to make new seed and dynamic seed array */
 static inline struct Seed * mk_seed (int c_len, int w_len);
 static inline void free_seed (struct Seed *s);
+static inline struct Seed * seeddup (const struct Seed *s);
+#define drop_seeds(seed_ptr) do {               \
+    seed_ptr->cseed_len = 0;                    \
+    da_drop (seed_ptr->wseed);                  \
+  } while (0)
+
 /* unique append to seed functions */
 int cseed_uniappd (struct Seed *, const char *src, int len);
 void wseed_uniappd (struct Seed *, char *str_word);
@@ -637,6 +643,19 @@ init_opt (int argc, char **argv, struct Opt *opt)
   return 0;
 }
 
+static inline struct Seed *
+seeddup (const struct Seed *s)
+{
+  int clen = s->cseed_len;
+  int wlen = da_sizeof (s->wseed);
+
+  struct Seed *res = mk_seed (clen, wlen);
+  res->cseed_len = clen;
+  memcpy (res->cseed, s->cseed, clen);
+  res->wseed = da_dup (s->wseed);
+
+  return res;
+}
 
 static inline void
 free_seed (struct Seed *s)
