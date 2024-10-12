@@ -122,16 +122,10 @@ static const char *__PROGVERSION__ = "v1.3";
 #  define printd_arr(arr, T, len) (void)(arr)
 #endif /* _DEBUG */
 
+#undef warnf
+#define warnf(format, ...) \
+  fprintf (stderr, "%s: "format"\n", __progname__, ##__VA_ARGS__)
 
-#undef errorf
-#define errorf(format, ...) \
-  fprintf (stderr, format"\n", ##__VA_ARGS__)
-#define argerr(arg, message) \
-  errorf ("(%s) was ignored -- "message, arg)
-// prints perror at the end
-#undef perrorf
-#define perrorf(format, ...)                                    \
-  (fprintf (stderr, format, ##__VA_ARGS__), perror(NULL))
 
 struct char_seed
 {
@@ -422,12 +416,12 @@ safe_fopen (FILE **dest,
   FILE *__tmp;
   if (!pathname || !mode)
     {
-      errorf ("Invalud filename");
+      warnf ("Invalud filename");
       return;
     }
   if (!(__tmp = fopen (pathname, mode)))
     {
-      perrorf ("Could not open file (%s:%s) -- ", mode, pathname);
+      warnf ("Could not open file (%s:%s) -- ", mode, pathname);
       return;
     }
   *dest = __tmp;
@@ -741,7 +735,7 @@ main (int argc, char **argv)
     else if (opt.global_seeds->cseed_len == 0 &&
              da_sizeof (opt.global_seeds->wseed) == 0)
       {
-        errorf ("%s: empty permutation", __progname__);
+        warnf ("empty permutation");
         goto EndOfMain;
       }
   }
