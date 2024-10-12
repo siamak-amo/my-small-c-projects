@@ -725,14 +725,25 @@ main (int argc, char **argv)
   dprintf ("* permutations:\n");
 
 
-  { /* organizing permutation loop */
-    int rw_err = 0;
-    for (int d = opt.from_depth; d <= opt.to_depth; ++d)
-      {
-        if ((rw_err = perm (d, &opt)) != 0)
-          break;
-      }
-  }
+  if (opt._regular_mode > 0)
+    {
+      for (idx_t i=0; i<da_sizeof (opt.reg_seeds); ++i)
+        {
+          puts ("----------------");
+          struct Seed *s = opt.reg_seeds[i];
+          printd_arr (s->cseed, "`%c`", s->cseed_len);
+          printd_arr (s->wseed, "`%s`", (int)da_sizeof (s->wseed));
+        }
+    }
+  else
+    { /* organizing permutation loop */
+      int rw_err = 0;
+      for (int d = opt.from_depth; d <= opt.to_depth; ++d)
+        {
+          if ((rw_err = perm (d, &opt)) != 0)
+            break;
+        }
+    }
 
 
 #ifdef _USE_BIO
