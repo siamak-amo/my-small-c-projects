@@ -603,9 +603,15 @@ init_opt (int argc, char **argv, struct Opt *opt)
    *  Initializing the default values
    *  when they are not specified by the user
    */
+  if (opt->outf == NULL)
+    opt->outf = stdout;
+
+  if (opt->_regular_mode > 0)
+    {
+
+    }
+  else
   {
-    if (opt->outf == NULL)
-      opt->outf = stdout;
 
     if (opt->global_seeds->cseed_len == 0 && using_default_seed)
       {
@@ -696,8 +702,11 @@ main (int argc, char **argv)
     if (init_opt (argc, argv, &opt))
       goto EndOfMain;
 
-    if (opt.global_seeds->cseed_len == 0 &&
-        da_sizeof (opt.global_seeds->wseed) == 0)
+    if (opt._regular_mode > 0)
+      {
+      }
+    else if (opt.global_seeds->cseed_len == 0 &&
+             da_sizeof (opt.global_seeds->wseed) == 0)
       {
         errorf ("%s: empty permutation", __progname__);
         goto EndOfMain;
