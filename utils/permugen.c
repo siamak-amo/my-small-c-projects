@@ -593,6 +593,38 @@ init_opt (int argc, char **argv, struct Opt *opt)
           if (!opt->escape_disabled)
             unescape (optarg);
           wseed_uniappd (opt->global_seeds, optarg);
+          break;
+
+        case 'r':
+          struct Seed *tmp = mk_seed (CSEED_MAXLEN, 1);
+          int end_of_options = 0;
+          using_default_seed = 0;
+          opt->_regular_mode = 1;
+          if (opt->reg_seeds)
+            break;
+           opt->reg_seeds = mk_seed_arr (1);
+
+          for (int i=optind; i < argc; ++i)
+            {
+              if (*argv[i] == '-' && !end_of_options)
+                {
+                  if (argv[i][1] == '-' && argv[i][2] == '\0')
+                    {
+                      optind++;
+                      end_of_options = 1;
+                    }
+                }
+              else
+                {
+                  drop_seeds (tmp);
+                  optind++;
+                  unescape (argv[i]);
+                  opt->_regular_mode++;
+                  parse_seed_regex (tmp, argv[i]);
+                  da_appd (opt->reg_seeds, seeddup (tmp));
+                }
+            }
+          break;
 
         default:
           break;
