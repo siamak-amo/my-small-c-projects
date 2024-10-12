@@ -175,7 +175,7 @@ struct Opt
   struct Seed *global_seeds;
 
   /* regular permutation */
-  int _regular_mode; /* also indicates depth */
+  int _regular_mode;
   struct Seed **reg_seeds; /* dynamic array */
 
   /* output format */
@@ -635,7 +635,9 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
   if (opt->_regular_mode > 0)
     {
-
+      /* _regular_mode = 1 + (sizeof it seeds) */
+      if (opt->_regular_mode == 1)
+        warnf ("empty regular seed");
     }
   else
   {
