@@ -635,9 +635,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
   if (opt->_regular_mode > 0)
     {
-      /* _regular_mode = 1 + (sizeof it seeds) */
-      if (opt->_regular_mode == 1)
-        warnf ("empty regular seed");
     }
   else
   {
@@ -733,8 +730,15 @@ main (int argc, char **argv)
 
     if (opt._regular_mode > 0)
       {
+        /* _regular_mode = 1 + (sizeof it seeds) */
+        if (opt._regular_mode == 1)
+          {
+            warnf ("empty regular seed");
+            goto EndOfMain;
+          }
       }
-    else if (opt.global_seeds->cseed_len == 0 &&
+    else /* normal mode */
+      if (opt.global_seeds->cseed_len == 0 &&
              da_sizeof (opt.global_seeds->wseed) == 0)
       {
         warnf ("empty permutation");
