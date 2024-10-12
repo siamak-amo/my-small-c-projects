@@ -180,7 +180,7 @@ typedef struct
 DADEFF dyna_t * __mk_da (sidx_t, sidx_t);
 DADEFF sidx_t __da_appd (void **);
 DADEFF void * __da_funappd (void **, sidx_t);
-
+DADEFF void * __da_dup (void **);
 
 #define DA_NNULL(arr) (NULL != arr)
 /**
@@ -217,6 +217,13 @@ DADEFF void * __da_funappd (void **, sidx_t);
       dyna_t *__da = __mk_da (sizeof (T), n);    \
       (T *)(__da->arr);                          \
     })
+
+/**
+ *  returns a pointer to a new dynamic array
+ *  which is a duplicate of @arr
+ *  this also must be freed via `da_free`
+ */
+#define da_dup(arr) (DA_NNULL (arr) ? __da_dup ((void **)&arr) : NULL)
 
 /**
  *  append to array macro
@@ -311,6 +318,16 @@ __da_funappd (void **arr, sidx_t cell_bytes)
     return NULL;
 
   return *(char **)arr + cell_bytes * (idx2append);
+}
+
+DADEFF void *
+__da_dup (void **arr)
+{
+  dyna_t *da = __da_containerof (*arr);
+  size_t lenof_da = da->size * da->cell_bytes + sizeof (dyna_t);
+  dyna_t *new_da = malloc (lenof_da);
+  memcpy (new_da, da, lenof_da);
+  return &new_da->arr;
 }
 
 #endif /* DYNA_IMPLEMENTATION */
