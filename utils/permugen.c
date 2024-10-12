@@ -158,6 +158,8 @@ struct Seed
   char **wseed;
 };
 #define CSEED_MAXLEN 256
+static inline struct Seed * mk_seed (int c_len, int w_len);
+static inline void free_seed (struct Seed *s);
 /* unique append to seed functions */
 int cseed_uniappd (struct Seed *, const char *src, int len);
 void wseed_uniappd (struct Seed *, char *str_word);
@@ -635,6 +637,17 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
 struct Seed *
 mk_seed ()
+
+static inline void
+free_seed (struct Seed *s)
+{
+  if (!s)
+    return;
+  if (s->cseed)
+    free (s->cseed);
+  if (s->wseed)
+    da_free (s->wseed);
+}
 {
   struct Seed *s = malloc (sizeof (struct Seed));
   if (!s)
@@ -702,14 +715,17 @@ main (int argc, char **argv)
 
 
  EndOfMain:
-  if (opt.global_seeds->cseed)
-    free (opt.global_seeds->cseed);
-  if (opt.global_seeds->wseed)
-    da_free (opt.global_seeds->wseed);
+  {
+    /**
+     *  global_seed itself is not a dynamic array
+     *  and is allocated using malloc
+     */
+    free_seed (opt.global_seeds);
+    free (opt.global_seeds);
+  }
   /* close any non-stdout file descriptors */
   if (opt.outf && fileno (opt.outf) != 1)
     fclose (opt.outf);
-  free (opt.global_seeds);
 
   return 0;
 }
