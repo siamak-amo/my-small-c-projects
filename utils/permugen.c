@@ -468,6 +468,7 @@ const struct option lopts[] = {
   {"prefix", required_argument, NULL, '3'},
   {"suff", required_argument, NULL, '4'},
   {"suffix", required_argument, NULL, '4'},
+  {"regular", no_argument, NULL, 'r'},
 
   /* end of options */
   {NULL, 0, NULL, 0}
@@ -481,7 +482,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
     {
       /* we use 0,1,2,... as `helper` options and only to use getopt */
       flag = getopt_long (argc, argv,
-                          "s:S:o:a:p:d:f:D:0:1:2:3:4:5:hEe", lopts, &idx);
+                          "s:S:o:a:p:d:f:D:0:1:2:3:4:5:hrEe", lopts, &idx);
         if (flag == -1)
           {
             /* End of Options */
