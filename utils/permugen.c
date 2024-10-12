@@ -852,8 +852,7 @@ void
 parse_seed_regex (struct Seed *s, const char *input)
 {
   // input: "  [..\[..]  {..\{..} "
-  char prev_p = 0;
-  for (; *input != '\0'; prev_p = *input, ++input)
+  for (char prev_p = 0;; prev_p = *input, ++input)
     {
       if (*input == '[' && prev_p != '\\')
         {
@@ -863,5 +862,8 @@ parse_seed_regex (struct Seed *s, const char *input)
         {
           input = __preg_wseed_provider (s, ++input);
         }
+
+      if (*input == '\0')
+        break;
     }
 }
