@@ -163,6 +163,7 @@ struct Seed
 static inline struct Seed * mk_seed (int c_len, int w_len);
 static inline void free_seed (struct Seed *s);
 static inline struct Seed * seeddup (const struct Seed *s);
+#define mk_seed_arr(n) da_newn (struct Seed *, n)
 #define drop_seeds(seed_ptr) do {               \
     seed_ptr->cseed_len = 0;                    \
     da_drop (seed_ptr->wseed);                  \
@@ -178,6 +179,10 @@ struct Opt
 {
   /* main seed configuration */
   struct Seed *global_seeds;
+
+  /* regular permutation */
+  int _regular_mode; /* also indicates depth */
+  struct Seed **reg_seeds; /* dynamic array */
 
   /* output format */
   int escape_disabled; /* to disable backslash interpretation */
