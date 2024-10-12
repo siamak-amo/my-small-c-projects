@@ -753,8 +753,25 @@ main (int argc, char **argv)
 
 
   /* print some debug information */
-  printd_arr (opt.global_seeds->cseed, "`%c`", opt.global_seeds->cseed_len);
-  printd_arr (opt.global_seeds->wseed, "`%s`", (int) da_sizeof (opt.global_seeds->wseed));
+  if (opt._regular_mode)
+    {
+      dprintf ("* regular mode\n");
+      for (idx_t i=0; i < da_sizeof (opt.reg_seeds); ++i)
+        {
+          struct Seed *s = opt.reg_seeds[i];
+          dprintf ("regular seed %d: {\n  ", i+1);
+          printd_arr (s->cseed, "`%c`", s->cseed_len);
+          dprintf ("  ");
+          printd_arr (s->wseed, "`%s`", (int)da_sizeof (s->wseed));
+          dprintf ("}\n");
+        }
+    }
+  else
+    {
+      dprintf ("* normal mode\n");
+      printd_arr (opt.global_seeds->cseed, "`%c`", opt.global_seeds->cseed_len);
+      printd_arr (opt.global_seeds->wseed, "`%s`", (int) da_sizeof (opt.global_seeds->wseed));
+    }
   if (opt.escape_disabled)
     dprintf ("- backslash interpretation is disabled\n");
   if (opt.__sep)
@@ -765,13 +782,7 @@ main (int argc, char **argv)
 
   if (opt._regular_mode > 0)
     {
-      for (idx_t i=0; i<da_sizeof (opt.reg_seeds); ++i)
-        {
-          puts ("----------------");
-          struct Seed *s = opt.reg_seeds[i];
-          printd_arr (s->cseed, "`%c`", s->cseed_len);
-          printd_arr (s->wseed, "`%s`", (int)da_sizeof (s->wseed));
-        }
+      /* not implemented yet */
     }
   else
     { /* organizing permutation loop */
