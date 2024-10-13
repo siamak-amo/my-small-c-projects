@@ -616,9 +616,16 @@ init_opt (int argc, char **argv, struct Opt *opt)
                   drop_seeds (tmp);
                   optind++;
                   unescape (argv[i]);
-                  opt->_regular_mode++;
                   parse_seed_regex (tmp, argv[i]);
-                  da_appd (opt->reg_seeds, seeddup (tmp));
+                  if (tmp->cseed_len == 0 && da_sizeof (tmp->wseed) == 0)
+                    {
+                      warnf ("empty regular seed configuration was ignored");
+                    }
+                  else
+                    {
+                      opt->_regular_mode++;
+                      da_appd (opt->reg_seeds, seeddup (tmp));
+                    }
                 }
             }
           break;
