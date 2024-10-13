@@ -247,6 +247,8 @@ usage ()
            "          BBB might contain white-space character(s)\n"
            "          to have white-space in AAA, either use `\\x20` or --prefix\n\n"
            "    seed: this option accepts a simple regex as argument\n"
+           "          `-`:              to read seeds from stdin, it will continue reading\n"
+           "                            until reaches an empty line and then the word `EOF`\n"
            "          `[XYZ]`:          to use characters X,Y,Z as character seed\n"
            "          `[a-f]`:          to use characters a,b,...,f\n"
            "          `[\\[\\]]`:         to use `[`,`]` characters\n"
@@ -1118,16 +1120,50 @@ parse_seed_regex (struct Seed *s, const char *input)
   // input: "  [..\[..]  {..\{..} "
   for (char prev_p = 0;; prev_p = *input, ++input)
     {
-      if (*input == '[' && prev_p != '\\')
+      switch (*input)
         {
-          input = __preg_cseed_provider (s, ++input);
-        }
-      else if (*input == '{' && prev_p != '\\')
-        {
-          input = __preg_wseed_provider (s, ++input);
+        case '/': /* file path */
+          {
+            FILE *f = NULL;
+            safe_fopen (&f, input, "r");
+            if (f)
+              {
+                wseed_fileappd (s, f);
+                if (f != stdin)
+                  fclose (f);
+              }
+            goto End_of_Parsing;
+          }
+
+        case '-': /* read from stdin */
+          {
+            if (isatty (fileno (stdin)))
+              puts ("reading wseed(s) from stdin until EOF:");
+            wseed_fileappd (s, stdin);
+            input++;
+            break;
+          }
+
+        case '[':
+          if (prev_p != '\\')
+            {
+              input = __preg_cseed_provider (s, ++input);
+            }
+          break;
+
+        case '{':
+          if (prev_p != '\\')
+            {
+              input = __preg_wseed_provider (s, ++input);
+            }
+          break;
+
+        default:
+          continue;
         }
 
       if (*input == '\0')
-        break;
+        goto End_of_Parsing;
     }
+ End_of_Parsing:
 }
