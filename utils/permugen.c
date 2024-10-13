@@ -351,6 +351,92 @@ perm (const int depth, const struct Opt *opt)
   goto Perm_Loop;
 }
 
+int
+__regular_perm (struct Opt *opt, int *depths, int depth)
+{
+  int ret;
+  /* permutation indexes */
+  int *idxs = malloc (depth * sizeof (int));
+  memset (idxs, 0, depth);
+
+  struct Seed **s = opt->reg_seeds;
+  /**
+   *  O(S_1 * ... * S_n)
+   *  where: n=depth and S_i = depths[i]
+   */
+ Reg_Perm_Loop:
+  int i = 0;
+  if (opt->__pref)
+    Pfputs (opt->__pref, opt);
+ Print_Loop: /* O(S_i) */
+  {
+    int idx = idxs[i];
+    struct Seed *current_seed = s[i];
+    if (idx < current_seed->cseed_len)
+      {
+        /* range of character seeds */
+        Pfputc (current_seed->cseed[idx], opt);
+      }
+    else
+      {
+        /* range of word seeds */
+        idx -= current_seed->cseed_len;
+        Pfputs (current_seed->wseed[idx], opt);
+      }
+    i++;
+  }
+  if (i < depth)
+    {
+      if (opt->__sep)
+        Pfputs (opt->__sep, opt);
+      goto Print_Loop;
+    }
+  /* End of Printing the current permutation */
+  if (opt->__suff)
+    Pputs (opt->__suff, opt);
+  else
+    Pputln (opt);
+
+  int pos;
+  for (pos = depth-1; pos >= 0 && idxs[pos]==depths[pos]; --pos)
+    idxs[pos] = 0;
+
+  if (pos < 0)
+    {
+      ret = 0;
+      goto Reg_Return;
+    }
+
+  idxs[pos]++;
+  goto Reg_Perm_Loop;
+
+ Reg_Return:
+  free (idxs);
+  return ret;
+}
+
+int
+regular_perm (struct Opt *opt)
+{
+  struct Seed *s = NULL;
+  /* count of seed configurations */
+  int seeds_count = (int) da_sizeof (opt->reg_seeds);
+  /* len(cseed)+len(wseed) of each configuration */
+  int *depths = malloc (seeds_count * sizeof (int));
+
+  for (int i=0; i < seeds_count && (s = opt->reg_seeds[i]); ++i)
+    {
+      if ((depths[i] = (s->cseed_len) + da_sizeof (s->wseed) - 1) < 0)
+        goto _return; /* unreachable */
+    }
+  /* depth is length of depths */
+  int ret = __regular_perm (opt, depths, seeds_count);
+
+ _return:
+  free (depths);
+  return ret;
+}
+
 /**
  *  uniquely appends char(s) from @src to @dest
  *  until reaches \0 or non-printable characters
@@ -796,7 +882,7 @@ main (int argc, char **argv)
 
   if (opt._regular_mode > 0)
     {
-      /* not implemented yet */
+      regular_perm (&opt);
     }
   else
     { /* organizing permutation loop */
