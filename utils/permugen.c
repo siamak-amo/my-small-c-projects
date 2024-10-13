@@ -687,6 +687,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
           }
         case 'S': /* wseed file / stdin */
           {
+            if (opt->_regular_mode)
+              break;
             FILE *wseed_f = stdin;
             /* using optarg value as filepath otherwise stdin */
             if (!_strcmp (optarg, "-"))
@@ -704,6 +706,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
         case 's': /* seed configuration */
           {
+            if (opt->_regular_mode)
+              break;
             using_default_seed = 0;
             /* this option disables the default seed config */
             parse_seed_regex (opt->global_seeds, optarg);
@@ -711,6 +715,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
 
         case '0': /* raw seed */
+          if (opt->_regular_mode)
+            break;
           using_default_seed = 0;
           if (!opt->escape_disabled)
             unescape (optarg);
@@ -718,6 +724,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
 
         case '5': /* raw word seed */
+          if (opt->_regular_mode)
+            break;
           if (!opt->escape_disabled)
             unescape (optarg);
           wseed_uniappd (opt->global_seeds, optarg);
