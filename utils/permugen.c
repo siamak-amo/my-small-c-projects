@@ -608,6 +608,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
                       optind++;
                       end_of_options = 1;
                     }
+                  else
+                    break;
                 }
               else
                 {
