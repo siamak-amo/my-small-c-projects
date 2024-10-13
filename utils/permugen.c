@@ -69,7 +69,7 @@
 #include <getopt.h>
 
 static const char *__progname__;
-static const char *__PROGVERSION__ = "v1.3";
+static const char *__PROGVERSION__ = "v1.4";
 
 /**
  *  using buffered_io.h for better performance
