@@ -737,7 +737,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
                 {
                   drop_seeds (tmp);
                   optind++;
-                  unescape (argv[i]);
+                  if (!opt->escape_disabled)
+                    unescape (argv[i]);
                   parse_seed_regex (tmp, argv[i]);
                   if (tmp->cseed_len == 0 && da_sizeof (tmp->wseed) == 0)
                     {
