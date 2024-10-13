@@ -357,7 +357,7 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
   int ret;
   /* permutation indexes */
   int *idxs = malloc (depth * sizeof (int));
-  memset (idxs, 0, depth);
+  memset (idxs, 0, depth * sizeof (int));
 
   struct Seed **s = opt->reg_seeds;
   /**
