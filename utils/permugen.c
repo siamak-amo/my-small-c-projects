@@ -503,6 +503,41 @@ wseed_uniappd (struct Seed *s, char *str_word)
   da_appd (s->wseed, str_word);
 }
 
+void
+wseed_fileappd (struct Seed *s, FILE *f)
+{
+  size_t __len;
+  char *__line = NULL;
+  int empty_prevline = 0;
+  while (1)
+    {
+      if (getline (&__line, &__len, f) < 0)
+        break;
+      if (__line && *__line &&
+          __line[0] != '#') // commented line
+        {
+          int len = strlen (__line);
+          while (--len > 0)
+            {
+              if (__line[len] > 0 && __line[len] < ' ')
+                __line[len] = '\0';
+              else
+                break;
+            }
+          if (len)
+            {
+              if (empty_prevline && _strcmp (__line, "EOF"))
+                break;
+              wseed_uniappd (s, strdup (__line));
+            }
+          else
+            empty_prevline = 1;
+        }
+    }
+  if (__line)
+    free (__line);
+}
+
 /**
  *  safe file open (fopen)
  *  only if it could open @pathname changes @dest[0]
@@ -641,8 +676,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
           }
         case 'S': /* wseed file / stdin */
           {
-            size_t __len;
-            char *__line = NULL;
             FILE *wseed_f = stdin;
             /* using optarg value as filepath otherwise stdin */
             if (!_strcmp (optarg, "-"))
@@ -650,20 +683,9 @@ init_opt (int argc, char **argv, struct Opt *opt)
             if (wseed_f == stdin && isatty (fileno (stdin)))
               fprintf (stderr, "reading words from stdin:\n");
 
-            while (1)
-              {
-                if (getline (&__line, &__len, wseed_f) < 0)
-                  break;
-                if (__line && *__line &&
-                    __line[0] != '\n' &&  // empty line
-                    __line[0] != '#') // commented line
-                  {
-                    __line[strlen (__line) - 1] = '\0';
-                    wseed_uniappd (opt->global_seeds, strdup (__line));
-                  }
-              }
-            if (__line)
-              free (__line);
+            /* read from file and append to wseed */
+            wseed_fileappd (opt->global_seeds, wseed_f);
+
             if (wseed_f != stdin)
               fclose (wseed_f);
           }
