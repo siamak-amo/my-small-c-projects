@@ -50,10 +50,14 @@
  *
  *  Regular permutation:
  *    # argument(s) of `-r` are the same as `-s`
- *    - First component: [0-2]  and  Second component: AA,BB
+ *    - First component: [0-2]  and  second component: AA,BB
  *    ./permugen -r "[0-2]" "{AA,BB}"
- *    - First component: dev,prod,www  and  Second and third: [0-9]
+ *    - First component: dev,prod,www  and  second and third: [0-9]
  *    ./permugen -r "{dev,prod,www}" "[0-9]" "[0-9]"
+ *
+ *    - First component: dev,prod  and  second argument from file
+ *    ./permugen -r -- "{dev,prod}" /path/to/wordlist   # must start with /
+ *    ./permugen -r -- "{dev,prod}" "-"                 # read from stdin
  *
  *
  *  Compilation:
@@ -216,11 +220,15 @@ void
 usage ()
 {
   fprintf (stdout,
-           "Permugen %s, permutation generator utility\n"
-           "Usage: %s [OPTIONS] [ARGUMENTS]\n\n"
-           "OPTIONS:\n"
+           "Permugen %s, permutation generator utility\n\n"
+           "Usage:\n"
+           "   normal mode: %s [OPTIONS] [ARGUMENTS]\n\n"
+           "  regular mode: %s -r [SEED 1] ... [SEED N] [OPTIONS]\n"
+           "                %s [OPTIONS] -r -- [SEED 1] ... [SEED N]\n"
+           "\nOPTIONS:\n"
            "      -E                      disable backslash interpretation\n"
            "      -e                      enable backslash interpretation (default)\n"
+           "      -r, --regular           regular mode\n"
            "      -d, --depth             specify depth\n"
            "      -D, --depth-range       depth range\n"
            "     -df, --depth-from        specify min depth\n"
@@ -246,9 +254,10 @@ usage ()
            "          ` BBB`     to use BBB as suffix\n"
            "          BBB might contain white-space character(s)\n"
            "          to have white-space in AAA, either use `\\x20` or --prefix\n\n"
-           "    seed: this option accepts a simple regex as argument\n"
+           "    seed: in normal mode and regular mode, this accepts a simple regex:\n"
            "          `-`:              to read seeds from stdin, it will continue reading\n"
            "                            until reaches an empty line and then the word `EOF`\n"
+           "                            alternatively use `-S` option in normal mode\n"
            "          `[XYZ]`:          to use characters X,Y,Z as character seed\n"
            "          `[a-f]`:          to use characters a,b,...,f\n"
            "          `[\\[\\]]`:         to use `[`,`]` characters\n"
@@ -264,7 +273,7 @@ usage ()
            "             \\x:  for \\t, \\v, \\r, \\a, \\b, \\f, \\n \n"
            "           \\xHH:  to pass a hex value 0xHH\n"
            "          \\0NNN: to pass a octal value 0oNNN\n"
-           ,__PROGVERSION__, __progname__);
+           ,__PROGVERSION__, __progname__, __progname__, __progname__);
 }
 
 /**
