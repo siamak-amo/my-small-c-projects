@@ -22,10 +22,12 @@
  *  to generate customizable permutations of given seeds
  *
  *  Usage:  ./permugen [OPTIONS] [ARGUMENTS]
+ *          ./permugen -r [seed_1] ... [seed_N] [OPTIONS] [ARGUMENTS]
  *    for more details see help function via `-h` option:
  *    $ ./permugen -h
  *
  *  Some usage examples:
+ *  Normal permutation:
  *    - To make permutations of A,B,C, and a,...,f
  *    ./permugen -s "[ABC] [a-f]" -d4             # with length 4
  *    ./permugen -s "[ABCa-f]" -d4                # equivalent
@@ -45,6 +47,13 @@
  *    # using `www.` as prefix and `.com` as suffix
  *    # you may use --prefix, --suffix instead for more control
  *    ./permugen --format "www. .com"
+ *
+ *  Regular permutation:
+ *    # argument(s) of `-r` are the same as `-s`
+ *    - First component: [0-2]  and  Second component: AA,BB
+ *    ./permugen -r "[0-2]" "{AA,BB}"
+ *    - First component: dev,prod,www  and  Second and third: [0-9]
+ *    ./permugen -r "{dev,prod,www}" "[0-9]" "[0-9]"
  *
  *
  *  Compilation:
