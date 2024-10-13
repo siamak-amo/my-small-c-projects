@@ -692,7 +692,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
             if (!_strcmp (optarg, "-"))
               safe_fopen (&wseed_f, optarg, "r");
             if (wseed_f == stdin && isatty (fileno (stdin)))
-              fprintf (stderr, "reading words from stdin:\n");
+              fprintf (stderr, "reading words from stdin until EOF:\n");
 
             /* read from file and append to wseed */
             wseed_fileappd (opt->global_seeds, wseed_f);
@@ -1138,7 +1138,7 @@ parse_seed_regex (struct Seed *s, const char *input)
         case '-': /* read from stdin */
           {
             if (isatty (fileno (stdin)))
-              puts ("reading wseed(s) from stdin until EOF:");
+              fprintf (stderr, "reading words from stdin until EOF:\n");
             wseed_fileappd (s, stdin);
             input++;
             break;
