@@ -401,10 +401,24 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
   for (pos = depth-1; pos >= 0 && idxs[pos]==depths[pos]; --pos)
     idxs[pos] = 0;
 
-  if (pos < 0)
+  if (pos < 0) /* end of permutations */
     {
+#ifdef _USE_BIO
+      if (bio_err (opt->bio))
+        {
+          /* buffered_io write error */
+          ret = bio_errno (opt->bio);
+          goto Reg_Return;
+        }
+      else
+        {
+          ret = 0;
+          goto Reg_Return;
+        }
+#else
       ret = 0;
       goto Reg_Return;
+#endif
     }
 
   idxs[pos]++;
