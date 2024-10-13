@@ -759,7 +759,8 @@ main (int argc, char **argv)
   /* print some debug information */
   if (opt._regular_mode)
     {
-      dprintf ("* regular mode\n");
+      dprintf ("* regular mode, with %d seed configuration(s)\n",
+               da_sizeof (opt.reg_seeds));
       for (idx_t i=0; i < da_sizeof (opt.reg_seeds); ++i)
         {
           struct Seed *s = opt.reg_seeds[i];
@@ -775,12 +776,12 @@ main (int argc, char **argv)
       dprintf ("* normal mode\n");
       printd_arr (opt.global_seeds->cseed, "`%c`", opt.global_seeds->cseed_len);
       printd_arr (opt.global_seeds->wseed, "`%s`", (int) da_sizeof (opt.global_seeds->wseed));
+      dprintf ("* depth: from %d to %d\n", opt.from_depth, opt.to_depth);
     }
   if (opt.escape_disabled)
     dprintf ("- backslash interpretation is disabled\n");
   if (opt.__sep)
     dprintf ("* delimiter: `%s`\n", opt.__sep);
-  dprintf ("* depth: from %d to %d\n", opt.from_depth, opt.to_depth);
   dprintf ("* permutations:\n");
 
 
