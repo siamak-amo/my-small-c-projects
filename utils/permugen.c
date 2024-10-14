@@ -653,6 +653,14 @@ const struct option lopts[] = {
 int
 init_opt (int argc, char **argv, struct Opt *opt)
 {
+#define CASE_NOT_IN_REG_MODE(option) \
+  NOT_IN_REG_MODE (option, break)
+#define NOT_IN_REG_MODE(option, action)                                 \
+  if (opt->_regular_mode) {                                             \
+    warnf ("wrong regular mode option (%s) was ignored", option);       \
+    action;                                                             \
+  }
+
   int idx = 0, flag, using_default_seed = 1;
   while (1)
     {
@@ -723,8 +731,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
           }
         case 'S': /* wseed file / stdin */
           {
-            if (opt->_regular_mode)
-              break;
+            CASE_NOT_IN_REG_MODE(argv[optind-2]);
             FILE *wseed_f = stdin;
             /* using optarg value as filepath otherwise stdin */
             if (!_strcmp (optarg, "-"))
@@ -742,8 +749,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
         case 's': /* seed configuration */
           {
-            if (opt->_regular_mode)
-              break;
+            CASE_NOT_IN_REG_MODE(argv[optind-2]);
             using_default_seed = 0;
             /* this option disables the default seed config */
             parse_seed_regex (opt, opt->global_seeds, optarg);
@@ -751,8 +757,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
 
         case '0': /* raw seed */
-          if (opt->_regular_mode)
-            break;
+          CASE_NOT_IN_REG_MODE(argv[optind-2]);
           using_default_seed = 0;
           if (!opt->escape_disabled)
             unescape (optarg);
@@ -760,8 +765,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
 
         case '5': /* raw word seed */
-          if (opt->_regular_mode)
-            break;
+          CASE_NOT_IN_REG_MODE(argv[optind-2]);
           if (!opt->escape_disabled)
             unescape (optarg);
           wseed_uniappd (opt, opt->global_seeds, optarg);
