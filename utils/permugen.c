@@ -1146,8 +1146,19 @@ parse_seed_regex (struct Opt *opt,
     {
       switch (*input)
         {
-        case '/': /* file path */
+        case '\0':
+          goto End_of_Parsing;
+
+          /* file path */
+        case '.':
+          if (input[1] == '/' || // ./filename
+              (input[1] == '.' && input[2] == '/')) // ../filename
+            goto File_Path_Parsing;
+          break;
+        case '/':
+        case '~':
           {
+          File_Path_Parsing:
             FILE *f = NULL;
             safe_fopen (&f, input, "r");
             if (f)
