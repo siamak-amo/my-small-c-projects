@@ -515,7 +515,8 @@ cseed_uniappd (struct Seed *s, const char *src, int len)
  *  use strdup when @word gets dereferenced
  */
 void
-wseed_uniappd (struct Seed *s, char *str_word)
+wseed_uniappd (struct Opt *opt,
+               struct Seed *s, char *str_word)
 {
   if (!s->wseed || !str_word)
     return;
@@ -524,11 +525,13 @@ wseed_uniappd (struct Seed *s, char *str_word)
       if (_strcmp (s->wseed[i], str_word))
         return;
     }
+  if (!opt->escape_disabled)
+    unescape (str_word);
   da_appd (s->wseed, str_word);
 }
 
 void
-wseed_fileappd (struct Seed *s, FILE *f)
+wseed_fileappd (struct Opt *opt, struct Seed *s, FILE *f)
 {
   size_t __len;
   char *__line = NULL;
@@ -552,7 +555,7 @@ wseed_fileappd (struct Seed *s, FILE *f)
             {
               if (empty_prevline && _strcmp (__line, "EOF"))
                 break;
-              wseed_uniappd (s, strdup (__line));
+              wseed_uniappd (opt, s, strdup (__line));
             }
           else
             empty_prevline = 1;
@@ -710,7 +713,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
               fprintf (stderr, "reading words from stdin until EOF:\n");
 
             /* read from file and append to wseed */
-            wseed_fileappd (opt->global_seeds, wseed_f);
+            wseed_fileappd (opt, opt->global_seeds, wseed_f);
 
             if (wseed_f != stdin)
               fclose (wseed_f);
