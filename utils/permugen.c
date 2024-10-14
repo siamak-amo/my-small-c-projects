@@ -176,12 +176,6 @@ static inline struct Seed * seeddup (const struct Seed *s);
     da_drop (seed_ptr->wseed);                  \
   } while (0)
 
-/* unique append to seed functions */
-int cseed_uniappd (struct Seed *, const char *src, int len);
-void wseed_uniappd (struct Seed *, char *str_word);
-/* simple seed regex handler function */
-void parse_seed_regex (struct Seed *, const char *str_regex);
-
 struct Opt
 {
   /* main seed configuration */
@@ -207,6 +201,12 @@ struct Opt
   BIO_t *bio;
 #endif
 };
+
+/* unique append to seed functions */
+int cseed_uniappd (struct Seed *, const char *src, int len);
+void wseed_uniappd (struct Opt *opt, struct Seed *, char *str_word);
+/* simple seed regex handler function */
+void parse_seed_regex (struct Opt *opt, struct Seed *, const char *str_regex);
 
 #define _strcmp(s1, s2)                         \
   ((s1) != NULL && (s2) != NULL &&              \
@@ -261,8 +261,12 @@ usage ()
            "          `[XYZ]`:          to use characters X,Y,Z as character seed\n"
            "          `[a-f]`:          to use characters a,b,...,f\n"
            "          `[\\[\\]]`:         to use `[`,`]` characters\n"
+           "                            it will not backslash interpret other characters\n"
            "          `{word1,word2}`   to include `word1` and `word2` in word seeds\n"
            "                            use `--raw-wseed` if your words contain comma\n"
+           "                            as it will backslash interpret words, use `\\x2c`\n"
+           "                            or `--raw-wseed` if your words contain comma\n"
+           "          `-`:              to read seeds from stdin, it will continue reading\n"
            "          example:\n"
            "            to include a,b and 0,...,9  also words foo,bar:\n"
            "             `[ab0-9] {foo,bar}`  or equivalently  `[ab] {foo,bar} [0-9]`\n\n"
@@ -719,7 +723,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
               break;
             using_default_seed = 0;
             /* this option disables the default seed config */
-            parse_seed_regex (opt->global_seeds, optarg);
+            parse_seed_regex (opt, opt->global_seeds, optarg);
           }
           break;
 
@@ -737,7 +741,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
             break;
           if (!opt->escape_disabled)
             unescape (optarg);
-          wseed_uniappd (opt->global_seeds, optarg);
+          wseed_uniappd (opt, opt->global_seeds, optarg);
           break;
 
         case 'r':
@@ -765,9 +769,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                 {
                   drop_seeds (tmp);
                   optind++;
-                  if (!opt->escape_disabled)
-                    unescape (argv[i]);
-                  parse_seed_regex (tmp, argv[i]);
+                  parse_seed_regex (opt, tmp, argv[i]);
                   if (tmp->cseed_len == 0 && da_sizeof (tmp->wseed) == 0)
                     {
                       warnf ("empty regular seed configuration was ignored");
@@ -1009,7 +1011,8 @@ main (int argc, char **argv)
  *  comma is not allowed in wseeds
  */
 const char *
-__preg_wseed_provider (struct Seed *s, const char *p)
+__preg_wseed_provider (struct Opt *opt,
+                       struct Seed *s, const char *p)
 {
   const char *next_p = p + 1;
   const char *start = p;
@@ -1022,7 +1025,7 @@ __preg_wseed_provider (struct Seed *s, const char *p)
     char *str = malloc (++len);                 \
     memcpy (str, start, len);                   \
     str[len - 1] = '\0';                        \
-    wseed_uniappd (s, str);                     \
+    wseed_uniappd (opt, s, str);                \
   } while (0)
 
   for (; *p != '\0'; __forward (1))
@@ -1132,7 +1135,8 @@ __preg_cseed_provider (struct Seed *s, const char *p)
 
 // main seed regex parser function
 void
-parse_seed_regex (struct Seed *s, const char *input)
+parse_seed_regex (struct Opt *opt,
+                  struct Seed *s, const char *input)
 {
   // input: "  [..\[..]  {..\{..} "
   for (char prev_p = 0;; prev_p = *input, ++input)
@@ -1145,7 +1149,7 @@ parse_seed_regex (struct Seed *s, const char *input)
             safe_fopen (&f, input, "r");
             if (f)
               {
-                wseed_fileappd (s, f);
+                wseed_fileappd (opt, s, f);
                 if (f != stdin)
                   fclose (f);
               }
@@ -1156,7 +1160,7 @@ parse_seed_regex (struct Seed *s, const char *input)
           {
             if (isatty (fileno (stdin)))
               fprintf (stderr, "reading words from stdin until EOF:\n");
-            wseed_fileappd (s, stdin);
+            wseed_fileappd (opt, s, stdin);
             input++;
             break;
           }
@@ -1171,7 +1175,7 @@ parse_seed_regex (struct Seed *s, const char *input)
         case '{':
           if (prev_p != '\\')
             {
-              input = __preg_wseed_provider (s, ++input);
+              input = __preg_wseed_provider (opt, s, ++input);
             }
           break;
 
