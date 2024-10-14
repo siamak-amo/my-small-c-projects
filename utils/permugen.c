@@ -1033,13 +1033,14 @@ main (int argc, char **argv)
 
 /**
  *  internal regex functions
- *  these functions are used to parse `-s` argument
- *  regex which is used to configure seeds
+ *  these functions parse argument of `-s`
+ *  which is a regex to configure seeds
  */
 
-/** wseed provider
- *  inside {...} - comma-separated values
- *  comma is not allowed in wseeds
+/** wseed regex parser
+ *  inside `{...}` - comma-separated values
+ *  it backslash interprets them when not disabled
+ *  comma is not allowed in wseeds, use \x2c
  */
 const char *
 __preg_wseed_provider (struct Opt *opt,
@@ -1084,10 +1085,9 @@ __preg_wseed_provider (struct Opt *opt,
   return p;
 }
 
-/** character seed provider
- *  inside [...]
- *  X-Y: means range X to Y
- *  `\[` and `\]`: means `[`,`]` characters
+/** character seed regex parser
+ *  inside `[...]`
+ *  it does not backslash interpret @p
  */
 const char *
 __preg_cseed_provider (struct Seed *s, const char *p)
@@ -1169,7 +1169,11 @@ void
 parse_seed_regex (struct Opt *opt,
                   struct Seed *s, const char *input)
 {
-  // input: "  [..\[..]  {..\{..} "
+  /**
+   *  @input: "  [..\[..]  {..\{..} /path/to/file"
+   *  file path must be at the end and can start with `/`,`~` ,`./` ,`../`
+   *  `-` in @input means to read from stdin and inside `[]` means range
+   */
   for (char prev_p = 0;; prev_p = *input, ++input)
     {
       switch (*input)
