@@ -253,7 +253,6 @@ DADEFF void * __da_dup (void **);
  *  to be updated, you can use this macro
  *  @arr must be (void **) pointing to the address
  *  of the primary pointer array
- *  and the type of @val must be known
  */
 #define da_funappd(arr, val) do {                       \
     typeof (val) *__arr;                                \
@@ -264,10 +263,6 @@ DADEFF void * __da_dup (void **);
 
 #ifdef DYNA_IMPLEMENTATION
 
-/** to make dynamic arrays
- *  with each cell of length @cell_size
- *  and the initial capacity @n
- */
 dyna_t *
 __mk_da(sidx_t cell_size, sidx_t n)
 {
