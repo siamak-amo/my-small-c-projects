@@ -67,10 +67,10 @@
 #define UNESCAPE__H__
 
 /* Hex */
-#define hchr2num(HH)                         \
-  (  (HH >= '0' && HH <= '9') ? (HH - '0')   \
-   : (HH >= 'A' && HH <= 'F') ? (HH - 'A')   \
-   : (HH >= 'a' && HH <= 'f') ? (HH - 'a')   \
+#define hchr2num(HH)                                \
+  (  (HH >= '0' && HH <= '9') ? (HH - '0' + 0x00)   \
+   : (HH >= 'A' && HH <= 'F') ? (HH - 'A' + 0x0A)   \
+   : (HH >= 'a' && HH <= 'f') ? (HH - 'a' + 0x0a)   \
    : -1  )
 /* Octal */
 #define nchr2num(NNN)                           \
