@@ -442,8 +442,12 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
     Pputln (opt);
 
   int pos;
-  for (pos = depth-1; pos >= 0 && idxs[pos]==depths[pos]; --pos)
-    idxs[pos] = 0;
+  for (pos = depth-1;
+       pos >= 0 && idxs[pos] == depths[pos];
+       --pos)
+    {
+      idxs[pos] = 0;
+    }
 
   if (pos < 0) /* end of permutations */
     {
