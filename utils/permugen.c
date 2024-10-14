@@ -40,6 +40,15 @@
  *    ./permugen -s "[xyz0-4] {foo,bar,baz}"      # to also include x,y,z
  *    ./permugen -s "[0-4] [x-z] {foo,bar,baz}"   # equivalent
  *
+ *    - To include words from file
+ *    ./permugen -s "/path/to/file"               # or use -S
+ *    ./permugen -s "-"                           # read from stdin
+ *    # include 0 to 5, ABC and also read from stdin
+ *    ./permugen -s "[0-5] - {ABC}"
+ *    # read from file instead (file path must be at the end)
+ *    ./permugen -s "[0-5] {ABC} /path/to/file"
+ *    ./permugen -s "- [0-5]{ABC} /path/to/file"  # also stdin
+ *
  *    - Output formatting (separator `-p` and format `-f`)
  *      to disable backslash interpretation (default) use `-E`
  *    ./permugen --delim ", "                     # comma separated
@@ -56,8 +65,8 @@
  *    ./permugen -r "{dev,prod,www}" "[0-9]" "[0-9]"
  *
  *    - First component: dev,prod  and  second argument from file
- *    ./permugen -r -- "{dev,prod}" /path/to/wordlist   # must start with /
- *    ./permugen -r -- "{dev,prod}" "-"                 # read from stdin
+ *    ./permugen -r "{dev,prod}" /path/to/wordlist   # must start with /
+ *    ./permugen -r -- "{dev,prod}" "-"              # read from stdin
  *
  *
  *  Compilation:
@@ -225,27 +234,31 @@ usage ()
            "   normal mode: %s [OPTIONS] [ARGUMENTS]\n\n"
            "  regular mode: %s -r [SEED 1] ... [SEED N] [OPTIONS]\n"
            "                %s [OPTIONS] -r -- [SEED 1] ... [SEED N]\n"
-           "\nOPTIONS:\n"
+           "\n"
+           "OPTIONS:\n"
            "      -E                      disable backslash interpretation\n"
            "      -e                      enable backslash interpretation (default)\n"
            "      -r, --regular           regular mode\n"
+           "      -o, --output            output file\n"
+           "  -a,-oA, --append            append to file\n"
+           "      -p, --delimiter         permutations component separator\n"
+           "      -f, --format            output format (see ARGUMENTS)\n"
+           "          --prefix            output prefix\n"
+           "          --suffix            output suffix\n"
+           "\n"
+           "  only in normal mode:\n"
            "      -d, --depth             specify depth\n"
            "      -D, --depth-range       depth range\n"
            "     -df, --depth-from        specify min depth\n"
            "          --min-depth\n"
            "     -dt, --depth-to          specify max depth\n"
            "          --max-depth\n"
-           "      -o, --output            output file\n"
-           "  -a,-oA, --append            append to file\n"
-           "      -p, --delimiter         permutations component separator\n"
            "      -S, --seed-path         word seed path\n"
            "                              pass - to read from stdin\n"
            "      -s, --seed              to configure global seeds (see ARGUMENTS)\n"
            "          --raw-seed          to configure character seeds\n"
            "          --raw-wseed         to add a single word to global seeds\n"
-           "      -f, --format            output format (see ARGUMENTS)\n"
-           "          --prefix            output prefix\n"
-           "          --suffix            output suffix\n\n"
+           "\n"
            "ARGUMENTS:\n"
            "  Argument values of --format, --prefix, --suffix, --raw-xxx, and --delimiter\n"
            "  will be backslash-interpreted by default, (disable it by `-E`)\n\n"
@@ -253,17 +266,14 @@ usage ()
            "          `AAA BBB`  to use AAA as prefix and BBB as suffix\n"
            "          ` BBB`     to use BBB as suffix\n"
            "          BBB might contain white-space character(s)\n"
-           "          to have white-space in AAA, either use `\\x20` or --prefix\n\n"
+           "          to have white-space in AAA, either use `\\x20` or --prefix\n"
+           "\n"
            "    seed: in normal mode and regular mode, this accepts a simple regex:\n"
-           "          `-`:              to read seeds from stdin, it will continue reading\n"
-           "                            until reaches an empty line and then the word `EOF`\n"
-           "                            alternatively use `-S` option in normal mode\n"
            "          `[XYZ]`:          to use characters X,Y,Z as character seed\n"
            "          `[a-f]`:          to use characters a,b,...,f\n"
            "          `[\\[\\]]`:         to use `[`,`]` characters\n"
            "                            it will not backslash interpret other characters\n"
            "          `{word1,word2}`   to include `word1` and `word2` in word seeds\n"
-           "                            use `--raw-wseed` if your words contain comma\n"
            "                            as it will backslash interpret words, use `\\x2c`\n"
            "                            or `--raw-wseed` if your words contain comma\n"
            "          `-`:              to read seeds from stdin, it will continue reading\n"
