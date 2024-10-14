@@ -1113,7 +1113,7 @@ __preg_cseed_provider (struct Seed *s, const char *p)
             {
               seed = *next_p;
               __forward (1);
-              goto Put_a_char;
+              goto SeedOut;
             }
           break;
 
@@ -1134,13 +1134,13 @@ __preg_cseed_provider (struct Seed *s, const char *p)
               else
                 {
                   seed = *p;
-                  goto Put_a_char;
+                  goto SeedOut;
                 }
             }
           else
             {
               seed = *p;
-              goto Put_a_char;
+              goto SeedOut;
             }
           break;
 
@@ -1155,7 +1155,7 @@ __preg_cseed_provider (struct Seed *s, const char *p)
               case ']':
               default:
                 seed = *p;
-              Put_a_char:
+              SeedOut:
                 seedout ();
               }
           }
