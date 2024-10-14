@@ -159,8 +159,8 @@ typedef struct
 } dyna_t;
 
 
-/* internal offsetof macro, to give offset of @member in struct @T */
-#define offsetof(T, member) ((size_t)((T *)(0))->member)
+/* internal __offsetof macro, to give offset of @member in struct @T */
+#define __offsetof(T, member) ((size_t)((T *)(0))->member)
 
 /** internal container_of macro
  *  users don't use this macro directly
@@ -169,7 +169,7 @@ typedef struct
  */
 #define __da_containerof(arr_ptr) ({                        \
       const char *__ptr = (const char *)(arr_ptr);          \
-      (dyna_t *)(__ptr - offsetof (dyna_t, arr));           \
+      (dyna_t *)(__ptr - __offsetof (dyna_t, arr));         \
     })
 
 /**
