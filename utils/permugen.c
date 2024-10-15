@@ -211,11 +211,17 @@ struct Opt
 #endif
 };
 
+/**
+ *  these functions only need opt pointer to know
+ *  whether backslash interpretation is disabled or not
+ */
 /* unique append to seed functions */
 int cseed_uniappd (struct Seed *, const char *src, int len);
-void wseed_uniappd (struct Opt *opt, struct Seed *, char *str_word);
+void wseed_uniappd (const struct Opt *opt,
+                    struct Seed *, char *str_word);
 /* simple seed regex handler function */
-void parse_seed_regex (struct Opt *opt, struct Seed *, const char *str_regex);
+void parse_seed_regex (const struct Opt *opt,
+                       struct Seed *, const char *str_regex);
 
 #define _strcmp(s1, s2)                         \
   ((s1) != NULL && (s2) != NULL &&              \
@@ -542,7 +548,7 @@ cseed_uniappd (struct Seed *s, const char *src, int len)
  *  use strdup when @word gets dereferenced
  */
 void
-wseed_uniappd (struct Opt *opt,
+wseed_uniappd (const struct Opt *opt,
                struct Seed *s, char *str_word)
 {
   if (!s->wseed || !str_word)
@@ -558,7 +564,7 @@ wseed_uniappd (struct Opt *opt,
 }
 
 void
-wseed_fileappd (struct Opt *opt, struct Seed *s, FILE *f)
+wseed_fileappd (const struct Opt *opt, struct Seed *s, FILE *f)
 {
   size_t __len;
   char *__line = NULL;
@@ -1046,7 +1052,7 @@ main (int argc, char **argv)
  *  comma is not allowed in wseeds, use \x2c
  */
 const char *
-__preg_wseed_provider (struct Opt *opt,
+__preg_wseed_provider (const struct Opt *opt,
                        struct Seed *s, const char *p)
 {
   const char *next_p = p + 1;
@@ -1168,7 +1174,7 @@ __preg_cseed_provider (struct Seed *s, const char *p)
 
 // main seed regex parser function
 void
-parse_seed_regex (struct Opt *opt,
+parse_seed_regex (const struct Opt *opt,
                   struct Seed *s, const char *input)
 {
   /**
