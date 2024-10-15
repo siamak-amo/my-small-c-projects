@@ -231,9 +231,12 @@ usage ()
   fprintf (stdout,
            "Permugen %s, permutation generator utility\n\n"
            "Usage:\n"
-           "   normal mode: %s [OPTIONS] [ARGUMENTS]\n\n"
-           "  regular mode: %s -r [SEED 1] ... [SEED N] [OPTIONS]\n"
-           "                %s [OPTIONS] -r -- [SEED 1] ... [SEED N]\n"
+           "   normal mode: any possible permutation of given seed(s)\n"
+           "       %s [OPTIONS] [ARGUMENTS]\n\n"
+           "  regular mode: to specify seed(s) of each component manually\n"
+           "    this will generate permutations with exactly N component\n"
+           "       %s -r [SEED 1] ... [SEED N] [OPTIONS]\n"
+           "       %s [OPTIONS] -r -- [SEED 1] ... [SEED N]\n"
            "\n"
            "OPTIONS:\n"
            "      -E                      disable backslash interpretation\n"
@@ -295,8 +298,8 @@ usage ()
            "             \\\\:  to pass a single `\\`, some shells might eliminate them\n"
            "                  so it is convenient to use single quotes\n"
            "             \\x:  for \\t, \\v, \\r, \\a, \\b, \\f, \\n \n"
-           "           \\xHH:  to pass a hex value 0xHH\n"
-           "          \\0NNN: to pass a octal value 0oNNN\n"
+           "           \\xHH:  byte with hexadecimal value HH (1 to 2 digits)\n"
+           "          \\0NNN:  byte with octal value NNN (1 to 3 digits)\n"
            ,__PROGVERSION__, __progname__, __progname__, __progname__);
 }
 
