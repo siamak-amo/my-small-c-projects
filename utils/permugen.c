@@ -1050,9 +1050,7 @@ __preg_wseed_provider (struct Opt *opt,
   const char *start = p;
   size_t len = 0;
 
-#undef __forward
 #define __forward(n) (p += n, next_p += n)
-#undef seedout
 #define seedout() do {                          \
     char *str = malloc (++len);                 \
     memcpy (str, start, len);                   \
@@ -1083,6 +1081,8 @@ __preg_wseed_provider (struct Opt *opt,
         }
     }
   return p;
+#undef __forward
+#undef seedout
 }
 
 /** character seed regex parser
@@ -1095,9 +1095,7 @@ __preg_cseed_provider (struct Seed *s, const char *p)
   const char *next_p = p + 1;
   static char seed = 0;
 
-#undef __forward
 #define __forward(n) (p += n, next_p += n)
-#undef seedout
 #define seedout() cseed_uniappd (s, &seed, 1)
 
   for (; *p != '\0'; __forward (1))
@@ -1113,7 +1111,7 @@ __preg_cseed_provider (struct Seed *s, const char *p)
             {
               seed = *next_p;
               __forward (1);
-              goto SeedOut;
+              seedout ();
             }
           break;
 
@@ -1134,13 +1132,13 @@ __preg_cseed_provider (struct Seed *s, const char *p)
               else
                 {
                   seed = *p;
-                  goto SeedOut;
+                  seedout ();
                 }
             }
           else
             {
               seed = *p;
-              goto SeedOut;
+              seedout ();
             }
           break;
 
@@ -1155,13 +1153,14 @@ __preg_cseed_provider (struct Seed *s, const char *p)
               case ']':
               default:
                 seed = *p;
-              SeedOut:
                 seedout ();
               }
           }
         }
     }
   return p;
+#undef __forward
+#undef seedout
 }
 
 // main seed regex parser function
