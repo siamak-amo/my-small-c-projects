@@ -228,7 +228,7 @@ void parse_seed_regex (const struct Opt *opt,
 
 #define _strcmp(s1, s2)                         \
   ((s1) != NULL && (s2) != NULL &&              \
-   strncmp ((s1), (s2), strlen (s2)) == 0)
+   strcmp ((s1), (s2)) == 0)
 
 /* is non white-space ascii-printable */
 #define IS_ASCII_PR(c) (c >= 0x21 && c <= 0x7E)
