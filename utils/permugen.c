@@ -31,8 +31,8 @@
  *    - To make permutations of A,B,C, and a,...,f
  *    ./permugen -s "[ABC] [a-f]" -d4             # with length 4
  *    ./permugen -s "[ABCa-f]" -d4                # equivalent
- *    ./permugen -s "[ABCa-f]" -D4                # with length 1,...,4
- *    ./permugen --min-depth 3 --max-depth 5      # with length 3,...,5
+ *    ./permugen -s "[ABCa-f]" -D4                # depth: 1,...,4
+ *    ./permugen --min-depth 3 --max-depth 5      # depth: 3,...,5
  *
  *    - To include word(s) in permutations
  *    ./permugen -s "{foo,bar}"
@@ -54,7 +54,7 @@
  *    ./permugen --delim ", "                     # comma separated
  *    ./permugen --delim "\t"                     # tab separated
  *    # using `www.` as prefix and `.com` as suffix
- *    # you may use --prefix, --suffix instead for more control
+ *    # you may use --prefix, --suffix for more control
  *    ./permugen --format "www. .com"
  *
  *  Regular permutation:
