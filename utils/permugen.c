@@ -95,7 +95,7 @@ static const char *__PROGVERSION__ = "v1.4";
 
 /**
  *  using buffered_io.h for better performance
- *  this file should be available in this repo
+ *  this file should be available in ../libs
  */
 #ifdef _USE_BIO
 #  ifndef _BMAX
@@ -105,18 +105,16 @@ static const char *__PROGVERSION__ = "v1.4";
 #  include "buffered_io.h"
 #endif
 
-/* for using unescape function */
+/* for backslash interpretation */
 #define UNESCAPE_IMPLEMENTATION
 #include "unescape.h"
 
-/* for using dynamic array */
+/* for dynamic array */
 #define DYNA_IMPLEMENTATION
 #include "dyna.h"
 
-/* default permutaiton depth */
-#ifndef DEF_DEPTH
-#  define DEF_DEPTH 3
-#endif
+/* default permutaiton depth (normal mode) */
+#define DEF_DEPTH 3
 
 #ifdef _DEBUG
 #undef dprintf
@@ -161,9 +159,10 @@ static const struct char_seed charseed_09 = {"0123456789", 10};
 /**
  *  seeds container
  *  wseed within this struct is dynamic array
- *  to handle it properly, only use `xxx_uniappd`
- *  and regex parser functions
- *  also to have length of it, use `da_sizeof (wseed)`
+ *  only use the following functions and macros
+ *  and `xxx_uniappd` and `parse_seed_regex`
+ *  to manipulate this type
+ *  to get the length of wseed, use `da_sizeof`
  */
 struct Seed
 {
@@ -185,6 +184,10 @@ static inline struct Seed * seeddup (const struct Seed *s);
     da_drop (seed_ptr->wseed);                  \
   } while (0)
 
+/**
+ *  the main configuration of permugen
+ *  reg_seeds is a dynamic array of (Seed *)
+ */
 struct Opt
 {
   /* main seed configuration */
