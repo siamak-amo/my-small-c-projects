@@ -579,15 +579,16 @@ wseed_fileappd (const struct Opt *opt, struct Seed *s, FILE *f)
       if (__line && *__line &&
           __line[0] != '#') // commented line
         {
-          int len = strlen (__line);
-          while (--len > 0)
+          int idx = strlen (__line) - 1;
+          for (; idx >= 0; --idx)
             {
-              if (__line[len] > 0 && __line[len] < ' ')
-                __line[len] = '\0';
+              /* remove non-printable characters */
+              if (__line[idx] > 0 && __line[idx] < 0x20)
+                __line[idx] = '\0';
               else
                 break;
             }
-          if (len)
+          if (idx >= 0)
             {
               if (empty_prevline && _strcmp (__line, "EOF"))
                 break;
