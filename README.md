@@ -28,6 +28,12 @@ Data structure and Memory management
 
 
 ## Libs
+### dyna.h
+Generic dynamic array implementation
+
+dependency of: `permugen.c`
+
+
 ### leven.c
 Levenshtein Distance  
 dependency of: `codeM`
