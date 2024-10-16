@@ -64,7 +64,7 @@
  *    - First component: dev,prod,www  and  second and third: [0-9]
  *    ./permugen -r "{dev,prod,www}" "[0-9]" "[0-9]"
  *
- *    - First component: dev,prod  and  second argument from file
+ *    - First component: dev,prod  and  second component: from file
  *    ./permugen -r "{dev,prod}" /path/to/wordlist   # must start with /
  *    ./permugen -r -- "{dev,prod}" "-"              # read from stdin
  *
@@ -75,12 +75,11 @@
  *         -D_USE_BIO -I../libs \
  *         -o permugen permugen.c
  *
- *  Compilation options:
- *    - To compile without buffered IO (less performance)
- *      remove `-D_USE_BIO`
- *
- *    - define `-D_BMAX="1024 * 1"` (in bytes) to change
- *      the default buffered IO buffer length
+ *  Options:
+ *    - To compile without buffered IO (less performance):
+ *        remove `-D_USE_BIO`
+ *    - To change the default buffered IO buffer length:
+ *        define `_BMAX="1024 * 1"`  (in bytes)
  *
  **/
 #include <stdio.h>
