@@ -86,6 +86,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <string.h>
 #include <getopt.h>
 
@@ -1178,6 +1179,43 @@ __preg_cseed_provider (struct Seed *s, const char *p)
   return p;
 #undef __forward
 #undef seedout
+}
+
+static char *
+path_resolution (const char *path, size_t len)
+{
+  static char PATH[PATH_MAX];
+  char *tmp;
+  if (*path == '~')
+    {
+      const char* home = getenv("HOME");
+      if (!home)
+        return NULL;
+      tmp = malloc (len + strlen (home) + 1);
+      char *p;
+      p = mempcpy (tmp, home, strlen (home));
+      p = mempcpy (p, path+1, len-1);
+      *p = '\0';
+    }
+  else
+    {
+      tmp = malloc (len + 1);
+      ((char *)mempcpy (tmp, path, len))[0] = '\0';
+    }
+
+  /* interpret `\<space>` */
+  unescape (tmp);
+
+  if (realpath (tmp, PATH))
+    {
+      free (tmp);
+      return PATH;
+    }
+  else
+    {
+      free (tmp);
+      return NULL;
+    }
 }
 
 // main seed regex parser function
