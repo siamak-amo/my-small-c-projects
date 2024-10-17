@@ -45,9 +45,8 @@
  *    ./permugen -s "-"                           # read from stdin
  *    # include 0 to 5, ABC and also read from stdin
  *    ./permugen -s "[0-5] - {ABC}"
- *    # read from file instead (file path must be at the end)
- *    ./permugen -s "[0-5] {ABC} /path/to/file"
- *    ./permugen -s "- [0-5]{ABC} /path/to/file"  # also stdin
+ *    ./permugen -s "[0-5] {ABC} /path/to/file"   # read from file
+ *    ./permugen -s "- [0-5]{ABC} /path/to/file"  # also read from stdin
  *
  *    - Output formatting (separator `-p` and format `-f`)
  *      to disable backslash interpretation (default) use `-E`
@@ -296,7 +295,6 @@ usage ()
            "                            alternatively, use the `-S` option\n"
            "          `/path/to/file`:  to read words from a file (line by line)\n"
            "                            lines with `#` will be ignored\n"
-           "                            this should be at the end of the argument\n"
            "          Example:\n"
            "            to include a,b and 0,...,9 and also words `foo` and `bar`:\n"
            "             `[ab0-9] {foo,bar}`  or equivalently  `[ab] {foo,bar} [0-9]`\n"
@@ -1225,7 +1223,7 @@ parse_seed_regex (const struct Opt *opt,
 {
   /**
    *  @input: "  [..\[..]  {..\{..} /path/to/file"
-   *  file path must be at the end and can start with `/`,`~` ,`./` ,`../`
+   *  file path pattern might be: / ./ ../ ~ and `file\ 1.txt`
    *  `-` in @input means to read from stdin and inside `[]` means range
    */
   for (char prev_p = 0;; prev_p = *input)
