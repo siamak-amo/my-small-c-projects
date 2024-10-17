@@ -558,7 +558,7 @@ wseed_uniappd (const struct Opt *opt,
 {
   if (!s->wseed || !str_word)
     return;
-  for (idx_t i=0; i < da_sizeof (s->wseed); ++i)
+  for (da_idx i=0; i < da_sizeof (s->wseed); ++i)
     {
       if (_strcmp (s->wseed[i], str_word))
         return;
@@ -967,10 +967,10 @@ main (int argc, char **argv)
   /* print some debug information */
   if (opt._regular_mode)
     {
-      idx_t len = da_sizeof (opt.reg_seeds);
+      da_idx len = da_sizeof (opt.reg_seeds);
       dprintf ("* regular mode\n");
       dprintf ("* %lu seed configuration(s):\n", (size_t)len);
-      for (idx_t i=0; i < len; ++i)
+      for (da_idx i=0; i < len; ++i)
         {
           struct Seed *s = opt.reg_seeds[i];
           dprintf ("    %s[%d]: {\n      ", STR(opt.reg_seeds), i);
@@ -1033,7 +1033,7 @@ main (int argc, char **argv)
      */
     if (opt.reg_seeds)
       {
-        for (idx_t i=0; i < da_sizeof (opt.reg_seeds); ++i)
+        for (da_idx i=0; i < da_sizeof (opt.reg_seeds); ++i)
           {
             free_seed (opt.reg_seeds[i]);
             free (opt.reg_seeds[i]);
