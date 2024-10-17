@@ -622,7 +622,7 @@ safe_fopen (FILE **dest,
     }
   if (!(__tmp = fopen (pathname, mode)))
     {
-      warnf ("Could not open file (%s:%s) -- ", mode, pathname);
+      warnf ("Could not open file -- (%s:%s)", mode, pathname);
       return;
     }
   *dest = __tmp;
