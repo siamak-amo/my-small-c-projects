@@ -23,16 +23,16 @@
  *
  *  Usage:  ./permugen [OPTIONS] [ARGUMENTS]
  *          ./permugen -r [seed_1] ... [seed_N] [OPTIONS] [ARGUMENTS]
- *    for more details see help function via `-h` option:
+ *    see help function by `-h` option, for more details:
  *    $ ./permugen -h
  *
  *  Some usage examples:
- *  Normal permutation:
+ *   Normal permutation:
  *    - To make permutations of A,B,C, and a,...,f
  *    ./permugen -s "[ABC] [a-f]" -d4             # with length 4
  *    ./permugen -s "[ABCa-f]" -d4                # equivalent
- *    ./permugen -s "[ABCa-f]" -D4                # depth: 1,...,4
- *    ./permugen --min-depth 3 --max-depth 5      # depth: 3,...,5
+ *    ./permugen -s "[ABCa-f]" -D4                # depth range 1,...,4
+ *    ./permugen --min-depth 3 --max-depth 5      # depth range 3,...,5
  *
  *    - To include word(s) in permutations
  *    ./permugen -s "{foo,bar}"
@@ -57,7 +57,7 @@
  *    # you may use --prefix, --suffix for more control
  *    ./permugen --format "www. .com"
  *
- *  Regular permutation:
+ *   Regular permutation:
  *    # argument(s) of `-r` are the same as `-s`
  *    - First component: [0-2]  and  second component: AA,BB
  *    ./permugen -r "[0-2]" "{AA,BB}"
@@ -89,7 +89,7 @@
 #include <string.h>
 #include <getopt.h>
 
-static const char *__progname__;
+static const char *__progname__ = "permugen";
 static const char *__PROGVERSION__ = "v1.4";
 
 /**
@@ -929,7 +929,6 @@ int
 main (int argc, char **argv)
 {
     struct Opt opt = {0};
-  __progname__ = *argv;
 
   { /* initializing options */
     opt.global_seeds = mk_seed (CSEED_MAXLEN, 1);
