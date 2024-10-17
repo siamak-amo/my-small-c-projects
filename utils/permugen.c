@@ -1228,7 +1228,7 @@ parse_seed_regex (const struct Opt *opt,
    *  file path must be at the end and can start with `/`,`~` ,`./` ,`../`
    *  `-` in @input means to read from stdin and inside `[]` means range
    */
-  for (char prev_p = 0;; prev_p = *input, ++input)
+  for (char prev_p = 0;; prev_p = *input)
     {
       switch (*input)
         {
@@ -1246,14 +1246,31 @@ parse_seed_regex (const struct Opt *opt,
           {
           File_Path_Parsing:
             FILE *f = NULL;
-            safe_fopen (&f, input, "r");
+            const char *__input = input;
+            size_t inplen = 0;
+            for (; *__input != '\0'; __input++)
+              {
+                if (*__input == ' ' && *(__input-1) != '\\')
+                  break;
+                inplen++;
+              }
+            if (*__input != '\0')
+              __input++;
+
+            char *path;
+            if (!(path = path_resolution (input, inplen)))
+              goto End_of_File_Path;
+            printf ("path: `%s`\n", path);
+            safe_fopen (&f, path, "r");
             if (f)
               {
                 wseed_fileappd (opt, s, f);
                 if (f != stdin)
                   fclose (f);
               }
-            goto End_of_Parsing;
+          End_of_File_Path:
+            input = __input;
+            break;
           }
 
         case '-': /* read from stdin */
@@ -1280,6 +1297,7 @@ parse_seed_regex (const struct Opt *opt,
           break;
 
         default:
+          input++;
           continue;
         }
 
