@@ -115,6 +115,9 @@ static const char *__PROGVERSION__ = "v1.4";
 /* default permutaiton depth (normal mode) */
 #define DEF_DEPTH 3
 
+#define __str__(x) #x
+#define STR(x) __str__(x)
+
 #ifdef _DEBUG
 #undef dprintf
 #define dprintf(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
@@ -130,11 +133,11 @@ static const char *__PROGVERSION__ = "v1.4";
  * Ex: to print `int arr[7]`  -->  printd_arr (arr, "%d", 7);
  */
 #  define printd_arr(arr, T, len)               \
-  if (len > 0) {                                \
-    dprintf ("* "#arr"[.%d] = {", len);         \
+  if (len > 0 && arr) {                         \
+    dprintf (#arr"[.%d] = {", len);             \
     printd_arr__H (arr, T, len, ", ", "}\n");   \
   } else {                                      \
-    dprintf ("- "#arr" is empty\n");            \
+    dprintf (#arr" is empty\n");                \
   }
 #else
 #  define dprintf(format, ...) (void)(format)
@@ -964,22 +967,25 @@ main (int argc, char **argv)
   /* print some debug information */
   if (opt._regular_mode)
     {
-      dprintf ("* regular mode, with %d seed configuration(s)\n",
-               da_sizeof (opt.reg_seeds));
-      for (idx_t i=0; i < da_sizeof (opt.reg_seeds); ++i)
+      idx_t len = da_sizeof (opt.reg_seeds);
+      dprintf ("* regular mode\n");
+      dprintf ("* %lu seed configuration(s):\n", (size_t)len);
+      for (idx_t i=0; i < len; ++i)
         {
           struct Seed *s = opt.reg_seeds[i];
-          dprintf ("regular seed %d: {\n  ", i+1);
+          dprintf ("    %s[%d]: {\n      ", STR(opt.reg_seeds), i);
           printd_arr (s->cseed, "`%c`", s->cseed_len);
-          dprintf ("  ");
+          dprintf ("      ");
           printd_arr (s->wseed, "`%s`", (int)da_sizeof (s->wseed));
-          dprintf ("}\n");
+          dprintf ("    }\n");
         }
     }
   else
     {
       dprintf ("* normal mode\n");
+      dprintf ("    ");
       printd_arr (opt.global_seeds->cseed, "`%c`", opt.global_seeds->cseed_len);
+      dprintf ("    ");
       printd_arr (opt.global_seeds->wseed, "`%s`", (int) da_sizeof (opt.global_seeds->wseed));
       dprintf ("* depth: from %d to %d\n", opt.from_depth, opt.to_depth);
     }
