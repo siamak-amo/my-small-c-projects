@@ -31,7 +31,7 @@
  *      da_appd (cstr, "string1");
  *      da_appd (cstr, "string2");
  *
- *      for (idx_t i=0; i < da_sizeof (cstr); ++i)
+ *      for (da_idx i=0; i < da_sizeof (cstr); ++i)
  *        printf ("str%lu: {%s}\n", i, cstr[i]);
  *
  *      da_free (cstr);
@@ -105,9 +105,9 @@
 #endif
 
 /* array index types */
-#ifndef idx_t
-# define sidx_t int
-# define idx_t unsigned int
+#ifndef da_idx
+# define da_sidx int
+# define da_idx unsigned int
 #endif
 
 
@@ -150,9 +150,9 @@
 /* users don't need to work with this struct */
 typedef struct
 {
-  idx_t cap; /* capacity of array */
-  idx_t size; /* length of array */
-  idx_t cell_bytes; /* size of each cell */
+  da_idx cap; /* capacity of array */
+  da_idx size; /* length of array */
+  da_idx cell_bytes; /* size of each cell */
 
   /* actual bytes of array */
   char arr[];
@@ -177,9 +177,9 @@ typedef struct
  *  and instead, use provided macros for
  *  generic type purposes and safety
  */
-DADEFF dyna_t * __mk_da (sidx_t, sidx_t);
-DADEFF sidx_t __da_appd (void **);
-DADEFF void * __da_funappd (void **, sidx_t);
+DADEFF dyna_t * __mk_da (da_sidx, da_sidx);
+DADEFF da_sidx __da_appd (void **);
+DADEFF void * __da_funappd (void **, da_sidx);
 DADEFF void * __da_dup (void **);
 
 #define DA_NNULL(arr) (NULL != arr)
@@ -203,7 +203,7 @@ DADEFF void * __da_dup (void **);
 
 // gives how many cells left until the next reallocation (at overflow)
 #define da_leftof(arr) \
-  (DA_NNULL (arr) ? (sidx_t)da_capof (arr) - (sidx_t)da_sizeof (arr) : 0)
+  (DA_NNULL (arr) ? (da_sidx)da_capof (arr) - (da_sidx)da_sizeof (arr) : 0)
 
 /** da_new, da_newn
  *  only create `da` dynamic arrays with these macros
@@ -231,7 +231,7 @@ DADEFF void * __da_dup (void **);
  *  @val: value of type T, type of the array
  */
 #define da_appd(arr, val) do {                          \
-    sidx_t i;                                           \
+    da_sidx i;                                           \
     if ((i = __da_appd ((void **)&arr)) != -1) {        \
       arr[i] = val;                                     \
     }} while (0)
@@ -264,7 +264,7 @@ DADEFF void * __da_dup (void **);
 #ifdef DYNA_IMPLEMENTATION
 
 dyna_t *
-__mk_da(sidx_t cell_size, sidx_t n)
+__mk_da(da_sidx cell_size, da_sidx n)
 {
   if (0 == n)
     n = 1; /* prevent 0 capacity initialization */
@@ -284,7 +284,7 @@ __mk_da(sidx_t cell_size, sidx_t n)
   return da;
 }
 
-DADEFF sidx_t
+DADEFF da_sidx
 __da_appd (void **arr)
 {
   dyna_t *da;
@@ -316,9 +316,9 @@ __da_appd (void **arr)
 }
 
 DADEFF void *
-__da_funappd (void **arr, sidx_t cell_bytes)
+__da_funappd (void **arr, da_sidx cell_bytes)
 {
-  sidx_t idx2append;
+  da_sidx idx2append;
   if ((idx2append = __da_appd (arr)) == -1)
     return NULL;
 
