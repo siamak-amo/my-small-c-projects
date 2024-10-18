@@ -1179,6 +1179,10 @@ __preg_cseed_provider (struct Seed *s, const char *p)
 #undef seedout
 }
 
+/**
+ *  resolves: `~/` , `/../` , `/./`
+ *  path is not necessarily null-terminated
+ */
 static char *
 path_resolution (const char *path, size_t len)
 {
@@ -1186,19 +1190,19 @@ path_resolution (const char *path, size_t len)
   char *tmp;
   if (*path == '~')
     {
-      const char* home = getenv("HOME");
+      const char* home = getenv ("HOME");
       if (!home)
         return NULL;
       tmp = malloc (len + strlen (home) + 1);
       char *p;
       p = mempcpy (tmp, home, strlen (home));
-      p = mempcpy (p, path+1, len-1);
+      p = mempcpy (p, path + 1, len - 1);
       *p = '\0';
     }
   else
     {
       tmp = malloc (len + 1);
-      ((char *)mempcpy (tmp, path, len))[0] = '\0';
+      *((char *) mempcpy (tmp, path, len)) = '\0';
     }
 
   /* interpret `\<space>` */
@@ -1226,7 +1230,7 @@ parse_seed_regex (const struct Opt *opt,
    *  file path pattern might be: / ./ ../ ~ and `file\ 1.txt`
    *  `-` in @input means to read from stdin and inside `[]` means range
    */
-  for (char prev_p = 0;; prev_p = *input)
+  for (char prev_p = 0; *input != '\0'; prev_p = *input)
     {
       switch (*input)
         {
@@ -1235,15 +1239,14 @@ parse_seed_regex (const struct Opt *opt,
 
           /* file path */
         case '.':
-          if (input[1] == '/' || // ./filename
-              (input[1] == '.' && input[2] == '/')) // ../filename
+          if (input[1] == '/' ||
+              (input[1] == '.' && input[2] == '/'))
             goto File_Path_Parsing;
           break;
         case '/':
         case '~':
           {
           File_Path_Parsing:
-            FILE *f = NULL;
             const char *__input = input;
             size_t inplen = 0;
             for (; *__input != '\0'; __input++)
@@ -1256,9 +1259,9 @@ parse_seed_regex (const struct Opt *opt,
               __input++;
 
             char *path;
+            FILE *f = NULL;
             if (!(path = path_resolution (input, inplen)))
               goto End_of_File_Path;
-            printf ("path: `%s`\n", path);
             safe_fopen (&f, path, "r");
             if (f)
               {
@@ -1267,7 +1270,7 @@ parse_seed_regex (const struct Opt *opt,
                   fclose (f);
               }
           End_of_File_Path:
-            input = __input;
+            input = __input; /* update the input pointer */
             break;
           }
 
@@ -1298,9 +1301,6 @@ parse_seed_regex (const struct Opt *opt,
           input++;
           continue;
         }
-
-      if (*input == '\0')
-        goto End_of_Parsing;
     }
  End_of_Parsing:
 }
