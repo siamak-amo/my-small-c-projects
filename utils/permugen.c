@@ -1074,7 +1074,7 @@ __preg_wseed_provider (const struct Opt *opt,
     wseed_uniappd (opt, s, str);                \
   } while (0)
 
-  for (; *p != '\0'; __forward (1))
+  for (char prev_p = *p; *p != '\0'; prev_p = *p, __forward (1))
     {
       switch (*p)
         {
@@ -1082,17 +1082,22 @@ __preg_wseed_provider (const struct Opt *opt,
           return p;
 
         case '}':
+          if (prev_p == '\\')
+            goto Wcontinue;
           if (len > 0)
             seedout ();
           return p+1;
 
         case ',':
+          if (prev_p == '\\')
+            goto Wcontinue;
           if (len > 0)
             seedout ();
           start = p+1, len = 0;
           break;
 
         default:
+        Wcontinue:
           len++;
         }
     }
