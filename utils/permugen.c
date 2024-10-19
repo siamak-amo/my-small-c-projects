@@ -573,6 +573,15 @@ wseed_fileappd (const struct Opt *opt, struct Seed *s, FILE *f)
   size_t __len;
   char *__line = NULL;
   int empty_prevline = 0;
+
+  if (!f || ferror (f) || feof (f))
+    {
+      warnf ("reading from file failed -- file is not usable");
+      return;
+    }
+  if (f == stdin && isatty (fileno (f)))
+    fprintf (stderr, "Reading words until EOF:\n");
+
   while (1)
     {
       if (getline (&__line, &__len, f) < 0)
@@ -621,7 +630,12 @@ safe_fopen (FILE **dest,
     }
   if (!(__tmp = fopen (pathname, mode)))
     {
-      warnf ("Could not open file -- (%s:%s)", mode, pathname);
+      warnf ("fould not open file -- (%s:%s)", mode, pathname);
+      return;
+    }
+  if (ferror (__tmp) || feof (__tmp))
+    {
+      warnf ("file is not usable -- (%s)", pathname);
       return;
     }
   *dest = __tmp;
@@ -754,8 +768,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
             /* using optarg value as filepath otherwise stdin */
             if (!_strcmp (optarg, "-"))
               safe_fopen (&wseed_f, optarg, "r");
-            if (wseed_f == stdin && isatty (fileno (stdin)))
-              fprintf (stderr, "reading words from stdin until EOF:\n");
 
             /* read from file and append to wseed */
             wseed_fileappd (opt, opt->global_seeds, wseed_f);
@@ -1281,8 +1293,6 @@ parse_seed_regex (const struct Opt *opt,
 
         case '-': /* read from stdin */
           {
-            if (isatty (fileno (stdin)))
-              fprintf (stderr, "reading words from stdin until EOF:\n");
             wseed_fileappd (opt, s, stdin);
             input++;
             break;
