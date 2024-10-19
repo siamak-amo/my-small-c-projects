@@ -625,7 +625,7 @@ safe_fopen (FILE **dest,
   FILE *__tmp;
   if (!pathname || !mode)
     {
-      warnf ("Invalud filename");
+      warnf ("invalud filename");
       return;
     }
   if (!(__tmp = fopen (pathname, mode)))
@@ -948,10 +948,10 @@ main (int argc, char **argv)
 
     if (opt._regular_mode > 0)
       {
-        /* _regular_mode = 1 + (sizeof it seeds) */
+        /* _regular_mode = 1 + length of seeds */
         if (opt._regular_mode == 1)
           {
-            warnf ("empty regular seed");
+            warnf ("empty regular permutation");
             goto EndOfMain;
           }
       }
@@ -968,7 +968,7 @@ main (int argc, char **argv)
   int cap = _BMAX;
   BIO_t __bio = bio_new (cap, malloc (cap), fileno (opt.outf));
   opt.bio = &__bio;
-  dprintf ("* buffered_io buffer length: %ld bytes\n", _BMAX);
+  dprintf ("* buffer length of buffered_io: %ld bytes\n", _BMAX);
 #else
   dprintf ("- compiled without buffered_io\n");
 # endif /* _USE_BIO */
@@ -979,16 +979,17 @@ main (int argc, char **argv)
     {
       da_idx len = da_sizeof (opt.reg_seeds);
       dprintf ("* regular mode\n");
-      dprintf ("* %lu seed configuration(s):\n", (size_t)len);
+      dprintf ("* %s[.%lu] = {\n", STR (opt.reg_seeds), (size_t)len);
       for (da_idx i=0; i < len; ++i)
         {
           struct Seed *s = opt.reg_seeds[i];
-          dprintf ("    %s[%d]: {\n      ", STR(opt.reg_seeds), i);
+          dprintf ("    %s[%d]: {\n      ", STR (opt.reg_seeds), i);
           printd_arr (s->cseed, "`%c`", s->cseed_len);
           dprintf ("      ");
           printd_arr (s->wseed, "`%s`", (int)da_sizeof (s->wseed));
           dprintf ("    }\n");
         }
+      dprintf ("  }\n");
     }
   else
     {
