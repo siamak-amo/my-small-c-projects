@@ -90,7 +90,7 @@
 #include <getopt.h>
 
 static const char *__progname__ = "permugen";
-static const char *__PROGVERSION__ = "v1.4";
+static const char *__PROGVERSION__ = "v2.0-stable";
 
 /**
  *  using buffered_io.h for better performance
