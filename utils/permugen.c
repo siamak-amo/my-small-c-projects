@@ -828,7 +828,10 @@ init_opt (int argc, char **argv, struct Opt *opt)
                       end_of_options = 1;
                     }
                   else
-                    break;
+                    {
+                      /* end of `-r` arguments */
+                      break;
+                    }
                 }
               else
                 {
@@ -861,11 +864,10 @@ init_opt (int argc, char **argv, struct Opt *opt)
     opt->outf = stdout;
 
   if (opt->_regular_mode > 0)
-    {
+    { /* regular mode */
     }
   else
-  {
-
+  { /* normal mode */
     if (opt->global_seeds->cseed_len == 0 && using_default_seed)
       {
         /* initializing with the default seed [a-z0-9] */
@@ -1013,12 +1015,14 @@ main (int argc, char **argv)
     dprintf ("* delimiter: `%s`\n", opt.__sep);
   dprintf ("* permutations:\n");
 
+
+  /* the main logic of making permutations */
   if (opt._regular_mode > 0)
     {
       regular_perm (&opt);
     }
   else
-    { /* organizing permutation loop */
+    {
       int rw_err = 0;
       for (int d = opt.from_depth; d <= opt.to_depth; ++d)
         {
@@ -1243,16 +1247,19 @@ path_resolution (const char *path, size_t len)
     }
 }
 
-// main seed regex parser function
+
+  /**
+   *  to parse @input regex and store the output in @s
+   *  @input: " - [..\[..]  {..\{..} /path/to/file"
+   *  supported file path formats:
+   *    `/tmp/wl.txt`, `~/wl.txt`, `./wl.txt`, `../wl.txt`
+   *  `-` in @input means to read from stdin and inside [] means range
+   *  [...] is used for cseed and {...} for wseed
+   */
 void
 parse_seed_regex (const struct Opt *opt,
                   struct Seed *s, const char *input)
 {
-  /**
-   *  @input: "  [..\[..]  {..\{..} /path/to/file"
-   *  file path pattern might be: / ./ ../ ~ and `file\ 1.txt`
-   *  `-` in @input means to read from stdin and inside `[]` means range
-   */
   for (char prev_p = 0; *input != '\0'; prev_p = *input)
     {
       switch (*input)
