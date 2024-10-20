@@ -64,7 +64,7 @@
  *    ./permugen -r "{dev,prod,www}" "[0-9]" "[0-9]"
  *
  *    - First component: dev,prod  and  second component: from file
- *    ./permugen -r "{dev,prod}" /path/to/wordlist   # must start with /
+ *    ./permugen -r "{dev,prod}" /path/to/wordlist
  *    ./permugen -r -- "{dev,prod}" "-"              # read from stdin
  *
  *
