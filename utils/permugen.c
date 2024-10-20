@@ -140,6 +140,7 @@ static const char *__PROGVERSION__ = "v2.0-stable";
     dprintf (#arr" is empty\n");                \
   }
 #else
+#  undef dprintf
 #  define dprintf(format, ...) (void)(format)
 #  define printd_arr(arr, T, len) (void)(arr)
 #endif /* _DEBUG */
@@ -430,6 +431,7 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
   int i = 0;
   if (opt->__pref)
     Pfputs (opt->__pref, opt);
+
  Print_Loop: /* O(S_i) */
   {
     int idx = idxs[i];
@@ -509,9 +511,8 @@ regular_perm (struct Opt *opt)
       if ((depths[i] = (s->cseed_len) + da_sizeof (s->wseed) - 1) < 0)
         goto _return; /* unreachable */
     }
-  /* depth is length of depths */
-  int ret = __regular_perm (opt, depths, seeds_count);
 
+  int ret = __regular_perm (opt, depths, seeds_count);
  _return:
   free (depths);
   return ret;
@@ -534,6 +535,7 @@ cseed_uniappd (struct Seed *s, const char *src, int len)
         break;
       if (!IS_ASCII_PR (*src))
         goto END_OF_LOOP;
+
       for (int __i = s->cseed_len - 1; __i >= 0; __i--)
         {
           if (*src == s->cseed[__i])
@@ -567,6 +569,7 @@ wseed_uniappd (const struct Opt *opt,
       if (_strcmp (s->wseed[i], str_word))
         return;
     }
+
   if (!opt->escape_disabled)
     unescape (str_word);
   da_appd (s->wseed, str_word);
@@ -806,7 +809,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
           wseed_uniappd (opt, opt->global_seeds, optarg);
           break;
 
-        case 'r':
+        case 'r': /* regular mode */
           struct Seed *tmp = mk_seed (CSEED_MAXLEN, 1);
           int end_of_options = 0;
           using_default_seed = 0;
@@ -978,7 +981,6 @@ main (int argc, char **argv)
   dprintf ("- compiled without buffered_io\n");
 # endif /* _USE_BIO */
 
-
   /* print some debug information */
   if (opt._regular_mode)
     {
@@ -1011,7 +1013,6 @@ main (int argc, char **argv)
     dprintf ("* delimiter: `%s`\n", opt.__sep);
   dprintf ("* permutations:\n");
 
-
   if (opt._regular_mode > 0)
     {
       regular_perm (&opt);
@@ -1025,7 +1026,6 @@ main (int argc, char **argv)
             break;
         }
     }
-
 
 #ifdef _USE_BIO
   bio_flush (opt.bio);
