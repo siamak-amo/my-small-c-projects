@@ -82,7 +82,6 @@
  *
  **/
 #include <stdio.h>
-#include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -90,7 +89,7 @@
 #include <getopt.h>
 
 static const char *__progname__ = "permugen";
-static const char *__PROGVERSION__ = "v2.0-stable";
+static const char *__PROGVERSION__ = "v2.0";
 
 /**
  *  using buffered_io.h for better performance
