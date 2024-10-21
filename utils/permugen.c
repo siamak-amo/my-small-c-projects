@@ -114,8 +114,8 @@ static const char *__PROGVERSION__ = "v2.0";
 /* default permutaiton depth (normal mode) */
 #define DEF_DEPTH 3
 
-#define __str__(x) #x
-#define STR(x) __str__(x)
+#undef STR
+#define STR(var) #var
 
 #ifdef _DEBUG
 #undef dprintf
