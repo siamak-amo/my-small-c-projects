@@ -167,9 +167,9 @@ typedef struct
  *  this macro, gives a pointer to the 'parent'
  *  struct of @arr the array pointer
  */
-#define __da_containerof(arr_ptr) ({                        \
-      const char *__ptr = (const char *)(arr_ptr);          \
-      (dyna_t *)(__ptr - __offsetof (dyna_t, arr));         \
+#define __da_containerof(arr_ptr) ({                    \
+      const char *__ptr = (const char *)(arr_ptr);      \
+      (dyna_t *)(__ptr - __offsetof (dyna_t, arr));     \
     })
 
 /**
@@ -188,15 +188,15 @@ DADEFF void * __da_dup (void **);
  *  to be used by users
  */
 // to free dynamic array @arr
-#define da_free(arr) do {                         \
-    if (DA_NNULL (arr)) {                         \
-      dyna_t *__d = __da_containerof (arr);       \
-      da_dprintf ("destroying %p\n", __d);        \
-      dyna_free (__d);                            \
+#define da_free(arr) do {                       \
+    if (DA_NNULL (arr)) {                       \
+      dyna_t *__d = __da_containerof (arr);     \
+      da_dprintf ("destroying %p\n", __d);      \
+      dyna_free (__d);                          \
     }} while (0)
 
 // to get length and capacity of @arr
-#define da_sizeof(arr) \
+#define da_sizeof(arr)                                  \
   (DA_NNULL (arr) ? __da_containerof (arr)->size : 0)
 #define da_capof(arr) \
   (DA_NNULL (arr) ? __da_containerof (arr)->cap : 0)
@@ -213,9 +213,9 @@ DADEFF void * __da_dup (void **);
  *    only use `da_xxx` macros to append to it or free it
  */
 #define da_new(T) da_newn (T, DA_INICAP)
-#define da_newn(T, n) ({                         \
-      dyna_t *__da = __mk_da (sizeof (T), n);    \
-      (T *)(__da->arr);                          \
+#define da_newn(T, n) ({                        \
+      dyna_t *__da = __mk_da (sizeof (T), n);   \
+      (T *)(__da->arr);                         \
     })
 
 /**
@@ -231,7 +231,7 @@ DADEFF void * __da_dup (void **);
  *  @val: value of type T, type of the array
  */
 #define da_appd(arr, val) do {                          \
-    da_sidx i;                                           \
+    da_sidx i;                                          \
     if ((i = __da_appd ((void **)&arr)) != -1) {        \
       arr[i] = val;                                     \
     }} while (0)
@@ -252,7 +252,7 @@ DADEFF void * __da_dup (void **);
  *  as the primary pointer to @arr, sometimes needs
  *  to be updated, you can use this macro
  *  @arr must be (void **) pointing to the address
- *  of the primary pointer array
+ *  of the primary array
  */
 #define da_funappd(arr, val) do {                       \
     typeof (val) *__arr;                                \
