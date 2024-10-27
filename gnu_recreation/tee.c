@@ -39,7 +39,6 @@ static const char *__progname__ = "tee";
 #define FOPEN_ERR 2
 #define MEM_ERR 3
 
-// output filename
 static int out_flags = O_CREAT|O_WRONLY;
 static mode_t out_mode = 0644;
 // IO file descriptors
@@ -65,9 +64,6 @@ out_open (const char *out_pathname)
       da_appd (out_fds, STDOUT_FILENO);
       return 0;
     }
-  /* truncate if not appending */
-  if (!(out_flags & O_APPEND))
-    out_flags |= O_TRUNC;
 
   int fd = open (out_pathname, out_flags, out_mode);
   if (fd == -1)
@@ -88,15 +84,11 @@ parse_args (int argc, char **argv)
 #define LOPT2(opt1, opt2) \
   (LOPT (opt1) || LOPT (opt2))
 
+  int ARGC = argc;
+  char **ARGV = argv;
   for (--argc, ++argv; argc != 0; --argc, ++argv)
     {
-      if (**argv == '/') // filepath
-        {
-          int ret;
-          if ((ret = out_open (*argv)) != 0)
-            return ret;
-        }
-      else if (**argv == '-')
+      if (**argv == '-')
         {
           char opt = argv[0][1];
           switch (opt)
@@ -124,6 +116,24 @@ parse_args (int argc, char **argv)
         }
     }
 
+  /* truncate if not appending */
+  if (out_flags & O_APPEND)
+    out_flags &= ~O_TRUNC;
+  else
+    out_flags |= O_TRUNC;
+
+  argc = ARGC;
+  argv = ARGV;
+  for (--argc, ++argv; argc != 0; --argc, ++argv)
+    {
+      if (**argv != '-') // filepath
+        {
+          int ret;
+          if ((ret = out_open (*argv)) != 0)
+            return ret;
+        }
+    }
+
   return 0;
 }
 
@@ -131,11 +141,13 @@ int
 main (int argc, char **argv)
 {
   out_fds = da_new (int);
-
+  /* parse options and open output files */
   int ret;
   if ((ret = parse_args (argc, argv)) != 0)
     return ret;
-  
+  /* number of output files */
+  da_idx out_count = da_sizeof (out_fds);
+
   char *buffer = malloc (_BMAX);
   if (!buffer)
     return MEM_ERR;
@@ -153,9 +165,6 @@ main (int argc, char **argv)
     }
 #endif
 
-
-  /* number of output files */
-  da_idx out_count = da_sizeof (out_fds);
 #ifndef _DEBUG
   while (1)
 #else
@@ -167,7 +176,7 @@ main (int argc, char **argv)
       ssize_t _r = read (in_fd, buffer, _BMAX);
       if (_r == -1 || _r == 0)
         {
-          /* error */
+          /* EOF or read error */
           goto End_of_Main;
         }
       else if (_r > 0)
@@ -179,16 +188,15 @@ main (int argc, char **argv)
           debugf ("write syscall, %ld bytes\n", _r);
           total_read += _r;
 #endif
-          /* write on each output file(s) */
+          /* write on output file(s) */
           int fd;
           for (da_idx i=0; i < out_count; ++i)
             {
               fd = out_fds[i];
               ssize_t _w = write (fd, buffer, _r);
-
               if (_w < 0 || _w != _r)
                 {
-                  errorf ("write error");
+                  errorf ("write error -- %s", strerror (errno));
                   goto End_of_Main;
                 }
             }
@@ -196,6 +204,7 @@ main (int argc, char **argv)
     }
  End_of_Main:
   free (buffer);
+  da_free (out_fds);
 
 #ifdef _DEBUG
   if (out_count == 0)
@@ -204,8 +213,6 @@ main (int argc, char **argv)
           "%lu write syscalls\n"
           ,total_read, sys_count, sys_count*out_count);
 #endif
-
-  da_free (out_fds);
 
   return 0;
 }
