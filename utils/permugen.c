@@ -57,7 +57,7 @@
  *    ./permugen --format "www. .com"
  *
  *   Regular permutation:
- *    # argument(s) of `-r` are the same as `-s`
+ *    Argument(s) of `-r` are the same as `-s`
  *    - First component: [0-2]  and  second component: AA,BB
  *    ./permugen -r "[0-2]" "{AA,BB}"
  *    - First component: dev,prod,www  and  second and third: [0-9]
@@ -65,7 +65,7 @@
  *
  *    - First component: dev,prod  and  second component: from file
  *    ./permugen -r "{dev,prod}" /path/to/wordlist
- *    ./permugen -r -- "{dev,prod}" "-"              # read from stdin
+ *    ./permugen -r -- "{dev,prod}" "-"           # read from stdin
  *
  *
  *  Compilation:
