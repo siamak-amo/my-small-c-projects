@@ -28,8 +28,14 @@
  *
  *  Some usage examples:
  *   Normal permutation:
+ *    - Alphanumeric permutations
+ *    ./permugen                      # a-z and 0-9 of length 3
+ *    ./permugen -s "\d"              # only digits 0-9
+ *    ./permugen -s "\d \u"           # 0-9 and A-Z
+ *    ./permugen -s "\d \u \l"        # 0-9 and A-Z and a-z
+ *
  *    - To make permutations of A,B,C, and a,...,f
- *    ./permugen -s "[ABC] [a-f]" -d4             # with length 4
+ *    ./permugen -s "[ABC] [a-f]" -d4             # of length 4
  *    ./permugen -s "[ABCa-f]" -d4                # equivalent
  *    ./permugen -s "[ABCa-f]" -D4                # depth range 1,...,4
  *    ./permugen --min-depth 3 --max-depth 5      # depth range 3,...,5
@@ -282,6 +288,8 @@ usage ()
            "        accepts any combination of the following patterns\n"
            "    `[XYZ]`:          to include characters X,Y,Z\n"
            "    `[a-f]`:          to include character range a,...,f\n"
+           "    character range shortcuts:\n"
+           "      '\\d' for [0-9],  '\\l' for [a-z],  '\\u','\\U' for [A-Z]\n"
            "    `{word1,word2}`   to include `word1` and `word2`\n"
            "    inside these regex's, you might also use:\n"
            "      `\\{ and \\[`       for `{`, `}` and `[`, `]` characters\n"
