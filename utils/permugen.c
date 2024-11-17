@@ -1087,10 +1087,11 @@ main (int argc, char **argv)
  *  inside `{...}` - comma-separated values
  *  it backslash interprets them when not disabled
  *  comma is not allowed in wseeds, use \x2c
+ *  returns pointer to the end of regex
  */
 const char *
-__preg_wseed_provider (const struct Opt *opt,
-                       struct Seed *s, const char *p)
+pparse_wseed_regex (const struct Opt *opt,
+                    struct Seed *s, const char *p)
 {
   const char *next_p = p + 1;
   const char *start = p;
@@ -1139,9 +1140,10 @@ __preg_wseed_provider (const struct Opt *opt,
 /** character seed regex parser
  *  inside `[...]`
  *  it does not backslash interpret @p
+ *  returns pointer to the end of regex
  */
 const char *
-__preg_cseed_provider (struct Seed *s, const char *p)
+pparse_cseed_regex (struct Seed *s, const char *p)
 {
   const char *next_p = p + 1;
   static char seed = 0;
@@ -1344,14 +1346,14 @@ parse_seed_regex (const struct Opt *opt,
         case '[':
           if (prev_p != '\\')
             {
-              input = __preg_cseed_provider (s, ++input);
+              input = pparse_cseed_regex (s, ++input);
             }
           break;
 
         case '{':
           if (prev_p != '\\')
             {
-              input = __preg_wseed_provider (opt, s, ++input);
+              input = pparse_wseed_regex (opt, s, ++input);
             }
           break;
 
