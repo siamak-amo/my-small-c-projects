@@ -155,7 +155,7 @@ struct char_seed
   int len;
 };
 static const struct char_seed charseed_az = {"abcdefghijklmnopqrstuvwxyz", 26};
-// static const struct char_seed charseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
+static const struct char_seed charseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 static const struct char_seed charseed_09 = {"0123456789", 10};
 
 /**
@@ -1265,6 +1265,26 @@ parse_seed_regex (const struct Opt *opt,
         {
         case '\0':
           goto End_of_Parsing;
+
+          /* shortcuts */
+        case '\\':
+          switch (*(++input))
+            {
+            case 'd': /* digits 0-9 */
+              cseed_uniappd (s, charseed_09.c, charseed_09.len);
+              break;
+            case 'l': /* lowercase letters */
+              cseed_uniappd (s, charseed_az.c, charseed_az.len);
+              break;
+            case 'U': /* uppercase letters */
+            case 'u':
+              cseed_uniappd (s, charseed_AZ.c, charseed_AZ.len);
+              break;
+
+            default:
+              break;
+            }
+          break;
 
           /* file path */
         case '.':
