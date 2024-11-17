@@ -88,14 +88,14 @@
  *
  **/
 #include <stdio.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <limits.h>
 #include <string.h>
 #include <getopt.h>
+#include <limits.h>
+#include <errno.h>
 
-static const char *__progname__ = "permugen";
+static const char *__PROGNAME__ = "permugen";
 static const char *__PROGVERSION__ = "v2.0";
 
 /**
@@ -153,7 +153,7 @@ static const char *__PROGVERSION__ = "v2.0";
 
 #undef warnf
 #define warnf(format, ...) \
-  fprintf (stderr, "%s: "format"\n", __progname__, ##__VA_ARGS__)
+  fprintf (stderr, "%s: "format"\n", __PROGNAME__, ##__VA_ARGS__)
 
 
 struct char_seed
