@@ -289,7 +289,6 @@ usage ()
            "    '[XYZ]':          to include characters X,Y,Z\n"
            "    '[a-f]':          to include character range a,...,f\n"
            "    character range shortcuts:\n"
-           "      '\\d' for [0-9],  '\\l' for [a-z],  '\\u','\\U' for [A-Z]\n"
            "    '{word1,word2}'   to include 'word1' and 'word2'\n"
            "    inside these regex's, you might also use:\n"
            "      '\\{ and \\['       for '{', '}' and '[', ']' characters\n"
@@ -1282,10 +1281,12 @@ parse_seed_regex (const struct Opt *opt,
               cseed_uniappd (s, charseed_09.c, charseed_09.len);
               break;
             case 'l': /* lowercase letters */
+            case 'a':
               cseed_uniappd (s, charseed_az.c, charseed_az.len);
               break;
             case 'U': /* uppercase letters */
             case 'u':
+            case 'A':
               cseed_uniappd (s, charseed_AZ.c, charseed_AZ.len);
               break;
 
