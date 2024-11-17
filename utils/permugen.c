@@ -1079,8 +1079,8 @@ main (int argc, char **argv)
 
 /**
  *  internal regex functions
- *  these functions parse argument of `-s`
- *  which is a regex to configure seeds
+ *  these functions parse argument of `-s` and `-r`
+ *  which is a simple regex to configure seeds
  */
 
 /** wseed regex parser
