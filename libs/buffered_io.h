@@ -7,7 +7,7 @@
  *  (on stdout / files) when writing many short lines
  *
  *  usage:
- *  ```
+ *  ```c
  *  #include <stdio.h>
  *  #include <stdlib.h>
  *  #define BIO_IMPLEMENTATION

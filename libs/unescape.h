@@ -36,7 +36,7 @@
  *
  *
  *  Usage:
- *  ```{c}
+ *  ```c
  *    #define UNESCAPE_IMPLEMENTATION
  *    #include "unescape.h"
  *

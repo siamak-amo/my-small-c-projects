@@ -7,7 +7,7 @@
  *
  *
  *  Usage:
- *  ```{c}
+ *  ```c
  *    #define B64_IMPLEMENTATION
  *    #include "libbase64.c"
  *

@@ -6,7 +6,7 @@
  *  based on `templates/slice.c` within this repository
  *
  *  Usage:
- *  ```{c}
+ *  ```c
  *    #define DYNA_IMPLEMENTATION
  *    #include "dyna.h"
  *
@@ -77,7 +77,7 @@
  *    so `da_appd` will update the reference properly
  *
  *    Another solution would be to use `da_funappd` macro:
- *    ```{c}
+ *    ```c
  *      // scope 1
  *      {
  *        T val = {0};
@@ -92,7 +92,7 @@
  *        // this might update @arr in scope 1
  *        da_funappd (array, data);
  *      }
- *    ```{c}
+ *    ```
  **/
 #ifndef DYNAMIC_ARRAY__H__
 #define DYNAMIC_ARRAY__H__

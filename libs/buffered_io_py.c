@@ -31,7 +31,7 @@
  *      `-D BMAX=`:  to change the default buffer length (1kb)
  *
  *  Usage:
- *  ```{py}
+ *  ```py
  *    import buffered_io
  *
  *    # initialization

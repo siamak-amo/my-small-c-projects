@@ -50,7 +50,7 @@
  *       -o test.out
  *
  *    to include in c files:
- *    ```{c}
+ *    ```c
  *    #include <stdio.h>
  *    #include <stdlib.h>
  *
