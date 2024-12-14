@@ -1009,7 +1009,7 @@ main (int argc, char **argv)
       for (da_idx i=0; i < len; ++i)
         {
           struct Seed *s = opt.reg_seeds[i];
-          dprintf ("    %s[%d]: {\n      ", STR (opt.reg_seeds), i);
+          dprintf ("    %s[%d] = {\n      ", STR (opt.reg_seeds), i);
           printd_arr (s->cseed, "`%c`", s->cseed_len);
           dprintf ("      ");
           printd_arr (s->wseed, "`%s`", (int)da_sizeof (s->wseed));
@@ -1310,7 +1310,9 @@ parse_seed_regex (const struct Opt *opt,
                 }
               else
                 {
-                  if (n >= opt->_regular_mode)
+                  if (n == opt->_regular_mode - 1)
+                    warnf ("circular append was ignored");
+                  else if (n >= opt->_regular_mode)
                     warnf ("seed index %d is out of bound", n+1);
                   else if (n < 0)
                     warnf ("invalid seed index");
