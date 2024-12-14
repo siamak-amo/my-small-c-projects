@@ -26,6 +26,7 @@
  *    see help function by `-h` option, for more details:
  *    $ ./permugen -h
  *
+ *
  *  Some usage examples:
  *   Normal permutation:
  *    - Alphanumeric permutations
@@ -81,7 +82,6 @@
  *
  *
  *  Compilation:
- *    to compile with `buffered_io.h`:
  *      cc -ggdb -O3 -Wall -Wextra -Werror \
  *         -D_USE_BIO -I../libs \
  *         -o permugen permugen.c
