@@ -19,7 +19,7 @@
  *  created on: 4 Sep 2024
  *
  *  Permugen, permutation generator utility
- *  to generate customizable permutations of given seeds
+ *  to generate customizable permutations based on provided seeds
  *
  *  Usage:  ./permugen [OPTIONS] [ARGUMENTS]
  *          ./permugen -r [seed_1] ... [seed_N] [OPTIONS] [ARGUMENTS]
@@ -297,7 +297,7 @@ usage ()
            "    `[XYZ]`:          to include characters X,Y,Z\n"
            "    `[a-f]`:          to include character range a,...,f\n"
            "    `\\N`:             to reuse (append) previous seeds, only in regular mode\n"
-           "                      where `N` is the index of a prior given seed, staring from 1\n"
+           "                      where `N` is the index of a prior given seed, starting from 1\n"
            "    character range shortcuts:\n"
            "      '\\d' for [0-9],  '\\l','\\a' for [a-z],  '\\u','\\U','\\A' for [A-Z]\n"
            "    inside these regex's, you might also use:\n"
