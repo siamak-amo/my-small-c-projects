@@ -235,11 +235,11 @@ struct Opt
  */
 /* unique append to seed functions */
 int cseed_uniappd (struct Seed *, const char *src, int len);
-void wseed_uniappd (const struct Opt *opt,
-                    struct Seed *, char *str_word);
+void wseed_uniappd (const struct Opt *, struct Seed *,
+                    char *str_word);
 /* simple seed regex handler function */
-void parse_seed_regex (const struct Opt *opt,
-                       struct Seed *, const char *str_regex);
+void parse_seed_regex (const struct Opt *, struct Seed *,
+                       const char *str_regex);
 
 #define _strcmp(s1, s2)                         \
   ((s1) != NULL && (s2) != NULL &&              \
@@ -516,6 +516,7 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
 int
 regular_perm (struct Opt *opt)
 {
+  int ret = 0;
   struct Seed *s = NULL;
   /* count of seed configurations */
   int seeds_count = (int) da_sizeof (opt->reg_seeds);
@@ -528,7 +529,7 @@ regular_perm (struct Opt *opt)
         goto _return; /* unreachable */
     }
 
-  int ret = __regular_perm (opt, depths, seeds_count);
+  ret = __regular_perm (opt, depths, seeds_count);
  _return:
   free (depths);
   return ret;
