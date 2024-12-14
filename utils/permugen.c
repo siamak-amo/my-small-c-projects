@@ -101,13 +101,12 @@
 #include <limits.h>
 #include <errno.h>
 
-static const char *__PROGNAME__ = "permugen";
-static const char *__PROGVERSION__ = "v2.2";
-
-/**
- *  using buffered_io.h for better performance
- *  this file should be available in ../libs
- */
+/**  Using header-only libraries
+ **  These files are available in `../libs`
+ **    buffered_io.h:  for better performance
+ **    unescape.h:     backslash interpretation
+ **    dyna.h:         dynamic array
+ **/
 #ifdef _USE_BIO
 #  ifndef _BMAX
 #    define _BMAX (sysconf (_SC_PAGESIZE) / 2) // 2kb
@@ -116,13 +115,14 @@ static const char *__PROGVERSION__ = "v2.2";
 #  include "buffered_io.h"
 #endif
 
-/* for backslash interpretation */
 #define UNESCAPE_IMPLEMENTATION
 #include "unescape.h"
 
-/* for dynamic array */
 #define DYNA_IMPLEMENTATION
 #include "dyna.h"
+
+static const char *__PROGNAME__ = "permugen";
+static const char *__PROGVERSION__ = "v2.2";
 
 /* default permutaiton depth (normal mode) */
 #define DEF_DEPTH 3
@@ -130,10 +130,10 @@ static const char *__PROGVERSION__ = "v2.2";
 #undef STR
 #define STR(var) #var
 
-#ifdef _DEBUG
+#ifdef _DEBUG /* debug macro */
 #undef dprintf
 #define dprintf(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
-/* use printd_arr */
+/* only use printd_arr */
 #  define printd_arr__H(arr, T, len, sep, end)  \
   for (int __idx = 0; __idx < len; __idx++) {   \
     dprintf (T"%s", arr[__idx],                 \
