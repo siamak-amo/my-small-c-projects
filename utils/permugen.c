@@ -69,6 +69,12 @@
  *    - First component: dev,prod,www  and  second and third: [0-9]
  *    ./permugen -r "{dev,prod,www}" "[0-9]" "[0-9]"
  *
+ *    To Reuse previously provided seeds (\n where n>=1)
+ *    - Equivalent to the previous example
+ *    ./permugen -r "{dev,prod,www}" "[0-9]" "\2"
+ *    - First component: dev,prod  and  second component also has www
+ *    ./permugen -r "{dev,prod}" "{www} \1"
+ *
  *    - First component: dev,prod  and  second component: from file
  *    ./permugen -r "{dev,prod}" /path/to/wordlist
  *    ./permugen -r -- "{dev,prod}" "-"           # read from stdin
@@ -290,6 +296,8 @@ usage ()
            "    `{word1,word2}`   to include 'word1' and 'word2'\n"
            "    `[XYZ]`:          to include characters X,Y,Z\n"
            "    `[a-f]`:          to include character range a,...,f\n"
+           "    `\\N`:             to reuse (append) previous seeds, only in regular mode\n"
+           "                      where `N` is the index of a prior given seed, staring from 1\n"
            "    character range shortcuts:\n"
            "      '\\d' for [0-9],  '\\l','\\a' for [a-z],  '\\u','\\U','\\A' for [A-Z]\n"
            "    inside these regex's, you might also use:\n"
