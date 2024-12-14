@@ -241,7 +241,7 @@ void parse_seed_regex (const struct Opt *opt,
 
 /* is non white-space ascii-printable */
 #define IS_ASCII_PR(c) (c >= 0x21 && c <= 0x7E)
-
+#define IS_NUMBER(c) (c >= '0' && c <= '9')
 
 void
 usage ()
@@ -1279,7 +1279,37 @@ parse_seed_regex (const struct Opt *opt,
 
           /* shortcuts */
         case '\\':
-          switch (*(++input))
+          input++;
+          /* check for \n where n is the index of a
+           * previously provided seed */
+          if (opt->_regular_mode && IS_NUMBER (*input))
+            {
+              char *p = NULL;
+              int n = strtol (input, &p, 10) - 1;
+              if (p)
+                input = p;
+              if (n >= 0 && n < opt->_regular_mode - 1)
+                { /* valid index */
+                  struct Seed *_src = opt->reg_seeds[n];
+                  /* append csseds */
+                  cseed_uniappd (s, _src->cseed, _src->cseed_len);
+                  /* append wseeds */
+                  for (da_idx i=0; i < da_sizeof(_src->wseed); ++i)
+                    {
+                      wseed_uniappd (opt, s, _src->wseed[i]);
+                    }
+                }
+              else
+                {
+                  if (n >= opt->_regular_mode)
+                    warnf ("seed index %d is out of bound", n+1);
+                  else if (n < 0)
+                    warnf ("invalid seed index");
+                }
+              goto End_of_Shortcut_Parsing;
+            }
+          /* when n is not a number */
+          switch (*input)
             {
             case 'd': /* digits 0-9 */
               cseed_uniappd (s, charseed_09.c, charseed_09.len);
