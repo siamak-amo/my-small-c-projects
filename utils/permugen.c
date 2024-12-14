@@ -1334,8 +1334,10 @@ parse_seed_regex (const struct Opt *opt,
               break;
 
             default:
-              break;
+              warnf ("invalid shortcut \\%c was ignored", *input);
             }
+        End_of_Shortcut_Parsing:
+          input++;
           break;
 
           /* file path */
