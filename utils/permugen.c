@@ -87,10 +87,10 @@
  *       -o permugen permugen.c
  *
  *  Options:
- *    - To compile without buffered IO (less performance):
- *        remove `-D_USE_BIO`
+ *    - To enable debug: pass `-D_DEBUG`
+ *    - To disable buffered IO (less performance): remove `-D_USE_BIO`
  *    - To change the default buffered IO buffer length:
- *        define `_BMAX="1024 * 1"`  (in bytes)
+ *      define `_BMAX="1024 * 1"`  (in bytes)
  *
  **/
 #include <stdio.h>
