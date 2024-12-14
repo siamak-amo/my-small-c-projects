@@ -82,9 +82,9 @@
  *
  *
  *  Compilation:
- *      cc -ggdb -O3 -Wall -Wextra -Werror \
- *         -D_USE_BIO -I../libs \
- *         -o permugen permugen.c
+ *    cc -ggdb -O3 -Wall -Wextra -Werror \
+ *       -D_USE_BIO -I../libs \
+ *       -o permugen permugen.c
  *
  *  Options:
  *    - To compile without buffered IO (less performance):
