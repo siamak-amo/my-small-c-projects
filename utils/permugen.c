@@ -19,7 +19,7 @@
  *  created on: 4 Sep 2024
  *
  *  Permugen, permutation generator utility
- *  to generate customizable permutations based on provided seeds
+ *  Generates customizable permutations based on provided seeds
  *
  *  Usage:  ./permugen [OPTIONS] [ARGUMENTS]
  *          ./permugen -r [seed_1] ... [seed_N] [OPTIONS] [ARGUMENTS]
@@ -1085,19 +1085,18 @@ main (int argc, char **argv)
   return 0;
 }
 
+/**
+ **  Internal regex functions
+ **  These functions parse argument(s) of `-s` and `-r`
+ **/
 
 /**
- *  internal regex functions
- *  these functions parse argument of `-s` and `-r`
- *  which is a simple regex to configure seeds
- */
-
-/** wseed regex parser
+ *  wseed regex parser
  *  inside `{...}` - comma-separated values
  *  it backslash interprets them when not disabled
  *  comma is not allowed in wseeds, use \x2c
  *  returns pointer to the end of regex
- */
+ **/
 const char *
 pparse_wseed_regex (const struct Opt *opt,
                     struct Seed *s, const char *p)
@@ -1146,7 +1145,8 @@ pparse_wseed_regex (const struct Opt *opt,
 #undef seedout
 }
 
-/** character seed regex parser
+/**
+ *  character seed regex parser
  *  inside `[...]`
  *  it does not backslash interpret @p
  *  returns pointer to the end of regex
@@ -1250,7 +1250,6 @@ path_resolution (const char *path, size_t len)
       tmp = malloc (len + 1);
       *((char *) mempcpy (tmp, path, len)) = '\0';
     }
-
   /* interpret `\<space>` */
   unescape (tmp);
 
@@ -1266,15 +1265,14 @@ path_resolution (const char *path, size_t len)
     }
 }
 
-
-  /**
-   *  to parse @input regex and store the output in @s
-   *  @input: " - [..\[..]  {..\{..} /path/to/file"
-   *  supported file path formats:
-   *    `/tmp/wl.txt`, `~/wl.txt`, `./wl.txt`, `../wl.txt`
-   *  `-` in @input means to read from stdin and inside [] means range
-   *  [...] is used for cseed and {...} for wseed
-   */
+/**
+ *  to parse @input regex and store the output in @s
+ *  @input: " - [..\[..]  {..\{..} /path/to/file"
+ *  supported file path formats:
+ *    `/tmp/wl.txt`, `~/wl.txt`, `./wl.txt`, `../wl.txt`
+ *  `-` in @input means to read from stdin and inside [] means range
+ *  [...] is used for cseed and {...} for wseed
+ **/
 void
 parse_seed_regex (const struct Opt *opt,
                   struct Seed *s, const char *input)
@@ -1288,59 +1286,66 @@ parse_seed_regex (const struct Opt *opt,
 
           /* shortcuts */
         case '\\':
-          input++;
-          /* check for \n where n is the index of a
-           * previously provided seed */
-          if (opt->_regular_mode && IS_NUMBER (*input))
-            {
-              char *p = NULL;
-              int n = strtol (input, &p, 10) - 1;
-              if (p)
-                input = p;
-              if (n >= 0 && n < opt->_regular_mode - 1)
-                { /* valid index */
-                  struct Seed *_src = opt->reg_seeds[n];
-                  /* append csseds */
-                  cseed_uniappd (s, _src->cseed, _src->cseed_len);
-                  /* append wseeds */
-                  for (da_idx i=0; i < da_sizeof(_src->wseed); ++i)
-                    {
-                      wseed_uniappd (opt, s, _src->wseed[i]);
-                    }
-                }
-              else
-                {
-                  if (n == opt->_regular_mode - 1)
-                    warnf ("circular append was ignored");
-                  else if (n >= opt->_regular_mode)
-                    warnf ("seed index %d is out of bound", n+1);
-                  else if (n < 0)
-                    warnf ("invalid seed index");
-                }
-              goto End_of_Shortcut_Parsing;
-            }
-          /* when n is not a number */
-          switch (*input)
-            {
-            case 'd': /* digits 0-9 */
-              cseed_uniappd (s, charseed_09.c, charseed_09.len);
-              break;
-            case 'l': /* lowercase letters */
-            case 'a':
-              cseed_uniappd (s, charseed_az.c, charseed_az.len);
-              break;
-            case 'U': /* uppercase letters */
-            case 'u':
-            case 'A':
-              cseed_uniappd (s, charseed_AZ.c, charseed_AZ.len);
-              break;
+          {
+            input++;
+            /**
+             *  check for \n where n is the index of a
+             *  previously provided seed
+             **/
+            if (opt->_regular_mode && IS_NUMBER (*input))
+              {
+                char *p = NULL;
+                int n = strtol (input, &p, 10) - 1;
+                if (p)
+                  input = p;
+                if (n >= 0 && n < opt->_regular_mode - 1)
+                  {
+                    /* valid index */
+                    struct Seed *_src = opt->reg_seeds[n];
+                    /* append csseds */
+                    cseed_uniappd (s, _src->cseed, _src->cseed_len);
+                    /* append wseeds */
+                    for (da_idx i=0; i < da_sizeof(_src->wseed); ++i)
+                      {
+                        wseed_uniappd (opt, s, _src->wseed[i]);
+                      }
+                  }
+                else
+                  { /* invalid index */
+                    if (n == opt->_regular_mode - 1)
+                      warnf ("circular append was ignored");
+                    else if (n >= opt->_regular_mode)
+                      warnf ("seed index %d is out of bound", n+1);
+                    else if (n < 0)
+                      warnf ("invalid seed index");
+                  }
+                goto End_of_Shortcut_Parsing;
+              }
 
-            default:
-              warnf ("invalid shortcut \\%c was ignored", *input);
-            }
-        End_of_Shortcut_Parsing:
-          input++;
-          break;
+            /* when n is not a number */
+            switch (*input)
+              {
+              case 'd': /* digits 0-9 */
+                cseed_uniappd (s, charseed_09.c, charseed_09.len);
+                break;
+              case 'l': /* lowercase letters */
+              case 'a':
+                cseed_uniappd (s, charseed_az.c, charseed_az.len);
+                break;
+              case 'U': /* uppercase letters */
+              case 'u':
+              case 'A':
+                cseed_uniappd (s, charseed_AZ.c, charseed_AZ.len);
+                break;
+
+              default:
+                warnf ("invalid shortcut \\%c was ignored", *input);
+              }
+
+          End_of_Shortcut_Parsing:
+            input++;
+            break;
+          }
 
           /* file path */
         case '.':
