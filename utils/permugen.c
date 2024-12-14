@@ -102,7 +102,7 @@
 #include <errno.h>
 
 static const char *__PROGNAME__ = "permugen";
-static const char *__PROGVERSION__ = "v2.0";
+static const char *__PROGVERSION__ = "v2.2";
 
 /**
  *  using buffered_io.h for better performance
