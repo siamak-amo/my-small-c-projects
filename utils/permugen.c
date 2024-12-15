@@ -181,13 +181,14 @@ static const struct char_seed charseed_09 = {"0123456789", 10};
  */
 struct Seed
 {
-  /* char seed */
+  /* Character seed */
   char *cseed;
   int cseed_len;
-  /* word seed, dynamic array */
+
+  /* Word seed, dynamic array */
   char **wseed;
 };
-#define CSEED_MAXLEN 256
+#define CSEED_MAXLEN 256 /* cseed_len max length */
 
 /* to make new seed and dynamic seed array */
 static inline struct Seed * mk_seed (int c_len, int w_len);
@@ -717,17 +718,17 @@ init_opt (int argc, char **argv, struct Opt *opt)
     action;                                                             \
   }
 
-  int idx = 0, flag, using_default_seed = 1;
+  int idx = 0, using_default_seed = 1;
   while (1)
     {
       /* we use 0,1,2,... as `helper` options and only to use getopt */
-      flag = getopt_long (argc, argv,
-                          "s:S:o:a:p:d:f:D:0:1:2:3:4:5:hrEe", lopts, &idx);
-        if (flag == -1)
-          {
-            /* End of Options */
-            break;
-          }
+      const char *lopt_cstr = "s:S:o:a:p:d:f:D:0:1:2:3:4:5:hrEe";
+      int flag = getopt_long (argc, argv, lopt_cstr, lopts, &idx);
+      if (flag == -1)
+        {
+          /* End of Options */
+          break;
+        }
 
       switch (flag)
         {
