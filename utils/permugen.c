@@ -205,24 +205,24 @@ static inline struct Seed * seeddup (const struct Seed *s);
  */
 struct Opt
 {
-  /* main seed configuration */
-  struct Seed *global_seeds;
-
-  /* regular permutation */
-  int _regular_mode;
-  struct Seed **reg_seeds; /* dynamic array */
-
-  /* output format */
+  /* General configuration */
   int escape_disabled; /* to disable backslash interpretation */
-  char *__pref; /* prefix */
-  char *__suff; /* suffix */
-  char *__sep; /* separator */
-
-  /* output conf */
-  FILE *outf; /* output file */
   int from_depth; /* min depth */
   int to_depth; /* max depth */
+  
+  /* Seed Configuration (Normal mode) */
+  struct Seed *global_seeds;
 
+  /* Seed Configuration (Regular mode) */
+  int _regular_mode; /* equal to `1 + len(reg_seeds)` */
+  struct Seed **reg_seeds; /* dynamic array of Seed struct */
+
+  /* Output Configuration */
+  FILE *outf; /* output file */
+  char *prefix;
+  char *suffix;
+  char *separator; /* between components of permutations */
+  
   /* buffered_io */
 #ifdef _USE_BIO
   BIO_t *bio;
@@ -372,8 +372,8 @@ perm (const int depth, const struct Opt *opt)
 
  Perm_Loop: /* O(seeds^depth) */
   int i = 0;
-  if (opt->__pref)
-    Pfputs (opt->__pref, opt);
+  if (opt->prefix)
+    Pfputs (opt->prefix, opt);
  Print_Loop: /* O(depth) */
   {
     int idx = idxs[i];
@@ -392,13 +392,13 @@ perm (const int depth, const struct Opt *opt)
   }
   if (i < depth)
     {
-      if (opt->__sep)
-        Pfputs (opt->__sep, opt);
+      if (opt->separator)
+        Pfputs (opt->separator, opt);
       goto Print_Loop;
     }
   /* End of Printing the current permutation */
-  if (opt->__suff)
-    Pputs (opt->__suff, opt);
+  if (opt->suffix)
+    Pputs (opt->suffix, opt);
   else
     Pputln (opt);
 
@@ -445,8 +445,8 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
    */
  Reg_Perm_Loop:
   int i = 0;
-  if (opt->__pref)
-    Pfputs (opt->__pref, opt);
+  if (opt->prefix)
+    Pfputs (opt->prefix, opt);
 
  Print_Loop: /* O(S_i) */
   {
@@ -467,13 +467,13 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
   }
   if (i < depth)
     {
-      if (opt->__sep)
-        Pfputs (opt->__sep, opt);
+      if (opt->separator)
+        Pfputs (opt->separator, opt);
       goto Print_Loop;
     }
   /* End of Printing the current permutation */
-  if (opt->__suff)
-    Pputs (opt->__suff, opt);
+  if (opt->suffix)
+    Pputs (opt->suffix, opt);
   else
     Pputln (opt);
 
@@ -755,13 +755,13 @@ init_opt (int argc, char **argv, struct Opt *opt)
           opt->to_depth = atoi (optarg);
           break;
         case 'p': /* delimiter */
-          opt->__sep = optarg;
+          opt->separator = optarg;
           break;
         case '3': /* prefix */
-          opt->__pref = optarg;
+          opt->prefix = optarg;
           break;
         case '4': /* suffix */
-          opt->__suff = optarg;
+          opt->suffix = optarg;
           break;
         case '1': /* depth from */
           opt->from_depth = atoi (optarg);
@@ -771,19 +771,19 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
         case 'f': /* format */
           {
-            opt->__pref = optarg;
+            opt->prefix = optarg;
             for (char *p = optarg; *p != '\0'; ++p)
               {
                 if (*p == ' ')
                   {
                     *(p++) = '\0';
                     if (*p != '\0')
-                      opt->__suff = p;
+                      opt->suffix = p;
                     break;
                   }
               }
-            if (opt->__pref && opt->__pref[0] == '\0')
-              opt->__pref = NULL;
+            if (opt->prefix && opt->prefix[0] == '\0')
+              opt->prefix = NULL;
             break;
           }
         case 'S': /* wseed file / stdin */
@@ -915,12 +915,12 @@ init_opt (int argc, char **argv, struct Opt *opt)
   /* interpreting backslash character(s) */
   if (!opt->escape_disabled)
     {
-      if (opt->__pref != NULL)
-        unescape (opt->__pref);
-      if (opt->__suff != NULL)
-        unescape (opt->__suff);
-      if (opt->__sep != NULL)
-        unescape (opt->__sep);
+      if (opt->prefix != NULL)
+        unescape (opt->prefix);
+      if (opt->suffix != NULL)
+        unescape (opt->suffix);
+      if (opt->separator != NULL)
+        unescape (opt->separator);
     }
 
   return 0;
@@ -1028,8 +1028,8 @@ main (int argc, char **argv)
     }
   if (opt.escape_disabled)
     dprintf ("- backslash interpretation is disabled\n");
-  if (opt.__sep)
-    dprintf ("* delimiter: `%s`\n", opt.__sep);
+  if (opt.separator)
+    dprintf ("* delimiter: `%s`\n", opt.separator);
   dprintf ("* permutations:\n");
 
 
