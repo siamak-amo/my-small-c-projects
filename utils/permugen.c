@@ -209,7 +209,7 @@ struct Opt
   int escape_disabled; /* to disable backslash interpretation */
   int from_depth; /* min depth */
   int to_depth; /* max depth */
-  
+
   /* Seed Configuration (Normal mode) */
   struct Seed *global_seeds;
 
@@ -222,7 +222,7 @@ struct Opt
   char *prefix;
   char *suffix;
   char *separator; /* between components of permutations */
-  
+
   /* buffered_io */
 #ifdef _USE_BIO
   BIO_t *bio;
