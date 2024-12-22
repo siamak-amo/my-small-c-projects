@@ -80,6 +80,10 @@
  *    ./permugen -r "{dev,prod}" /path/to/wordlist
  *    ./permugen -r -- "{dev,prod}" "-"           # read from stdin
  *
+ *    - Custom prefix and suffix in regular mode
+ *      The first component uses [] and the second one uses {}
+ *    ./permugen -r "([) {One} (])"  "({)  {Two}  (})"
+ *
  *
  *  Compilation:
  *    cc -ggdb -O3 -Wall -Wextra -Werror \
@@ -1237,6 +1241,53 @@ pparse_cseed_regex (struct Seed *s, const char *p)
 #undef seedout
 }
 
+static const char *
+pparse_format_regex (const struct Opt *opt,
+                     struct Seed *s, const char *p)
+{
+  const char *start = NULL;
+  const char *prev_p = p;
+  if (!opt->_regular_mode)
+    {
+      warnf ("use --pref and --suff in normal mode");
+      while (*p != '\0')
+        {
+          prev_p = p++;
+          if (*prev_p != '\\' && *p == ')')
+            break;
+        }
+      return p;
+    }
+  if (*p != ')' && *p != '\0')
+    start = p;
+  else
+    return p;
+
+  while (*p != '\0')
+    {
+      prev_p = p++;
+      if (*prev_p != '\\' && *p == ')')
+        break;
+    }
+
+  int len = p - start;
+  char *tmp = malloc (len);
+  *((char *) mempcpy (tmp, start, len)) = 0;
+  if (!opt->escape_disabled)
+    unescape (tmp);
+
+  if (s->pref == NULL)
+    s->pref = tmp;
+  else if (s->suff == NULL)
+    s->suff = tmp;
+  else
+    {
+      free (s->suff);
+      s->suff = tmp;
+    }
+  return p;
+}
+
 /**
  *  resolves: `~/` , `/../` , `/./`
  *  path is not necessarily null-terminated
@@ -1412,6 +1463,13 @@ parse_seed_regex (const struct Opt *opt,
           if (prev_p != '\\')
             {
               input = pparse_wseed_regex (opt, s, ++input);
+            }
+          break;
+
+        case '(':
+          if (prev_p != '\\')
+            {
+              input = pparse_format_regex (opt, s, ++input);
             }
           break;
 
