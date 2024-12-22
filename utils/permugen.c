@@ -653,28 +653,20 @@ wseed_fileappd (const struct Opt *opt, struct Seed *s, FILE *f)
  *  only if it could open @pathname changes @dest[0]
  *  @mode is the same as fopen mode
  */
-void
-safe_fopen (FILE **dest,
-            const char *restrict pathname,
-            const char *restrict mode)
+FILE *
+safe_fopen (const char *restrict pathname, const char *restrict mode)
 {
-  FILE *__tmp;
+  FILE *tmp;
   if (!pathname || !mode)
     {
       warnf ("invalud filename");
-      return;
+      return NULL;
     }
-  if (!(__tmp = fopen (pathname, mode)))
+  if ((tmp = fopen (pathname, mode)) == NULL)
     {
       warnf ("fould not open file -- (%s:%s)", mode, pathname);
-      return;
     }
-  if (ferror (__tmp) || feof (__tmp))
-    {
-      warnf ("file is not usable -- (%s)", pathname);
-      return;
-    }
-  *dest = __tmp;
+  return tmp;
 }
 
 /* CLI options, getopt */
@@ -752,10 +744,10 @@ init_opt (int argc, char **argv, struct Opt *opt)
           opt->escape_disabled = 0;
           break;
         case 'o': /* outout */
-          safe_fopen (&opt->outf, optarg, "w");
+          opt->outf = safe_fopen (optarg, "w");
           break;
         case 'a': /* append */
-          safe_fopen (&opt->outf, optarg, "a");
+          opt->outf = safe_fopen (optarg, "a");
           break;
         case 'd': /* depth */
           opt->from_depth = atoi (optarg);
@@ -802,7 +794,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
             FILE *wseed_f = stdin;
             /* using optarg value as filepath otherwise stdin */
             if (!_strcmp (optarg, "-"))
-              safe_fopen (&wseed_f, optarg, "r");
+              wseed_f = safe_fopen (optarg, "r");
 
             /* read from file and append to wseed */
             wseed_fileappd (opt, opt->global_seeds, wseed_f);
