@@ -306,9 +306,8 @@ usage ()
            "      '\\, or \\x2c'      for comma, alternatively use --raw-xxx in normal mode\n"
            "      '\\xNN or \\0HHH'   hex and octal byte, for example: \\x5c for backslash\n"
            "                        see the raw section for more details\n"
-           "    `-`:              to read seeds from stdin, it will continue reading\n"
-           "                      until an empty line, and then the word `EOF`\n"
-           "                      using Ctrl-D in regular mode, breaks the other dash options\n"
+           "    `-`:              to read word seeds from the stdin up until Ctrl-D\n"
+           "                      equivalently, an empty line and then the word `EOF`\n"
            "    `/path/to/file`:  to read words from a file (line by line)\n"
            "                      lines with '#' will be ignored\n"
            "    Example:\n"
@@ -602,8 +601,19 @@ wseed_fileappd (const struct Opt *opt, struct Seed *s, FILE *f)
 
   if (!f || ferror (f) || feof (f))
     {
-      warnf ("reading from file failed -- file is not usable");
-      return;
+      if (f == stdin)
+        {
+          if (freopen ("/dev/tty", "r", stdin) == NULL)
+            {
+              warnf ("could not read from stdin -- %s", strerror (errno));
+              return;
+            }
+        }
+      else
+        {
+          warnf ("could not read from file -- %s", strerror (errno));
+          return;
+        }
     }
   if (f == stdin && isatty (fileno (f)))
     fprintf (stderr, "Reading words until EOF:\n");
