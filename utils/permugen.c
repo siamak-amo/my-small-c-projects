@@ -1297,7 +1297,7 @@ pparse_format_regex (const struct Opt *opt,
     }
 
   int len = p - start;
-  char *tmp = malloc (len);
+  char *tmp = malloc (len + 1);
   *((char *) mempcpy (tmp, start, len)) = 0;
   if (!opt->escape_disabled)
     unescape (tmp);
