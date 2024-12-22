@@ -1279,6 +1279,7 @@ pparse_format_regex (const struct Opt *opt,
   const char *prev_p = p;
   if (!opt->_regular_mode)
     {
+      /* not supported in normal mode */
       warnf ("use --pref and --suff in normal mode");
       while (*p != '\0')
         {
@@ -1301,6 +1302,7 @@ pparse_format_regex (const struct Opt *opt,
     }
 
   int len = p - start;
+  /* this must be freed in free_seed function */
   char *tmp = malloc (len + 1);
   *((char *) mempcpy (tmp, start, len)) = 0;
   if (!opt->escape_disabled)
@@ -1312,6 +1314,7 @@ pparse_format_regex (const struct Opt *opt,
     s->suff = tmp;
   else
     {
+      /* just overwrite the latest suffix */
       free (s->suff);
       s->suff = tmp;
     }
