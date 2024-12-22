@@ -1359,14 +1359,9 @@ parse_seed_regex (const struct Opt *opt,
 
           /* file path */
         case '.':
-          if (input[1] == '/' ||
-              (input[1] == '.' && input[2] == '/'))
-            goto File_Path_Parsing;
-          break;
         case '/':
         case '~':
           {
-          File_Path_Parsing:
             const char *__input = input;
             size_t inplen = 0;
             for (; *__input != '\0'; __input++)
