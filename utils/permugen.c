@@ -1055,6 +1055,10 @@ main (int argc, char **argv)
           printd_arr (s->cseed, "`%c`", s->cseed_len);
           dprintf ("      ");
           printd_arr (s->wseed, "`%s`", (int)da_sizeof (s->wseed));
+          if (s->pref)
+            dprintf ("      prefix = \"%s\"\n", s->pref);
+          if (s->suff)
+            dprintf ("      suffix = \"%s\"\n", s->suff);
           dprintf ("    }\n");
         }
       dprintf ("  }\n");
