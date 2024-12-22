@@ -192,15 +192,27 @@ struct Seed
 
   /* Word seed, dynamic array */
   char **wseed;
+
+  /* Only in regular mode */
+  char *pref;
+  char *suff;
 };
 #define CSEED_MAXLEN 256 /* cseed_len max length */
 
 /* to make new seed and dynamic seed array */
 static inline struct Seed * mk_seed (int c_len, int w_len);
 static inline void free_seed (struct Seed *s);
+/**
+ *  to make a duplicate seed of @s
+ *  must be freed by the free_seed function
+ *  this does not strdup the fields pref and suff of @s
+ *  and they must be allocated via malloc
+ */
 static inline struct Seed * seeddup (const struct Seed *s);
 #define mk_seed_arr(n) da_newn (struct Seed *, n)
 #define drop_seeds(seed_ptr) do {               \
+    seed_ptr->pref = NULL;                      \
+    seed_ptr->suff = NULL;                      \
     seed_ptr->cseed_len = 0;                    \
     da_drop (seed_ptr->wseed);                  \
   } while (0)
@@ -949,6 +961,8 @@ seeddup (const struct Seed *s)
   int wlen = da_sizeof (s->wseed);
 
   struct Seed *res = mk_seed (clen, wlen);
+  res->pref = s->pref;
+  res->suff = s->suff;
   res->cseed_len = clen;
   memcpy (res->cseed, s->cseed, clen);
   res->wseed = da_dup (s->wseed);
@@ -961,6 +975,10 @@ free_seed (struct Seed *s)
 {
   if (!s)
     return;
+  if (s->pref)
+    free (s->pref);
+  if (s->suff)
+    free (s->suff);
   if (s->cseed)
     free (s->cseed);
   if (s->wseed)
