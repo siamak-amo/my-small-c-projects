@@ -160,7 +160,8 @@ static const char *__PROGVERSION__ = "v2.2";
 #undef warnf
 #define warnf(format, ...) \
   fprintf (stderr, "%s: "format"\n", __PROGNAME__, ##__VA_ARGS__)
-
+#define warnfun(format, ...) \
+  warnf ("%s failed -- "format, __func__, ##__VA_ARGS__)
 
 struct char_seed
 {
@@ -616,7 +617,16 @@ wseed_fileappd (const struct Opt *opt, struct Seed *s, FILE *f)
         }
     }
   if (f == stdin && isatty (fileno (f)))
-    fprintf (stderr, "Reading words until EOF:\n");
+    {
+      if (opt->_regular_mode)
+        {
+          fprintf (stderr,
+                   "Reading words for the seed #%d until EOF:\n",
+                   opt->_regular_mode);
+        }
+      else
+        fprintf (stderr, "Reading words until EOF:\n");
+    }
 
   while (1)
     {
@@ -1240,7 +1250,10 @@ path_resolution (const char *path, size_t len)
     {
       const char* home = getenv ("HOME");
       if (!home)
-        return NULL;
+        {
+          warnfun ("$HOME is null");
+          return NULL;
+        }
       tmp = malloc (len + strlen (home) + 1);
       char *p;
       p = mempcpy (tmp, home, strlen (home));
@@ -1262,6 +1275,7 @@ path_resolution (const char *path, size_t len)
     }
   else
     {
+      warnfun ("%s (%s)", strerror (errno), tmp);
       free (tmp);
       return NULL;
     }
