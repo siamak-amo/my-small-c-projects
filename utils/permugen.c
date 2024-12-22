@@ -126,7 +126,7 @@
 #include "dyna.h"
 
 static const char *__PROGNAME__ = "permugen";
-static const char *__PROGVERSION__ = "v2.2";
+static const char *__PROGVERSION__ = "v2.4";
 
 /* default permutaiton depth (normal mode) */
 #define DEF_DEPTH 3
