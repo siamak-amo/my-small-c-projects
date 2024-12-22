@@ -1379,18 +1379,17 @@ parse_seed_regex (const struct Opt *opt,
             if (*__input != '\0')
               __input++;
 
-            char *path;
-            FILE *f = NULL;
-            if (!(path = path_resolution (input, inplen)))
-              goto End_of_File_Path;
-            safe_fopen (&f, path, "r");
-            if (f)
+            char *path = path_resolution (input, inplen);
+            if (path)
               {
-                wseed_fileappd (opt, s, f);
-                if (f != stdin)
-                  fclose (f);
+                FILE *f = safe_fopen (path, "r");
+                if (f)
+                  {
+                    wseed_fileappd (opt, s, f);
+                    if (f != stdin)
+                      fclose (f);
+                  }
               }
-          End_of_File_Path:
             input = __input; /* update the input pointer */
             break;
           }
