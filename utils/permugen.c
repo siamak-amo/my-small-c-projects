@@ -462,13 +462,16 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
    */
  Reg_Perm_Loop:
   int i = 0;
+  struct Seed *current_seed;
   if (opt->prefix)
     Pfputs (opt->prefix, opt);
 
  Print_Loop: /* O(S_i) */
   {
     int idx = idxs[i];
-    struct Seed *current_seed = s[i];
+    current_seed = s[i];
+    if (current_seed->pref)
+      Pfputs (current_seed->pref, opt);
     if (idx < current_seed->cseed_len)
       {
         /* range of character seeds */
@@ -482,6 +485,8 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
       }
     i++;
   }
+  if (current_seed->suff)
+    Pfputs (current_seed->suff, opt);
   if (i < depth)
     {
       if (opt->separator)
