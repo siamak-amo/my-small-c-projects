@@ -327,7 +327,10 @@ usage ()
            "                      equivalently, an empty line and then the word `EOF`\n"
            "    `/path/to/file`:  to read words from a file (line by line)\n"
            "                      lines with '#' will be ignored\n"
-           "    Example:\n"
+           "    `(pref) (suff)`:  (in regular mode) to add custom prefix and suffix\n"
+           "                      for parenthesis, use: \\( and \\)  or  \\x28 and \\x29\n"
+           "\n"
+           "    Examples:\n"
            "      to include a,b and 0,...,9 and also words `foo` and `bar`:\n"
            "       \'[ab0-9] {foo,bar}\'  or equivalently  \'[ab] {foo,bar} [0-9]\'\n"
            "      to also include words from wordlist.txt:\n"
@@ -1357,7 +1360,7 @@ path_resolution (const char *path, size_t len)
 
 /**
  *  to parse @input regex and store the output in @s
- *  @input: " - [..\[..]  {..\{..} /path/to/file"
+ *  @input: "(prefix) [Cseed] {Wseed} /path/to/file (suffix)"
  *  supported file path formats:
  *    `/tmp/wl.txt`, `~/wl.txt`, `./wl.txt`, `../wl.txt`
  *  `-` in @input means to read from stdin and inside [] means range
