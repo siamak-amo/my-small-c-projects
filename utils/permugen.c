@@ -26,8 +26,9 @@
  *    see help function by `-h` option, for more details:
  *    $ ./permugen -h
  *
+ *
  *  Usage Examples:
- *   Normal permutation:
+ *  * Normal mode:
  *     Alphanumeric permutations:
  *     $ permugen                                  # a-z and 0-9 of length 3
  *     $ permugen -s "\d"                          # only digits 0-9
@@ -58,8 +59,9 @@
  *     - Suffix and Prefix (--format or --suff, --pref)
  *     $ permugen --format "www. .com"
  *
- *   Regular permutation
- *   To manually specify components of the output
+ *
+ *  * Regular Mode
+ *    To manually specify components of the output
  *     Basic Examples:
  *     - Permutations of {0,1,2}x{AA,BB} (cartesian product)
  *     $ permugen -r "[0-2]" "{AA,BB}"
@@ -93,7 +95,6 @@
  *    - To disable buffered IO (less performance): remove `-D_USE_BIO`
  *    - To change the default buffered IO buffer length:
  *      define `_BMAX="1024 * 1"`  (in bytes)
- *
  **/
 #include <stdio.h>
 #include <stdlib.h>
@@ -199,7 +200,7 @@ struct Seed
 
 /* to make new seed and dynamic seed array */
 static inline struct Seed * mk_seed (int c_len, int w_len);
-static inline void free_seed (struct Seed *s);
+#define mk_seed_arr(n) da_newn (struct Seed *, n)
 /**
  *  to make a duplicate seed of @s
  *  must be freed by the free_seed function
@@ -207,12 +208,16 @@ static inline void free_seed (struct Seed *s);
  *  and they must be allocated via malloc
  */
 static inline struct Seed * seeddup (const struct Seed *s);
-#define mk_seed_arr(n) da_newn (struct Seed *, n)
+static inline void free_seed (struct Seed *s);
+/**
+ *  this macro is used to zero out temporary seeds
+ *  this does not free any memory, to free memory use free_seed
+ */
 #define drop_seeds(seed_ptr) do {               \
-    seed_ptr->pref = NULL;                      \
-    seed_ptr->suff = NULL;                      \
-    seed_ptr->cseed_len = 0;                    \
-    da_drop (seed_ptr->wseed);                  \
+    (seed_ptr)->pref = NULL;                    \
+    (seed_ptr)->suff = NULL;                    \
+    (seed_ptr)->cseed_len = 0;                  \
+    da_drop ((seed_ptr)->wseed);                \
   } while (0)
 
 /**
