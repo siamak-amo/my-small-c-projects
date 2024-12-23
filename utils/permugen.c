@@ -19,21 +19,20 @@
  *  created on: 4 Sep 2024
  *
  *  Permugen, permutation generator utility
- *  Generates customizable permutations based on provided seeds
+ *  Generates customizable permutations from specified seeds
  *
  *  Usage:  ./permugen [OPTIONS] [ARGUMENTS]
  *          ./permugen -r [seed_1] ... [seed_N] [OPTIONS] [ARGUMENTS]
  *    see help function by `-h` option, for more details:
  *    $ ./permugen -h
  *
- *
  *  Some usage examples:
  *   Normal permutation:
  *    - Alphanumeric permutations
- *    ./permugen                      # a-z and 0-9 of length 3
- *    ./permugen -s "\d"              # only digits 0-9
- *    ./permugen -s "\d \u"           # 0-9 and A-Z
- *    ./permugen -s "\d \u \l"        # 0-9 and A-Z and a-z
+ *    ./permugen                                  # a-z and 0-9 of length 3
+ *    ./permugen -s "\d"                          # only digits 0-9
+ *    ./permugen -s "\d \u"                       # 0-9 and A-Z
+ *    ./permugen -s "\d \u \l"                    # 0-9 and A-Z and a-z
  *
  *    - To make permutations of A,B,C, and a,...,f
  *    ./permugen -s "[ABC] [a-f]" -d4             # of length 4
@@ -59,8 +58,9 @@
  *      to disable backslash interpretation (default) use `-E`
  *    ./permugen --delim ", "                     # comma separated
  *    ./permugen --delim "\t"                     # tab separated
+ *
  *    # using `www.` as prefix and `.com` as suffix
- *    # you may use --prefix, --suffix for more control
+ *    # you may use --prefix and --suffix for better control
  *    ./permugen --format "www. .com"
  *
  *   Regular permutation:
@@ -107,7 +107,7 @@
 
 /**  Using header-only libraries
  **  These files are available in `../libs`
- **    buffered_io.h:  for better performance
+ **    buffered_io.h:  to improve performance
  **    unescape.h:     backslash interpretation
  **    dyna.h:         dynamic array
  **/
@@ -172,9 +172,9 @@ struct char_seed
   const char *c;
   int len;
 };
-static const struct char_seed charseed_az = {"abcdefghijklmnopqrstuvwxyz", 26};
-static const struct char_seed charseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
-static const struct char_seed charseed_09 = {"0123456789", 10};
+const struct char_seed charseed_az = {"abcdefghijklmnopqrstuvwxyz", 26};
+const struct char_seed charseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
+const struct char_seed charseed_09 = {"0123456789", 10};
 
 /**
  *  seeds container
