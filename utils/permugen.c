@@ -26,63 +26,61 @@
  *    see help function by `-h` option, for more details:
  *    $ ./permugen -h
  *
- *  Some usage examples:
+ *  Usage Examples:
  *   Normal permutation:
- *    - Alphanumeric permutations
- *    ./permugen                                  # a-z and 0-9 of length 3
- *    ./permugen -s "\d"                          # only digits 0-9
- *    ./permugen -s "\d \u"                       # 0-9 and A-Z
- *    ./permugen -s "\d \u \l"                    # 0-9 and A-Z and a-z
+ *     Alphanumeric permutations:
+ *     $ permugen                                  # a-z and 0-9 of length 3
+ *     $ permugen -s "\d"                          # only digits 0-9
+ *     $ permugen -s "\d \u"                       # 0-9 and A-Z
+ *     $ permugen -s "\d \u \l"                    # 0-9 and A-Z and a-z
  *
- *    - To make permutations of A,B,C, and a,...,f
- *    ./permugen -s "[ABC] [a-f]" -d4             # of length 4
- *    ./permugen -s "[ABCa-f]" -d4                # equivalent
- *    ./permugen -s "[ABCa-f]" -D4                # depth range 1,...,4
- *    ./permugen --min-depth 3 --max-depth 5      # depth range 3,...,5
+ *     Permutations of A,B,C, and a,...,f:
+ *     $ permugen -s "[ABC] [a-f]" -d4             # of length 4
+ *     $ permugen -s "[ABCa-f]" -d4                # equivalent
+ *     $ permugen -s "[ABCa-f]" -D4                # depth range 1,...,4
+ *     $ permugen --min-depth 3 --max-depth 5      # depth range 3,...,5
  *
- *    - To include word(s) in permutations
- *    ./permugen -s "{foo,bar}"
- *    ./permugen -s "[0-4] {foo,bar,baz}"         # to also include 0,...,4
- *    ./permugen -s "[xyz0-4] {foo,bar,baz}"      # to also include x,y,z
- *    ./permugen -s "[0-4] [x-z] {foo,bar,baz}"   # equivalent
+ *     To include word(s) in permutations
+ *     $ permugen -s "{foo,bar}"
+ *     $ permugen -s "/path/to/wlist.txt"          # or use `-S`
+ *     $ permugen -s "-"                           # read from stdin
  *
- *    - To include words from file
- *    ./permugen -s "/path/to/file"               # or use -S
- *    ./permugen -s "-"                           # read from stdin
- *    # include 0 to 5, ABC and also read from stdin
- *    ./permugen -s "[0-5] - {ABC}"
- *    ./permugen -s "[0-5] {ABC} /path/to/file"   # read from file
- *    ./permugen -s "- [0-5]{ABC} /path/to/file"  # also read from stdin
+ *     Combined Examples:
+ *     $ permugen -s "{foo,bar} [x-z] [0-3]"       # foo,bar,x,y,z,0,1,2,3
+ *     $ permugen -s "{foo,bar} [x-z0-3]"          # equivalent
+ *     $ permugen -s "{foo,bar} [x-z0-3] -"        # also read from stdin
  *
- *    - Output formatting (separator `-p` and format `-f`)
- *      to disable backslash interpretation (default) use `-E`
- *    ./permugen --delim ", "                     # comma separated
- *    ./permugen --delim "\t"                     # tab separated
+ *     Output Format:
+ *     - Permutation components separator (-p, --delim)
+ *     $ permugen -p ", "                          # comma separated
+ *     $ permugen -p "\t"                          # tab separated
  *
- *    # using `www.` as prefix and `.com` as suffix
- *    # you may use --prefix and --suffix for better control
- *    ./permugen --format "www. .com"
+ *     - Suffix and Prefix (--format or --suff, --pref)
+ *     $ permugen --format "www. .com"
  *
- *   Regular permutation:
- *    Argument(s) of `-r` are the same as `-s`
- *    - First component: [0-2]  and  second component: AA,BB
- *    ./permugen -r "[0-2]" "{AA,BB}"
- *    - First component: dev,prod,www  and  second and third: [0-9]
- *    ./permugen -r "{dev,prod,www}" "[0-9]" "[0-9]"
+ *   Regular permutation
+ *   To manually specify components of the output
+ *     Basic Examples:
+ *     - Permutations of {0,1,2}x{AA,BB} (cartesian product)
+ *     $ permugen -r "[0-2]" "{AA,BB}"
  *
- *    To Reuse previously provided seeds (\n where n>=1)
- *    - Equivalent to the previous example
- *    ./permugen -r "{dev,prod,www}" "[0-9]" "\2"
- *    - First component: dev,prod  and  second component also has www
- *    ./permugen -r "{dev,prod}" "{www} \1"
+ *     - Permutations of {dev,prod}x{admin,<wordlist.txt>}
+ *     $ permugen -r "{dev,prod}" "{admin} /path/to/wordlist.txt"
+ *     - To also use `.` as separator
+ *     $ permugen -p. -r "{dev,prod}" "{admin} /path/to/wordlist.txt"
  *
- *    - First component: dev,prod  and  second component: from file
- *    ./permugen -r "{dev,prod}" /path/to/wordlist
- *    ./permugen -r -- "{dev,prod}" "-"           # read from stdin
+ *     - To Reuse previously provided seeds (\N where N>=1)
+ *       Permutations of {dev,prod}x{2,3}x{2,3}
+ *     $ permugen -r "{dev,prod}" "[2-3]" "\2"
+ *     - Permutation of {dev,prod}x{www,dev,prod} (dot separated)
+ *     $ permugen -p. -r "{dev,prod}" "{www} \1"
  *
- *    - Custom prefix and suffix in regular mode
- *      The first component uses [] and the second one uses {}
- *    ./permugen -r "([) {One} (])"  "({)  {Two}  (})"
+ *     Custom prefix and suffix:
+ *     - The first component has `xxx` as suffix and
+ *       the second component has `yyy` as prefix
+ *     $ permugen -r "() {One} (xxx)"  "(yyy)  {Two}  ()"
+ *     - The first component uses {} and the second one uses ()
+ *     $ permugen -r "({) {One} (})"  "(\()  {Two}  (\))"
  *
  *
  *  Compilation:
