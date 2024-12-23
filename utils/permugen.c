@@ -1289,16 +1289,13 @@ pparse_format_regex (const struct Opt *opt,
         }
       return p;
     }
-  if (*p != ')' && *p != '\0')
-    start = p;
-  else
-    return p;
+  start = p;
 
   while (*p != '\0')
     {
-      prev_p = p++;
       if (*prev_p != '\\' && *p == ')')
         break;
+      prev_p = p++;
     }
 
   int len = p - start;
