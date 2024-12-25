@@ -176,12 +176,10 @@ const struct char_seed charseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 const struct char_seed charseed_09 = {"0123456789", 10};
 
 /**
- *  seeds container
- *  wseed within this struct is dynamic array
- *  only use the following functions and macros
- *  and `xxx_uniappd` and `parse_seed_regex`
- *  to manipulate this type
+ *  Seeds container
  *  to get the length of wseed, use `da_sizeof`
+ *  cseed,pref,suff must be allocated using malloc
+ *  wseed must be allocated using da_new (dyna.h)
  */
 struct Seed
 {
@@ -198,20 +196,19 @@ struct Seed
 };
 #define CSEED_MAXLEN 256 /* cseed_len max length */
 
-/* to make new seed and dynamic seed array */
+/* To make new seed and dynamic seed array */
 static inline struct Seed * mk_seed (int c_len, int w_len);
 #define mk_seed_arr(n) da_newn (struct Seed *, n)
 /**
- *  to make a duplicate seed of @s
- *  must be freed by the free_seed function
- *  this does not strdup the fields pref and suff of @s
- *  and they must be allocated via malloc
+ *  To make a duplicate seed of @s (must be freed by free_seed)
+ *  This does NOT strdup the fields pref and suff of @s
  */
 static inline struct Seed * seeddup (const struct Seed *s);
+/* To free the seed @s, allocated by the mk_seed function */
 static inline void free_seed (struct Seed *s);
 /**
- *  this macro is used to zero out temporary seeds
- *  this does not free any memory, to free memory use free_seed
+ *  This macro is used to zero out temporary seeds
+ *  This does not free any memory, to free memory use free_seed
  */
 #define drop_seeds(seed_ptr) do {               \
     (seed_ptr)->pref = NULL;                    \
@@ -220,10 +217,7 @@ static inline void free_seed (struct Seed *s);
     da_drop ((seed_ptr)->wseed);                \
   } while (0)
 
-/**
- *  the main configuration of permugen
- *  reg_seeds is a dynamic array of (Seed *)
- */
+/* Permugen's main configuration */
 struct Opt
 {
   /* General configuration */
@@ -251,24 +245,41 @@ struct Opt
 };
 
 /**
- *  these functions only need opt pointer to know
- *  whether backslash interpretation is disabled or not
+ *  Appends characters from @src to @s->cseed, until \0
+ *  or !IS_ASCII_PR, returns the number of bytes written
+ *  @s->cseed will have unique chars after this call, if it did before
  */
-/* unique append to seed functions */
-int cseed_uniappd (struct Seed *, const char *src, int len);
-void wseed_uniappd (const struct Opt *, struct Seed *,
+int cseed_uniappd (struct Seed *s, const char *src, int len);
+/**
+ *  Appends @str_word to @s->wseed after unescape (if not disabled)
+ *  @s->wseed will have unique words after this call, if it did before
+ */
+void wseed_uniappd (const struct Opt *, struct Seed *s,
                     char *str_word);
-/* simple seed regex handler function */
-void parse_seed_regex (const struct Opt *, struct Seed *,
-                       const char *str_regex);
+/**
+ *  Using wseed_uniappd function, appends a word list from @f
+ *  to the seed @s, line by line, and ignores commented lines by `#`
+ */
+void
+wseed_fileappd (const struct Opt *, struct Seed *s, FILE *f);
+/**
+ *  Parses the @input regex and stores the result in @s
+ *  @input: "(prefix) [Cseed] {Wseed} /path/to/file (suffix)"
+ *  supported file path formats:
+ *    '/tmp/wl.txt', '~/wl.txt', './wl.txt', '../wl.txt', '.wl.txt'
+ *    using `-` as file path means to read from the stdin
+ **/
+void parse_seed_regex (const struct Opt *, struct Seed *s,
+                       const char *input);
 
-#define _strcmp(s1, s2)                         \
+/* Internal */
+#define Strcmp(s1, s2)                          \
   ((s1) != NULL && (s2) != NULL &&              \
    strcmp ((s1), (s2)) == 0)
-
-/* is non white-space ascii-printable */
-#define IS_ASCII_PR(c) (c >= 0x21 && c <= 0x7E)
+#undef IS_NUMBER
 #define IS_NUMBER(c) (c >= '0' && c <= '9')
+/* ASCII-printable, Non-white-space */
+#define IS_ASCII_PR(c) (c >= 0x21 && c <= 0x7E)
 
 void
 usage ()
@@ -359,9 +370,8 @@ usage ()
 }
 
 /**
- *  output of characters and strings
- *  these functions write on the corresponding
- *  output stream given in @opt->outf
+ *  Output of characters and strings
+ *  These macros write @str on @opt->outf
  *
  *  Pfputs:  writes @str without its terminating null byte
  *  Pputs:   writes @str like @Pfputs and a trailing newline
@@ -381,7 +391,7 @@ usage ()
 #endif
 
 /**
- *  permutation generator main logic
+ *  Main logic of normal mode
  *  you need to call it in a loop from
  *  depth=min_depth to depth=max_depth
  */
@@ -453,6 +463,10 @@ perm (const int depth, const struct Opt *opt)
   goto Perm_Loop;
 }
 
+/**
+ *  Main logic of regular mode
+ *  only call it by the regular_perm function
+ */
 int
 __regular_perm (struct Opt *opt, int *depths, int depth)
 {
@@ -513,7 +527,7 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
       idxs[pos] = 0;
     }
 
-  if (pos < 0) /* end of permutations */
+  if (pos < 0) /* End of Permutations */
     {
 #ifdef _USE_BIO
       if (bio_err (opt->bio))
@@ -563,13 +577,6 @@ regular_perm (struct Opt *opt)
   return ret;
 }
 
-/**
- *  uniquely appends char(s) from @src to @dest
- *  until reaches \0 or non-printable characters
- *  @dest with *CAPACITY* 256 is always enough
- *  time: O(src_len * dest_len);
- *  updates @dest_len and returns number of bytes written
- */
 int
 cseed_uniappd (struct Seed *s, const char *src, int len)
 {
@@ -598,11 +605,6 @@ cseed_uniappd (struct Seed *s, const char *src, int len)
   return rw;
 }
 
-/**
- *  uniquely appends reference of @word
- *  to @opt->wseed (dynamic array)
- *  use strdup when @word gets dereferenced
- */
 void
 wseed_uniappd (const struct Opt *opt,
                struct Seed *s, char *str_word)
@@ -611,7 +613,7 @@ wseed_uniappd (const struct Opt *opt,
     return;
   for (da_idx i=0; i < da_sizeof (s->wseed); ++i)
     {
-      if (_strcmp (s->wseed[i], str_word))
+      if (Strcmp (s->wseed[i], str_word))
         return;
     }
 
@@ -673,7 +675,7 @@ wseed_fileappd (const struct Opt *opt, struct Seed *s, FILE *f)
             }
           if (idx >= 0)
             {
-              if (empty_prevline && _strcmp (__line, "EOF"))
+              if (empty_prevline && Strcmp (__line, "EOF"))
                 break;
               wseed_uniappd (opt, s, strdup (__line));
             }
@@ -830,7 +832,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
             CASE_NOT_IN_REG_MODE(argv[optind-2]);
             FILE *wseed_f = stdin;
             /* using optarg value as filepath otherwise stdin */
-            if (!_strcmp (optarg, "-"))
+            if (!Strcmp (optarg, "-"))
               wseed_f = safe_fopen (optarg, "r");
 
             /* read from file and append to wseed */
@@ -860,8 +862,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
         case '5': /* raw word seed */
           CASE_NOT_IN_REG_MODE(argv[optind-2]);
-          if (!opt->escape_disabled)
-            unescape (optarg);
           wseed_uniappd (opt, opt->global_seeds, optarg);
           break;
 
@@ -914,7 +914,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
   /**
    *  Initializing the default values
-   *  when they are not specified by the user
    */
   if (opt->outf == NULL)
     opt->outf = stdout;
@@ -950,8 +949,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
         opt->to_depth = opt->from_depth;
       }
   }
-
-  /* interpreting backslash character(s) */
+  /* Interpret backslash characters */
   if (!opt->escape_disabled)
     {
       if (opt->prefix != NULL)
@@ -1134,18 +1132,33 @@ main (int argc, char **argv)
   return 0;
 }
 
-/**
- **  Internal regex functions
- **  These functions parse argument(s) of `-s` and `-r`
- **/
 
+/* Internal regex parser functions */
 /**
- *  wseed regex parser
- *  inside `{...}` - comma-separated values
- *  it backslash interprets them when not disabled
- *  comma is not allowed in wseeds, use \x2c
- *  returns pointer to the end of regex
+ *  Word Seed regex parser
+ *  inside `{...}`  -  comma-separated words
+ *  wseed_uniappd call will backslash interpret the result
+ *  returns a pointer to the end of the expression: `}`
  **/
+const char * pparse_wseed_regex (const struct Opt *,
+                                 struct Seed *s, const char *p);
+/**
+ *  Character Seed regex parser
+ *  inside: `[...]`
+ *  It does not backslash interpret @p
+ *  returns a pointer to the end of the expression: `]`
+ */
+const char * pparse_cseed_regex (struct Seed *s, const char *p);
+/**
+ *  Format (prefix & suffix) parser (only in regular mode)
+ *  inside: `(...)`
+ *  The first call will set the @s->pref and
+ *  the next calls will always overwrite @s->suff
+ *  returns a pointer to the end of the expression `)`
+ */
+const char * pparse_format_regex (const struct Opt *,
+                                 struct Seed *s, const char *p);
+
 const char *
 pparse_wseed_regex (const struct Opt *opt,
                     struct Seed *s, const char *p)
@@ -1194,12 +1207,6 @@ pparse_wseed_regex (const struct Opt *opt,
 #undef seedout
 }
 
-/**
- *  character seed regex parser
- *  inside `[...]`
- *  it does not backslash interpret @p
- *  returns pointer to the end of regex
- */
 const char *
 pparse_cseed_regex (struct Seed *s, const char *p)
 {
@@ -1274,7 +1281,7 @@ pparse_cseed_regex (struct Seed *s, const char *p)
 #undef seedout
 }
 
-static const char *
+const char *
 pparse_format_regex (const struct Opt *opt,
                      struct Seed *s, const char *p)
 {
@@ -1365,13 +1372,6 @@ path_resolution (const char *path, size_t len)
     }
 }
 
-/**
- *  to parse @input regex and store the output in @s
- *  @input: "(prefix) [Cseed] {Wseed} /path/to/file (suffix)"
- *  supported file path formats:
- *    '/tmp/wl.txt', '~/wl.txt', './wl.txt', '../wl.txt', '.wl.txt'
- *    using `-` as file path means to read from the stdin
- **/
 void
 parse_seed_regex (const struct Opt *opt,
                   struct Seed *s, const char *input)
