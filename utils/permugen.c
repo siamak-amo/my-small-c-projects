@@ -136,16 +136,16 @@ static const char *__PROGVERSION__ = "v2.4";
 #ifdef _DEBUG /* debug macro */
 #undef dprintf
 #define dprintf(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
-/* only use printd_arr */
+/** Debug printf for arrays helper
+ *  @T: printf format for typeof @arr and @len: sizeof @arr
+ */
 #  define printd_arr__H(arr, T, len, sep, end)  \
   for (int __idx = 0; __idx < len; __idx++) {   \
     dprintf (T"%s", arr[__idx],                 \
              (__idx < len-1) ? sep : end);      \
   }
-/**
- * debug printf for arrays
- * pass printf format for each element of @arr with @T
- * Ex: to print `int arr[7]`  -->  printd_arr (arr, "%d", 7);
+/** Debug printf for arrays
+ *  Ex: to print `int arr[7]`:  `printd_arr (arr, "%d", 7);`
  */
 #  define printd_arr(arr, T, len)               \
   if (len > 0 && arr) {                         \
