@@ -1369,9 +1369,8 @@ path_resolution (const char *path, size_t len)
  *  to parse @input regex and store the output in @s
  *  @input: "(prefix) [Cseed] {Wseed} /path/to/file (suffix)"
  *  supported file path formats:
- *    `/tmp/wl.txt`, `~/wl.txt`, `./wl.txt`, `../wl.txt`
- *  `-` in @input means to read from stdin and inside [] means range
- *  [...] is used for cseed and {...} for wseed
+ *    '/tmp/wl.txt', '~/wl.txt', './wl.txt', '../wl.txt', '.wl.txt'
+ *    using `-` as file path means to read from the stdin
  **/
 void
 parse_seed_regex (const struct Opt *opt,
