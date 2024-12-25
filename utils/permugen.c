@@ -94,7 +94,7 @@
  *    - To enable debug: pass `-D_DEBUG`
  *    - To disable buffered IO (less performance): remove `-D_USE_BIO`
  *    - To change the default buffered IO buffer length:
- *      define `_BMAX="1024 * 1"`  (in bytes)
+ *      add `-D_BMAX="(1024 * 1)"`  (in bytes)
  **/
 #include <stdio.h>
 #include <stdlib.h>
