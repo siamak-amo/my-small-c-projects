@@ -145,8 +145,16 @@ typedef struct
   enum milexer_token_t type;
   int id; /* when keywords is not null */
 
-  /* user of this library, allocates and frees
-     the temporary buffer @str of length @len+1 */
+  /**
+   *  when the token is an expression,
+   *  set it 1 to only get inside of the expression
+   **/
+  char inner;
+
+  /**
+   *  user of this library, allocates and frees
+   *  the temporary buffer @str of length @len+1
+   **/
   char *cstr;
   size_t len;
 
@@ -159,6 +167,7 @@ typedef struct
 #define TOKEN_IS_KNOWN(t) ((t)->id >= 0)
 #define TOKEN_ALLOC(n) (Milexer_Token){.cstr=malloc (n+1), .len=n}
 #define TOKEN_FREE(t) if ((t)->cstr) {free ((t)->cstr);}
+#define TOKEN_INNER(t) ({(t)->inner = 1; (t);})
 
 typedef struct Milexer_t
 {
@@ -346,7 +355,7 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
   
   if (ml->state == SYN_NO_DUMMY__)
     {
-      if (res->__last_pref)
+      if (res->__last_pref && res->inner == 0)
         {
           /* certainly the token type is expression */
           res->type = TK_EXPRESSION;
@@ -396,6 +405,8 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
             }
           else if (ml->state == SYN_NO_DUMMY)
             {
+              if (res->inner)
+                *__startof_exp = '\0';
               ST_STATE (ml, SYN_DONE);
               tmp[res->__idx] = 0;
               res->__idx = 0;
@@ -406,6 +417,8 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
               /* begginign of an expression */
               if (__startof_exp == tmp)
                 {
+                  if (res->inner)
+                    res->__idx = 0;
                   ST_STATE (ml, SYN_NO_DUMMY);
                 }
               else
@@ -558,7 +571,7 @@ enum LANG
     /* expressions */
     EXP_PAREN = 0,
     EXP_BRACE,
-    EXP_STR
+    EXP_STR,
   };
 static const char *Keys[] = {
   [LANG_IF]         = "if",
@@ -618,7 +631,7 @@ main (void)
   while (1)
     {
       /* Get the next token */
-      int ret = ml.next (&ml, &t);
+      int ret = ml.next (&ml, TOKEN_INNER (&t));
       switch (ret)
         {
         case NEXT_NEED_LOAD:
