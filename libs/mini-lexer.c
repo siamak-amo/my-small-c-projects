@@ -156,7 +156,7 @@ typedef struct
   const char *__last_punc;
 } Milexer_Token;
 
-#define TOKEN_IS_KEYWORD(t) ((t)->type == TK_KEYWORD && (t)->id >= 0)
+#define TOKEN_IS_KNOWN(t) ((t)->id >= 0)
 #define TOKEN_ALLOC(n) (Milexer_Token){.cstr=malloc (n+1), .len=n}
 #define TOKEN_FREE(t) if ((t)->cstr) {free ((t)->cstr);}
 
@@ -210,6 +210,8 @@ __handle_puncs (Milexer *ml, Milexer_Token *res)
         {
           return p;
         }
+      int longest_match_idx = -1;
+      size_t longest_match_len = 0;
       for (int i=0; i < ml->puncs.len; ++i)
         {
           const char *punc = ml->puncs.exp[i];
@@ -219,9 +221,18 @@ __handle_puncs (Milexer *ml, Milexer_Token *res)
           char *p = res->cstr + res->__idx - len;
           if (strncmp (punc, p, len) == 0)
             {
-              res->__last_punc = punc;
-              return p;
+              if (len >= longest_match_len)
+                {
+                  longest_match_len = len;
+                  longest_match_idx = i;
+                }
             }
+        }
+      if (longest_match_idx != -1)
+        {
+          res->__last_punc = ml->puncs.exp[longest_match_idx];
+          res->id = longest_match_idx;
+          return res->cstr + (res->__idx - longest_match_len);
         }
       return NULL;
     }
@@ -231,13 +242,13 @@ static inline char *
 __handle_expression (Milexer *ml, Milexer_Token *res) 
 {
 #define Return(n) do {                          \
-    if (n)                                      \
+    if (n) {                                    \
       logf ("match, d[.%lu]={%.*s} @%s",        \
             res->__idx,                         \
             (int)res->__idx,                    \
             res->cstr,                          \
             milexer_buf_state[ml->state]);      \
-    return n;                                   \
+    } return n;                                 \
   } while (0)
 
   /* strstr function works with \0 */
@@ -259,7 +270,10 @@ __handle_expression (Milexer *ml, Milexer_Token *res)
             continue;
           char *p = res->cstr + res->__idx - len;
           if (strncmp (p, e->end, len) == 0)
-            Return (p);
+            {
+              res->id = i;
+              Return (p);
+            }
         }
        Return (NULL);
       break;
@@ -353,6 +367,7 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
       size_t len = strlen (res->__last_punc);
       *((char *)mempcpy (tmp, res->__last_punc, len)) = '\0';
       res->type = TK_PUNCS;
+      res->id = res->__last_punc - *ml->puncs.exp;
       return NEXT_MATCH;
     }
     
@@ -437,7 +452,6 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
             {
               /* punc */
               size_t len = strlen (res->__last_punc);
-              // printf ("* %lu %lu '%s'\n", len, res->__idx, tmp);
               if (len == res->__idx)
                 {
                   /* just a simple punc */
@@ -462,8 +476,15 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
       //-- detect & reset chunks -------//
       if (res->__idx == res->len)
         {
-          if (res->type == TK_NOT_SET)
-            res->type = TK_KEYWORD;
+          if (res->type == TK_NOT_SET ||
+              ml->state == SYN_DUMMY || ml->state == SYN_DONE)
+            {
+              /**
+               *  we assume you don't have very long keyword
+               */
+              res->id = -1;
+              res->type = TK_KEYWORD;
+            }
           /* max token len reached */
           ST_STATE (ml, SYN_CHUNK);
           tmp[res->__idx + 1] = '\0';
@@ -519,22 +540,25 @@ milexer_init (Milexer *ml)
 #include <stdlib.h>
 #include <readline/readline.h>
 
-//-- expressions -----------------------//
-static struct Milexer_exp_ Exp[] = {
-  {"(", ")"},
-  {"\"", "\""},
-  {"<<", ">>"},
-};
-//-- keywords in this language ---------//
+//-- The language ----------------------//
 enum LANG
   {
+    /* keywords */
     LANG_IF = 0,
     LANG_ELSE,
     LANG_FI,
-
+    /* punctuations */
     PUNC_PLUS = 0,
     PUNC_MINUS,
+    PUNC_MULT,
+    PUNC_POW,
+    PUNC_COMMA,
     PUNC_EQUAL,
+    PUNC_NEQUAL,
+    /* expressions */
+    EXP_PAREN = 0,
+    EXP_BRACE,
+    EXP_STR
   };
 static const char *Keys[] = {
   [LANG_IF]         = "if",
@@ -544,21 +568,42 @@ static const char *Keys[] = {
 static const char *Puncs[] = {
   [PUNC_PLUS]       = "+",
   [PUNC_MINUS]      = "-",
-  [PUNC_EQUAL]      = "==",
+  [PUNC_MULT]       = "*",
+  [PUNC_POW]        = "^",
+  [PUNC_COMMA]      = ",",
+  [PUNC_EQUAL]      = "=", /* you cannot have "==" */
+  [PUNC_NEQUAL]     = "!=", /* also "!===" */
 };
-static const char *keys_cstr[] = {
-  [LANG_IF]         = "Key_IF",
-  [LANG_ELSE]       = "Key_ELSE",
-  [LANG_FI]         = "Key_FI",
+static struct Milexer_exp_ Exp[] = {
+  [EXP_PAREN]       = {"(", ")"},
+  [EXP_BRACE]       = {"{", "}"},
+  [EXP_STR]         = {"\"", "\""},
 };
+static const char *puncs_cstr[] = {
+  [PUNC_PLUS]       = "Plus",
+  [PUNC_MINUS]      = "Minus",
+  [PUNC_MULT]       = "Times",
+  [PUNC_POW]        = "Power",
+  [PUNC_COMMA]      = "Comma",
+  [PUNC_EQUAL]      = "Equal",  /* you cannot have "==" */
+  [PUNC_NEQUAL]     = "~Equal", /* also "!===" */
+};
+static const char *exp_cstr[] = {
+  [EXP_PAREN]       = "(@)",
+  [EXP_BRACE]       = "{@}",
+  [EXP_STR]         = "str",
+};
+
 //-- milixer configuration -------------//
 static Milexer ml = {
   .lazy = 1,
+
   .buffer = NULL,
+  .len    = 0,
   
-  .expression = GEN_CFG (Exp),
-  .keywords = GEN_CFG (Keys),
-  .puncs = GEN_CFG (Puncs),
+  .puncs       = GEN_CFG (Puncs),
+  .keywords    = GEN_CFG (Keys),
+  .expression  = GEN_CFG (Exp),
 };
 //--------------------------------------//
 
@@ -602,12 +647,29 @@ main (void)
         case NEXT_CHUNK:
         case NEXT_ZTERM:
           {
-            printf ("[%.*s]", 3, milexer_token_type_cstr[t.type]);
+            printf ("(%.*s)", 3, milexer_token_type_cstr[t.type]);
             
-            if (TOKEN_IS_KEYWORD (&t))
-              printf ("* %s", keys_cstr[t.id]);
-            else  
-              printf (" `%s`", t.cstr);
+            if (TOKEN_IS_KNOWN (&t))
+              {
+                switch (t.type)
+                  {
+                  case TK_KEYWORD:
+                    printf ("[*]  %s", t.cstr);
+                    break;
+                  case TK_PUNCS:
+                    printf ("[*]  %s", puncs_cstr[t.id]);
+                    break;
+                  case TK_EXPRESSION:
+                    printf ("%s  %s", exp_cstr[t.id], t.cstr);
+                    break;
+
+                  default:
+                    printf ("[#%d] `%s`", t.id, t.cstr);
+                    break;
+                  }
+              }
+            else
+              printf ("[U] `%s`", t.cstr);
 
             if (ret == NEXT_CHUNK)
               puts ("    <-- chunk");
