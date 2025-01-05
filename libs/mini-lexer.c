@@ -167,7 +167,6 @@ typedef struct
 #define TOKEN_IS_KNOWN(t) ((t)->id >= 0)
 #define TOKEN_ALLOC(n) (Milexer_Token){.cstr=malloc (n+1), .len=n}
 #define TOKEN_FREE(t) if ((t)->cstr) {free ((t)->cstr);}
-#define TOKEN_INNER(t) ({(t)->inner = 1; (t);})
 
 typedef struct Milexer_t
 {
@@ -388,14 +387,14 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
       return NEXT_NEED_LOAD;
     }
 
-  for (; ml->idx < ml->len; )
+  for (unsigned char p; ml->idx < ml->len; )
     {
-      unsigned char p = buff[ml->idx++];
+      char *__startof_exp, *__startof_punc;
+      
+      p = buff[ml->idx++];
       tmp[res->__idx++] = p;
 
       //-- handling expressions --------//
-      char *__startof_exp;
-      char *__startof_punc;
       if ((__startof_exp = __handle_expression (ml, res)))
         {
           res->type = TK_EXPRESSION;
@@ -628,10 +627,11 @@ main (void)
   char *line = NULL;
   size_t n;
   Milexer_Token t = TOKEN_ALLOC (32);
+  t.inner = 1; /* get inner expressions */
   while (1)
     {
       /* Get the next token */
-      int ret = ml.next (&ml, TOKEN_INNER (&t));
+      int ret = ml.next (&ml, &t);
       switch (ret)
         {
         case NEXT_NEED_LOAD:
