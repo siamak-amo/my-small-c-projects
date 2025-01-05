@@ -175,14 +175,18 @@ typedef struct
 #define __get_last_punc(ml, res) \
   ((ml)->puncs.exp[(res)->__last_punc_idx])
 
+typedef struct
+{
+  const char *buffer;
+  size_t len, idx;
+} Milexer_Slice;
+
 typedef struct Milexer_t
 {
   //-- Buffers -----------------------//
+  Milexer_Slice *src;
   int lazy, eof_lazy;
   enum __buffer_state_t state, prev_state;
-  
-  char *buffer;
-  size_t len, idx;
 
   //-- Configs -----------------------//
   Milexer_BEXP escape;    // Not implemented
@@ -199,7 +203,11 @@ typedef struct Milexer_t
 #define GEN_lenof(arr) (sizeof (arr) / sizeof ((arr)[0]))
 #define GEN_CFG(exp_ptr) {.exp=exp_ptr, .len=GEN_lenof (exp_ptr)}
 
+/* initialize */
+int milexer_init (Milexer *);
 
+
+#ifdef ML_IMPLEMENTATION
 /**
  **  Internal functions
  **  Only use Milexer.next()
@@ -353,10 +361,7 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
     (ml)->state = s;                            \
   } while (0)
 
-  char *buff = ml->buffer;
-  char *tmp = res->cstr;
-
-  if (tmp == NULL || res->len <= 0)
+  if (res->cstr == NULL || res->len <= 0)
     return NEXT_ERR;
   
   if (ml->state == SYN_NO_DUMMY__)
@@ -365,17 +370,16 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
         {
           /* certainly the token type is expression */
           res->type = TK_EXPRESSION;
-          logf ("recovering the prefix");
           const char *src = __get_last_exp (ml, res)->begin;
-          char *__p = mempcpy (tmp, src, strlen (src));
-          res->__idx += __p - tmp;
+          char *__p = mempcpy (res->cstr, src, strlen (src));
+          res->__idx += __p - res->cstr;
         }
       ml->state = SYN_NO_DUMMY;
     }
   else if (ml->state == SYN_PUNC)
     {
       const char *src = __get_last_punc (ml, res);
-      *((char *)mempcpy (tmp, src, strlen (src))) = '\0';
+      *((char *)mempcpy (res->cstr, src, strlen (src))) = '\0';
 
       LD_STATE (ml);
       res->type = TK_PUNCS;
@@ -383,20 +387,20 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
       return NEXT_MATCH;
     }
     
-  if (ml->idx > ml->len)
+  if (ml->src->idx > ml->src->len)
     {
       if (ml->eof_lazy)
         return NEXT_END;
-      ml->idx = 0;
+      ml->src->idx = 0;
       return NEXT_NEED_LOAD;
     }
 
-  for (unsigned char p; ml->idx < ml->len; )
+  for (unsigned char p; ml->src->idx < ml->src->len; )
     {
       char *__startof_exp, *__startof_punc;
       
-      p = buff[ml->idx++];
-      tmp[res->__idx++] = p;
+      p = ml->src->buffer[ml->src->idx++];
+      res->cstr[res->__idx++] = p;
 
       //-- handling expressions --------//
       if ((__startof_exp = __handle_expression (ml, res)))
@@ -411,14 +415,14 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
               if (res->inner)
                 *__startof_exp = '\0';
               ST_STATE (ml, SYN_DONE);
-              tmp[res->__idx] = 0;
+              res->cstr[res->__idx] = 0;
               res->__idx = 0;
               return NEXT_MATCH;
             }
           else
             {
               /* begginign of an expression */
-              if (__startof_exp == tmp)
+              if (__startof_exp == res->cstr)
                 {
                   if (res->inner)
                     res->__idx = 0;
@@ -454,7 +458,7 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
                 {
                   ST_STATE (ml, SYN_DUMMY);
                   res->type = TK_KEYWORD;
-                  tmp[res->__idx - 1] = '\0';
+                  res->cstr[res->__idx - 1] = '\0';
                   res->__idx = 0;
                   __handle_token_id (ml, res);
                   if (p == '\0')
@@ -474,7 +478,7 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
                   /* just a simple punc */
                   ST_STATE (ml, SYN_DUMMY);
                   res->type = TK_PUNCS;
-                  tmp[res->__idx] = '\0';
+                  res->cstr[res->__idx] = '\0';
                   res->__idx = 0;
                   return NEXT_MATCH;
                 }
@@ -504,7 +508,7 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
             }
           /* max token len reached */
           ST_STATE (ml, SYN_CHUNK);
-          tmp[res->__idx + 1] = '\0';
+          res->cstr[res->__idx + 1] = '\0';
           res->__idx = 0;
           return NEXT_CHUNK;
         }
@@ -517,7 +521,7 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
     {
       return NEXT_END;
     }
-  ml->idx = 0;
+  ml->src->idx = 0;
   return NEXT_NEED_LOAD;
 }
 
@@ -534,8 +538,8 @@ milexer_init (Milexer *ml)
   else
     {
       /**
-       *  assume the entire stuff is loaded
-       *  into syn_b->buffer
+       *  assume the entire data is loaded
+       *  into ml->src->buffer
        */
       ml->next = __next_token;
     }
@@ -543,9 +547,10 @@ milexer_init (Milexer *ml)
   return 0;
 }
 
+#endif /* ML_IMPLEMENTATION */
+
 #undef logf
 #undef fprintd
-
 #endif /* MINI_LEXER__H */
 
 
@@ -613,29 +618,30 @@ static const char *exp_cstr[] = {
   [EXP_STR]         = "\"*\"",
   [EXP_STR2]        = "'*'",
 };
-
-//-- milixer configuration -------------//
-static Milexer ml = {
-  .lazy = 1,
-
-  .buffer = NULL,
-  .len    = 0,
-  
-  .puncs       = GEN_CFG (Puncs),
-  .keywords    = GEN_CFG (Keys),
-  .expression  = GEN_CFG (Exp),
-};
 //--------------------------------------//
 
 int
 main (void)
 {
-  milexer_init (&ml);
-
   char *line = NULL;
   size_t n;
+  /* input source */
+  Milexer_Slice Src = {0};
+  /* token type */
   Milexer_Token t = TOKEN_ALLOC (32);
   t.inner = 1; /* get inner expressions */
+
+  /* Milexer initialization */
+  Milexer ml = {
+    .lazy = 1,
+    .src  = &Src,
+
+    .puncs       = GEN_CFG (Puncs),
+    .keywords    = GEN_CFG (Keys),
+    .expression  = GEN_CFG (Exp),
+  };
+  milexer_init (&ml);
+
   while (1)
     {
       /* Get the next token */
@@ -649,18 +655,18 @@ main (void)
           if (line == NULL)
             {
               ml.eof_lazy = 1;
-              ml.len = 0;
+              Src.len = 0;
             }
           else
             {
-              ml.buffer = line;
+              Src.buffer = line;
               /**
-               *  We are in the test environment
+               *  We are testing
                *  but is this safe??
                */
               n = strlen (line);
               line[n] = '\n';
-              ml.len = n+1;
+              Src.len = n+1;
             }
           break;
 
