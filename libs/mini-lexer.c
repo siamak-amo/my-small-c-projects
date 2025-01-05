@@ -24,13 +24,13 @@
 #  define logf(format, ...)
 #endif
 
-struct Milexer_exp_
+typedef struct Milexer_exp_
 {
   const char *begin;
   const char *end;
 
   // int __tag; // internal nesting
-};
+} _exp_t;
 
 /**
  *  Basic expression
@@ -158,15 +158,22 @@ typedef struct
   char *cstr;
   size_t len;
 
-  /* internal stuff */
+  /** internal **/
   size_t __idx;
-  const char *__last_pref;
-  const char *__last_punc;
+  /* TODO: for nesting, these should be arrays */
+  int __last_exp_idx;
+  int __last_punc_idx;
 } Milexer_Token;
 
 #define TOKEN_IS_KNOWN(t) ((t)->id >= 0)
 #define TOKEN_ALLOC(n) (Milexer_Token){.cstr=malloc (n+1), .len=n}
 #define TOKEN_FREE(t) if ((t)->cstr) {free ((t)->cstr);}
+
+/* internal */
+#define __get_last_exp(ml, res) \
+  ((ml)->expression.exp + (res)->__last_exp_idx)
+#define __get_last_punc(ml, res) \
+  ((ml)->puncs.exp[(res)->__last_punc_idx])
 
 typedef struct Milexer_t
 {
@@ -178,12 +185,12 @@ typedef struct Milexer_t
   size_t len, idx;
 
   //-- Configs -----------------------//
-  Milexer_BEXP escape;
+  Milexer_BEXP escape;    // Not implemented
   Milexer_BEXP puncs;
   Milexer_BEXP keywords;
   Milexer_AEXP expression;
-  Milexer_BEXP b_comment;
-  Milexer_AEXP a_comment;
+  Milexer_BEXP b_comment; // Not implemented
+  Milexer_AEXP a_comment; // Not implemented
   
   //-- Functions ---------------------//
   int (*next)(struct Milexer_t *, Milexer_Token *);
@@ -238,7 +245,7 @@ __handle_puncs (Milexer *ml, Milexer_Token *res)
         }
       if (longest_match_idx != -1)
         {
-          res->__last_punc = ml->puncs.exp[longest_match_idx];
+          res->__last_punc_idx = longest_match_idx;
           res->id = longest_match_idx;
           return res->cstr + (res->__idx - longest_match_len);
         }
@@ -269,17 +276,17 @@ __handle_expression (Milexer *ml, Milexer_Token *res)
 
     case SYN_NO_DUMMY:
     case SYN_NO_DUMMY__:
-      /* looking for closing */
-      for (int i=0; i < ml->expression.len; ++i)
+      /* looking for closing, O(1) */
         {
-          struct Milexer_exp_ *e = ml->expression.exp + i;
+          _exp_t *e = __get_last_exp (ml, res);
           size_t len = strlen (e->end);
+
           if (res->__idx < len)
-            continue;
+            break;
           char *p = res->cstr + res->__idx - len;
           if (strncmp (p, e->end, len) == 0)
             {
-              res->id = i;
+              res->id = res->__last_exp_idx;
               Return (p);
             }
         }
@@ -287,16 +294,16 @@ __handle_expression (Milexer *ml, Milexer_Token *res)
       break;
 
     default:
-      /* looking for opening */
+      /* looking for opening, O(ml->expression.len) */
       for (int i=0; i < ml->expression.len; ++i)
         {
-          struct Milexer_exp_ *e = ml->expression.exp + i;
           char *p;
+          _exp_t *e = ml->expression.exp + i;
           if ((p = strstr (res->cstr, e->begin)))
             {
-              res->__last_pref = e->begin;
               if (p == res->cstr && ml->state == SYN_MIDDLE)
                 Return (NULL);
+              res->__last_exp_idx = i;
               Return (p);
             }
         }
@@ -354,28 +361,25 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
   
   if (ml->state == SYN_NO_DUMMY__)
     {
-      if (res->__last_pref && res->inner == 0)
+      if (res->__last_exp_idx != -1 && res->inner == 0)
         {
           /* certainly the token type is expression */
           res->type = TK_EXPRESSION;
           logf ("recovering the prefix");
-          char *__p = mempcpy (tmp, res->__last_pref,
-                         strlen (res->__last_pref));
+          const char *src = __get_last_exp (ml, res)->begin;
+          char *__p = mempcpy (tmp, src, strlen (src));
           res->__idx += __p - tmp;
-        }
-      else
-        {
-          logf ("Could not recover the prefix");
         }
       ml->state = SYN_NO_DUMMY;
     }
   else if (ml->state == SYN_PUNC)
     {
+      const char *src = __get_last_punc (ml, res);
+      *((char *)mempcpy (tmp, src, strlen (src))) = '\0';
+
       LD_STATE (ml);
-      size_t len = strlen (res->__last_punc);
-      *((char *)mempcpy (tmp, res->__last_punc, len)) = '\0';
       res->type = TK_PUNCS;
-      res->id = res->__last_punc - *ml->puncs.exp;
+      res->id = res->__last_punc_idx;
       return NEXT_MATCH;
     }
     
@@ -463,7 +467,8 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
           else
             {
               /* punc */
-              size_t len = strlen (res->__last_punc);
+              const char *p = __get_last_punc (ml, res);
+              size_t len = strlen (p);
               if (len == res->__idx)
                 {
                   /* just a simple punc */
@@ -571,6 +576,7 @@ enum LANG
     EXP_PAREN = 0,
     EXP_BRACE,
     EXP_STR,
+    EXP_STR2,
   };
 static const char *Keys[] = {
   [LANG_IF]         = "if",
@@ -590,6 +596,7 @@ static struct Milexer_exp_ Exp[] = {
   [EXP_PAREN]       = {"(", ")"},
   [EXP_BRACE]       = {"{", "}"},
   [EXP_STR]         = {"\"", "\""},
+  [EXP_STR2]        = {"'", "'"},
 };
 static const char *puncs_cstr[] = {
   [PUNC_PLUS]       = "Plus",
@@ -601,9 +608,10 @@ static const char *puncs_cstr[] = {
   [PUNC_NEQUAL]     = "~Equal", /* also "!===" */
 };
 static const char *exp_cstr[] = {
-  [EXP_PAREN]       = "(@)",
-  [EXP_BRACE]       = "{@}",
-  [EXP_STR]         = "str",
+  [EXP_PAREN]       = "(*)",
+  [EXP_BRACE]       = "{*}",
+  [EXP_STR]         = "\"*\"",
+  [EXP_STR2]        = "'*'",
 };
 
 //-- milixer configuration -------------//
@@ -660,7 +668,7 @@ main (void)
         case NEXT_CHUNK:
         case NEXT_ZTERM:
           {
-            printf ("(%.*s)", 3, milexer_token_type_cstr[t.type]);
+            printf ("%.*s", 3, milexer_token_type_cstr[t.type]);
             
             if (TOKEN_IS_KNOWN (&t))
               {
