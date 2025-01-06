@@ -62,8 +62,8 @@ enum __buffer_state_t
     /* middle or beggining of a token */
     SYN_MIDDLE,
 
-    /* */
-    SYN_PUNC,
+    /* when need to recover the previous puck */
+    SYN_PUNC__,
     
     /* middle or beggining of a string or comment
        in this mode, nothing causes change of state
@@ -78,10 +78,11 @@ enum __buffer_state_t
 const char *milexer_buf_state[] = {
   [SYN_DUMMY]                   = "dummy",
   [SYN_ESCAPE]                  = "escape",
-  [SYN_MIDDLE]                  = "middle of token",
-  [SYN_NO_DUMMY]                = "middle of expression",
-  [SYN_NO_DUMMY__]              = "beginning of expression",
-  [SYN_DONE]                    = "token is ready",
+  [SYN_MIDDLE]                  = "inner token",
+  [SYN_NO_DUMMY]                = "inner exp",
+  [SYN_NO_DUMMY__]              = "recover exp",
+  [SYN_PUNC__]                  = "recover punc",
+  [SYN_DONE]                    = "done",
 };
 
 enum milexer_state_t
@@ -391,7 +392,7 @@ __next_token_lazy (Milexer *ml, Milexer_Slice *src,
         }
       src->state = SYN_NO_DUMMY;
     }
-  else if (src->state == SYN_PUNC)
+  else if (src->state == SYN_PUNC__)
     {
       const char *lp = __get_last_punc (ml, res);
       *((char *)mempcpy (res->cstr, lp, strlen (lp))) = '\0';
@@ -501,7 +502,7 @@ __next_token_lazy (Milexer *ml, Milexer_Slice *src,
               else
                 {
                   /* the punc have got some adjacents */
-                  ST_STATE (src, SYN_PUNC);
+                  ST_STATE (src, SYN_PUNC__);
                   *__startof_punc = '\0';
                   res->__idx = 0;
                   res->type = TK_KEYWORD;
