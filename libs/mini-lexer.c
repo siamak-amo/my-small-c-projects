@@ -102,7 +102,10 @@ enum milexer_state_t
     NEXT_NEED_LOAD,
     
     NEXT_END, /* nothing to do, end of parsing */
-    NEXT_ERR, /* token buffer is null */
+
+    /* either your buffer(s) is null or
+       input buffer and output token buffer are the same */
+    NEXT_ERR,
   };
 
 #define __flag__(n) (1<<(n))
@@ -189,6 +192,7 @@ typedef struct
 #define TOKEN_IS_KNOWN(t) ((t)->id >= 0)
 #define TOKEN_ALLOC(n) (Milexer_Token){.cstr=malloc (n+1), .len=n}
 #define TOKEN_FREE(t) if ((t)->cstr) {free ((t)->cstr);}
+#define TOKEN_DROP(t) ((t)->__idx = 0, (t)->type = TK_NOT_SET)
 
 /* internal */
 #define __get_last_exp(ml, res) \
@@ -400,7 +404,8 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
     (slice)->state = new_state;                 \
   } while (0)
 
-  if (res->cstr == NULL || res->len <= 0)
+  if (res->cstr == NULL || res->len <= 0
+      || res->cstr == src->buffer)
     return NEXT_ERR;
   
   if (src->state == SYN_NO_DUMMY__)
@@ -680,9 +685,8 @@ static const char *exp_cstr[] = {
 
 
 int
-token_expression (Milexer *ml,
-                  Milexer_Slice *src,
-                  Milexer_Token *t)
+parse_parenthesis (const Milexer *ml, Milexer_Slice *src,
+                   Milexer_Token *t)
 {
   for (int ret = 0; ret != NEXT_END; )
     {
@@ -702,8 +706,6 @@ token_expression (Milexer *ml,
 int
 main (void)
 {
-  char *line = NULL;
-  size_t n;
   /* input source */
   Milexer_Slice src = {0};
   /* token type */
@@ -719,6 +721,7 @@ main (void)
   };
   milexer_init (&ml);
 
+  char *line = NULL;
   for (int ret = 0;
        ret != NEXT_ERR && ret != NEXT_END; )
     {
@@ -727,10 +730,9 @@ main (void)
       switch (ret)
         {
         case NEXT_NEED_LOAD:
-          if (line)
-            free (line);
-          line = readline (">>> ");
-          if (line == NULL)
+          ssize_t n;
+          printf (">>> ");
+          if ((n = getline (&line, (size_t *)&n, stdin)) < 0)
             {
               src.eof_lazy = 1;
               src.len = 0;
@@ -738,13 +740,7 @@ main (void)
           else
             {
               src.buffer = line;
-              /**
-               *  We are testing
-               *  but is this safe ??
-               */
-              n = strlen (line);
-              line[n] = '\n';
-              src.len = n+1;
+              src.len = n;
             }
           break;
 
@@ -753,53 +749,51 @@ main (void)
         case NEXT_ZTERM:
           {
             printf ("%.*s", 3, milexer_token_type_cstr[t.type]);
-            
-            if (TOKEN_IS_KNOWN (&t))
+            switch (t.type)
               {
-                switch (t.type)
+              case TK_KEYWORD:
+                printf ("[%c]  %s", TOKEN_IS_KNOWN (&t)?'*':'U', t.cstr);
+                break;
+              case TK_PUNCS:
+                printf ("[*]  %s", puncs_cstr[t.id]);
+                break;
+              case TK_EXPRESSION:
+                if (t.id != EXP_PAREN)
+                  printf ("%s  %s", exp_cstr[t.id], t.cstr);
+                else
                   {
-                  case TK_KEYWORD:
-                    printf ("[*]  %s", t.cstr);
-                    break;
-                  case TK_PUNCS:
-                    printf ("[*]  %s", puncs_cstr[t.id]);
-                    break;
-                  case TK_EXPRESSION:
-                    if (t.id == EXP_PAREN)
+                    /**
+                     *  This is an example of parsing inside
+                     *  of a milexer output token
+                     */
+                    puts (" Tokens:");
+                    Milexer_Slice second_src = {0};
+                    Milexer_Token tmp = TOKEN_ALLOC (32);
+                    while (1)
                       {
-                        puts (" Tokens:");
-                        Milexer_Slice second_src = {0};
-                        Milexer_Token tmp = TOKEN_ALLOC (32);
-                        while (1)
-                          {
-                            second_src.buffer = t.cstr;
-                            second_src.len = strlen (t.cstr);
-                            /**
-                             *  when inner parenthesis is not a chunk,
-                             *  the parser should not expect more chunks
-                             */
-                            second_src.eof_lazy = (ret != NEXT_CHUNK);
+                        /**
+                         *  when inner parenthesis is not a chunk,
+                         *  the parser should not expect more chunks
+                         */
+                        second_src.eof_lazy = (ret != NEXT_CHUNK);
+                        second_src.buffer = t.cstr;
+                        second_src.len = strlen (t.cstr);
 
-                            int _ret = token_expression (&ml, &second_src, &tmp);
-                            if (_ret != NEXT_NEED_LOAD || ret != NEXT_CHUNK)
-                              break;
-                            /* load the rest of inner parenthesis */
-                            ret = ml.next (&ml, &src, &t, 0);
-                          }
-                        TOKEN_FREE (&tmp);
+                        int _ret = parse_parenthesis (&ml, &second_src, &tmp);
+                        if (_ret != NEXT_NEED_LOAD || ret != NEXT_CHUNK)
+                          break;
+                        /* load the rest of inner parenthesis */
+                        ret = ml.next (&ml, &src, &t, 0);
                       }
-                    else
-                      printf ("%s  %s", exp_cstr[t.id], t.cstr);
-                    break;
-
-                  default:
-                    printf ("[#%d] `%s`", t.id, t.cstr);
-                    break;
+                    TOKEN_FREE (&tmp);
                   }
-              }
-            else
-              printf ("[U] `%s`", t.cstr);
+                break;
 
+              default: /* t.type */
+                break;
+              }
+
+            /* detecting chunk */
             if (ret == NEXT_CHUNK)
               puts ("    <-- chunk");
             else
@@ -812,6 +806,7 @@ main (void)
   TOKEN_FREE (&t);
   if (line)
     free (line);
+  puts ("Bye");
 
   return 0;
 }
