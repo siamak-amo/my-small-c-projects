@@ -177,6 +177,7 @@ typedef struct
 
 typedef struct
 {
+  enum __buffer_state_t state, prev_state;
   const char *buffer;
   size_t len, idx;
 } Milexer_Slice;
@@ -184,9 +185,8 @@ typedef struct
 typedef struct Milexer_t
 {
   //-- Buffers -----------------------//
-  Milexer_Slice *src;
+  // Milexer_Slice *src, *__prev_src;
   int lazy, eof_lazy;
-  enum __buffer_state_t state, prev_state;
 
   //-- Configs -----------------------//
   Milexer_BEXP escape;    // Not implemented
@@ -197,7 +197,7 @@ typedef struct Milexer_t
   Milexer_AEXP a_comment; // Not implemented
   
   //-- Functions ---------------------//
-  int (*next)(struct Milexer_t *, Milexer_Token *);
+  int (*next)(struct Milexer_t *, Milexer_Slice *, Milexer_Token *);
 } Milexer;
 
 #define GEN_lenof(arr) (sizeof (arr) / sizeof ((arr)[0]))
@@ -213,14 +213,15 @@ int milexer_init (Milexer *);
  **  Only use Milexer.next()
  **/
 static inline char *
-__handle_puncs (Milexer *ml, Milexer_Token *res)
+__handle_puncs (Milexer *ml, Milexer_Slice *src,
+                Milexer_Token *res)
 {
   if (res->cstr[res->__idx - 1] < ' ')
     {
       return res->cstr + (res->__idx - 1);
     }
 
-  switch (ml->state)
+  switch (src->state)
     {
     case SYN_ESCAPE:
     case SYN_NO_DUMMY:
@@ -262,7 +263,8 @@ __handle_puncs (Milexer *ml, Milexer_Token *res)
 }
 
 static inline char *
-__handle_expression (Milexer *ml, Milexer_Token *res) 
+__handle_expression (Milexer *ml, Milexer_Slice *src,
+                     Milexer_Token *res) 
 {
 #define Return(n) do {                          \
     if (n) {                                    \
@@ -277,7 +279,7 @@ __handle_expression (Milexer *ml, Milexer_Token *res)
   /* strstr function works with \0 */
   res->cstr[res->__idx] = '\0';
   
-  switch (ml->state)
+  switch (src->state)
     {
     case SYN_ESCAPE:
       Return (res->cstr + res->__idx);
@@ -309,7 +311,7 @@ __handle_expression (Milexer *ml, Milexer_Token *res)
           _exp_t *e = ml->expression.exp + i;
           if ((p = strstr (res->cstr, e->begin)))
             {
-              if (p == res->cstr && ml->state == SYN_MIDDLE)
+              if (p == res->cstr && src->state == SYN_MIDDLE)
                 Return (NULL);
               res->__last_exp_idx = i;
               Return (p);
@@ -345,26 +347,29 @@ __handle_token_id (Milexer *ml, Milexer_Token *res)
 
 
 static int
-__next_token (Milexer *ml, Milexer_Token *res)
+__next_token (Milexer *ml, Milexer_Slice *src,
+              Milexer_Token *res)
 {
   (void)(ml);
+  (void)(src);
   (void)(res);
   return 0;
 }
 
 static int
-__next_token_lazy (Milexer *ml, Milexer_Token *res)
+__next_token_lazy (Milexer *ml, Milexer_Slice *src,
+                   Milexer_Token *res)
 {
-#define LD_STATE(ml) (ml)->state = (ml)->prev_state
-#define ST_STATE(ml, s) do {                    \
-    (ml)->prev_state = (ml)->state;             \
-    (ml)->state = s;                            \
+#define LD_STATE(src) (src)->state = (src)->prev_state
+#define ST_STATE(slice, new_state) do {         \
+    (slice)->prev_state = (slice)->state;       \
+    (slice)->state = new_state;                 \
   } while (0)
 
   if (res->cstr == NULL || res->len <= 0)
     return NEXT_ERR;
   
-  if (ml->state == SYN_NO_DUMMY__)
+  if (src->state == SYN_NO_DUMMY__)
     {
       if (res->__last_exp_idx != -1 && res->inner == 0)
         {
@@ -374,47 +379,48 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
           char *__p = mempcpy (res->cstr, src, strlen (src));
           res->__idx += __p - res->cstr;
         }
-      ml->state = SYN_NO_DUMMY;
+      src->state = SYN_NO_DUMMY;
     }
-  else if (ml->state == SYN_PUNC)
+  else if (src->state == SYN_PUNC)
     {
-      const char *src = __get_last_punc (ml, res);
-      *((char *)mempcpy (res->cstr, src, strlen (src))) = '\0';
+      const char *lp = __get_last_punc (ml, res);
+      *((char *)mempcpy (res->cstr, lp, strlen (lp))) = '\0';
 
-      LD_STATE (ml);
+      LD_STATE (src);
       res->type = TK_PUNCS;
       res->id = res->__last_punc_idx;
       return NEXT_MATCH;
     }
     
-  if (ml->src->idx > ml->src->len)
+  if (src->idx > src->len)
     {
       if (ml->eof_lazy)
         return NEXT_END;
-      ml->src->idx = 0;
+      src->idx = 0;
       return NEXT_NEED_LOAD;
     }
 
-  for (unsigned char p; ml->src->idx < ml->src->len; )
+  res->type = TK_NOT_SET;
+  for (unsigned char p; src->idx < src->len; )
     {
       char *__startof_exp, *__startof_punc;
       
-      p = ml->src->buffer[ml->src->idx++];
+      p = src->buffer[src->idx++];
       res->cstr[res->__idx++] = p;
 
       //-- handling expressions --------//
-      if ((__startof_exp = __handle_expression (ml, res)))
+      if ((__startof_exp = __handle_expression (ml, src, res)))
         {
           res->type = TK_EXPRESSION;
-          if (ml->state == SYN_ESCAPE)
+          if (src->state == SYN_ESCAPE)
             {
-              LD_STATE (ml);
+              LD_STATE (src);
             }
-          else if (ml->state == SYN_NO_DUMMY)
+          else if (src->state == SYN_NO_DUMMY)
             {
               if (res->inner)
                 *__startof_exp = '\0';
-              ST_STATE (ml, SYN_DONE);
+              ST_STATE (src, SYN_DONE);
               res->cstr[res->__idx] = 0;
               res->__idx = 0;
               return NEXT_MATCH;
@@ -426,7 +432,7 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
                 {
                   if (res->inner)
                     res->__idx = 0;
-                  ST_STATE (ml, SYN_NO_DUMMY);
+                  ST_STATE (src, SYN_NO_DUMMY);
                 }
               else
                 {
@@ -434,7 +440,7 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
                    *  xxx`expression`yyy
                    *  the expression is adjacent to another token
                    */
-                  ST_STATE (ml, SYN_NO_DUMMY__);
+                  ST_STATE (src, SYN_NO_DUMMY__);
                   *__startof_exp = 0;
                   res->__idx = 0;
                   res->type = TK_KEYWORD;
@@ -446,17 +452,17 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
       //-- handling escape -------------//
       else if (p == '\\')
         {
-          ST_STATE (ml, SYN_ESCAPE);
+          ST_STATE (src, SYN_ESCAPE);
         }
       //-- handling puncs --------------//
-      else if ((__startof_punc = __handle_puncs (ml, res)))
+      else if ((__startof_punc = __handle_puncs (ml, src, res)))
         {
           if (*__startof_punc <= ' ')
             {
               /* normal token */
               if (res->__idx > 1)
                 {
-                  ST_STATE (ml, SYN_DUMMY);
+                  ST_STATE (src, SYN_DUMMY);
                   res->type = TK_KEYWORD;
                   res->cstr[res->__idx - 1] = '\0';
                   res->__idx = 0;
@@ -476,7 +482,7 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
               if (len == res->__idx)
                 {
                   /* just a simple punc */
-                  ST_STATE (ml, SYN_DUMMY);
+                  ST_STATE (src, SYN_DUMMY);
                   res->type = TK_PUNCS;
                   res->cstr[res->__idx] = '\0';
                   res->__idx = 0;
@@ -485,7 +491,7 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
               else
                 {
                   /* the punc have got some adjacents */
-                  ST_STATE (ml, SYN_PUNC);
+                  ST_STATE (src, SYN_PUNC);
                   *__startof_punc = '\0';
                   res->__idx = 0;
                   res->type = TK_KEYWORD;
@@ -498,30 +504,49 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
       if (res->__idx == res->len)
         {
           if (res->type == TK_NOT_SET ||
-              ml->state == SYN_DUMMY || ml->state == SYN_DONE)
+              src->state == SYN_DUMMY || src->state == SYN_DONE)
             {
               /**
-               *  we assume you don't have very long keyword
+               *  we assume your keywords are smaller than
+               *  the length of res->cstr buffer
                */
               res->id = -1;
               res->type = TK_KEYWORD;
             }
           /* max token len reached */
-          ST_STATE (ml, SYN_CHUNK);
+          ST_STATE (src, SYN_CHUNK);
           res->cstr[res->__idx + 1] = '\0';
           res->__idx = 0;
           return NEXT_CHUNK;
         }
-      if (ml->state == SYN_CHUNK)
-        LD_STATE (ml);
+      if (src->state == SYN_CHUNK)
+        LD_STATE (src);
       //--------------------------------//
     }
 
   if (ml->eof_lazy)
     {
-      return NEXT_END;
+      if (res->__idx > 1)
+        {
+          if (res->type == TK_NOT_SET)
+            {
+              res->type = TK_KEYWORD;
+              __handle_token_id (ml, res);
+            }
+          return NEXT_END;
+        }
+      else if (res->__idx == 1 && *res->cstr > ' ')
+        {
+          res->type = TK_KEYWORD;
+          return NEXT_END;
+        }
+      else
+        {
+          res->type = TK_NOT_SET;
+          return NEXT_END;
+        }
     }
-  ml->src->idx = 0;
+  src->idx = 0;
   return NEXT_NEED_LOAD;
 }
 
@@ -529,7 +554,6 @@ __next_token_lazy (Milexer *ml, Milexer_Token *res)
 int
 milexer_init (Milexer *ml)
 {
-  ml->state = SYN_DUMMY;
   if (ml->lazy)
     {
       /* lazy loading */
@@ -620,13 +644,42 @@ static const char *exp_cstr[] = {
 };
 //--------------------------------------//
 
+
+int
+token_expression (Milexer *ml,
+                  Milexer_Slice *src,
+                  Milexer_Token *t)
+{
+  int ret = 0;
+  while (ret != NEXT_END)
+    {
+      ret = ml->next (ml, src, t);
+      switch (ret)
+        {
+        case NEXT_MATCH:
+        case NEXT_ZTERM:
+        case NEXT_END:
+        case NEXT_CHUNK:
+          if (t->type == TK_KEYWORD)
+            printf ("%s", t->cstr);
+          else if (t->type == TK_PUNCS && t->id == PUNC_COMMA)
+            printf ("\n");
+          break;
+
+        case NEXT_NEED_LOAD:
+          return NEXT_NEED_LOAD;
+        }
+    }
+  return NEXT_END;
+}
+
 int
 main (void)
 {
   char *line = NULL;
   size_t n;
   /* input source */
-  Milexer_Slice Src = {0};
+  Milexer_Slice src = {0};
   /* token type */
   Milexer_Token t = TOKEN_ALLOC (32);
   t.inner = 1; /* get inner expressions */
@@ -634,7 +687,6 @@ main (void)
   /* Milexer initialization */
   Milexer ml = {
     .lazy = 1,
-    .src  = &Src,
 
     .puncs       = GEN_CFG (Puncs),
     .keywords    = GEN_CFG (Keys),
@@ -645,7 +697,7 @@ main (void)
   while (1)
     {
       /* Get the next token */
-      int ret = ml.next (&ml, &t);
+      int ret = ml.next (&ml, &src, &t);
       switch (ret)
         {
         case NEXT_NEED_LOAD:
@@ -655,18 +707,18 @@ main (void)
           if (line == NULL)
             {
               ml.eof_lazy = 1;
-              Src.len = 0;
+              src.len = 0;
             }
           else
             {
-              Src.buffer = line;
+              src.buffer = line;
               /**
                *  We are testing
-               *  but is this safe??
+               *  but is this safe ??
                */
               n = strlen (line);
               line[n] = '\n';
-              Src.len = n+1;
+              src.len = n+1;
             }
           break;
 
@@ -687,7 +739,32 @@ main (void)
                     printf ("[*]  %s", puncs_cstr[t.id]);
                     break;
                   case TK_EXPRESSION:
-                    printf ("%s  %s", exp_cstr[t.id], t.cstr);
+                    if (t.id == EXP_PAREN)
+                      {
+                        puts (" Tokens:");
+                        Milexer_Slice second_src = {0};
+                        Milexer_Token tmp = TOKEN_ALLOC (32);
+                        while (1)
+                          {
+                            second_src.buffer = t.cstr;
+                            second_src.len = strlen (t.cstr);
+                            /**
+                             *  when inner parenthesis is not a chunk,
+                             *  parser should not expect more chunks
+                             */
+                            ml.eof_lazy = (ret != NEXT_CHUNK);
+                            
+                            int _ret = token_expression (&ml, &second_src, &tmp);
+                            if (_ret != NEXT_NEED_LOAD || ret != NEXT_CHUNK)
+                              break;
+                            /* load the rest of inner parenthesis */
+                            ret = ml.next (&ml, &src, &t);
+                          }
+                        ml.eof_lazy = 0;
+                        TOKEN_FREE (&tmp);
+                      }
+                    else
+                      printf ("%s  %s", exp_cstr[t.id], t.cstr);
                     break;
 
                   default:
