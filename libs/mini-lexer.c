@@ -177,27 +177,37 @@ typedef struct
 
 typedef struct
 {
+  /* configs */
+  int eof_lazy; // End of Lazy loading
   enum __buffer_state_t state, prev_state;
+
+  /* buffer & index & capacity */
   const char *buffer;
   size_t len, idx;
 } Milexer_Slice;
 
 typedef struct Milexer_t
 {
-  //-- Buffers -----------------------//
-  // Milexer_Slice *src, *__prev_src;
-  int lazy, eof_lazy;
+  /* lazy mode */
+  int lazy;
 
-  //-- Configs -----------------------//
+  /* configuration */
   Milexer_BEXP escape;    // Not implemented
   Milexer_BEXP puncs;
   Milexer_BEXP keywords;
   Milexer_AEXP expression;
   Milexer_BEXP b_comment; // Not implemented
   Milexer_AEXP a_comment; // Not implemented
-  
-  //-- Functions ---------------------//
-  int (*next)(struct Milexer_t *, Milexer_Slice *, Milexer_Token *);
+
+  /**
+   *  user of this library, uses this function
+   *  to retrieve the next token
+   *  @src is the input buffer source and the result
+   *  will be stored into @t
+   *  handling memory of @src and @t is up to them
+   */
+  int (*next)(struct Milexer_t *,
+              Milexer_Slice *src, Milexer_Token *t);
 } Milexer;
 
 #define GEN_lenof(arr) (sizeof (arr) / sizeof ((arr)[0]))
@@ -394,7 +404,7 @@ __next_token_lazy (Milexer *ml, Milexer_Slice *src,
     
   if (src->idx > src->len)
     {
-      if (ml->eof_lazy)
+      if (src->eof_lazy)
         return NEXT_END;
       src->idx = 0;
       return NEXT_NEED_LOAD;
@@ -524,7 +534,7 @@ __next_token_lazy (Milexer *ml, Milexer_Slice *src,
       //--------------------------------//
     }
 
-  if (ml->eof_lazy)
+  if (src->eof_lazy)
     {
       if (res->__idx > 1)
         {
@@ -706,7 +716,7 @@ main (void)
           line = readline (">>> ");
           if (line == NULL)
             {
-              ml.eof_lazy = 1;
+              src.eof_lazy = 1;
               src.len = 0;
             }
           else
@@ -750,9 +760,9 @@ main (void)
                             second_src.len = strlen (t.cstr);
                             /**
                              *  when inner parenthesis is not a chunk,
-                             *  parser should not expect more chunks
+                             *  the parser should not expect more chunks
                              */
-                            ml.eof_lazy = (ret != NEXT_CHUNK);
+                            second_src.eof_lazy = (ret != NEXT_CHUNK);
                             
                             int _ret = token_expression (&ml, &second_src, &tmp);
                             if (_ret != NEXT_NEED_LOAD || ret != NEXT_CHUNK)
@@ -760,7 +770,6 @@ main (void)
                             /* load the rest of inner parenthesis */
                             ret = ml.next (&ml, &src, &t);
                           }
-                        ml.eof_lazy = 0;
                         TOKEN_FREE (&tmp);
                       }
                     else
