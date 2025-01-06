@@ -105,6 +105,26 @@ enum milexer_state_t
     NEXT_ERR, /* token buffer is null */
   };
 
+#define __flag__(n) (1<<(n))
+enum milexer_parsing_flag_t
+  {
+    /* default parser mode */
+    PFLAG_DEFAULT = 0,
+
+    /**
+     *  to get the inside of expressions
+     *  without their prefix and suffix
+     */
+    PFLAG_INEXP = __flag__ (0),
+
+    /**
+     *  to ignore (allow) space in tokens, on enabled
+     *  white space (0x20) character is no longer a delimiter
+     */
+    PFLAG_IGSPACE = __flag__ (1),
+  };
+
+
 const char *milexer_state_cstr[] = {
   [NEXT_MATCH]                   = "match",
   [NEXT_CHUNK]                   = "chunk",
@@ -144,18 +164,13 @@ const char *milexer_token_type_cstr[] = {
 typedef struct
 {
   enum milexer_token_t type;
-  int id; /* when keywords is not null */
 
   /**
-   *  when the token is an expression,
-   *  set it 1 to only get inside of the expression
-   **/
-  char inner;
-  /**
-   *  ignore the space delimiter
-   *  when it's 1, space is no longer a token delimiter
-   **/
-  char ignore_space;
+   *  index of the token in the corresponding
+   *  exps/puncs/keys array
+   *  -1 when the token was not recognized
+   */
+  int id;
 
   /**
    *  user of this library, allocates and frees
@@ -212,7 +227,9 @@ typedef struct Milexer_t
    *  handling memory of @src and @t is up to user of this library
    */
   int (*next)(const struct Milexer_t *,
-              Milexer_Slice *src, Milexer_Token *t);
+              Milexer_Slice *src,
+              Milexer_Token *t,
+              int flags);
 } Milexer;
 
 #define GEN_lenof(arr) (sizeof (arr) / sizeof ((arr)[0]))
@@ -229,7 +246,7 @@ int milexer_init (Milexer *);
  **/
 static inline char *
 __handle_puncs (const Milexer *ml, const Milexer_Slice *src,
-                Milexer_Token *res)
+                Milexer_Token *res, int flags)
 {
   if (res->cstr[res->__idx - 1] < ' ')
     {
@@ -245,7 +262,8 @@ __handle_puncs (const Milexer *ml, const Milexer_Slice *src,
 
     default:
       char *p = res->cstr + (res->__idx - 1);
-      if (*p < ' ' || (*p == ' ' && res->ignore_space == 0))
+      if (*p < ' ' ||
+          (*p == ' ' && !(flags & PFLAG_IGSPACE)))
         {
           return p;
         }
@@ -363,17 +381,18 @@ __handle_token_id (const Milexer *ml, Milexer_Token *res)
 
 static int
 __next_token (const Milexer *ml, Milexer_Slice *src,
-              Milexer_Token *res)
+              Milexer_Token *res, int flags)
 {
   (void)(ml);
   (void)(src);
   (void)(res);
+  (void)(flags);
   return 0;
 }
 
 static int
 __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
-                   Milexer_Token *res)
+                   Milexer_Token *res, int flags)
 {
 #define LD_STATE(src) (src)->state = (src)->prev_state
 #define ST_STATE(slice, new_state) do {         \
@@ -386,7 +405,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
   
   if (src->state == SYN_NO_DUMMY__)
     {
-      if (res->__last_exp_idx != -1 && res->inner == 0)
+      if ((flags & PFLAG_INEXP) && res->__last_exp_idx != -1)
         {
           /* certainly the token type is expression */
           res->type = TK_EXPRESSION;
@@ -433,7 +452,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
             }
           else if (src->state == SYN_NO_DUMMY)
             {
-              if (res->inner)
+              if (flags & PFLAG_INEXP)
                 *__startof_exp = '\0';
               ST_STATE (src, SYN_DONE);
               res->cstr[res->__idx] = 0;
@@ -445,7 +464,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
               /* begginign of an expression */
               if (__startof_exp == res->cstr)
                 {
-                  if (res->inner)
+                  if (flags & PFLAG_INEXP)
                     res->__idx = 0;
                   ST_STATE (src, SYN_NO_DUMMY);
                 }
@@ -470,7 +489,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
           ST_STATE (src, SYN_ESCAPE);
         }
       //-- handling puncs --------------//
-      else if ((__startof_punc = __handle_puncs (ml, src, res)))
+      else if ((__startof_punc = __handle_puncs (ml, src, res, flags)))
         {
           if (*__startof_punc <= ' ')
             {
@@ -665,25 +684,17 @@ token_expression (Milexer *ml,
                   Milexer_Slice *src,
                   Milexer_Token *t)
 {
-  int ret = 0;
-  while (ret != NEXT_END)
+  for (int ret = 0; ret != NEXT_END; )
     {
-      ret = ml->next (ml, src, t);
-      switch (ret)
-        {
-        case NEXT_MATCH:
-        case NEXT_ZTERM:
-        case NEXT_END:
-        case NEXT_CHUNK:
-          if (t->type == TK_KEYWORD)
-            printf ("%s", t->cstr);
-          else if (t->type == TK_PUNCS && t->id == PUNC_COMMA)
-            printf ("\n");
-          break;
+      /* allow space character in tokens */
+      ret = ml->next (ml, src, t, PFLAG_IGSPACE);
+      if (ret == NEXT_NEED_LOAD)
+        return NEXT_NEED_LOAD;
 
-        case NEXT_NEED_LOAD:
-          return NEXT_NEED_LOAD;
-        }
+      if (t->type == TK_KEYWORD)
+        printf ("%s", t->cstr);
+      else if (t->type == TK_PUNCS && t->id == PUNC_COMMA)
+        printf ("\n");
     }
   return NEXT_END;
 }
@@ -697,7 +708,6 @@ main (void)
   Milexer_Slice src = {0};
   /* token type */
   Milexer_Token t = TOKEN_ALLOC (32);
-  t.inner = 1; /* get inner expressions */
 
   /* Milexer initialization */
   Milexer ml = {
@@ -709,10 +719,11 @@ main (void)
   };
   milexer_init (&ml);
 
-  while (1)
+  for (int ret = 0;
+       ret != NEXT_ERR && ret != NEXT_END; )
     {
       /* Get the next token */
-      int ret = ml.next (&ml, &src, &t);
+      ret = ml.next (&ml, &src, &t, PFLAG_INEXP);
       switch (ret)
         {
         case NEXT_NEED_LOAD:
@@ -768,17 +779,12 @@ main (void)
                              *  the parser should not expect more chunks
                              */
                             second_src.eof_lazy = (ret != NEXT_CHUNK);
-                            /**
-                             *  we wnat to allow space character
-                             *  inside the `(xxx)` expression
-                             */
-                            tmp.ignore_space = 1;
-                            
+
                             int _ret = token_expression (&ml, &second_src, &tmp);
                             if (_ret != NEXT_NEED_LOAD || ret != NEXT_CHUNK)
                               break;
                             /* load the rest of inner parenthesis */
-                            ret = ml.next (&ml, &src, &t);
+                            ret = ml.next (&ml, &src, &t, 0);
                           }
                         TOKEN_FREE (&tmp);
                       }
@@ -800,14 +806,9 @@ main (void)
               puts ("");
           }
           break;
-
-        case NEXT_END:
-        case NEXT_ERR:
-          goto End_of_Main;
         }
     }
 
- End_of_Main:
   TOKEN_FREE (&t);
   if (line)
     free (line);
