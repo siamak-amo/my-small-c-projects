@@ -592,7 +592,7 @@ milexer_init (Milexer *ml)
 /**
  **  Test1 Program
  **/
-#ifdef ML_TEST1
+#ifdef ML_EXAMPLE_1
 #include <stdio.h>
 #include <stdlib.h>
 #include <readline/readline.h>
@@ -806,4 +806,4 @@ main (void)
   return 0;
 }
 
-#endif /* ML_TEST1 */
+#endif /* ML_EXAMPLE_1 */
