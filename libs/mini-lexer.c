@@ -151,6 +151,11 @@ typedef struct
    *  set it 1 to only get inside of the expression
    **/
   char inner;
+  /**
+   *  ignore the space delimiter
+   *  when it's 1, space is no longer a token delimiter
+   **/
+  char ignore_space;
 
   /**
    *  user of this library, allocates and frees
@@ -201,13 +206,12 @@ typedef struct Milexer_t
   Milexer_AEXP a_comment; // Not implemented
 
   /**
-   *  user of this library, uses this function
    *  to retrieve the next token
    *  @src is the input buffer source and the result
    *  will be stored into @t
-   *  handling memory of @src and @t is up to them
+   *  handling memory of @src and @t is up to user of this library
    */
-  int (*next)(struct Milexer_t *,
+  int (*next)(const struct Milexer_t *,
               Milexer_Slice *src, Milexer_Token *t);
 } Milexer;
 
@@ -224,7 +228,7 @@ int milexer_init (Milexer *);
  **  Only use Milexer.next()
  **/
 static inline char *
-__handle_puncs (Milexer *ml, Milexer_Slice *src,
+__handle_puncs (const Milexer *ml, const Milexer_Slice *src,
                 Milexer_Token *res)
 {
   if (res->cstr[res->__idx - 1] < ' ')
@@ -241,7 +245,7 @@ __handle_puncs (Milexer *ml, Milexer_Slice *src,
 
     default:
       char *p = res->cstr + (res->__idx - 1);
-      if (*p <= ' ')
+      if (*p < ' ' || (*p == ' ' && res->ignore_space == 0))
         {
           return p;
         }
@@ -274,7 +278,7 @@ __handle_puncs (Milexer *ml, Milexer_Slice *src,
 }
 
 static inline char *
-__handle_expression (Milexer *ml, Milexer_Slice *src,
+__handle_expression (const Milexer *ml, const Milexer_Slice *src,
                      Milexer_Token *res) 
 {
 #define Return(n) do {                          \
@@ -337,7 +341,7 @@ __handle_expression (Milexer *ml, Milexer_Slice *src,
 }
 
 static inline void
-__handle_token_id (Milexer *ml, Milexer_Token *res)
+__handle_token_id (const Milexer *ml, Milexer_Token *res)
 {
   if (res->type != TK_KEYWORD)
     return;
@@ -358,7 +362,7 @@ __handle_token_id (Milexer *ml, Milexer_Token *res)
 
 
 static int
-__next_token (Milexer *ml, Milexer_Slice *src,
+__next_token (const Milexer *ml, Milexer_Slice *src,
               Milexer_Token *res)
 {
   (void)(ml);
@@ -368,7 +372,7 @@ __next_token (Milexer *ml, Milexer_Slice *src,
 }
 
 static int
-__next_token_lazy (Milexer *ml, Milexer_Slice *src,
+__next_token_lazy (const Milexer *ml, Milexer_Slice *src,
                    Milexer_Token *res)
 {
 #define LD_STATE(src) (src)->state = (src)->prev_state
@@ -764,6 +768,11 @@ main (void)
                              *  the parser should not expect more chunks
                              */
                             second_src.eof_lazy = (ret != NEXT_CHUNK);
+                            /**
+                             *  we wnat to allow space character
+                             *  inside the `(xxx)` expression
+                             */
+                            tmp.ignore_space = 1;
                             
                             int _ret = token_expression (&ml, &second_src, &tmp);
                             if (_ret != NEXT_NEED_LOAD || ret != NEXT_CHUNK)
