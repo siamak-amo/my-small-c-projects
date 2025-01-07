@@ -108,8 +108,9 @@ enum milexer_state_t
     NEXT_ERR,
   };
 
-#define NEXT_SHOULD_BREAK(ret) \
-  (ret == NEXT_NEED_LOAD || ret == NEXT_END || ret == NEXT_ERR)
+#define NEXT_SHOULD_END(ret) (ret == NEXT_END || ret == NEXT_ERR)
+#define NEXT_SHOULD_LOAD(ret) (ret == NEXT_NEED_LOAD || NEXT_SHOULD_END (ret))
+
 
 #define __flag__(n) (1 << (n))
 enum milexer_parsing_flag_t
@@ -770,8 +771,7 @@ main (void)
 
   char *line = NULL;
   const int flg = PFLAG_INEXP;
-  for (int ret = 0;
-       ret != NEXT_ERR && ret != NEXT_END; )
+  for (int ret = 0; !NEXT_SHOULD_END (ret); )
     {
       /* Get the next token */
       ret = ml.next (&ml, &src, &tk, flg);
@@ -827,7 +827,7 @@ main (void)
                         /* prepare the new input source buffer */
                         SET_SLICE (&second_src, tk.cstr, strlen (tk.cstr));
 
-                        for (int _ret = 0; !NEXT_SHOULD_BREAK (_ret); )
+                        for (int _ret = 0; !NEXT_SHOULD_LOAD (_ret); )
                           {
                             /* allow space character in tokens */
                             _ret = ml.next (&ml, &second_src, &tmp, PFLAG_IGSPACE);
