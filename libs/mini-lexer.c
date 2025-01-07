@@ -108,71 +108,74 @@ enum milexer_state_t
     NEXT_ERR,
   };
 
-#define NEXT_SHOULD_BREAK(ret)                      \
-  (ret == NEXT_NEED_LOAD ||                         \
-   ret == NEXT_END   || ret == NEXT_ERR)
+#define NEXT_SHOULD_BREAK(ret) \
+  (ret == NEXT_NEED_LOAD || ret == NEXT_END || ret == NEXT_ERR)
 
-#define __flag__(n) (1<<(n))
+#define __flag__(n) (1 << (n))
 enum milexer_parsing_flag_t
   {
-    /* default parser mode */
+    /* Default behavior */
     PFLAG_DEFAULT = 0,
 
     /**
-     *  to get the inside of expressions
-     *  without their prefix and suffix
+     *  To Retrieve the contents of expressions 
+     *  without their prefix and suffix.
      */
     PFLAG_INEXP =      __flag__ (0),
 
     /**
-     *  to ignore (allow) space in tokens, on enabled
-     *  white space (0x20) character is no longer a delimiter
+     *  To allow space(s) in tokens
+     *  The whitespace (0x20) character is no longer
+     *  treated as a delimiter while using this flag
      */
     PFLAG_IGSPACE =    __flag__ (1),
 
     /**
-     *  when ml->delim_ranges is defined, it will overwrite
-     *  the default delimiters (range 0,0x20), to also
-     *  include the default ones, use this flag
+     *  When `delim_ranges` is available, it will overwrite 
+     *  the default delimiters (range 0, 0x20)
+     *  To include them as well, use this flag
      */
     PFLAG_ALLDELIMS =  __flag__ (1),
   };
 
 
 const char *milexer_state_cstr[] = {
-  [NEXT_MATCH]                   = "match",
-  [NEXT_CHUNK]                   = "chunk",
-  [NEXT_ZTERM]                   = "zero terminated",
-  [NEXT_NEED_LOAD]               = "lazy load",
-  [NEXT_END]                     = "eof parsing",
-  [NEXT_ERR]                     = "error"
+  [NEXT_MATCH]                   = "Match",
+  [NEXT_CHUNK]                   = "Chunk",
+  [NEXT_ZTERM]                   = "zero-byte",
+  [NEXT_NEED_LOAD]               = "Load",
+  [NEXT_END]                     = "END",
+  [NEXT_ERR]                     = "Error"
 };
 
 enum milexer_token_t
   {
+    /* internal bug */
     TK_NOT_SET = 0,
 
     TK_PUNCS,
     TK_KEYWORD,
-    
-    /* expression might be anything,
-       strings like: "xxx" or stuff like: (xxx) or {xxx} */
+
+    /**
+     *  An expression might be anything,
+     *  strings like: "xxx" or constructs like: (xxx) or {xxx}
+     */
     TK_EXPRESSION,
-    
+
     /* basic comments (single line) */
     TK_BCOMMENT,
-    
+
     /* advanced comments (multi-line comments) */
     TK_ACOMMENT,
   };
 
 const char *milexer_token_type_cstr[] = {
   [TK_NOT_SET]                        = "NAN", /* unreachable */
-  [TK_PUNCS]                          = "punctuation",
-  [TK_KEYWORD]                        = "keyword",
-  [TK_EXPRESSION]                     = "expression",
-  [TK_BCOMMENT]                       = "comment",
-  [TK_ACOMMENT]                       = "comment",
+  [TK_PUNCS]                          = "Punctuation",
+  [TK_KEYWORD]                        = "Keyword",
+  [TK_EXPRESSION]                     = "Expression",
+  [TK_BCOMMENT]                       = "Comment",
+  [TK_ACOMMENT]                       = "Comment",
 };
 
 typedef struct
@@ -180,20 +183,22 @@ typedef struct
   enum milexer_token_t type;
 
   /**
-   *  index of the token in the corresponding
-   *  exps/puncs/keys array
-   *  -1 when the token was not recognized
+   *  Index of the token in the corresponding
+   *  Milexer configuration field, punc/keyword/...
+   *  -1 means the token is not recognized
    */
   int id;
 
   /**
-   *  user of this library, allocates and frees
-   *  the temporary buffer @str of length @len+1
-   **/
+   *  The user of this library is responsible for allocating
+   *  and freeing the buffer @cstr of length `@len + 1`
+   *  `TOKEN_ALLOC` macro does this using malloc
+   *  We guarantee that @cstr is always null-terminated
+   */
   char *cstr;
   size_t len;
 
-  /** internal **/
+  /* Internal */
   size_t __idx;
 } Milexer_Token;
 
@@ -202,21 +207,24 @@ typedef struct
 #define TOKEN_FREE(t) if ((t)->cstr) {free ((t)->cstr);}
 #define TOKEN_DROP(t) ((t)->__idx = 0, (t)->type = TK_NOT_SET)
 
-/* internal */
+/* Internal macros */
 #define __get_last_exp(ml, src) \
   ((ml)->expression.exp + (src)->__last_exp_idx)
 #define __get_last_punc(ml, src) \
   ((ml)->puncs.exp[(src)->__last_punc_idx])
 
+
 typedef struct
 {
-  /* configs */
-  int eof_lazy; // End of Lazy loading
+  /* End of lazy loading */
+  int eof_lazy;
+
+  /* Internal state of the buffer, SYN_xxx */
   enum __buffer_state_t state, prev_state;
 
   /* buffer & index & capacity */
   const char *buffer;
-  size_t len, idx;
+  size_t cap, idx;
 
   /* Internal */
   /* TODO: for nesting, these should be arrays */
@@ -224,12 +232,16 @@ typedef struct
   int __last_punc_idx;
 } Milexer_Slice;
 
+#define SET_SLICE(src, buf, n) ((src)->buffer = buf, (src)->cap = n)
+/* to indicate that lazy loading is over */
+#define END_SLICE(src) ((src)->cap = 0, (src)->eof_lazy = 1)
+
 typedef struct Milexer_t
 {
   /* lazy mode */
   int lazy;
 
-  /* configuration */
+  /* Configurations */
   Milexer_BEXP escape;    // Not implemented
   Milexer_BEXP puncs;
   Milexer_BEXP keywords;
@@ -237,18 +249,23 @@ typedef struct Milexer_t
   Milexer_BEXP b_comment; // Not implemented
   Milexer_AEXP a_comment; // Not implemented
   /**
-   *  delimiter ranges, each entry of this field,
-   *  shall be a char[2], which determines a range
-   *  of character that will be treated as token delimiter
-   *  Ex: "\x01\x12" describes the range [0x01, 0x12]
+   *  Delimiter ranges; each entry in this field
+   *  must be 1 or 2-byte string, which defines a range
+   *  of characters that will be treated as token delimiters
+   *  For example: "\x01\x12" describes the range [0x01, 0x12],
+   *  while "\x42" represents a single character 0x42
    */
   Milexer_BEXP delim_ranges;
 
   /**
-   *  to retrieve the next token
-   *  @src is the input buffer source and the result
-   *  will be stored into @t
-   *  handling memory of @src and @t is up to user of this library
+   *  Retrieves the next token
+   *
+   *  @src is the input buffer source and The result 
+   *  will be stored in @t
+   *
+   *  Memory management for @src and @t is up to
+   *  the user of this library
+   *  Their allocated buffers *MUST* be distinct
    */
   int (*next)(const struct Milexer_t *,
               Milexer_Slice *src,
@@ -256,8 +273,8 @@ typedef struct Milexer_t
               int flags);
 } Milexer;
 
-#define GEN_lenof(arr) (sizeof (arr) / sizeof ((arr)[0]))
-#define GEN_CFG(exp_ptr) {.exp=exp_ptr, .len=GEN_lenof (exp_ptr)}
+#define __gen_lenof(arr) (sizeof (arr) / sizeof ((arr)[0]))
+#define GEN_MKCFG(exp_ptr) {.exp=exp_ptr, .len=__gen_lenof (exp_ptr)}
 
 /* initialize */
 int milexer_init (Milexer *);
@@ -294,7 +311,12 @@ __handle_delims (const Milexer *ml, const Milexer_Slice *src,
           for (int i=0; i < ml->delim_ranges.len; ++i)
             {
               const char *__p = ml->delim_ranges.exp[i];
-              if (p >= __p[0] && p <= __p[1])
+              if (__p[1] != '\0')
+                {
+                  if (p >= __p[0] && p <= __p[1])
+                    return p;
+                }
+              else if (p == __p[0])
                 return p;
             }
         }
@@ -474,7 +496,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
       return NEXT_MATCH;
     }
     
-  if (src->idx > src->len)
+  if (src->idx > src->cap)
     {
       if (src->eof_lazy)
         return NEXT_END;
@@ -483,7 +505,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
     }
 
   res->type = TK_NOT_SET;
-  for (unsigned char p; src->idx < src->len; )
+  for (unsigned char p; src->idx < src->cap; )
     {
       char *__startof_exp, *__startof_punc;
       
@@ -680,7 +702,7 @@ enum LANG
     PUNC_PLUS = 0,
     PUNC_MINUS,
     PUNC_MULT,
-    PUNC_POW,
+    PUNC_DIV,
     PUNC_COMMA,
     PUNC_EQUAL,
     PUNC_NEQUAL,
@@ -699,7 +721,7 @@ static const char *Puncs[] = {
   [PUNC_PLUS]       = "+",
   [PUNC_MINUS]      = "-",
   [PUNC_MULT]       = "*",
-  [PUNC_POW]        = "^",
+  [PUNC_DIV]        = "/",
   [PUNC_COMMA]      = ",",
   [PUNC_EQUAL]      = "=", /* you cannot have "==" */
   [PUNC_NEQUAL]     = "!=", /* also "!===" */
@@ -714,10 +736,10 @@ static const char *puncs_cstr[] = {
   [PUNC_PLUS]       = "Plus",
   [PUNC_MINUS]      = "Minus",
   [PUNC_MULT]       = "Times",
-  [PUNC_POW]        = "Power",
+  [PUNC_DIV]        = "Division",
   [PUNC_COMMA]      = "Comma",
-  [PUNC_EQUAL]      = "Equal",  /* you cannot have "==" */
-  [PUNC_NEQUAL]     = "~Equal", /* also "!===" */
+  [PUNC_EQUAL]      = "Equal",
+  [PUNC_NEQUAL]     = "~Equal",
 };
 static const char *exp_cstr[] = {
   [EXP_PAREN]       = "(*)",
@@ -734,15 +756,15 @@ main (void)
   /* input source */
   Milexer_Slice src = {0};
   /* token type */
-  Milexer_Token t = TOKEN_ALLOC (32);
+  Milexer_Token tk = TOKEN_ALLOC (32);
 
   /* Milexer initialization */
   Milexer ml = {
     .lazy = 1,
 
-    .puncs       = GEN_CFG (Puncs),
-    .keywords    = GEN_CFG (Keys),
-    .expression  = GEN_CFG (Exp),
+    .puncs       = GEN_MKCFG (Puncs),
+    .keywords    = GEN_MKCFG (Keys),
+    .expression  = GEN_MKCFG (Exp),
   };
   milexer_init (&ml);
 
@@ -752,22 +774,16 @@ main (void)
        ret != NEXT_ERR && ret != NEXT_END; )
     {
       /* Get the next token */
-      ret = ml.next (&ml, &src, &t, flg);
+      ret = ml.next (&ml, &src, &tk, flg);
       switch (ret)
         {
         case NEXT_NEED_LOAD:
           ssize_t n;
           printf (">>> ");
           if ((n = getline (&line, (size_t *)&n, stdin)) < 0)
-            {
-              src.eof_lazy = 1;
-              src.len = 0;
-            }
+            END_SLICE (&src);
           else
-            {
-              src.buffer = line;
-              src.len = n;
-            }
+            SET_SLICE (&src, line, n);
           break;
 
         case NEXT_MATCH:
@@ -775,19 +791,19 @@ main (void)
         case NEXT_ZTERM:
           {
             /* print the type of the token @t */
-            printf ("%.*s", 3, milexer_token_type_cstr[t.type]);
-            switch (t.type)
+            printf ("%.*s", 3, milexer_token_type_cstr[tk.type]);
+            switch (tk.type)
               {
               case TK_KEYWORD:
-                printf ("[%c]  `%s`", TOKEN_IS_KNOWN (&t) ?'*':'-', t.cstr);
+                printf ("[%c]  `%s`", TOKEN_IS_KNOWN (&tk) ?'*':'-', tk.cstr);
                 break;
               case TK_PUNCS:
-                printf ("[*]   %s", puncs_cstr[t.id]);
+                printf ("[*]   %s", puncs_cstr[tk.id]);
                 break;
               case TK_EXPRESSION:
-                printf ("%s", exp_cstr[t.id]);
-                if (t.id != EXP_PAREN) /* is not parenthesis */
-                  printf ("   `%s`", t.cstr);
+                printf ("%s", exp_cstr[tk.id]);
+                if (tk.id != EXP_PAREN) /* is not parenthesis */
+                  printf ("   `%s`", tk.cstr);
                 else
                   {
                     /**
@@ -808,9 +824,9 @@ main (void)
                          *  the parser should not expect additional chunks
                          */
                         second_src.eof_lazy = (ret != NEXT_CHUNK);
-                        second_src.buffer = t.cstr;
-                        second_src.len = strlen (t.cstr);
-                        
+                        /* prepare the new input source buffer */
+                        SET_SLICE (&second_src, tk.cstr, strlen (tk.cstr));
+
                         for (int _ret = 0; !NEXT_SHOULD_BREAK (_ret); )
                           {
                             /* allow space character in tokens */
@@ -820,14 +836,12 @@ main (void)
                               printf ("%s", tmp.cstr);
                             else if (tmp.type == TK_PUNCS && tmp.id == PUNC_COMMA)
                               puts ("");
-                            else
-                              puts ("?");
                           }
 
                         /* load the remaining chunks of the inner parentheses, if any */
                         if (ret != NEXT_CHUNK)
                           break;
-                        ret = ml.next (&ml, &src, &t, flg);
+                        ret = ml.next (&ml, &src, &tk, flg);
                       }
                     TOKEN_FREE (&tmp);
                   }
@@ -847,7 +861,7 @@ main (void)
         }
     }
 
-  TOKEN_FREE (&t);
+  TOKEN_FREE (&tk);
   if (line)
     free (line);
   puts ("Bye");
