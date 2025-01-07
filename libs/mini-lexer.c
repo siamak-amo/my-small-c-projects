@@ -62,54 +62,65 @@ enum __buffer_state_t
     /* middle or beggining of a token */
     SYN_MIDDLE,
 
-    /* when need to recover the previous puck */
+    /* when recovering the previous punc is needed */
     SYN_PUNC__,
     
-    /* middle or beggining of a string or comment
-       in this mode, nothing causes change of state
-       but the specified end of expression */
+    /**
+     *  Middle or beggining of an expression
+     *  Only the corresponding suffix will change this state
+     */
     SYN_NO_DUMMY,
-    SYN_NO_DUMMY__, /* when the prefix needs to be recovered */
+    SYN_NO_DUMMY__, /* when recovering the prefix is needed */
+
+    /* line or section is commented */
+    SYN_COMM,
+    SYN_ML_COMM, /* multi-line comments */
     
     SYN_CHUNK, /* handling fragmentation */
     SYN_DONE /* token is ready */
   };
 
-const char *milexer_buf_state[] = {
-  [SYN_DUMMY]                   = "dummy",
-  [SYN_ESCAPE]                  = "escape",
-  [SYN_MIDDLE]                  = "inner token",
-  [SYN_NO_DUMMY]                = "inner exp",
-  [SYN_NO_DUMMY__]              = "recover exp",
-  [SYN_PUNC__]                  = "recover punc",
-  [SYN_DONE]                    = "done",
-};
 
 enum milexer_state_t
   {
     NEXT_MATCH = 0, /* got a token */
     
-    /* no enough space left in the token's buffer
-       keep reading the rest of the chunks */
+    /**
+     *  Not enough space left in the token's buffer, 
+     *  so the token was fragmented
+     *  You will receive the remaining chunk(s)
+     *  until you get a NEXT_MATCH token
+     */
     NEXT_CHUNK,
     
-    /* parser has encountered a zero-byte \0
-       you might want to end it up */
+    /**
+     *  The parser has encountered a zero-byte
+     *  You might want to terminate parsing
+     */
     NEXT_ZTERM,
     
-    /* only in lazy loading
-       you need to load the rest of your stuff */
+    /**
+     *  Only in lazy loading:
+     *  Parsing the current slice source is done
+     *  You need to load the remaining of data
+     */
     NEXT_NEED_LOAD,
     
     NEXT_END, /* nothing to do, end of parsing */
-
-    /* either your buffer(s) is null or
-       input buffer and output token buffer are the same */
-    NEXT_ERR,
+    NEXT_ERR, /* error */
   };
 
 #define NEXT_SHOULD_END(ret) (ret == NEXT_END || ret == NEXT_ERR)
 #define NEXT_SHOULD_LOAD(ret) (ret == NEXT_NEED_LOAD || NEXT_SHOULD_END (ret))
+
+const char *milexer_state_cstr[] = {
+  [NEXT_MATCH]                   = "Match",
+  [NEXT_CHUNK]                   = "Chunk",
+  [NEXT_ZTERM]                   = "zero-byte",
+  [NEXT_NEED_LOAD]               = "Load",
+  [NEXT_END]                     = "END",
+  [NEXT_ERR]                     = "Error"
+};
 
 
 #define __flag__(n) (1 << (n))
@@ -136,47 +147,32 @@ enum milexer_parsing_flag_t
      *  the default delimiters (range 0, 0x20)
      *  To include them as well, use this flag
      */
-    PFLAG_ALLDELIMS =  __flag__ (1),
-  };
-
-
-const char *milexer_state_cstr[] = {
-  [NEXT_MATCH]                   = "Match",
-  [NEXT_CHUNK]                   = "Chunk",
-  [NEXT_ZTERM]                   = "zero-byte",
-  [NEXT_NEED_LOAD]               = "Load",
-  [NEXT_END]                     = "END",
-  [NEXT_ERR]                     = "Error"
-};
-
-enum milexer_token_t
-  {
-    /* internal bug */
-    TK_NOT_SET = 0,
-
-    TK_PUNCS,
-    TK_KEYWORD,
+    PFLAG_ALLDELIMS =  __flag__ (2),
 
     /**
-     *  An expression might be anything,
-     *  strings like: "xxx" or constructs like: (xxx) or {xxx}
+     *  To retrive tokens of commented sections
+     *  which are ignored by default
      */
+    PFLAG_INCOMMENT =  __flag__ (3),
+  };
+
+enum milexer_token_t
+  { 
+    TK_NOT_SET = 0, /* internal milexer bug */
+    TK_COMMENT, /* commented */
+
+    /* usable tokens */
+    TK_PUNCS,
+    TK_KEYWORD,
     TK_EXPRESSION,
-
-    /* basic comments (single line) */
-    TK_BCOMMENT,
-
-    /* advanced comments (multi-line comments) */
-    TK_ACOMMENT,
   };
 
 const char *milexer_token_type_cstr[] = {
-  [TK_NOT_SET]                        = "NAN", /* unreachable */
-  [TK_PUNCS]                          = "Punctuation",
-  [TK_KEYWORD]                        = "Keyword",
-  [TK_EXPRESSION]                     = "Expression",
-  [TK_BCOMMENT]                       = "Comment",
-  [TK_ACOMMENT]                       = "Comment",
+  [TK_NOT_SET]         = "NAN", /* unreachable */
+  [TK_PUNCS]           = "Punctuation",
+  [TK_KEYWORD]         = "Keyword",
+  [TK_EXPRESSION]      = "Expression",
+  [TK_COMMENT]         = "Comment",
 };
 
 typedef struct
@@ -236,6 +232,11 @@ typedef struct
 #define SET_SLICE(src, buf, n) ((src)->buffer = buf, (src)->cap = n)
 /* to indicate that lazy loading is over */
 #define END_SLICE(src) ((src)->cap = 0, (src)->eof_lazy = 1)
+/* set new state & load the previous state */
+#define LD_STATE(src) (src)->state = (src)->prev_state
+#define ST_STATE(slice, new_state) \
+  ((slice)->prev_state = (slice)->state, (slice)->state = new_state)
+
 
 typedef struct Milexer_t
 {
@@ -253,6 +254,7 @@ typedef struct Milexer_t
    *  Delimiter ranges; each entry in this field
    *  must be 1 or 2-byte string, which defines a range
    *  of characters that will be treated as token delimiters
+   *
    *  For example: "\x01\x12" describes the range [0x01, 0x12],
    *  while "\x42" represents a single character 0x42
    */
@@ -274,8 +276,8 @@ typedef struct Milexer_t
               int flags);
 } Milexer;
 
-#define __gen_lenof(arr) (sizeof (arr) / sizeof ((arr)[0]))
-#define GEN_MKCFG(exp_ptr) {.exp=exp_ptr, .len=__gen_lenof (exp_ptr)}
+#define GEN_LENOF(arr) (sizeof (arr) / sizeof ((arr)[0]))
+#define GEN_MKCFG(exp_ptr) {.exp = exp_ptr, .len = GEN_LENOF (exp_ptr)}
 
 /* initialize */
 int milexer_init (Milexer *);
@@ -464,12 +466,6 @@ static int
 __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
                    Milexer_Token *res, int flags)
 {
-#define LD_STATE(src) (src)->state = (src)->prev_state
-#define ST_STATE(slice, new_state) do {         \
-    (slice)->prev_state = (slice)->state;       \
-    (slice)->state = new_state;                 \
-  } while (0)
-
   if (res->cstr == NULL || res->len <= 0
       || res->cstr == src->buffer)
     return NEXT_ERR;
