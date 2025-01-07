@@ -449,7 +449,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
   
   if (src->state == SYN_NO_DUMMY__)
     {
-      if ((flags & PFLAG_INEXP) && src->__last_exp_idx != -1)
+      if (!(flags & PFLAG_INEXP) && src->__last_exp_idx != -1)
         {
           /* certainly the token type is expression */
           res->type = TK_EXPRESSION;
@@ -517,7 +517,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
             }
           else if (src->state == SYN_NO_DUMMY)
             {
-              if (flags & PFLAG_INEXP)
+              if (!(flags & PFLAG_INEXP))
                 *__startof_exp = '\0';
               ST_STATE (src, SYN_DONE);
               res->cstr[res->__idx] = 0;
@@ -725,25 +725,6 @@ static const char *exp_cstr[] = {
 
 
 int
-parse_parenthesis (const Milexer *ml, Milexer_Slice *src,
-                   Milexer_Token *t)
-{
-  for (int ret = 0; ret != NEXT_END; )
-    {
-      /* allow space character in tokens */
-      ret = ml->next (ml, src, t, PFLAG_IGSPACE);
-      if (ret == NEXT_NEED_LOAD)
-        return NEXT_NEED_LOAD;
-
-      if (t->type == TK_KEYWORD)
-        printf ("%s", t->cstr);
-      else if (t->type == TK_PUNCS && t->id == PUNC_COMMA)
-        printf ("\n");
-    }
-  return NEXT_END;
-}
-
-int
 main (void)
 {
   /* input source */
@@ -824,9 +805,17 @@ main (void)
                         second_src.eof_lazy = (ret != NEXT_CHUNK);
                         second_src.buffer = t.cstr;
                         second_src.len = strlen (t.cstr);
-                        /* parse inside the parenthesis */
-                        int _ret = parse_parenthesis (&ml, &second_src, &tmp);
-                        if (_ret != NEXT_NEED_LOAD || ret != NEXT_CHUNK)
+                        
+                        for (int _ret = 0; _ret != NEXT_NEED_LOAD && _ret != NEXT_END; )
+                          {
+                            /* allow space character in tokens */
+                            _ret = ml.next (&ml, &second_src, &tmp, PFLAG_IGSPACE);
+                            if (tmp.type == TK_KEYWORD)
+                              printf ("%s", tmp.cstr);
+                            else if (tmp.type == TK_PUNCS && tmp.id == PUNC_COMMA)
+                              printf ("\n");
+                          }
+                        if (ret != NEXT_CHUNK)
                           break;
                         /* load the rest of inner parenthesis */
                         ret = ml.next (&ml, &src, &t, 0);
