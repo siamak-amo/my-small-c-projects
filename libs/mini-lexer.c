@@ -108,6 +108,10 @@ enum milexer_state_t
     NEXT_ERR,
   };
 
+#define NEXT_SHOULD_BREAK(ret)                      \
+  (ret == NEXT_NEED_LOAD ||                         \
+   ret == NEXT_END   || ret == NEXT_ERR)
+
 #define __flag__(n) (1<<(n))
 enum milexer_parsing_flag_t
   {
@@ -517,7 +521,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
             }
           else if (src->state == SYN_NO_DUMMY)
             {
-              if (!(flags & PFLAG_INEXP))
+              if (flags & PFLAG_INEXP)
                 *__startof_exp = '\0';
               ST_STATE (src, SYN_DONE);
               res->cstr[res->__idx] = 0;
@@ -743,11 +747,12 @@ main (void)
   milexer_init (&ml);
 
   char *line = NULL;
+  const int flg = PFLAG_INEXP;
   for (int ret = 0;
        ret != NEXT_ERR && ret != NEXT_END; )
     {
       /* Get the next token */
-      ret = ml.next (&ml, &src, &t, PFLAG_INEXP);
+      ret = ml.next (&ml, &src, &t, flg);
       switch (ret)
         {
         case NEXT_NEED_LOAD:
@@ -786,12 +791,12 @@ main (void)
                 else
                   {
                     /**
-                     *  This example, parses the inside of
-                     *  an expression token, inside (`xxx`)
-                     *  so, we use t.cstr as the input buffer in second_src
-                     *  thus we must allocate a new token buffer, otherwise
+                     *  This example parses the contents of expressions
+                     *  enclosed in parenthesis: given: '(xxx)' -> parsing 'xxx'
+                     *  We use `t.cstr` as the input buffer in `second_src`
+                     *  Therefore, we must allocate a new token, otherwise
                      *  the parser will fail to parse the input and store
-                     *  the result in the same plase
+                     *  the result in the same location simultaneously
                      */
                     puts (":");
                     Milexer_Slice second_src = {0};
@@ -799,26 +804,30 @@ main (void)
                     for (;;)
                       {
                         /**
-                         *  when inner parenthesis is not a chunk,
-                         *  the parser should not expect more chunks
+                         *  When the inner parentheses token is not a chunk,
+                         *  the parser should not expect additional chunks
                          */
                         second_src.eof_lazy = (ret != NEXT_CHUNK);
                         second_src.buffer = t.cstr;
                         second_src.len = strlen (t.cstr);
                         
-                        for (int _ret = 0; _ret != NEXT_NEED_LOAD && _ret != NEXT_END; )
+                        for (int _ret = 0; !NEXT_SHOULD_BREAK (_ret); )
                           {
                             /* allow space character in tokens */
                             _ret = ml.next (&ml, &second_src, &tmp, PFLAG_IGSPACE);
+
                             if (tmp.type == TK_KEYWORD)
                               printf ("%s", tmp.cstr);
                             else if (tmp.type == TK_PUNCS && tmp.id == PUNC_COMMA)
-                              printf ("\n");
+                              puts ("");
+                            else
+                              puts ("?");
                           }
+
+                        /* load the remaining chunks of the inner parentheses, if any */
                         if (ret != NEXT_CHUNK)
                           break;
-                        /* load the rest of inner parenthesis */
-                        ret = ml.next (&ml, &src, &t, 0);
+                        ret = ml.next (&ml, &src, &t, flg);
                       }
                     TOKEN_FREE (&tmp);
                   }
