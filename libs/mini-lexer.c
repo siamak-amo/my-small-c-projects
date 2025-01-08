@@ -11,7 +11,7 @@
 
 #include <string.h>
 #include <stddef.h>
-
+#include <stdbool.h>
 
 #ifdef _ML_DEBUG
 #  include <stdio.h>
@@ -229,7 +229,8 @@ typedef struct
   int __last_punc_idx;
 } Milexer_Slice;
 
-#define SET_SLICE(src, buf, n) ((src)->buffer = buf, (src)->cap = n)
+#define SET_SLICE(src, buf, n) \
+  ((src)->buffer = buf, (src)->cap = n, (src)->idx = 0)
 /* to indicate that lazy loading is over */
 #define END_SLICE(src) ((src)->cap = 0, (src)->eof_lazy = 1)
 /* set new state & load the previous state */
@@ -280,7 +281,7 @@ typedef struct Milexer_t
 #define GEN_MKCFG(exp_ptr) {.exp = exp_ptr, .len = GEN_LENOF (exp_ptr)}
 
 /* initialize */
-int milexer_init (Milexer *);
+int milexer_init (Milexer *, bool lazy_mode);
 
 
 #ifdef ML_IMPLEMENTATION
@@ -309,7 +310,7 @@ __handle_delims (const Milexer *ml, const Milexer_Slice *src,
               return p;
             }
         }
-      else
+      if (ml->delim_ranges.len > 0 || (flags & PFLAG_ALLDELIMS))
         {
           for (int i=0; i < ml->delim_ranges.len; ++i)
             {
@@ -654,8 +655,9 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
 
 
 int
-milexer_init (Milexer *ml)
+milexer_init (Milexer *ml, bool lazy_mode)
 {
+  ml->lazy = lazy_mode;
   if (ml->lazy)
     {
       /* lazy loading */
