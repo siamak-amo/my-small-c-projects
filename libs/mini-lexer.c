@@ -682,13 +682,15 @@ milexer_init (Milexer *ml, bool lazy_mode)
 #endif /* MINI_LEXER__H */
 
 
+
 /**
- **  Test1 Program
+ **  Common headers for both
+ **  example_1 and test_1 programs
  **/
-#ifdef ML_EXAMPLE_1
-#include <stdio.h>
-#include <stdlib.h>
-#include <readline/readline.h>
+#if defined (ML_EXAMPLE_1) || defined (ML_TEST_1)
+# include <stdio.h>
+# include <stdlib.h>
+# include <stdbool.h>
 
 //-- The language ----------------------//
 enum LANG
@@ -731,6 +733,29 @@ static struct Milexer_exp_ Exp[] = {
   [EXP_STR]         = {"\"", "\""},
   [EXP_STR2]        = {"'", "'"},
 };
+//-- Milexer main configuration --------//
+static Milexer ml = {
+    .lazy = 1,
+    .puncs       = GEN_MKCFG (Puncs),
+    .keywords    = GEN_MKCFG (Keys),
+    .expression  = GEN_MKCFG (Exp),
+  };
+//--------------------------------------//
+#endif /* defined (ML_EXAMPLE_1) || defined (ML_TEST_1) */
+
+
+
+/**
+ **  Example_1 program
+ **/
+#ifdef ML_EXAMPLE_1
+static const char *exp_cstr[] = {
+  [EXP_PAREN]       = "(*)",
+  [EXP_BRACE]       = "{*}",
+  [EXP_STR]         = "\"*\"",
+  [EXP_STR2]        = "'*'",
+};
+
 static const char *puncs_cstr[] = {
   [PUNC_PLUS]       = "Plus",
   [PUNC_MINUS]      = "Minus",
@@ -740,13 +765,6 @@ static const char *puncs_cstr[] = {
   [PUNC_EQUAL]      = "Equal",
   [PUNC_NEQUAL]     = "~Equal",
 };
-static const char *exp_cstr[] = {
-  [EXP_PAREN]       = "(*)",
-  [EXP_BRACE]       = "{*}",
-  [EXP_STR]         = "\"*\"",
-  [EXP_STR2]        = "'*'",
-};
-//--------------------------------------//
 
 
 int
@@ -756,16 +774,8 @@ main (void)
   Milexer_Slice src = {0};
   /* token type */
   Milexer_Token tk = TOKEN_ALLOC (32);
-
   /* Milexer initialization */
-  Milexer ml = {
-    .lazy = 1,
-
-    .puncs       = GEN_MKCFG (Puncs),
-    .keywords    = GEN_MKCFG (Keys),
-    .expression  = GEN_MKCFG (Exp),
-  };
-  milexer_init (&ml);
+  milexer_init (&ml, true);
 
   char *line = NULL;
   const int flg = PFLAG_INEXP;
@@ -866,5 +876,201 @@ main (void)
 
   return 0;
 }
-
 #endif /* ML_EXAMPLE_1 */
+
+
+
+/**
+ **  test_1 program
+ **/
+#ifdef ML_TEST_1
+
+typedef struct
+{
+  int id;
+  int parsing_flags;
+  char *input;
+  const char **T;
+} test_t;
+
+#define __mangle(str) __42__##str
+
+#define DEFINE_TEST(n, flags, inp, ...)                 \
+  const char *__mangle (t##n)[] = {__VA_ARGS__, NULL};  \
+  test_t t##n = {.id = n, .parsing_flags = flags,       \
+                 .input = inp, .T = __mangle(t##n)}
+
+#define for_test(test, member, idx)                             \
+  for (const char **__mangle(member) = (test)->T,               \
+         *member = *__mangle(member);                           \
+       *__mangle(member) != NULL;                               \
+       ++__mangle(member), member = *__mangle(member), ++idx)
+
+
+/* testing token */
+static Milexer_Token tk;
+static Milexer_Slice src = {0};
+
+int
+do_test__H (test_t *t, Milexer_Slice *src)
+{
+#define Return(n, format, ...) do {             \
+    if (n == -1) { puts ("pass"); } else {      \
+      printf ("fail!\n");                       \
+      printf (" test %d-%d:  "format"\n",       \
+              t->id, n+1, ##__VA_ARGS__);       \
+    } return n;                                 \
+  } while (0)
+
+  int ret, idx = 0;
+  for_test (t, tcase, idx)
+    {
+      if (NEXT_SHOULD_END (ret))
+        {
+          Return (idx, "unexpected NEXT_END");
+        }
+      ret = ml.next (&ml, src, &tk, t->parsing_flags);
+      if (strcmp (tcase, tk.cstr) != 0)
+        {
+          Return (idx, "token `%s` != expected `%s`",
+                  tk.cstr, tcase);
+        }
+    }
+  if (ret == NEXT_NEED_LOAD && src->eof_lazy)
+    {
+      Return (idx, "unexpected NEXT_NEED_LOAD");
+    }
+  Return (-1, "");
+#undef Return
+}
+
+int
+do_test (test_t *t, const char *msg, Milexer_Slice *src)
+{
+  int ret;
+  printf ("Test #%d: %s... ", t->id, msg);
+
+  SET_SLICE (src, t->input, strlen (t->input));
+  if ((ret = do_test__H (t, src)) != -1)
+    return ret;
+  return -1;
+}
+
+int
+main (void)
+{
+#define DO_TEST(n, msg)                 \
+  if (do_test (&t##n, msg, &src) != -1) \
+    { ret = 1; goto eo_main; }
+
+  int ret = 0;
+  tk = TOKEN_ALLOC (16);
+  milexer_init (&ml, true);
+
+
+  puts ("-- elementary tests -- ");
+  {
+    DEFINE_TEST (1, PFLAG_DEFAULT,
+                 "aa bb ",
+                 "aa", "bb");
+    DO_TEST (1, "space delimiter");
+    
+    /* this test does not have a tailing delimiter
+       and the parser must continue reading */  
+    DEFINE_TEST (2, PFLAG_DEFAULT,
+                 "ccc",
+                 "ccc");
+    DO_TEST (2, "after delimiter");
+    DEFINE_TEST (3, PFLAG_DEFAULT,
+                 "xxx   ",
+                 "cccxxx");
+    DO_TEST (3, "after no delimiter");
+  }
+
+  puts ("-- long tokens --");
+  {
+    DEFINE_TEST (4, PFLAG_DEFAULT,
+                 "aaaaaaaaaaaaaabcdefghi",
+                 "aaaaaaaaaaaaaabc", "defghi");
+    DO_TEST (4, "after load recovery");
+    DEFINE_TEST (5, PFLAG_DEFAULT,
+                 "6789abcdef\t", "defghi6789abcdef");
+    DO_TEST (5, "load after fragmentation");
+  }
+
+  puts ("-- expressions & punctuations --");
+  {
+    DEFINE_TEST (6, PFLAG_DEFAULT,
+                 "AAA + BBB (te st) ",
+                 "AAA", "+", "BBB", "(te st)");
+    DO_TEST (6, "basic puncs & expressions");
+
+    DEFINE_TEST (7, PFLAG_DEFAULT,
+                 "AAA+{a string . }(t e s t)",
+                 "AAA", "+", "{a string . }", "(t e s t)");
+    DO_TEST (7, "adjacent puncs & expressions");
+
+    /* the previous test didn't have tailing delimiter,
+       but as it was an expression, the parser must
+       treat this one as a separate token */
+    DEFINE_TEST (8, PFLAG_DEFAULT,
+                 "AA!=BB!= CC !=DD",
+                 "AA", "!=", "BB", "!=", "CC", "!=", "DD");
+    DO_TEST (8, "multi-character puncs");
+
+    DEFINE_TEST (9, PFLAG_DEFAULT,
+                 "!= EEE ",
+                 "DD", "!=", "EEE");
+    DO_TEST (9, "punc after load");
+  }
+
+  puts ("-- parser flags --");
+  {
+    DEFINE_TEST (10, PFLAG_IGSPACE,
+                 "a b c (x y z)\n",
+                 "a b c ", "(x y z)");
+    DO_TEST (10, "ignore space flag");
+
+    DEFINE_TEST (11, PFLAG_INEXP,
+                 "AA'++'{ x y z}(test 2 . )",
+                 "AA", "++", " x y z", "test 2 . ");
+    DO_TEST (11, "inner expression flag");
+  }
+
+  puts ("-- custom delimiters --");
+  {
+    /* making `.`,`@` and `0`,...,`9` delimiters */
+    const char *delims[] = {".", "09", "@"};
+    ml.delim_ranges = (Milexer_BEXP)GEN_MKCFG (delims);
+    {
+      DEFINE_TEST (12, PFLAG_DEFAULT,
+                   "a@b cde0123 test.1xyz42",
+                   "a", "b cde", " test", "xyz");
+      DO_TEST (12, "basic custom delimiter");
+    
+      DEFINE_TEST (13, PFLAG_ALLDELIMS,
+                   "a b cde0123 test.1xyz42",
+                   "a", "b", "cde", "test", "xyz");
+      DO_TEST (13, "with all delimiters flag");
+    }
+    /* unset the custom delimiters */
+    ml.delim_ranges = (Milexer_BEXP){0};
+    DEFINE_TEST (14, PFLAG_DEFAULT,
+                 "a.a cde0123 ",
+                 "a.a", "cde0123");
+    DO_TEST (14, "after unset delim_ranges");
+  }
+
+  puts ("-- end of input slice --");
+  {
+    END_SLICE (&src);
+    DEFINE_TEST (0, PFLAG_DEFAULT, "", NULL);
+    DO_TEST (0, "end of lazy loading");
+  }
+
+  puts ("\n *** All tests were passed *** ");
+ eo_main:
+  TOKEN_FREE (&tk);
+  return ret;
+}
+#endif /* ML_TEST_1 */
