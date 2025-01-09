@@ -511,7 +511,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
   if (tk->cstr == NULL || tk->len <= 0
       || tk->cstr == src->buffer)
     return NEXT_ERR;
-  
+
   if (src->state == SYN_NO_DUMMY__)
     {
       if (!(flags & PFLAG_INEXP) && src->__last_exp_idx != -1)
@@ -537,15 +537,27 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
   else if (src->state == SYN_CHUNK)
     LD_STATE (src);
 
-  if (src->idx > src->cap)
+  if (src->idx >= src->cap)
     {
       if (src->eof_lazy)
         return NEXT_END;
       src->idx = 0;
+      if (tk->__idx == 0)
+        *tk->cstr = '\0';
       return NEXT_NEED_LOAD;
     }
 
   tk->type = TK_NOT_SET;
+  if (src->state == SYN_ML_COMM && src->__last_comm
+      && (flags & PFLAG_INCOMMENT))
+    {
+      size_t len = strlen (src->__last_comm);
+      *((char *) mempcpy (tk->cstr, src->__last_comm, len)) = 0;
+      tk->__idx = len;
+      tk->type = TK_COMMENT;
+      src->__last_comm = NULL;
+    }
+
   const char *p;
   char *dst = tk->cstr;
   for (; src->idx < src->cap; )
@@ -568,7 +580,14 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
                    *  the length of tk->cstr buffer
                    */
                   tk->id = -1;
-                  tk->type = TK_KEYWORD;
+                  if (src->state == SYN_COMM || src->state == SYN_ML_COMM)
+                    {
+                      tk->type = TK_COMMENT;
+                    }
+                  else
+                    {
+                      tk->type = TK_KEYWORD;
+                    }
                 }
               /* max token len reached */
               ST_STATE (src, SYN_CHUNK);
@@ -593,8 +612,9 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
         case SYN_COMM:
           if (*p == '\n' || *p == '\r')
             {
-              LD_STATE (src);
+              ST_STATE (src, SYN_DUMMY);
               tk->type = TK_COMMENT;
+              tk->__idx = 0;
               if (flags & PFLAG_INCOMMENT)
                 {
                   *(dst) = '\0';
@@ -611,11 +631,12 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
           case SYN_ML_COMM:
           if ((__ptr = __is_mline_commented_suff (ml, src, tk)))
             {
-              LD_STATE (src);
+              ST_STATE (src, SYN_DUMMY);
               tk->__idx = 0;
               if (flags & PFLAG_INCOMMENT)
                 {
-                  *(dst) = '\0';
+                  *(dst + 1) = '\0';
+                  tk->type = TK_COMMENT;
                   return NEXT_MATCH;
                 }
             }
@@ -685,11 +706,18 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
           else if ((__ptr = __is_mline_commented_pref (ml, src, tk)))
             {
               ST_STATE (src, SYN_ML_COMM);
-              if (tk->type == TK_NOT_SET)
-                tk->type = TK_KEYWORD;
-              tk->__idx = 0;
-              *__ptr = 0;
-              return NEXT_MATCH;
+              if (__ptr == tk->cstr)
+                {
+                  break;
+                }
+              else
+                {
+                  if (tk->type == TK_NOT_SET)
+                    tk->type = TK_KEYWORD;
+                  tk->__idx = 0;
+                  *__ptr = 0;
+                  return NEXT_MATCH;
+                }
             }
           else if (__detect_delim (ml, *p, flags))
             {
@@ -844,7 +872,7 @@ enum LANG
     PUNC_PLUS = 0,
     PUNC_MINUS,
     PUNC_MULT,
-    PUNC_DIV,
+    // PUNC_DIV,
     PUNC_COMMA,
     PUNC_EQUAL,
     PUNC_NEQUAL,
@@ -869,7 +897,7 @@ static const char *Puncs[] = {
   [PUNC_PLUS]       = "+",
   [PUNC_MINUS]      = "-",
   [PUNC_MULT]       = "*",
-  [PUNC_DIV]        = "/",
+  // [PUNC_DIV]        = "/", otherwise we cannot have /*comment*/
   [PUNC_COMMA]      = ",",
   [PUNC_EQUAL]      = "=", /* you cannot have "==" */
   [PUNC_NEQUAL]     = "!=", /* also "!===" */
@@ -917,7 +945,7 @@ static const char *puncs_cstr[] = {
   [PUNC_PLUS]       = "Plus",
   [PUNC_MINUS]      = "Minus",
   [PUNC_MULT]       = "Times",
-  [PUNC_DIV]        = "Division",
+  // [PUNC_DIV]        = "Division",
   [PUNC_COMMA]      = "Comma",
   [PUNC_EQUAL]      = "Equal",
   [PUNC_NEQUAL]     = "~Equal",
@@ -1456,17 +1484,39 @@ main (void)
         {.type = TK_EXPRESSION,    .cstr = "(e x p)"},
         {.type = TK_COMMENT,       .cstr = "#0123456789abcde"},
         {.type = TK_COMMENT,       .cstr = "fghi"},
+        {.type = TK_COMMENT,       .cstr = ""}, // dry out
         {0}
       }};
     DO_TEST (&t, "with include comment flag");
-
   }
 
   puts ("-- multi-line comment --");
   {
-    /* not tested yet */
-  }
+    t = (test_t) {
+      .test_number = 25,
+      .parsing_flags = PFLAG_DEFAULT,
+      .input = "/*t e \n s t*/ XXX/*t e \n s t*/YYY ",
+      .etk = (Milexer_Token []){
+        {.type = TK_KEYWORD, .cstr = "XXX"},
+        {.type = TK_KEYWORD, .cstr = "YYY"},
+        {0}
+      }};
+    DO_TEST (&t, "basic multi-line comment");
 
+    t = (test_t) {
+      .test_number = 26,
+      .parsing_flags = PFLAG_INCOMMENT,
+      .input = "XXX/*aaaaaaaabbbbbbbbccccccccdddddddd*/YYY ",
+      .etk = (Milexer_Token []){
+        {.type = TK_KEYWORD, .cstr = "XXX"},
+        {.type = TK_COMMENT, .cstr = "/*aaaaaaaabbbbbb"},
+        {.type = TK_COMMENT, .cstr = "bbccccccccdddddd"},
+        {.type = TK_COMMENT, .cstr = "dd*/"},
+        {.type = TK_KEYWORD, .cstr = "YYY"},
+        {0}
+      }};
+    DO_TEST (&t, "with include comment flag");
+  }
   
 
   puts ("-- end of input slice --");
