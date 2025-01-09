@@ -565,16 +565,17 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
             }
           else if (__detect_puncs (ml, src, tk))
             {
-              tk->type = TK_PUNCS;
               const char *_punc = __get_last_punc (ml, src);
               size_t n = strlen (_punc);
               if (n == tk->__idx)
                 {
+                  tk->type = TK_PUNCS;
                   tk->__idx = 0;
                   return NEXT_MATCH;
                 }
               else
                 {
+                  tk->type = TK_KEYWORD;
                   *(dst - n + 1) = '\0';
                   tk->__idx = 0;
                   ST_STATE (src, SYN_PUNC__);
@@ -583,7 +584,6 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
             }
           else if ((__ptr = __is_expression_pref (ml, src, tk)))
             {
-              tk->type = TK_EXPRESSION;
               if (__ptr != tk->cstr)
                 {
                   ST_STATE (src, SYN_NO_DUMMY__);
@@ -595,6 +595,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
                 }
               else
                 {
+                  tk->type = TK_EXPRESSION;
                   if (flags & PFLAG_INEXP)
                     tk->__idx = 0;
                   ST_STATE (src, SYN_NO_DUMMY);
@@ -605,7 +606,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
         case SYN_NO_DUMMY:
           if ((__ptr = __is_expression_suff (ml, src, tk)))
             {
-
+              tk->type = TK_EXPRESSION;
               if (flags & PFLAG_INEXP)
                 *__ptr = '\0';
               ST_STATE (src, SYN_MIDDLE);
