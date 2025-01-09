@@ -80,6 +80,18 @@ enum __buffer_state_t
     SYN_DONE /* token is ready */
   };
 
+const char *milexer_state_cstr[] = {
+  [SYN_DUMMY]        = "dummy",
+  [SYN_ESCAPE]       = "escape",
+  [SYN_MIDDLE]       = "middle",
+  [SYN_PUNC__]       = "punc__",
+  [SYN_NO_DUMMY]     = "no_dummy",
+  [SYN_NO_DUMMY__]   = "no_dummy__",
+  [SYN_COMM]         = "comm",
+  [SYN_ML_COMM]      = "ml_comm",
+  [SYN_CHUNK]        = "chunk",
+  [SYN_DONE]         = "done",
+};
 
 enum milexer_state_t
   {
@@ -113,7 +125,7 @@ enum milexer_state_t
 #define NEXT_SHOULD_END(ret) (ret == NEXT_END || ret == NEXT_ERR)
 #define NEXT_SHOULD_LOAD(ret) (ret == NEXT_NEED_LOAD || NEXT_SHOULD_END (ret))
 
-const char *milexer_state_cstr[] = {
+const char *milexer_next_cstr[] = {
   [NEXT_MATCH]                   = "Match",
   [NEXT_CHUNK]                   = "Chunk",
   [NEXT_ZTERM]                   = "zero-byte",
@@ -290,144 +302,115 @@ int milexer_init (Milexer *, bool lazy_mode);
  **  Only use Milexer.next()
  **/
 static inline int
-__handle_delims (const Milexer *ml, const Milexer_Slice *src,
-                 unsigned char p, int flags)
+__detect_delim (const Milexer *ml, unsigned char p, int flags)
 {
-  switch (src->state)
+  if (ml->delim_ranges.len == 0 || (flags & PFLAG_ALLDELIMS))
     {
-    case SYN_ESCAPE:
-    case SYN_NO_DUMMY:
-    case SYN_NO_DUMMY__:
-      return 0;
-
-    default:
-      if (ml->delim_ranges.len == 0 || (flags & PFLAG_ALLDELIMS))
+      /* default delimiters */
+      if (p < ' ' ||
+          (p == ' ' && !(flags & PFLAG_IGSPACE)))
         {
-          /* default delimiters */
-          if (p < ' ' ||
-              (p == ' ' && !(flags & PFLAG_IGSPACE)))
-            {
-              return p;
-            }
+          return p;
         }
-      if (ml->delim_ranges.len > 0 || (flags & PFLAG_ALLDELIMS))
+    }
+  if (ml->delim_ranges.len > 0 || (flags & PFLAG_ALLDELIMS))
+    {
+      for (int i=0; i < ml->delim_ranges.len; ++i)
         {
-          for (int i=0; i < ml->delim_ranges.len; ++i)
+          const char *__p = ml->delim_ranges.exp[i];
+          if (__p[1] != '\0')
             {
-              const char *__p = ml->delim_ranges.exp[i];
-              if (__p[1] != '\0')
-                {
-                  if (p >= __p[0] && p <= __p[1])
-                    return p;
-                }
-              else if (p == __p[0])
+              if (p >= __p[0] && p <= __p[1])
                 return p;
             }
+          else if (p == __p[0])
+            return p;
         }
     }
   return 0;
 }
 
 static inline char *
-__handle_puncs (const Milexer *ml, Milexer_Slice *src,
+__detect_puncs (const Milexer *ml, Milexer_Slice *src,
                 Milexer_Token *res)
 {
-  switch (src->state)
+  int longest_match_idx = -1;
+  size_t longest_match_len = 0;
+  res->cstr[res->__idx] = '\0';
+  for (int i=0; i < ml->puncs.len; ++i)
     {
-    case SYN_ESCAPE:
-    case SYN_NO_DUMMY:
-    case SYN_NO_DUMMY__:
-      return NULL;
-
-    default:
-      int longest_match_idx = -1;
-      size_t longest_match_len = 0;
-      for (int i=0; i < ml->puncs.len; ++i)
+      const char *punc = ml->puncs.exp[i];
+      size_t len = strlen (punc);
+      if (res->__idx < len)
+        continue;
+      char *p = res->cstr + res->__idx - len;
+      if (strncmp (punc, p, len) == 0)
         {
-          const char *punc = ml->puncs.exp[i];
-          size_t len = strlen (punc);
-          if (res->__idx < len)
-            continue;
-          char *p = res->cstr + res->__idx - len;
-          if (strncmp (punc, p, len) == 0)
+          if (len >= longest_match_len)
             {
-              if (len >= longest_match_len)
-                {
-                  longest_match_len = len;
-                  longest_match_idx = i;
-                }
+              longest_match_len = len;
+              longest_match_idx = i;
             }
         }
-      if (longest_match_idx != -1)
-        {
-          src->__last_punc_idx = longest_match_idx;
-          res->id = longest_match_idx;
-          return res->cstr + (res->__idx - longest_match_len);
-        }
-      return NULL;
     }
+
+  if (longest_match_idx != -1)
+    {
+      src->__last_punc_idx = longest_match_idx;
+      res->id = longest_match_idx;
+      return res->cstr + (res->__idx - longest_match_len);
+    }
+  return NULL;
 }
 
 static inline char *
-__handle_expression (const Milexer *ml, Milexer_Slice *src,
-                     Milexer_Token *res) 
+__is_expression_suff (const Milexer *ml, Milexer_Slice *src,
+                     Milexer_Token *tk)
 {
-#define Return(n) do {                          \
-    if (n) {                                    \
-      logf ("match, d[.%lu]={%.*s} @%s",        \
-            res->__idx,                         \
-            (int)res->__idx,                    \
-            res->cstr,                          \
-            milexer_buf_state[ml->state]);      \
-    } return n;                                 \
-  } while (0)
+  /* looking for closing, O(1) */
+  _exp_t *e = __get_last_exp (ml, src);
+  size_t len = strlen (e->end);
 
-  /* strstr function works with \0 */
-  res->cstr[res->__idx] = '\0';
+  if (tk->__idx < len)
+    return NULL;;
   
-  switch (src->state)
+  char *p = tk->cstr + tk->__idx;
+  *p = '\0';
+  p -= len;
+  if (tk->__idx - len >= 1 && *p == '\\')
+    return NULL;
+
+  if (strncmp (p, e->end, len) == 0)
     {
-    case SYN_ESCAPE:
-      Return (res->cstr + res->__idx);
-
-    case SYN_NO_DUMMY:
-    case SYN_NO_DUMMY__:
-      /* looking for closing, O(1) */
-        {
-          _exp_t *e = __get_last_exp (ml, src);
-          size_t len = strlen (e->end);
-
-          if (res->__idx < len)
-            break;
-          char *p = res->cstr + res->__idx - len;
-          if (strncmp (p, e->end, len) == 0)
-            {
-              res->id = src->__last_exp_idx;
-              Return (p);
-            }
-        }
-       Return (NULL);
-      break;
-
-    default:
-      /* looking for opening, O(ml->expression.len) */
-      for (int i=0; i < ml->expression.len; ++i)
-        {
-          char *p;
-          _exp_t *e = ml->expression.exp + i;
-          if ((p = strstr (res->cstr, e->begin)))
-            {
-              if (p == res->cstr && src->state == SYN_MIDDLE)
-                Return (NULL);
-              src->__last_exp_idx = i;
-              Return (p);
-            }
-        }
-      Return (0);
-      break;
+      tk->id = src->__last_exp_idx;
+      return p;
     }
+  return NULL;
+}
 
-#undef Return
+static inline char *
+__is_expression_pref (const Milexer *ml, Milexer_Slice *src,
+                     Milexer_Token *tk)
+{
+  /* looking for opening, O(ml->expression.len) */
+  char *p;
+  char *__cstr = tk->cstr;
+  __cstr[tk->__idx] = '\0';
+  if ((p = strrchr (__cstr, '\\')))
+    {
+      if ((size_t)(p - __cstr + 2) >= tk->__idx)
+        return NULL;
+      __cstr = p + 2;
+    }
+  for (int i=0; i < ml->expression.len; ++i)
+    {
+      _exp_t *e = ml->expression.exp + i;
+      if ((p = strstr (__cstr, e->begin)))
+        {
+          src->__last_exp_idx = i;
+          return p;
+        }
+    }
   return NULL;
 }
 
@@ -465,10 +448,10 @@ __next_token (const Milexer *ml, Milexer_Slice *src,
 
 static int
 __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
-                   Milexer_Token *res, int flags)
+                   Milexer_Token *tk, int flags)
 {
-  if (res->cstr == NULL || res->len <= 0
-      || res->cstr == src->buffer)
+  if (tk->cstr == NULL || tk->len <= 0
+      || tk->cstr == src->buffer)
     return NEXT_ERR;
   
   if (src->state == SYN_NO_DUMMY__)
@@ -476,24 +459,26 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
       if (!(flags & PFLAG_INEXP) && src->__last_exp_idx != -1)
         {
           /* certainly the token type is expression */
-          res->type = TK_EXPRESSION;
+          tk->type = TK_EXPRESSION;
           const char *le = __get_last_exp (ml, src)->begin;
-          char *__p = mempcpy (res->cstr, le, strlen (le));
-          res->__idx += __p - res->cstr;
+          char *__p = mempcpy (tk->cstr, le, strlen (le));
+          tk->__idx += __p - tk->cstr;
         }
       src->state = SYN_NO_DUMMY;
     }
   else if (src->state == SYN_PUNC__)
     {
       const char *lp = __get_last_punc (ml, src);
-      *((char *)mempcpy (res->cstr, lp, strlen (lp))) = '\0';
+      *((char *)mempcpy (tk->cstr, lp, strlen (lp))) = '\0';
 
       LD_STATE (src);
-      res->type = TK_PUNCS;
-      res->id = src->__last_punc_idx;
+      tk->type = TK_PUNCS;
+      tk->id = src->__last_punc_idx;
       return NEXT_MATCH;
     }
-    
+  else if (src->state == SYN_CHUNK)
+    LD_STATE (src);
+
   if (src->idx > src->cap)
     {
       if (src->eof_lazy)
@@ -502,154 +487,165 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
       return NEXT_NEED_LOAD;
     }
 
-  res->type = TK_NOT_SET;
-  for (unsigned char p; src->idx < src->cap; )
+  tk->type = TK_NOT_SET;
+  const char *p;
+  char *dst = tk->cstr;
+  for (; src->idx < src->cap; )
     {
-      char *__startof_exp, *__startof_punc;
-      
-      p = src->buffer[src->idx++];
-      res->cstr[res->__idx++] = p;
+      p = src->buffer + (src->idx++);
+      dst = tk->cstr + (tk->__idx++);
+      *dst = *p;
 
-      //-- handling delimiters ---------//
-      if (__handle_delims (ml, src, p, flags))
-        {
-          /* normal token */
-          if (res->__idx > 1)
-            {
-              ST_STATE (src, SYN_DUMMY);
-              res->type = TK_KEYWORD;
-              res->cstr[res->__idx - 1] = '\0';
-              res->__idx = 0;
-              __handle_token_id (ml, res);
-              if (p == '\0')
-                return NEXT_ZTERM;
-              return NEXT_MATCH;
-            }
-          else
-            {
-              /* ignore empty stuff */
-              res->__idx = 0;
-            }
-        }
-      //-- handling expressions --------//
-      if ((__startof_exp = __handle_expression (ml, src, res)))
-        {
-          res->type = TK_EXPRESSION;
-          if (src->state == SYN_ESCAPE)
-            {
-              LD_STATE (src);
-            }
-          else if (src->state == SYN_NO_DUMMY)
-            {
-              if (flags & PFLAG_INEXP)
-                *__startof_exp = '\0';
-              ST_STATE (src, SYN_DONE);
-              res->cstr[res->__idx] = 0;
-              res->__idx = 0;
-              return NEXT_MATCH;
-            }
-          else
-            {
-              /* begginign of an expression */
-              if (__startof_exp == res->cstr)
-                {
-                  if (flags & PFLAG_INEXP)
-                    res->__idx = 0;
-                  ST_STATE (src, SYN_NO_DUMMY);
-                }
-              else
-                {
-                  /**
-                   *  xxx`expression`yyy
-                   *  the expression is adjacent to another token
-                   */
-                  ST_STATE (src, SYN_NO_DUMMY__);
-                  *__startof_exp = 0;
-                  res->__idx = 0;
-                  res->type = TK_KEYWORD;
-                  __handle_token_id (ml, res);
-                  return NEXT_MATCH;
-                }
-            }
-        }
-      //-- handling escape -------------//
-      else if (p == '\\')
-        {
-          ST_STATE (src, SYN_ESCAPE);
-        }
-      //-- handling puncs --------------//
-      else if ((__startof_punc = __handle_puncs (ml, src, res)))
-        {
-          /* punc */
-          const char *p = __get_last_punc (ml, src);
-          size_t len = strlen (p);
-          if (len == res->__idx)
-            {
-              /* just a simple punc */
-              ST_STATE (src, SYN_DUMMY);
-              res->type = TK_PUNCS;
-              res->cstr[res->__idx] = '\0';
-              res->__idx = 0;
-              return NEXT_MATCH;
-            }
-          else
-            {
-              /* the punc have got some adjacents */
-              ST_STATE (src, SYN_PUNC__);
-              *__startof_punc = '\0';
-              res->__idx = 0;
-              res->type = TK_KEYWORD;
-              __handle_token_id (ml, res);
-              return NEXT_MATCH;
-            }
-        }
       //-- detect & reset chunks -------//
-      if (res->__idx == res->len)
+      if (tk->__idx == tk->len)
         {
-          if (res->type == TK_NOT_SET ||
+          if (tk->type == TK_NOT_SET ||
               src->state == SYN_DUMMY || src->state == SYN_DONE)
             {
               /**
                *  we assume your keywords are smaller than
-               *  the length of res->cstr buffer
+               *  the length of tk->cstr buffer
                */
-              res->id = -1;
-              res->type = TK_KEYWORD;
+              tk->id = -1;
+              tk->type = TK_KEYWORD;
             }
           /* max token len reached */
           ST_STATE (src, SYN_CHUNK);
-          res->cstr[res->__idx + 1] = '\0';
-          res->__idx = 0;
+          tk->cstr[tk->__idx + 1] = '\0';
+          tk->__idx = 0;
           return NEXT_CHUNK;
         }
-      if (src->state == SYN_CHUNK)
-        LD_STATE (src);
       //--------------------------------//
+      char *__ptr;
+      /* logf ("'%c' - %s, %s", *p,
+            milexer_state_cstr[src->state],
+            milexer_token_type_cstr[tk->type]); */
+      switch (src->state)
+        {
+        case SYN_ESCAPE:
+          LD_STATE (src);
+          break;
+
+        case SYN_DUMMY:
+          if ((__ptr = __is_expression_pref (ml, src, tk)))
+            {
+              tk->type = TK_EXPRESSION;
+              if (__ptr == tk->cstr)
+                {
+                  ST_STATE (src, SYN_NO_DUMMY);
+                }
+              else
+                {
+                  ST_STATE (src, SYN_NO_DUMMY__);
+                  *dst = '\0';
+                  tk->__idx = 0;
+                  return NEXT_MATCH;
+                }
+            }
+          else if (!__detect_delim (ml, *p, flags))
+            src->state = SYN_MIDDLE;
+          else
+            tk->__idx = 0;
+          break;
+
+        case SYN_MIDDLE:
+          if (__detect_delim (ml, *p, flags))
+            {
+              if (tk->__idx > 1)
+                {
+                  *dst = '\0';
+                  if (tk->type == TK_NOT_SET)
+                    tk->type = TK_KEYWORD;
+                  ST_STATE (src, SYN_DUMMY);
+                  tk->__idx = 0;
+                  return NEXT_MATCH;
+                }
+              else
+                tk->__idx = 0;
+            }
+          else if (__detect_puncs (ml, src, tk))
+            {
+              tk->type = TK_PUNCS;
+              const char *_punc = __get_last_punc (ml, src);
+              size_t n = strlen (_punc);
+              if (n == tk->__idx)
+                {
+                  tk->__idx = 0;
+                  return NEXT_MATCH;
+                }
+              else
+                {
+                  *(dst - n + 1) = '\0';
+                  tk->__idx = 0;
+                  ST_STATE (src, SYN_PUNC__);
+                  return NEXT_MATCH;
+                }
+            }
+          else if ((__ptr = __is_expression_pref (ml, src, tk)))
+            {
+              tk->type = TK_EXPRESSION;
+              if (__ptr != tk->cstr)
+                {
+                  ST_STATE (src, SYN_NO_DUMMY__);
+                  *(__ptr) = '\0';
+                  tk->__idx = 0;
+                  tk->type = TK_KEYWORD;
+                  __handle_token_id (ml, tk);
+                  return NEXT_MATCH;
+                }
+              else
+                {
+                  if (flags & PFLAG_INEXP)
+                    tk->__idx = 0;
+                  ST_STATE (src, SYN_NO_DUMMY);
+                }
+            }
+          break;
+
+        case SYN_NO_DUMMY:
+          if ((__ptr = __is_expression_suff (ml, src, tk)))
+            {
+
+              if (flags & PFLAG_INEXP)
+                *__ptr = '\0';
+              ST_STATE (src, SYN_MIDDLE);
+              tk->__idx = 0;
+              *(dst + 1) = '\0';
+              return NEXT_MATCH;
+            }
+          break;
+
+        default:
+          break;
+        }
+      if (*p == '\\')
+        ST_STATE (src, SYN_ESCAPE);
     }
 
   if (src->eof_lazy)
     {
-      if (res->__idx > 1)
+      if (tk->__idx > 1)
         {
-          if (res->type == TK_NOT_SET)
+          if (tk->type == TK_NOT_SET)
             {
-              res->type = TK_KEYWORD;
-              __handle_token_id (ml, res);
+              tk->type = TK_KEYWORD;
+              __handle_token_id (ml, tk);
             }
           return NEXT_END;
         }
-      else if (res->__idx == 1 && *res->cstr > ' ')
+      else if (tk->__idx == 1 && *tk->cstr > ' ')
         {
-          res->type = TK_KEYWORD;
+          tk->type = TK_KEYWORD;
           return NEXT_END;
         }
       else
         {
-          res->type = TK_NOT_SET;
+          tk->type = TK_NOT_SET;
           return NEXT_END;
         }
     }
   src->idx = 0;
+  *(dst + 1) = '\0';
   return NEXT_NEED_LOAD;
 }
 
