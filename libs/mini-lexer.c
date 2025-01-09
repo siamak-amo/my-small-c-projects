@@ -975,19 +975,17 @@ do_test (test_t *t, const char *msg, Milexer_Slice *src)
 int
 main (void)
 {
-#define DO_TEST(msg)                            \
-  if (do_test (&t, msg, &src) != -1)            \
+#define DO_TEST(test, msg)                         \
+  if (do_test (test, msg, &src) != -1)            \
     { ret = 1; goto eo_main; }
 
+  test_t t = {0};
   int ret = 0;
   tk = TOKEN_ALLOC (16);
   milexer_init (&ml, true);
 
-  test_t t;
-
   puts ("-- elementary tests -- ");
   {
-
     t = (test_t) {
       .test_number = 1,
       .parsing_flags = PFLAG_DEFAULT,
@@ -997,7 +995,7 @@ main (void)
         {.type = TK_KEYWORD, .cstr = "bb"},
         {0}
       }};
-    DO_TEST ("space delimiter");
+    DO_TEST (&t, "space delimiter");
     
     /* this test does not have a tailing delimiter
        and the parser must continue reading */
@@ -1009,7 +1007,7 @@ main (void)
         {.type = TK_KEYWORD, .cstr = "ccc"},
         {0}
       }};
-    DO_TEST ("after delimiter");
+    DO_TEST (&t, "after delimiter");
 
     t = (test_t) {
       .test_number = 3,
@@ -1019,7 +1017,7 @@ main (void)
         {.type = TK_KEYWORD, .cstr = "cccxxx"},
         {0}
       }};
-    DO_TEST ("after no delimiter");
+    DO_TEST (&t, "after no delimiter");
   }
 
   puts ("-- long tokens --");
@@ -1033,7 +1031,7 @@ main (void)
         {.type = TK_KEYWORD, .cstr = "defghi"},
         {0}
       }};
-    DO_TEST ("after load recovery");
+    DO_TEST (&t, "after load recovery");
 
     t = (test_t) {
       .test_number = 5,
@@ -1043,7 +1041,7 @@ main (void)
         {.type = TK_KEYWORD, .cstr = "defghi6789abcdef"},
         {0}
       }};
-    DO_TEST ("load after fragmentation");
+    DO_TEST (&t, "load after fragmentation");
   }
 
   puts ("-- expressions & punctuations --");
@@ -1059,7 +1057,7 @@ main (void)
         {.type = TK_EXPRESSION, .cstr = "(te st)"},
         {0}
       }};
-    DO_TEST ("basic puncs & expressions");
+    DO_TEST (&t, "basic puncs & expressions");
 
     t = (test_t) {
       .test_number = 7,
@@ -1073,7 +1071,7 @@ main (void)
         {.type = TK_EXPRESSION, .cstr = "(t e s t)"},
         {0}
       }};
-    DO_TEST ("adjacent puncs & expressions");
+    DO_TEST (&t, "adjacent puncs & expressions");
 
     /* the previous test didn't have tailing delimiter,
        but as it was an expression, the parser must
@@ -1092,7 +1090,7 @@ main (void)
         {.type = TK_KEYWORD,      .cstr = "DD"},
         {0}
       }};
-    DO_TEST ("multi-character puncs");
+    DO_TEST (&t, "multi-character puncs");
     
     t = (test_t) {
       .test_number = 9,
@@ -1104,7 +1102,7 @@ main (void)
         {.type = TK_KEYWORD,      .cstr = "EEE"},
         {0}
       }};
-    DO_TEST ("punc after load");
+    DO_TEST (&t, "punc after load");
 
     /* long expression prefix & suffix */
     t = (test_t) {
@@ -1119,7 +1117,7 @@ main (void)
         {.type = TK_EXPRESSION,    .cstr = "<<BB >>"},
         {0}
       }};
-    DO_TEST ("expressions with long prefix & suffix");
+    DO_TEST (&t, "expressions with long prefix & suffix");
  
     /* fragmented expressions */
     t = (test_t) {
@@ -1132,7 +1130,7 @@ main (void)
         {.type = TK_EXPRESSION,    .cstr = "<<>>"},
         {0}
       }};
-    DO_TEST ("inner long expressions");
+    DO_TEST (&t, "inner long expressions");
   }
 
   puts ("-- parser flags --");
@@ -1147,7 +1145,7 @@ main (void)
         {.type = TK_KEYWORD,       .cstr = "  de f"},
         {0}
       }};
-    DO_TEST ("ignore space flag");
+    DO_TEST (&t, "ignore space flag");
     
     t = (test_t) {
       .test_number = 13,
@@ -1160,7 +1158,7 @@ main (void)
         {.type = TK_EXPRESSION,    .cstr = "test 2 . "},
         {0}
       }};
-    DO_TEST ("inner expression flag");
+    DO_TEST (&t, "inner expression flag");
     
     t = (test_t) {
       .test_number = 14,
@@ -1173,7 +1171,7 @@ main (void)
         {.type = TK_EXPRESSION,    .cstr = ""},
         {0}
       }};
-    DO_TEST ("inner long expressions");
+    DO_TEST (&t, "inner long expressions");
   }
 
   puts ("-- custom delimiters --");
@@ -1193,7 +1191,7 @@ main (void)
           {.type = TK_KEYWORD,    .cstr = "xyz"},
           {0}
         }};
-      DO_TEST ("basic custom delimiter");
+      DO_TEST (&t, "basic custom delimiter");
 
       t = (test_t) {
         .test_number = 16,
@@ -1207,7 +1205,7 @@ main (void)
           {.type = TK_KEYWORD,    .cstr = "xyz"},
           {0}
         }};
-      DO_TEST ("with all delimiters flag");
+      DO_TEST (&t, "with all delimiters flag");
     }
     /* unset the custom delimiters */
     ml.delim_ranges = (Milexer_BEXP){0};
@@ -1225,7 +1223,7 @@ main (void)
         {.type = TK_KEYWORD,    .cstr = "\\)yyy"},
         {0}
       }};
-    DO_TEST ("basic escape in expressions");
+    DO_TEST (&t, "basic escape in expressions");
       
     t = (test_t) {
       .test_number = 18,
@@ -1237,7 +1235,7 @@ main (void)
         {.type = TK_EXPRESSION,    .cstr = "d \\) )"},
         {0}
       }};
-    DO_TEST ("complex escape in expressions");
+    DO_TEST (&t, "complex escape in expressions");
 
     t = (test_t) {
       .test_number = 19,
@@ -1249,20 +1247,20 @@ main (void)
         {.type = TK_EXPRESSION,    .cstr = "yy"},
         {0}
       }};
-    DO_TEST ("escape & inner expression flag");
+    DO_TEST (&t, "escape & inner expression flag");
   }
 
   puts ("-- end of input slice --");
   {
     END_SLICE (&src);
     t = (test_t) {
-      .test_number = 19,
+      .test_number = 0,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "",
       .etk = (Milexer_Token []){
         {0}
       }};
-    DO_TEST ("end of lazy loading");
+    DO_TEST (&t, "end of lazy loading");
   }
 
   puts ("\n *** All tests were passed *** ");
