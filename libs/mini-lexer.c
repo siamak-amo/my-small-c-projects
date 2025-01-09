@@ -926,8 +926,7 @@ do_test__H (test_t *t, Milexer_Slice *src)
   if (n == -1) {                                    \
     puts ("pass");                                  \
   } else {                                          \
-    printf ("fail!\n");                             \
-    printf (" test %d-%d:  "format"\n",             \
+    printf ("fail!\n test %d-%d:  "format"\n",      \
             t->test_number, n, ##__VA_ARGS__);      \
   } return n;
 
@@ -939,7 +938,12 @@ do_test__H (test_t *t, Milexer_Slice *src)
         {
           Return (counter, "unexpected NEXT_END");
         }
+
       ret = ml.next (&ml, src, &tk, t->parsing_flags);
+#ifdef _ML_DEBUG
+      printf (" test %d-%d: expect `%s`... ", t->test_number, counter, tk.cstr);
+#endif
+
       if (strcmp (tcase->cstr, tk.cstr) != 0)
         {
           Return (counter, "token `%s` != expected `%s`",
@@ -955,7 +959,13 @@ do_test__H (test_t *t, Milexer_Slice *src)
         {
           Return (counter, "unexpected NEXT_NEED_LOAD");
         }
+
+#ifdef _ML_DEBUG
+      printf ("pass\n");
+#endif
+
     }
+
   Return (-1, "");
 #undef Return
 }
@@ -964,7 +974,11 @@ int
 do_test (test_t *t, const char *msg, Milexer_Slice *src)
 {
   int ret;
+#ifdef _ML_DEBUG
+  printf ("Test #%d: %s\n", t->test_number, msg);
+#else
   printf ("Test #%d: %s... ", t->test_number, msg);
+#endif
 
   SET_SLICE (src, t->input, strlen (t->input));
   if ((ret = do_test__H (t, src)) != -1)
@@ -976,7 +990,7 @@ int
 main (void)
 {
 #define DO_TEST(test, msg)                         \
-  if (do_test (test, msg, &src) != -1)            \
+  if (do_test (test, msg, &src) != -1)             \
     { ret = 1; goto eo_main; }
 
   test_t t = {0};
