@@ -708,6 +708,11 @@ enum LANG
     EXP_BRACE,
     EXP_STR,
     EXP_STR2,
+    EXP_LONG,
+    /* comments */
+    COMM_1 = 0,
+    COMM_2,
+    COMM_ml,
   };
 static const char *Keys[] = {
   [LANG_IF]         = "if",
@@ -728,6 +733,14 @@ static struct Milexer_exp_ Exp[] = {
   [EXP_BRACE]       = {"{", "}"},
   [EXP_STR]         = {"\"", "\""},
   [EXP_STR2]        = {"'", "'"},
+  [EXP_LONG]        = {"<<", ">>"},
+};
+static const char *Comm[] = {
+  [COMM_1]          = "#",
+  [COMM_2]          = "//",
+};
+static struct Milexer_exp_ Comm_ml[] = {
+  [COMM_ml]         = {"/*", "*/"},
 };
 //-- Milexer main configuration --------//
 static Milexer ml = {
@@ -735,6 +748,8 @@ static Milexer ml = {
     .puncs       = GEN_MKCFG (Puncs),
     .keywords    = GEN_MKCFG (Keys),
     .expression  = GEN_MKCFG (Exp),
+    .b_comment   = GEN_MKCFG (Comm),
+    .a_comment   = GEN_MKCFG (Comm_ml),
   };
 //--------------------------------------//
 #endif /* defined (ML_EXAMPLE_1) || defined (ML_TEST_1) */
@@ -918,7 +933,7 @@ do_test__H (test_t *t, Milexer_Slice *src)
     } return n;                                 \
   } while (0)
 
-  int ret, idx = 0;
+  int ret = 0, idx = 0;
   for_test (t, tcase, idx)
     {
       if (NEXT_SHOULD_END (ret))
@@ -1018,19 +1033,35 @@ main (void)
                  "!= EEE ",
                  "DD", "!=", "EEE");
     DO_TEST (9, "punc after load");
+
+    /* long expression prefix & suffix */
+    DEFINE_TEST (10, PFLAG_DEFAULT,
+                 "aa<<e x>>+<< AA>> <<BB >>",
+                 "aa", "<<e x>>", "+", "<< AA>>", "<<BB >>");
+    DO_TEST (10, "expressions with long prefix & suffix");
+    DEFINE_TEST (11, PFLAG_INEXP,
+                 "<<o n e>><<t w o>> <<x y z >><<>>",
+                 "o n e", "t w o", "x y z ", "");
+    DO_TEST (11, "inner long expressions");
+
+    /* fragmented expressions */
+    DEFINE_TEST (12, PFLAG_DEFAULT,
+                 "<<0123456789a b c d e f>><<>>",
+                 "<<0123456789a b ", "c d e f>>", "<<>>");
+    DO_TEST (12, "inner long expressions");
   }
 
   puts ("-- parser flags --");
   {
-    DEFINE_TEST (10, PFLAG_IGSPACE,
+    DEFINE_TEST (13, PFLAG_IGSPACE,
                  "a b c (x y z)\n",
                  "a b c ", "(x y z)");
-    DO_TEST (10, "ignore space flag");
+    DO_TEST (13, "ignore space flag");
 
-    DEFINE_TEST (11, PFLAG_INEXP,
+    DEFINE_TEST (14, PFLAG_INEXP,
                  "AA'++'{ x y z}(test 2 . )",
                  "AA", "++", " x y z", "test 2 . ");
-    DO_TEST (11, "inner expression flag");
+    DO_TEST (14, "inner expression flag");
   }
 
   puts ("-- custom delimiters --");
@@ -1039,22 +1070,40 @@ main (void)
     const char *delims[] = {".", "09", "@"};
     ml.delim_ranges = (Milexer_BEXP)GEN_MKCFG (delims);
     {
-      DEFINE_TEST (12, PFLAG_DEFAULT,
+      DEFINE_TEST (15, PFLAG_DEFAULT,
                    "a@b cde0123 test.1xyz42",
                    "a", "b cde", " test", "xyz");
-      DO_TEST (12, "basic custom delimiter");
+      DO_TEST (15, "basic custom delimiter");
     
-      DEFINE_TEST (13, PFLAG_ALLDELIMS,
+      DEFINE_TEST (16, PFLAG_ALLDELIMS,
                    "a b cde0123 test.1xyz42",
                    "a", "b", "cde", "test", "xyz");
-      DO_TEST (13, "with all delimiters flag");
+      DO_TEST (16, "with all delimiters flag");
     }
     /* unset the custom delimiters */
     ml.delim_ranges = (Milexer_BEXP){0};
-    DEFINE_TEST (14, PFLAG_DEFAULT,
+    DEFINE_TEST (17, PFLAG_DEFAULT,
                  "a.a cde0123 ",
                  "a.a", "cde0123");
-    DO_TEST (14, "after unset delim_ranges");
+    DO_TEST (17, "after unset delim_ranges");
+  }
+
+  puts ("-- escape --");
+  {
+    DEFINE_TEST (18, PFLAG_DEFAULT,
+                 "\\(xx(aa\\)bb)\\)yyy ",
+                 "\\(xx", "(aa\\)bb)", "\\)yyy");
+    DO_TEST (18, "basic escape in expressions");
+
+    DEFINE_TEST (19, PFLAG_DEFAULT,
+                 "(xx\\))(aa\\)bb \\)cc\\) dd \\) )",
+                 "(xx\\))", "(aa\\)bb \\)cc\\) d", "d \\) )");
+    DO_TEST (19, "complex escape in expressions");
+
+    DEFINE_TEST (20, PFLAG_INEXP,
+                 "(\\(\\(\\(\\)test)\\(\\((yy)",
+                 "\\(\\(\\(\\)test", "\\(\\(", "yy");
+    DO_TEST (20, "escape & inner expression flag");
   }
 
   puts ("-- end of input slice --");
