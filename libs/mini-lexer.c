@@ -239,6 +239,7 @@ typedef struct
   /* TODO: for nesting, these should be arrays */
   int __last_exp_idx;
   int __last_punc_idx;
+  const char *__last_comm;
 } Milexer_Slice;
 
 #define SET_SLICE(src, buf, n) \
@@ -389,6 +390,63 @@ __is_expression_suff (const Milexer *ml, Milexer_Slice *src,
 }
 
 static inline char *
+__is_mline_commented_suff (const Milexer *ml, Milexer_Slice *src,
+                       Milexer_Token *tk)
+{
+  for (int i=0; i < ml->a_comment.len; ++i)
+    {
+      const char *pref = ml->a_comment.exp[i].end;
+      size_t len = strlen (pref);
+      char *__cstr = tk->cstr + tk->__idx - len;
+
+      if (strncmp (pref, __cstr, len) == 0)
+        {
+          src->__last_comm = pref;
+          return __cstr;
+        }
+    }
+  return NULL;
+}
+
+static inline char *
+__is_sline_commented_pref (const Milexer *ml, Milexer_Slice *src,
+                       Milexer_Token *tk)
+{
+  for (int i=0; i < ml->b_comment.len; ++i)
+    {
+      const char *pref = ml->b_comment.exp[i];
+      size_t len = strlen (pref);
+      char *__cstr = tk->cstr + tk->__idx - len;
+
+      if (strncmp (pref, __cstr, len) == 0)
+        {
+          src->__last_comm = pref;
+          return __cstr;
+        }
+    }
+  return NULL;
+}
+
+static inline char *
+__is_mline_commented_pref (const Milexer *ml, Milexer_Slice *src,
+                       Milexer_Token *tk)
+{
+  for (int i=0; i < ml->a_comment.len; ++i)
+    {
+      const char *pref = ml->a_comment.exp[i].begin;
+      size_t len = strlen (pref);
+      char *__cstr = tk->cstr + tk->__idx - len;
+
+      if (strncmp (pref, __cstr, len) == 0)
+        {
+          src->__last_comm = pref;
+          return __cstr;
+        }
+    }
+  return NULL;
+}
+
+static inline char *
 __is_expression_pref (const Milexer *ml, Milexer_Slice *src,
                      Milexer_Token *tk)
 {
@@ -499,21 +557,27 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
       //-- detect & reset chunks -------//
       if (tk->__idx == tk->len)
         {
-          if (tk->type == TK_NOT_SET ||
-              src->state == SYN_DUMMY || src->state == SYN_DONE)
+          if ((src->state != SYN_COMM && src->state != SYN_ML_COMM)
+              || (flags & PFLAG_INCOMMENT))
             {
-              /**
-               *  we assume your keywords are smaller than
-               *  the length of tk->cstr buffer
-               */
-              tk->id = -1;
-              tk->type = TK_KEYWORD;
+              if (tk->type == TK_NOT_SET ||
+                  src->state == SYN_DUMMY || src->state == SYN_DONE)
+                {
+                  /**
+                   *  we assume your keywords are smaller than
+                   *  the length of tk->cstr buffer
+                   */
+                  tk->id = -1;
+                  tk->type = TK_KEYWORD;
+                }
+              /* max token len reached */
+              ST_STATE (src, SYN_CHUNK);
+              tk->cstr[tk->__idx + 1] = '\0';
+              tk->__idx = 0;
+              return NEXT_CHUNK;
             }
-          /* max token len reached */
-          ST_STATE (src, SYN_CHUNK);
-          tk->cstr[tk->__idx + 1] = '\0';
-          tk->__idx = 0;
-          return NEXT_CHUNK;
+          else
+            tk->__idx = 0;
         }
       //--------------------------------//
       char *__ptr;
@@ -526,13 +590,59 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
           LD_STATE (src);
           break;
 
+        case SYN_COMM:
+          if (*p == '\n' || *p == '\r')
+            {
+              LD_STATE (src);
+              tk->type = TK_COMMENT;
+              if (flags & PFLAG_INCOMMENT)
+                {
+                  *(dst) = '\0';
+                  return NEXT_MATCH;
+                }
+              else
+                {
+                  tk->__idx = 0;
+                  *tk->cstr = '\0';
+                }
+            }
+          break;
+
+          case SYN_ML_COMM:
+          if ((__ptr = __is_mline_commented_suff (ml, src, tk)))
+            {
+              LD_STATE (src);
+              tk->__idx = 0;
+              if (flags & PFLAG_INCOMMENT)
+                {
+                  *(dst) = '\0';
+                  return NEXT_MATCH;
+                }
+            }
+          break;
+          
         case SYN_DUMMY:
-          if ((__ptr = __is_expression_pref (ml, src, tk)))
+          if ((__ptr = __is_sline_commented_pref (ml, src, tk)))
+            {
+              tk->type = TK_COMMENT;
+              ST_STATE (src, SYN_COMM);
+            }
+          else if ((__ptr = __is_mline_commented_pref (ml, src, tk)))
+            {
+              tk->type = TK_COMMENT;
+              ST_STATE (src, SYN_ML_COMM);
+            }
+          else if ((__ptr = __is_expression_pref (ml, src, tk)))
             {
               tk->type = TK_EXPRESSION;
               if (__ptr == tk->cstr)
                 {
                   ST_STATE (src, SYN_NO_DUMMY);
+                  if (flags & PFLAG_INEXP)
+                    {
+                      *__ptr = '\0';
+                      tk->__idx = 0;
+                    }
                 }
               else
                 {
@@ -542,7 +652,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
                   return NEXT_MATCH;
                 }
             }
-          if ((__ptr = __detect_puncs (ml, src, tk)))
+          else if ((__ptr = __detect_puncs (ml, src, tk)))
             {
               tk->type = TK_PUNCS;
               *(__ptr + 1) = '\0';
@@ -556,7 +666,32 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
           break;
 
         case SYN_MIDDLE:
-          if (__detect_delim (ml, *p, flags))
+          if ((__ptr = __is_sline_commented_pref (ml, src, tk)))
+            {
+              ST_STATE (src, SYN_COMM);
+              if (__ptr == tk->cstr)
+                {
+                  break;
+                }
+              else
+                {
+                  if (tk->type == TK_NOT_SET)
+                    tk->type = TK_KEYWORD;
+                  tk->__idx = 0;
+                  *__ptr = 0;
+                  return NEXT_MATCH;
+                }
+            }
+          else if ((__ptr = __is_mline_commented_pref (ml, src, tk)))
+            {
+              ST_STATE (src, SYN_ML_COMM);
+              if (tk->type == TK_NOT_SET)
+                tk->type = TK_KEYWORD;
+              tk->__idx = 0;
+              *__ptr = 0;
+              return NEXT_MATCH;
+            }
+          else if (__detect_delim (ml, *p, flags))
             {
               if (tk->__idx > 1)
                 {
@@ -616,7 +751,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
               tk->type = TK_EXPRESSION;
               if (flags & PFLAG_INEXP)
                 *__ptr = '\0';
-              ST_STATE (src, SYN_MIDDLE);
+              ST_STATE (src, SYN_DUMMY);
               tk->__idx = 0;
               *(dst + 1) = '\0';
               return NEXT_MATCH;
@@ -719,10 +854,11 @@ enum LANG
     EXP_STR,
     EXP_STR2,
     EXP_LONG,
-    /* comments */
+    /* single-line comments */
     COMM_1 = 0,
     COMM_2,
-    COMM_ml,
+    /* multi-line comments */
+    COMM_ml = 0,
   };
 static const char *Keys[] = {
   [LANG_IF]         = "if",
@@ -926,7 +1062,7 @@ do_test__H (test_t *t, Milexer_Slice *src)
   if (n == -1) {                                    \
     puts ("pass");                                  \
   } else {                                          \
-    printf ("fail!\n test %d-%d:  "format"\n",      \
+    printf ("fail!\n test %d:%d:  "format"\n",      \
             t->test_number, n, ##__VA_ARGS__);      \
   } return n;
 
@@ -941,7 +1077,7 @@ do_test__H (test_t *t, Milexer_Slice *src)
 
       ret = ml.next (&ml, src, &tk, t->parsing_flags);
 #ifdef _ML_DEBUG
-      printf (" test %d-%d: expect `%s`... ", t->test_number, counter, tk.cstr);
+      printf (" test %d:%d: expect `%s`... ", t->test_number, counter, tcase->cstr);
 #endif
 
       if (strcmp (tcase->cstr, tk.cstr) != 0)
@@ -1263,6 +1399,75 @@ main (void)
       }};
     DO_TEST (&t, "escape & inner expression flag");
   }
+
+  puts ("-- single-line comment --");
+  {
+    t = (test_t) {
+      .test_number = 20,
+      .parsing_flags = PFLAG_DEFAULT,
+      .input = "#0123456789abcdef 0123456789abcdef\n",
+      .etk = (Milexer_Token []){
+        {.type = TK_COMMENT,    .cstr = ""}, // dry out
+        {0}
+      }};
+    DO_TEST (&t, "basic comment");
+
+    t = (test_t) {
+      .test_number = 21,
+      .parsing_flags = PFLAG_DEFAULT,
+      .input = "AAA#0123456789abcdef\n",
+      .etk = (Milexer_Token []){
+        {.type = TK_KEYWORD,    .cstr = "AAA"},
+        {.type = TK_COMMENT,    .cstr = ""}, // dry out
+        {0}
+      }};
+    DO_TEST (&t, "keyword before comment");
+
+    t = (test_t) {
+      .test_number = 22,
+      .parsing_flags = PFLAG_DEFAULT,
+      .input = "AAA+#0123456789abcdef\n",
+      .etk = (Milexer_Token []){
+        {.type = TK_KEYWORD,    .cstr = "AAA"},
+        {.type = TK_PUNCS,      .cstr = "+"},
+        {.type = TK_COMMENT,    .cstr = ""}, // dry out
+        {0}
+      }};
+    DO_TEST (&t, "punc before comment");
+    
+    t = (test_t) {
+      .test_number = 23,
+      .parsing_flags = PFLAG_DEFAULT,
+      .input = "AAA(e x p)#0123456789abcdef\n",
+      .etk = (Milexer_Token []){
+        {.type = TK_KEYWORD,       .cstr = "AAA"},
+        {.type = TK_EXPRESSION,    .cstr = "(e x p)"},
+        {.type = TK_COMMENT,       .cstr = ""}, // dry out
+        {0}
+      }};
+    DO_TEST (&t, "expression before comment");
+
+    t = (test_t) {
+      .test_number = 24,
+      .parsing_flags = PFLAG_INCOMMENT,
+      .input = "AAA(e x p)#0123456789abcdefghi\n",
+      .etk = (Milexer_Token []){
+        {.type = TK_KEYWORD,       .cstr = "AAA"},
+        {.type = TK_EXPRESSION,    .cstr = "(e x p)"},
+        {.type = TK_COMMENT,       .cstr = "#0123456789abcde"},
+        {.type = TK_COMMENT,       .cstr = "fghi"},
+        {0}
+      }};
+    DO_TEST (&t, "with include comment flag");
+
+  }
+
+  puts ("-- multi-line comment --");
+  {
+    /* not tested yet */
+  }
+
+  
 
   puts ("-- end of input slice --");
   {
