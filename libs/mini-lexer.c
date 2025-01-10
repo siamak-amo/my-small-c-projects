@@ -310,7 +310,7 @@ typedef struct Milexer_t
    *
    *  Memory management for @src and @t is up to
    *  the user of this library
-   *  Their allocated buffers *MUST* be distinct
+   *  @src and @t buffers *MUST* be distinct
    */
   int (*next)(const struct Milexer_t *,
               Milexer_Slice *src,
@@ -333,12 +333,8 @@ typedef struct Milexer_t
  **/
 int milexer_init (Milexer *, bool lazy_mode);
 /**
- * To set the ID of keyword tokens
- * The next function does not set the ID of tokens
- * If you need keyword detection, call this function
- * after verifying that your token type is a keyword
- *
- * @return 0 on success, -1 if not detected
+ *  To set the ID of keyword tokens
+ *  @return 0 on success, -1 if not detected
  */
 int ml_set_keyword_id (const Milexer *, Milexer_Token *t);
 
@@ -646,6 +642,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
                   else
                     {
                       tk->type = TK_KEYWORD;
+                      ml_set_keyword_id (ml, tk);
                     }
                 }
               /* max token len reached */
@@ -765,7 +762,10 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
               else
                 {
                   if (tk->type == TK_NOT_SET)
-                    tk->type = TK_KEYWORD;
+                    {
+                      tk->type = TK_KEYWORD; 
+                      ml_set_keyword_id (ml, tk);
+                    }
                   tk->__idx = 0;
                   *__ptr = 0;
                   return NEXT_MATCH;
@@ -781,7 +781,10 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
               else
                 {
                   if (tk->type == TK_NOT_SET)
-                    tk->type = TK_KEYWORD;
+                    {
+                      tk->type = TK_KEYWORD; 
+                      ml_set_keyword_id (ml, tk);
+                    }
                   tk->__idx = 0;
                   *__ptr = 0;
                   return NEXT_MATCH;
@@ -798,7 +801,10 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
                 {
                   *dst = '\0';
                   if (tk->type == TK_NOT_SET)
-                    tk->type = TK_KEYWORD;
+                    {
+                      tk->type = TK_KEYWORD; 
+                      ml_set_keyword_id (ml, tk);
+                    }
                   ST_STATE (src, SYN_DUMMY);
                   tk->__idx = 0;
                   return NEXT_MATCH;
@@ -821,6 +827,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
               else
                 {
                   tk->type = TK_KEYWORD;
+                  ml_set_keyword_id (ml, tk);
                   *(dst - n + 1) = '\0';
                   tk->__idx = 0;
                   ST_STATE (src, SYN_PUNC__);
@@ -835,6 +842,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
                   *(__ptr) = '\0';
                   tk->__idx = 0;
                   tk->type = TK_KEYWORD;
+                  ml_set_keyword_id (ml, tk);
                   return NEXT_MATCH;
                 }
               else
@@ -877,6 +885,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
           if (tk->type == TK_NOT_SET)
             {
               tk->type = TK_KEYWORD;
+              ml_set_keyword_id (ml, tk);
             }
           return NEXT_END;
         }
@@ -890,7 +899,10 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
   src->idx = 0;
   *(dst + 1) = '\0';
   if (tk->type == TK_NOT_SET)
-    tk->type = TK_KEYWORD;
+    {
+      tk->type = TK_KEYWORD; 
+      ml_set_keyword_id (ml, tk);
+    }
   return NEXT_NEED_LOAD;
 }
 
@@ -1060,7 +1072,6 @@ main (void)
             switch (tk.type)
               {
               case TK_KEYWORD:
-                ml_set_keyword_id (&ml, &tk);
                 printf ("[%c]  `%s`", TOKEN_IS_KNOWN (&tk) ?'*':'-', tk.cstr);
                 break;
               case TK_PUNCS:
