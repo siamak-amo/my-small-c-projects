@@ -129,7 +129,7 @@ enum milexer_state_t
      *  Not enough space left in the token's buffer, 
      *  so the token was fragmented
      *  You will receive the remaining chunk(s)
-     *  until you get a NEXT_MATCH token
+     *  until you get a NEXT_MATCH return code
      */
     NEXT_CHUNK,
     
@@ -150,8 +150,10 @@ enum milexer_state_t
     NEXT_ERR, /* error */
   };
 
-#define NEXT_SHOULD_END(ret) (ret == NEXT_END || ret == NEXT_ERR)
-#define NEXT_SHOULD_LOAD(ret) (ret == NEXT_NEED_LOAD || NEXT_SHOULD_END (ret))
+#define NEXT_SHOULD_END(ret) \
+  (ret == NEXT_END || ret == NEXT_ERR)
+#define NEXT_SHOULD_LOAD(ret) \
+  (ret == NEXT_NEED_LOAD || NEXT_SHOULD_END (ret))
 
 const char *milexer_next_cstr[] = {
   [NEXT_MATCH]                   = "Match",
@@ -198,7 +200,7 @@ enum milexer_parsing_flag_t
 
 enum milexer_token_t
   { 
-    TK_NOT_SET = 0, /* internal milexer bug */
+    TK_NOT_SET = 0,
     TK_COMMENT, /* commented */
 
     /* usable tokens */
@@ -208,7 +210,7 @@ enum milexer_token_t
   };
 
 const char *milexer_token_type_cstr[] = {
-  [TK_NOT_SET]         = "NAN", /* unreachable */
+  [TK_NOT_SET]         = "NAN",
   [TK_PUNCS]           = "Punctuation",
   [TK_KEYWORD]         = "Keyword",
   [TK_EXPRESSION]      = "Expression",
@@ -290,8 +292,8 @@ typedef struct Milexer_t
   Milexer_BEXP puncs;
   Milexer_BEXP keywords;
   Milexer_AEXP expression;
-  Milexer_BEXP b_comment; // Not implemented
-  Milexer_AEXP a_comment; // Not implemented
+  Milexer_BEXP b_comment;
+  Milexer_AEXP a_comment;
   /**
    *  Delimiter ranges; each entry in this field
    *  must be 1 or 2-byte string, which defines a range
@@ -302,20 +304,6 @@ typedef struct Milexer_t
    */
   Milexer_BEXP delim_ranges;
 
-  /**
-   *  Retrieves the next token
-   *
-   *  @src is the input buffer source and The result 
-   *  will be stored in @t
-   *
-   *  Memory management for @src and @t is up to
-   *  the user of this library
-   *  @src and @t buffers *MUST* be distinct
-   */
-  int (*next)(const struct Milexer_t *,
-              Milexer_Slice *src,
-              Milexer_Token *t,
-              int flags);
 } Milexer;
 
 #define GEN_LENOF(arr) (sizeof (arr) / sizeof ((arr)[0]))
@@ -330,13 +318,28 @@ typedef struct Milexer_t
 /**
  *  Milexer init, this function should be called
  *  at the beginning, before `next()`
- **/
+ */
 int milexer_init (Milexer *, bool lazy_mode);
+
 /**
  *  To set the ID of keyword tokens
  *  @return 0 on success, -1 if not detected
  */
 int ml_set_keyword_id (const Milexer *, Milexer_Token *t);
+
+/**
+ *  Retrieves the next token
+ *
+ *  @src is the input buffer source and
+ *  The result will be stored in @t
+ *
+ *  Memory management for @src and @t is up to
+ *  the user of this library
+ *  @src and @t buffers *MUST* be distinct
+ */
+int ml_next (const Milexer *,
+             Milexer_Slice *src, Milexer_Token *t,
+             int flags);
 
 
 /**
@@ -538,20 +541,8 @@ ml_set_keyword_id (const Milexer *ml, Milexer_Token *res)
   return -1;
 }
 
-
-static int
-__next_token (const Milexer *ml, Milexer_Slice *src,
-              Milexer_Token *res, int flags)
-{
-  (void)(ml);
-  (void)(src);
-  (void)(res);
-  (void)(flags);
-  return 0;
-}
-
-static int
-__next_token_lazy (const Milexer *ml, Milexer_Slice *src,
+int
+ml_next (const Milexer *ml, Milexer_Slice *src,
                    Milexer_Token *tk, int flags)
 {
   if (tk->cstr == NULL || tk->len <= 0 || tk->cstr == src->buffer)
@@ -911,20 +902,6 @@ int
 milexer_init (Milexer *ml, bool lazy_mode)
 {
   ml->lazy = lazy_mode;
-  if (ml->lazy)
-    {
-      /* lazy loading */
-      ml->next = __next_token_lazy;
-    }
-  else
-    {
-      /**
-       *  assume the entire data is loaded
-       *  into ml->src->buffer
-       */
-      ml->next = __next_token;
-    }
-
   return 0;
 }
 
@@ -1051,7 +1028,7 @@ main (void)
   for (int ret = 0; !NEXT_SHOULD_END (ret); )
     {
       /* Get the next token */
-      ret = ml.next (&ml, &src, &tk, flg);
+      ret = ml_next (&ml, &src, &tk, flg);
       switch (ret)
         {
         case NEXT_NEED_LOAD:
@@ -1107,7 +1084,7 @@ main (void)
                         for (int _ret = 0; !NEXT_SHOULD_LOAD (_ret); )
                           {
                             /* allow space character in tokens */
-                            _ret = ml.next (&ml, &second_src, &tmp, PFLAG_IGSPACE);
+                            _ret = ml_next (&ml, &second_src, &tmp, PFLAG_IGSPACE);
 
                             if (tmp.type == TK_KEYWORD)
                               printf ("%s", tmp.cstr);
@@ -1118,7 +1095,7 @@ main (void)
                         /* load the remaining chunks of the inner parentheses, if any */
                         if (ret != NEXT_CHUNK)
                           break;
-                        ret = ml.next (&ml, &src, &tk, flg);
+                        ret = ml_next (&ml, &src, &tk, flg);
                       }
                     TOKEN_FREE (&tmp);
                   }
@@ -1187,7 +1164,7 @@ do_test__H (test_t *t, Milexer_Slice *src)
           Return (counter, "unexpected NEXT_END");
         }
 
-      ret = ml.next (&ml, src, &tk, t->parsing_flags);
+      ret = ml_next (&ml, src, &tk, t->parsing_flags);
 #ifdef _ML_DEBUG
       printf (" test %d:%d: expect `%s`... ", t->test_number, counter, tcase->cstr);
 #endif
