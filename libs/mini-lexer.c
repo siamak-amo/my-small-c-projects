@@ -255,6 +255,9 @@ typedef struct
 
 typedef struct
 {
+  /* lazy mode */
+  int lazy;
+
   /* End of lazy loading */
   int eof_lazy;
 
@@ -284,9 +287,6 @@ typedef struct
 
 typedef struct Milexer_t
 {
-  /* lazy mode */
-  int lazy;
-
   /* Configurations */
   Milexer_BEXP escape;    // Not implemented
   Milexer_BEXP puncs;
@@ -897,14 +897,6 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
   return NEXT_NEED_LOAD;
 }
 
-
-int
-milexer_init (Milexer *ml, bool lazy_mode)
-{
-  ml->lazy = lazy_mode;
-  return 0;
-}
-
 #endif /* ML_IMPLEMENTATION */
 
 #undef logf
@@ -979,7 +971,6 @@ static struct Milexer_exp_ Comm_ml[] = {
 };
 //-- Milexer main configuration --------//
 static Milexer ml = {
-    .lazy = 1,
     .puncs       = GEN_MKCFG (Puncs),
     .keywords    = GEN_MKCFG (Keys),
     .expression  = GEN_MKCFG (Exp),
@@ -1017,11 +1008,9 @@ int
 main (void)
 {
   /* input source */
-  Milexer_Slice src = {0};
+  Milexer_Slice src = {.lazy = true};
   /* token type */
   Milexer_Token tk = TOKEN_ALLOC (32);
-  /* Milexer initialization */
-  milexer_init (&ml, true);
 
   char *line = NULL;
   const int flg = PFLAG_INEXP;
@@ -1221,7 +1210,6 @@ main (void)
   test_t t = {0};
   int ret = 0;
   tk = TOKEN_ALLOC (16);
-  milexer_init (&ml, true);
 
   puts ("-- elementary tests -- ");
   {
