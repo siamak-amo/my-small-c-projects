@@ -321,14 +321,31 @@ typedef struct Milexer_t
 #define GEN_LENOF(arr) (sizeof (arr) / sizeof ((arr)[0]))
 #define GEN_MKCFG(exp_ptr) {.exp = exp_ptr, .len = GEN_LENOF (exp_ptr)}
 
-/* initialize */
+
+/**
+ **  Function definitions
+ **  you shoud only call these functions
+ **/
+
+/**
+ *  Milexer init, this function should be called
+ *  at the beginning, before `next()`
+ **/
 int milexer_init (Milexer *, bool lazy_mode);
+/**
+ * To set the ID of keyword tokens
+ * The next function does not set the ID of tokens
+ * If you need keyword detection, call this function
+ * after verifying that your token type is a keyword
+ *
+ * @return 0 on success, -1 if not detected
+ */
+int ml_set_keyword_id (const Milexer *, Milexer_Token *t);
 
 
 #ifdef ML_IMPLEMENTATION
 /**
  **  Internal functions
- **  Only use Milexer.next()
  **/
 static inline int
 __detect_delim (const Milexer *ml, unsigned char p, int flags)
@@ -500,11 +517,11 @@ __is_expression_pref (const Milexer *ml, Milexer_Slice *src,
   return NULL;
 }
 
-static inline void
-__handle_token_id (const Milexer *ml, Milexer_Token *res)
+int
+ml_set_keyword_id (const Milexer *ml, Milexer_Token *res)
 {
   if (res->type != TK_KEYWORD)
-    return;
+    return -1;
   if (ml->keywords.len > 0)
     {
       for (int i=0; i < ml->keywords.len; ++i)
@@ -513,11 +530,12 @@ __handle_token_id (const Milexer *ml, Milexer_Token *res)
           if (strcmp (p, res->cstr) == 0)
             {
               res->id = i;
-              return;
+              return 0;
             }
         }
       res->id = -1;
     }
+  return -1;
 }
 
 
@@ -797,7 +815,6 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
                   *(__ptr) = '\0';
                   tk->__idx = 0;
                   tk->type = TK_KEYWORD;
-                  __handle_token_id (ml, tk);
                   return NEXT_MATCH;
                 }
               else
@@ -840,7 +857,6 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
           if (tk->type == TK_NOT_SET)
             {
               tk->type = TK_KEYWORD;
-              __handle_token_id (ml, tk);
             }
           return NEXT_END;
         }
@@ -1024,6 +1040,7 @@ main (void)
             switch (tk.type)
               {
               case TK_KEYWORD:
+                ml_set_keyword_id (&ml, &tk);
                 printf ("[%c]  `%s`", TOKEN_IS_KNOWN (&tk) ?'*':'-', tk.cstr);
                 break;
               case TK_PUNCS:
