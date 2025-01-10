@@ -508,35 +508,9 @@ static int
 __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
                    Milexer_Token *tk, int flags)
 {
-  if (tk->cstr == NULL || tk->len <= 0
-      || tk->cstr == src->buffer)
+  if (tk->cstr == NULL || tk->len <= 0 || tk->cstr == src->buffer)
     return NEXT_ERR;
-
-  if (src->state == SYN_NO_DUMMY__)
-    {
-      if (!(flags & PFLAG_INEXP) && src->__last_exp_idx != -1)
-        {
-          /* certainly the token type is expression */
-          tk->type = TK_EXPRESSION;
-          const char *le = __get_last_exp (ml, src)->begin;
-          char *__p = mempcpy (tk->cstr, le, strlen (le));
-          tk->__idx += __p - tk->cstr;
-        }
-      src->state = SYN_NO_DUMMY;
-    }
-  else if (src->state == SYN_PUNC__)
-    {
-      const char *lp = __get_last_punc (ml, src);
-      *((char *)mempcpy (tk->cstr, lp, strlen (lp))) = '\0';
-
-      LD_STATE (src);
-      tk->type = TK_PUNCS;
-      tk->id = src->__last_punc_idx;
-      return NEXT_MATCH;
-    }
-  else if (src->state == SYN_CHUNK)
-    LD_STATE (src);
-
+  /* check end of src slice */
   if (src->idx >= src->cap)
     {
       if (src->eof_lazy)
@@ -547,17 +521,52 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
       return NEXT_NEED_LOAD;
     }
 
+  /* pre parsing */
   tk->type = TK_NOT_SET;
-  if (src->state == SYN_ML_COMM && src->__last_comm
-      && (flags & PFLAG_INCOMMENT))
+  switch (src->state)
     {
-      size_t len = strlen (src->__last_comm);
-      *((char *) mempcpy (tk->cstr, src->__last_comm, len)) = 0;
-      tk->__idx = len;
-      tk->type = TK_COMMENT;
-      src->__last_comm = NULL;
+    case SYN_NO_DUMMY__:
+      if (!(flags & PFLAG_INEXP) && src->__last_exp_idx != -1)
+        {
+          /* certainly the token type is expression */
+          tk->type = TK_EXPRESSION;
+          const char *le = __get_last_exp (ml, src)->begin;
+          char *__p = mempcpy (tk->cstr, le, strlen (le));
+          tk->__idx += __p - tk->cstr;
+        }
+      src->state = SYN_NO_DUMMY;
+      break;
+
+    case SYN_PUNC__:
+      const char *lp = __get_last_punc (ml, src);
+      *((char *)mempcpy (tk->cstr, lp, strlen (lp))) = '\0';
+
+      LD_STATE (src);
+      tk->type = TK_PUNCS;
+      tk->id = src->__last_punc_idx;
+      return NEXT_MATCH;
+      break;
+
+    case SYN_CHUNK:
+      LD_STATE (src);
+      break;
+
+    case SYN_ML_COMM:
+      if (src->__last_comm && (flags & PFLAG_INCOMMENT))
+        {
+          tk->type = TK_COMMENT;
+          size_t len = strlen (src->__last_comm);
+          *((char *) mempcpy (tk->cstr, src->__last_comm, len)) = 0;
+          tk->__idx = len;
+          src->__last_comm = NULL;
+        }
+      break;
+
+    default:
+      break;
     }
 
+  /* parsing main logic */
   const char *p;
   char *dst = tk->cstr;
   for (; src->idx < src->cap; )
@@ -789,13 +798,16 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
         default:
           break;
         }
+
+      /* check for escape */
       if (*p == '\\')
         ST_STATE (src, SYN_ESCAPE);
     }
 
+  /* check for end of lazy loading */
   if (src->eof_lazy)
     {
-      if (tk->__idx > 1)
+      if (tk->__idx >= 1)
         {
           if (tk->type == TK_NOT_SET)
             {
@@ -804,17 +816,13 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
             }
           return NEXT_END;
         }
-      else if (tk->__idx == 1 && *tk->cstr > ' ')
-        {
-          tk->type = TK_KEYWORD;
-          return NEXT_END;
-        }
-      else
+       else
         {
           tk->type = TK_NOT_SET;
           return NEXT_END;
         }
     }
+  /* end of src slice */
   src->idx = 0;
   *(dst + 1) = '\0';
   if (tk->type == TK_NOT_SET)
@@ -1435,7 +1443,7 @@ main (void)
       .parsing_flags = PFLAG_DEFAULT,
       .input = "#0123456789abcdef 0123456789abcdef\n",
       .etk = (Milexer_Token []){
-        {.type = TK_COMMENT,    .cstr = ""}, // dry out
+        {.type = TK_NOT_SET,    .cstr = ""}, // dry out
         {0}
       }};
     DO_TEST (&t, "basic comment");
@@ -1446,7 +1454,7 @@ main (void)
       .input = "AAA#0123456789abcdef\n",
       .etk = (Milexer_Token []){
         {.type = TK_KEYWORD,    .cstr = "AAA"},
-        {.type = TK_COMMENT,    .cstr = ""}, // dry out
+        {.type = TK_NOT_SET,    .cstr = ""}, // dry out
         {0}
       }};
     DO_TEST (&t, "keyword before comment");
@@ -1458,7 +1466,7 @@ main (void)
       .etk = (Milexer_Token []){
         {.type = TK_KEYWORD,    .cstr = "AAA"},
         {.type = TK_PUNCS,      .cstr = "+"},
-        {.type = TK_COMMENT,    .cstr = ""}, // dry out
+        {.type = TK_NOT_SET,    .cstr = ""}, // dry out
         {0}
       }};
     DO_TEST (&t, "punc before comment");
@@ -1470,7 +1478,7 @@ main (void)
       .etk = (Milexer_Token []){
         {.type = TK_KEYWORD,       .cstr = "AAA"},
         {.type = TK_EXPRESSION,    .cstr = "(e x p)"},
-        {.type = TK_COMMENT,       .cstr = ""}, // dry out
+        {.type = TK_NOT_SET,       .cstr = ""}, // dry out
         {0}
       }};
     DO_TEST (&t, "expression before comment");
@@ -1484,7 +1492,7 @@ main (void)
         {.type = TK_EXPRESSION,    .cstr = "(e x p)"},
         {.type = TK_COMMENT,       .cstr = "#0123456789abcde"},
         {.type = TK_COMMENT,       .cstr = "fghi"},
-        {.type = TK_COMMENT,       .cstr = ""}, // dry out
+        {.type = TK_NOT_SET,       .cstr = ""}, // dry out
         {0}
       }};
     DO_TEST (&t, "with include comment flag");
