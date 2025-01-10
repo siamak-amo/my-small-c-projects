@@ -343,13 +343,17 @@ int milexer_init (Milexer *, bool lazy_mode);
 int ml_set_keyword_id (const Milexer *, Milexer_Token *t);
 
 
-#ifdef ML_IMPLEMENTATION
 /**
  **  Internal functions
  **/
+#ifdef ML_IMPLEMENTATION
+
+/* returns @p when @p is a delimiter, and -1 on null-byte */
 static inline int
 __detect_delim (const Milexer *ml, unsigned char p, int flags)
 {
+  if (p == 0)
+    return -1;
   if (ml->delim_ranges.len == 0 || (flags & PFLAG_ALLDELIMS))
     {
       /* default delimiters */
@@ -620,7 +624,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
       p = src->buffer + (src->idx++);
       dst = tk->cstr + (tk->__idx++);
       *dst = *p;
-
+      
       //-- detect & reset chunks -------//
       if (tk->__idx == tk->len)
         {
@@ -654,7 +658,7 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
             tk->__idx = 0;
         }
       //--------------------------------//
-      char *__ptr;
+      char *__ptr, c;
       /* logf ("'%c' - %s, %s", *p,
             milexer_state_cstr[src->state],
             milexer_token_type_cstr[tk->type]); */
@@ -735,10 +739,19 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
               tk->__idx = 0;
               return NEXT_MATCH;
             }
-          else if (!__detect_delim (ml, *p, flags))
-            src->state = SYN_MIDDLE;
+          else if ((c = __detect_delim (ml, *p, flags)) == 0)
+            {
+              if (c == -1)
+                {
+                  tk->__idx = 0;
+                  return NEXT_ZTERM;
+                }
+              src->state = SYN_MIDDLE;
+            }
           else
-            tk->__idx = 0;
+            {
+              tk->__idx = 0;
+            }
           break;
 
         case SYN_MIDDLE:
@@ -774,8 +787,13 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
                   return NEXT_MATCH;
                 }
             }
-          else if (__detect_delim (ml, *p, flags))
+          else if ((c = __detect_delim (ml, *p, flags)) != 0)
             {
+              if (c == -1)
+                {
+                  tk->__idx = 0;
+                  return NEXT_ZTERM;
+                } 
               if (tk->__idx > 1)
                 {
                   *dst = '\0';
@@ -786,7 +804,9 @@ __next_token_lazy (const Milexer *ml, Milexer_Slice *src,
                   return NEXT_MATCH;
                 }
               else
-                tk->__idx = 0;
+                {
+                  tk->__idx = 0;
+                }
             }
           else if (__detect_puncs (ml, src, tk))
             {
