@@ -113,6 +113,7 @@
  *       any other punctuation with an `=` prefix (e.g. `==`, `===`, `=xxx`)
  *
  *  Parsing the contents of a retrieved *Expression* token again:
+ *    For a complete example, see the `ML_EXAMPLE_1` program included in this file
  *  ```{c}
  *    // You *MUST* pass the INEXP flag to the parser; otherwise,
  *    // the result will contain the expression prefix and suffix,
@@ -1158,6 +1159,14 @@ main (void)
   /* token type */
   Milexer_Token tk = TOKEN_ALLOC (32);
 
+  printf (
+          "Mini-Lexer Example 1\n"
+          "This program parses your input and detects some pre-defined "
+          "punctuations, expressions, and keywords.\n"
+          "It also parses the contents of expressions within parentheses separately, "
+          "allowing the space character, which is a delimiter outside of these expressions.\n\n"
+          );
+
   char *line = NULL;
   const int flg = PFLAG_INEXP;
   for (int ret = 0; !NEXT_SHOULD_END (ret); )
@@ -1206,8 +1215,7 @@ main (void)
                     puts (":");
                     Milexer_Slice second_src = {0};
                     Milexer_Token tmp = TOKEN_ALLOC (32);
-                    for (;;)
-                      {
+                    do {
                         /**
                          *  When the inner parentheses token is not a chunk,
                          *  the parser should not expect additional chunks
@@ -1216,22 +1224,23 @@ main (void)
                         /* prepare the new input source buffer */
                         SET_ML_SLICE (&second_src, tk.cstr, strlen (tk.cstr));
 
-                        for (int _ret = 0; !NEXT_SHOULD_LOAD (_ret); )
+                        for (int _ret = 0; !NEXT_SHOULD_END (_ret); )
                           {
                             /* allow space character in tokens */
                             _ret = ml_next (&ml, &second_src, &tmp, PFLAG_IGSPACE);
 
                             if (tmp.type == TK_KEYWORD)
-                              printf ("%s", tmp.cstr);
-                            else if (tmp.type == TK_PUNCS && tmp.id == PUNC_COMMA)
-                              puts ("");
+                              printf ("`%s`", tmp.cstr);
+                            else if (tmp.type == TK_PUNCS)
+                              printf ("%c", *tmp.cstr);
                           }
 
                         /* load the remaining chunks of the inner parentheses, if any */
                         if (ret != NEXT_CHUNK)
                           break;
                         ret = ml_next (&ml, &src, &tk, flg);
-                      }
+                      } while (!NEXT_SHOULD_LOAD (ret));
+
                     TOKEN_FREE (&tmp);
                   }
                 break;
