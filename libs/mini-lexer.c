@@ -18,10 +18,140 @@
  *  file: mini-lexer.c
  *  created on: 16 Dec 2024
  *
- *  Minimal Lexer header-only library
- *  --Under Development--
+ *  Mini-Lexer
+ *  Minimal chunk-based lexer
  *
  *
+ *  Usage Example:
+ *  ```{c}
+ *    #define ML_IMPLEMENTATION
+ *    #include "mini-lexer.c"
+ *
+ *    //-- Defining the language -------//
+ *    enum LANG
+ *      {
+ *        // keywords
+ *        KEY_IF = 0,
+ *        KEY_ELSE,
+ *        ...
+ *        // punctuations
+ *        PUNC_COMMA = 0,
+ *        ...
+ *        // expressions
+ *        EXP_STR = 0,
+ *        ...
+ *        // single-line & multi-line comment
+ *        SL_COMM_1 = 0,
+ *        ...
+ *        ML_COMM_1 = 0,
+ *        ...
+ *      };
+ *
+ *    static const char *Keywords[] = { [KEY_IF] = "if", ... };
+ *    static const char *Puncs[] = { [PUNC_COMMA] = ",", ... };
+ *    static const char *SL_Comments[] = { [SL_COMM_1] = "#", ...};
+ *
+ *    static struct Milexer_exp_ Expressions[] = {
+ *      [EXP_STR] = {"'", "'"}, ...
+ *    };
+ *    static struct Milexer_exp_ ML_Comments[] = {
+ *      [ML_COMM_1] = {"-(", ")-"}, ...
+ *    };
+ *
+ *    // Define delimiter ranges if deeded
+ *    static const char *Delimiters = {
+ *      "\x00\x19",  // the range [0x00, 0x19]
+ *      ";",         // the `;` character
+ *      ...
+ *    };
+ *
+ *    // The main configuration of Mini-Lexer
+ *    static Milexer ml = {
+ *      .puncs         = GEN_MKCFG (Puncs),
+ *      .keywords      = GEN_MKCFG (Keywords),
+ *      .expression    = GEN_MKCFG (Expressions),
+ *      .b_comment     = GEN_MKCFG (SL_Comments),
+ *      .a_comment     = GEN_MKCFG (ML_Comments),
+ *      .delim_ranges  = GEN_MKCFG (Delimiters),
+ *    };
+ *
+ *    //-- Actual Parsing --------------//
+ *    const int flg = PFLAG_DEFAULT;
+ *    Milexer_Slice src = {.lazy = true};
+ *    Milexer_Token tk = TOKEN_ALLOC (32);
+ *
+ *    for (int ret = 0; !NEXT_SHOULD_END (ret); )
+ *      {
+ *        ret = ml_next (&ml, &src, &tk, flg);
+ *        switch (ret)
+ *          {
+ *          case NEXT_NEED_LOAD:
+ *            // Load the data to be parsed
+ *            SET_ML_SLICE (&src, buffer, buffer_length);
+ *            // If your input data is complete
+ *            END_ML_SLICE (&src);
+ *            break; 
+ *
+ *          case NEXT_MATCH:   // match
+ *          case NEXT_CHUNK:   // you are receiving a chunk of the result
+ *          case NEXT_ZTERN:   // the parser has encountered a null-byte
+ *            printf ("got `%s` of type %s\n", tk.cstr,
+ *                    milexer_token_type_cstr[tk.type]);
+ *            break;
+ *          }
+ *
+ *          default: break;
+ *      }
+ *    TOKEN_FREE (&tk);
+ *  ```
+ *
+ *  Known Issues:
+ *    As this library parses the input one character at a time, 
+ *    these issues may be irresolvable:
+ *    1. If you define `/` as a punctuation, comments like `//` will NOT work
+ *    2. If you define `=` as a punctuation, you cannot define 
+ *       any other punctuation with an `=` prefix (e.g. `==`, `===`, `=xxx`)
+ *
+ *  Parsing the contents of a retrieved *Expression* token again:
+ *  ```{c}
+ *    // You *MUST* pass the INEXP flag to the parser; otherwise,
+ *    // the result will contain the expression prefix and suffix,
+ *    // which may potentially cause an infinite loop
+ *    ret = ml_next (&ml, &src, &tk, PFLAG_INEXP);
+ *    ...
+ *    if (tk.type == TK_EXPRESSION)
+ *    {
+ *      int _ret;
+ *      Milexer_Slice new_src = {0};
+ *
+ *      SET_ML_SLICE (&new_src, tk.cstr, strlen (tk.cstr));
+ *      // As we are using @tk.cstr in new_src, we cannot also
+ *      // store the result data into the @tk itself, so
+ *      // you *MUST* also allocate a new token, @new_token
+ *
+ *      do {
+ *        // Indicates to the parser when it should stop
+ *        new_src.eof_lazy = (ret != NEXT_CHUNK);
+ *        // Prepare the new parsing data source, @new_src
+ *        SET_ML_SLICE (&new_src, tk.cstr, strlen (tk.cstr));
+ *
+ *        for (int _ret = 0; !NEXT_SHOULD_END (_ret); )
+ *          {
+ *            _ret = ml_next (&ml, &s, &new_token, PFLAG_IGSPACE);
+ *            if (NEXT_SHOULD_LOAD (_ret))
+ *              break;
+ *
+ *            // do something here
+ *            ...
+ *          }
+ *
+ *        // Load the remaining chunk(s)
+ *        if (ret != NEXT_CHUNK)
+ *          break;
+ *        ret = ml_next (&ml, &src, &tk, PFLAG_INEXP);
+ *
+ *      } while (!NEXT_SHOULD_LOAD (ret));
+ *  ```
  *
  *  Compilation:
  *   The test program:
