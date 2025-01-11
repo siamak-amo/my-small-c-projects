@@ -699,11 +699,14 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
   /* check end of src slice */
   if (src->idx >= src->cap)
     {
-      if (src->eof_lazy)
-        return NEXT_END;
       src->idx = 0;
       if (tk->__idx == 0)
-        *tk->cstr = '\0';
+        {
+          *tk->cstr = '\0';
+          tk->type = TK_NOT_SET;
+        }
+      if (src->eof_lazy)
+        return NEXT_END;
       return NEXT_NEED_LOAD;
     }
 
