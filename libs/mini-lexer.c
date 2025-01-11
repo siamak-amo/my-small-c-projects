@@ -696,19 +696,6 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
 {
   if (tk->cstr == NULL || tk->cap <= 0 || tk->cstr == src->buffer)
     return NEXT_ERR;
-  /* check end of src slice */
-  if (src->idx >= src->cap)
-    {
-      src->idx = 0;
-      if (tk->__idx == 0)
-        {
-          *tk->cstr = '\0';
-          tk->type = TK_NOT_SET;
-        }
-      if (src->eof_lazy)
-        return NEXT_END;
-      return NEXT_NEED_LOAD;
-    }
 
   /* pre parsing */
   tk->type = TK_NOT_SET;
@@ -756,6 +743,20 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
 
     default:
       break;
+    }
+
+  /* check end of src slice */
+  if (src->idx >= src->cap)
+    {
+      src->idx = 0;
+      if (tk->__idx == 0)
+        {
+          *tk->cstr = '\0';
+          tk->type = TK_NOT_SET;
+        }
+      if (src->eof_lazy)
+        return NEXT_END;
+      return NEXT_NEED_LOAD;
     }
 
   /* parsing main logic */
