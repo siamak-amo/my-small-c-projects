@@ -153,7 +153,7 @@ enum milexer_state_t
 #define NEXT_SHOULD_END(ret) \
   (ret == NEXT_END || ret == NEXT_ERR)
 #define NEXT_SHOULD_LOAD(ret) \
-  (ret == NEXT_NEED_LOAD || NEXT_SHOULD_END (ret))
+  (ret == NEXT_NEED_LOAD && !NEXT_SHOULD_END (ret))
 
 const char *milexer_next_cstr[] = {
   [NEXT_MATCH]                   = "Match",
@@ -235,23 +235,20 @@ typedef struct
    *  We guarantee that @cstr is always null-terminated
    */
   char *cstr;
-  size_t len;
+  size_t cap, len;
 
   /* Internal */
   size_t __idx;
 } Milexer_Token;
 
 #define TOKEN_IS_KNOWN(t) ((t)->id >= 0)
-#define TOKEN_ALLOC(n) (Milexer_Token){.cstr=malloc (n+1), .len=n}
+#define TOKEN_ALLOC(n) \
+  (Milexer_Token){.cstr=malloc (n+1), .cap=n, .len = 0}
 #define TOKEN_FREE(t) if ((t)->cstr) {free ((t)->cstr);}
 #define TOKEN_DROP(t) ((t)->__idx = 0, (t)->type = TK_NOT_SET)
-
 /* Internal macros */
-#define __get_last_exp(ml, src) \
-  ((ml)->expression.exp + (src)->__last_exp_idx)
-#define __get_last_punc(ml, src) \
-  ((ml)->puncs.exp[(src)->__last_punc_idx])
-
+#define TOEKN_FINISH(t) \
+  ((t)->len = (t)->__idx - 1, (t)->__idx = 0)
 
 typedef struct
 {
@@ -275,15 +272,29 @@ typedef struct
   const char *__last_comm;
 } Milexer_Slice;
 
-#define SET_SLICE(src, buf, n) \
+/**
+ *  SET_ML_SLICE:
+ *    Initializes a Mini-Lexer slice 
+ *    using a pre-allocated buffer
+ *  END_ML_SLICE:
+ *    Ends a slice, after this, the parser
+ *    will always return NEXT_END
+ */
+#define SET_ML_SLICE(src, buf, n) \
   ((src)->buffer = buf, (src)->cap = n, (src)->idx = 0)
 /* to indicate that lazy loading is over */
-#define END_SLICE(src) ((src)->cap = 0, (src)->eof_lazy = 1)
-/* set new state & load the previous state */
+#define END_ML_SLICE(src) ((src)->cap = 0, (src)->eof_lazy = 1)
+
+/** Internal macros **/
+/* set new state, load the previous state */
 #define LD_STATE(src) (src)->state = (src)->prev_state
 #define ST_STATE(slice, new_state) \
   ((slice)->prev_state = (slice)->state, (slice)->state = new_state)
-
+/* get the latest exp/punc prefix */
+#define __get_last_exp(ml, src) \
+  ((ml)->expression.exp + (src)->__last_exp_idx)
+#define __get_last_punc(ml, src) \
+  ((ml)->puncs.exp[(src)->__last_punc_idx])
 
 typedef struct Milexer_t
 {
@@ -545,7 +556,7 @@ int
 ml_next (const Milexer *ml, Milexer_Slice *src,
                    Milexer_Token *tk, int flags)
 {
-  if (tk->cstr == NULL || tk->len <= 0 || tk->cstr == src->buffer)
+  if (tk->cstr == NULL || tk->cap <= 0 || tk->cstr == src->buffer)
     return NEXT_ERR;
   /* check end of src slice */
   if (src->idx >= src->cap)
@@ -613,7 +624,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
       *dst = *p;
       
       //-- detect & reset chunks -------//
-      if (tk->__idx == tk->len)
+      if (tk->__idx == tk->cap)
         {
           if ((src->state != SYN_COMM && src->state != SYN_ML_COMM)
               || (flags & PFLAG_INCOMMENT))
@@ -639,11 +650,11 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
               /* max token len reached */
               ST_STATE (src, SYN_CHUNK);
               tk->cstr[tk->__idx + 1] = '\0';
-              tk->__idx = 0;
+              TOEKN_FINISH (tk);
               return NEXT_CHUNK;
             }
           else
-            tk->__idx = 0;
+            TOEKN_FINISH (tk);
         }
       //--------------------------------//
       char *__ptr, c;
@@ -661,7 +672,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
             {
               ST_STATE (src, SYN_DUMMY);
               tk->type = TK_COMMENT;
-              tk->__idx = 0;
+              TOEKN_FINISH (tk);
               if (flags & PFLAG_INCOMMENT)
                 {
                   *(dst) = '\0';
@@ -669,7 +680,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                 }
               else
                 {
-                  tk->__idx = 0;
+                  TOEKN_FINISH (tk);
                   *tk->cstr = '\0';
                 }
             }
@@ -679,7 +690,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
           if ((__ptr = __is_mline_commented_suff (ml, src, tk)))
             {
               ST_STATE (src, SYN_DUMMY);
-              tk->__idx = 0;
+              TOEKN_FINISH (tk);
               if (flags & PFLAG_INCOMMENT)
                 {
                   *(dst + 1) = '\0';
@@ -709,14 +720,14 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                   if (flags & PFLAG_INEXP)
                     {
                       *__ptr = '\0';
-                      tk->__idx = 0;
+                      TOEKN_FINISH (tk);
                     }
                 }
               else
                 {
                   ST_STATE (src, SYN_NO_DUMMY__);
                   *dst = '\0';
-                  tk->__idx = 0;
+                  TOEKN_FINISH (tk);
                   return NEXT_MATCH;
                 }
             }
@@ -724,21 +735,21 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
             {
               tk->type = TK_PUNCS;
               *(__ptr + 1) = '\0';
-              tk->__idx = 0;
+              TOEKN_FINISH (tk);
               return NEXT_MATCH;
             }
           else if ((c = __detect_delim (ml, *p, flags)) == 0)
             {
               if (c == -1)
                 {
-                  tk->__idx = 0;
+                  TOEKN_FINISH (tk);
                   return NEXT_ZTERM;
                 }
               src->state = SYN_MIDDLE;
             }
           else
             {
-              tk->__idx = 0;
+              TOEKN_FINISH (tk);
             }
           break;
 
@@ -757,7 +768,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                       tk->type = TK_KEYWORD; 
                       ml_set_keyword_id (ml, tk);
                     }
-                  tk->__idx = 0;
+                  TOEKN_FINISH (tk);
                   *__ptr = 0;
                   return NEXT_MATCH;
                 }
@@ -776,7 +787,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                       tk->type = TK_KEYWORD; 
                       ml_set_keyword_id (ml, tk);
                     }
-                  tk->__idx = 0;
+                  TOEKN_FINISH (tk);
                   *__ptr = 0;
                   return NEXT_MATCH;
                 }
@@ -785,7 +796,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
             {
               if (c == -1)
                 {
-                  tk->__idx = 0;
+                  TOEKN_FINISH (tk);
                   return NEXT_ZTERM;
                 } 
               if (tk->__idx > 1)
@@ -797,12 +808,12 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                       ml_set_keyword_id (ml, tk);
                     }
                   ST_STATE (src, SYN_DUMMY);
-                  tk->__idx = 0;
+                  TOEKN_FINISH (tk);
                   return NEXT_MATCH;
                 }
               else
                 {
-                  tk->__idx = 0;
+                  TOEKN_FINISH (tk);
                 }
             }
           else if (__detect_puncs (ml, src, tk))
@@ -812,7 +823,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
               if (n == tk->__idx)
                 {
                   tk->type = TK_PUNCS;
-                  tk->__idx = 0;
+                  TOEKN_FINISH (tk);
                   return NEXT_MATCH;
                 }
               else
@@ -820,7 +831,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                   tk->type = TK_KEYWORD;
                   ml_set_keyword_id (ml, tk);
                   *(dst - n + 1) = '\0';
-                  tk->__idx = 0;
+                  TOEKN_FINISH (tk);
                   ST_STATE (src, SYN_PUNC__);
                   return NEXT_MATCH;
                 }
@@ -831,7 +842,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                 {
                   ST_STATE (src, SYN_NO_DUMMY__);
                   *(__ptr) = '\0';
-                  tk->__idx = 0;
+                  TOEKN_FINISH (tk);
                   tk->type = TK_KEYWORD;
                   ml_set_keyword_id (ml, tk);
                   return NEXT_MATCH;
@@ -840,7 +851,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                 {
                   tk->type = TK_EXPRESSION;
                   if (flags & PFLAG_INEXP)
-                    tk->__idx = 0;
+                    TOEKN_FINISH (tk);
                   ST_STATE (src, SYN_NO_DUMMY);
                 }
             }
@@ -853,7 +864,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
               if (flags & PFLAG_INEXP)
                 *__ptr = '\0';
               ST_STATE (src, SYN_DUMMY);
-              tk->__idx = 0;
+              TOEKN_FINISH (tk);
               *(dst + 1) = '\0';
               return NEXT_MATCH;
             }
@@ -1024,9 +1035,9 @@ main (void)
           ssize_t n;
           printf (">>> ");
           if ((n = getline (&line, (size_t *)&n, stdin)) < 0)
-            END_SLICE (&src);
+            END_ML_SLICE (&src);
           else
-            SET_SLICE (&src, line, n);
+            SET_ML_SLICE (&src, line, n);
           break;
 
         case NEXT_MATCH:
@@ -1068,7 +1079,7 @@ main (void)
                          */
                         second_src.eof_lazy = (ret != NEXT_CHUNK);
                         /* prepare the new input source buffer */
-                        SET_SLICE (&second_src, tk.cstr, strlen (tk.cstr));
+                        SET_ML_SLICE (&second_src, tk.cstr, strlen (tk.cstr));
 
                         for (int _ret = 0; !NEXT_SHOULD_LOAD (_ret); )
                           {
@@ -1194,7 +1205,7 @@ do_test (test_t *t, const char *msg, Milexer_Slice *src)
   printf ("Test #%d: %s... ", t->test_number, msg);
 #endif
 
-  SET_SLICE (src, t->input, strlen (t->input));
+  SET_ML_SLICE (src, t->input, strlen (t->input));
   if ((ret = do_test__H (t, src)) != -1)
     return ret;
   return -1;
@@ -1570,7 +1581,7 @@ main (void)
 
   puts ("-- end of input slice --");
   {
-    END_SLICE (&src);
+    END_ML_SLICE (&src);
     t = (test_t) {
       .test_number = 0,
       .parsing_flags = PFLAG_DEFAULT,
