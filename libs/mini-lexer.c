@@ -236,7 +236,7 @@ typedef struct
    *  The `TOKEN_ALLOC` macro allocates a token using malloc
    */
   char *cstr;
-  size_t cap, len;
+  size_t cap;
 
   /* Internal */
   size_t __idx;
@@ -244,7 +244,7 @@ typedef struct
 
 /* to allocate/free a token using malloc */
 #define TOKEN_ALLOC(n) \
-  (Milexer_Token){.cstr = malloc (n+1), .cap = n, .len = 0}
+  (Milexer_Token){.cstr = malloc (n+1), .cap = n}
 #define TOKEN_FREE(t) if ((t)->cstr) {free ((t)->cstr);}
 /* to only drop contents of a token */
 #define TOKEN_DROP(t) \
@@ -254,8 +254,8 @@ typedef struct
 #define TOKEN_IS_KNOWN(t) ((t)->id >= 0)
 
 /* Internal macros */
-#define TOEKN_FINISH(t) \
-  ((t)->len = (t)->__idx - 1, (t)->__idx = 0)
+#define TOKEN_FINISH(t) \
+  ((t)->cstr[(t)->__idx] = 0 , (t)->__idx = 0)
 
 typedef struct
 {
@@ -594,11 +594,14 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
 
     case SYN_PUNC__:
       const char *lp = __get_last_punc (ml, src);
-      *((char *)mempcpy (tk->cstr, lp, strlen (lp))) = '\0';
-
+      size_t lplen = strlen (lp);
+      memcpy (tk->cstr, lp, lplen);
       LD_STATE (src);
+      /* just to make to null-terminated */
+      tk->__idx = lplen;
       tk->type = TK_PUNCS;
       tk->id = src->__last_punc_idx;
+      TOKEN_FINISH (tk);
       return NEXT_MATCH;
       break;
 
@@ -656,12 +659,11 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                 }
               /* max token len reached */
               ST_STATE (src, SYN_CHUNK);
-              tk->cstr[tk->__idx + 1] = '\0';
-              TOEKN_FINISH (tk);
+              TOKEN_FINISH (tk);
               return NEXT_CHUNK;
             }
           else
-            TOEKN_FINISH (tk);
+            TOKEN_FINISH (tk);
         }
       //--------------------------------//
       char *__ptr, c;
@@ -679,7 +681,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
             {
               ST_STATE (src, SYN_DUMMY);
               tk->type = TK_COMMENT;
-              TOEKN_FINISH (tk);
+              TOKEN_FINISH (tk);
               if (flags & PFLAG_INCOMMENT)
                 {
                   *(dst) = '\0';
@@ -687,7 +689,6 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                 }
               else
                 {
-                  TOEKN_FINISH (tk);
                   *tk->cstr = '\0';
                 }
             }
@@ -697,10 +698,9 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
           if ((__ptr = __is_mline_commented_suff (ml, src, tk)))
             {
               ST_STATE (src, SYN_DUMMY);
-              TOEKN_FINISH (tk);
+              TOKEN_FINISH (tk);
               if (flags & PFLAG_INCOMMENT)
                 {
-                  *(dst + 1) = '\0';
                   tk->type = TK_COMMENT;
                   return NEXT_MATCH;
                 }
@@ -726,37 +726,34 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                   ST_STATE (src, SYN_NO_DUMMY);
                   if (flags & PFLAG_INEXP)
                     {
-                      *__ptr = '\0';
-                      TOEKN_FINISH (tk);
+                      TOKEN_FINISH (tk);
                     }
                 }
               else
                 {
                   ST_STATE (src, SYN_NO_DUMMY__);
-                  *dst = '\0';
-                  TOEKN_FINISH (tk);
+                  TOKEN_FINISH (tk);
                   return NEXT_MATCH;
                 }
             }
           else if ((__ptr = __detect_puncs (ml, src, tk)))
             {
               tk->type = TK_PUNCS;
-              *(__ptr + 1) = '\0';
-              TOEKN_FINISH (tk);
+              TOKEN_FINISH (tk);
               return NEXT_MATCH;
             }
           else if ((c = __detect_delim (ml, *p, flags)) == 0)
             {
               if (c == -1)
                 {
-                  TOEKN_FINISH (tk);
+                  TOKEN_FINISH (tk);
                   return NEXT_ZTERM;
                 }
               src->state = SYN_MIDDLE;
             }
           else
             {
-              TOEKN_FINISH (tk);
+              TOKEN_FINISH (tk);
             }
           break;
 
@@ -775,8 +772,8 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                       tk->type = TK_KEYWORD; 
                       ml_set_keyword_id (ml, tk);
                     }
-                  TOEKN_FINISH (tk);
                   *__ptr = 0;
+                  TOKEN_FINISH (tk);
                   return NEXT_MATCH;
                 }
             }
@@ -794,8 +791,8 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                       tk->type = TK_KEYWORD; 
                       ml_set_keyword_id (ml, tk);
                     }
-                  TOEKN_FINISH (tk);
                   *__ptr = 0;
+                  TOKEN_FINISH (tk);
                   return NEXT_MATCH;
                 }
             }
@@ -803,7 +800,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
             {
               if (c == -1)
                 {
-                  TOEKN_FINISH (tk);
+                  TOKEN_FINISH (tk);
                   return NEXT_ZTERM;
                 } 
               if (tk->__idx > 1)
@@ -815,12 +812,12 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                       ml_set_keyword_id (ml, tk);
                     }
                   ST_STATE (src, SYN_DUMMY);
-                  TOEKN_FINISH (tk);
+                  TOKEN_FINISH (tk);
                   return NEXT_MATCH;
                 }
               else
                 {
-                  TOEKN_FINISH (tk);
+                  TOKEN_FINISH (tk);
                 }
             }
           else if (__detect_puncs (ml, src, tk))
@@ -830,7 +827,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
               if (n == tk->__idx)
                 {
                   tk->type = TK_PUNCS;
-                  TOEKN_FINISH (tk);
+                  TOKEN_FINISH (tk);
                   return NEXT_MATCH;
                 }
               else
@@ -838,7 +835,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                   tk->type = TK_KEYWORD;
                   ml_set_keyword_id (ml, tk);
                   *(dst - n + 1) = '\0';
-                  TOEKN_FINISH (tk);
+                  TOKEN_FINISH (tk);
                   ST_STATE (src, SYN_PUNC__);
                   return NEXT_MATCH;
                 }
@@ -849,7 +846,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                 {
                   ST_STATE (src, SYN_NO_DUMMY__);
                   *(__ptr) = '\0';
-                  TOEKN_FINISH (tk);
+                  TOKEN_FINISH (tk);
                   tk->type = TK_KEYWORD;
                   ml_set_keyword_id (ml, tk);
                   return NEXT_MATCH;
@@ -858,7 +855,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
                 {
                   tk->type = TK_EXPRESSION;
                   if (flags & PFLAG_INEXP)
-                    TOEKN_FINISH (tk);
+                    TOKEN_FINISH (tk);
                   ST_STATE (src, SYN_NO_DUMMY);
                 }
             }
@@ -871,8 +868,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
               if (flags & PFLAG_INEXP)
                 *__ptr = '\0';
               ST_STATE (src, SYN_DUMMY);
-              TOEKN_FINISH (tk);
-              *(dst + 1) = '\0';
+              TOKEN_FINISH (tk);
               return NEXT_MATCH;
             }
           break;
@@ -896,11 +892,13 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
               tk->type = TK_KEYWORD;
               ml_set_keyword_id (ml, tk);
             }
+          TOKEN_FINISH (tk);
           return NEXT_END;
         }
        else
         {
           tk->type = TK_NOT_SET;
+          TOKEN_FINISH (tk);
           return NEXT_END;
         }
     }
