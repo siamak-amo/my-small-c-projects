@@ -121,7 +121,7 @@ const char *milexer_state_cstr[] = {
   [SYN_DONE]         = "done",
 };
 
-enum milexer_state_t
+enum milexer_next_t
   {
     NEXT_MATCH = 0, /* got a token */
     
@@ -229,10 +229,11 @@ typedef struct
   int id;
 
   /**
-   *  The user of this library is responsible for allocating
-   *  and freeing the buffer @cstr of length `@len + 1`
-   *  `TOKEN_ALLOC` macro does this using malloc
    *  We guarantee that @cstr is always null-terminated
+   *  The user of this library is responsible for allocating
+   *  and freeing the buffer @cstr of length `@cap + 1`
+   *
+   *  The `TOKEN_ALLOC` macro allocates a token using malloc
    */
   char *cstr;
   size_t cap, len;
@@ -241,11 +242,17 @@ typedef struct
   size_t __idx;
 } Milexer_Token;
 
-#define TOKEN_IS_KNOWN(t) ((t)->id >= 0)
+/* to allocate/free a token using malloc */
 #define TOKEN_ALLOC(n) \
-  (Milexer_Token){.cstr=malloc (n+1), .cap=n, .len = 0}
+  (Milexer_Token){.cstr = malloc (n+1), .cap = n, .len = 0}
 #define TOKEN_FREE(t) if ((t)->cstr) {free ((t)->cstr);}
-#define TOKEN_DROP(t) ((t)->__idx = 0, (t)->type = TK_NOT_SET)
+/* to only drop contents of a token */
+#define TOKEN_DROP(t) \
+  ((t)->__idx = 0, (t)->len = 0, \
+   (t)->type = TK_NOT_SET, (t)->cstr[0] = '\0')
+/* to check if the token @t is defined in Milexer language */
+#define TOKEN_IS_KNOWN(t) ((t)->id >= 0)
+
 /* Internal macros */
 #define TOEKN_FINISH(t) \
   ((t)->len = (t)->__idx - 1, (t)->__idx = 0)
