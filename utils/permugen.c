@@ -129,7 +129,7 @@
 #include "mini-lexer.c"
 
 static const char *__PROGNAME__ = "permugen";
-static const char *__PROGVERSION__ = "v2.4";
+static const char *__PROGVERSION__ = "v2.6";
 
 /* default permutaiton depth (normal mode) */
 #define DEF_DEPTH 3
