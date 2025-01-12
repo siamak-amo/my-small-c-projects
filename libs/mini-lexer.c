@@ -754,7 +754,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
           *tk->cstr = '\0';
           tk->type = TK_NOT_SET;
         }
-      if (src->eof_lazy)
+      if (src->eof_lazy || src->lazy == 0)
         return NEXT_END;
       return NEXT_NEED_LOAD;
     }
@@ -1018,7 +1018,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
     }
 
   /* check for end of lazy loading */
-  if (src->eof_lazy)
+  if (src->eof_lazy || src->lazy == 0)
     {
       if (tk->__idx >= 1)
         {
@@ -1045,6 +1045,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
       tk->type = TK_KEYWORD; 
       ml_set_keyword_id (ml, tk);
     }
+  TOKEN_FINISH (tk);
   return NEXT_NEED_LOAD;
 }
 
