@@ -109,6 +109,7 @@
  **    buffered_io.h:  to improve performance
  **    unescape.h:     backslash interpretation
  **    dyna.h:         dynamic array
+ **    mini-lexer.c:   parsing regex
  **/
 #ifdef _USE_BIO
 #  ifndef _BMAX
@@ -123,6 +124,9 @@
 
 #define DYNA_IMPLEMENTATION
 #include "dyna.h"
+
+#define ML_IMPLEMENTATION
+#include "mini-lexer.c"
 
 static const char *__PROGNAME__ = "permugen";
 static const char *__PROGVERSION__ = "v2.4";
@@ -217,6 +221,53 @@ static inline void free_seed (struct Seed *s);
     da_drop ((seed_ptr)->wseed);                \
   } while (0)
 
+/**
+ *  Mini-Lexer language
+ *  Introduce argument regex parser
+ */
+enum LANG
+  {
+    PUNC_COMMA = 0,
+    PUNC_DASH,
+    EXP_PAREN = 0,     /* (xxx) */
+    EXP_CBRACE,        /* {xxx} */
+    EXP_SBRACKET,      /* [xxx] */
+  };
+
+static const char *Puncs[] = {
+  [PUNC_COMMA]         = ",",
+  [PUNC_DASH]          = "-",
+};
+
+static struct Milexer_exp_ Expressions[] = {
+  [EXP_PAREN]          = {"(", ")"},
+  [EXP_CBRACE]         = {"{", "}"},
+  [EXP_SBRACKET]       = {"[", "]"},
+};
+
+static const Milexer ML = {
+  .puncs       = GEN_MKCFG (Puncs),
+  .expression  = GEN_MKCFG (Expressions),
+};
+
+/**
+ *  Permugen Regex Parser
+ *  General parsers handle the input regex from
+ *  the -r and -s arguments,
+ *  while special parsers process the contents
+ *  inside them (e.g. inside [a-z])
+ */
+struct permugex
+{
+  const Milexer *ml;
+  /* parser flags */
+  int general_flag, special_flag;
+  /* input source */
+  Milexer_Slice general_src, special_src;
+  /* result tokens */
+  Milexer_Token general_tk, special_tk;
+};
+
 /* Permugen's main configuration */
 struct Opt
 {
@@ -242,6 +293,9 @@ struct Opt
 #ifdef _USE_BIO
   BIO_t *bio;
 #endif
+
+  /* regex parser */
+  struct permugex parser;
 };
 
 /**
@@ -1011,7 +1065,22 @@ mk_seed (int c_len, int w_len)
 int
 main (int argc, char **argv)
 {
-    struct Opt opt = {0};
+  struct Opt opt = {0};
+
+  { /* initializing the parser */
+    opt.parser = (struct permugex) {
+      .ml = &ML,
+
+      .general_flag  = PFLAG_INEXP,
+      .special_flag  = PFLAG_IGSPACE,
+
+      .general_src   = {.lazy = 0},
+      .special_src   = {.lazy = 0},
+
+      .general_tk    = TOKEN_ALLOC (128),
+      .special_tk    = TOKEN_ALLOC (64),
+    };
+  }
 
   { /* initializing options */
     opt.global_seeds = mk_seed (CSEED_MAXLEN, 1);
@@ -1126,6 +1195,13 @@ main (int argc, char **argv)
           }
         da_free (opt.reg_seeds);
       }
+
+    /**
+     *  we have allocated 2 tokens for parsing
+     *  regex that should be freed
+     */
+    TOKEN_FREE (&opt.parser.general_tk);
+    TOKEN_FREE (&opt.parser.special_tk);
   }
   /* close any non-stdout file descriptors */
   if (opt.outf && fileno (opt.outf) != 1)
