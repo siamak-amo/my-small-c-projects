@@ -248,6 +248,8 @@ struct Opt
  *  Appends characters from @src to @s->cseed, until \0
  *  or !IS_ASCII_PR, returns the number of bytes written
  *  @s->cseed will have unique chars after this call, if it did before
+ *  Pass `len = -1` to stop only at the null byte
+ *  Returns the index of the last non-zero byte in @src
  */
 int cseed_uniappd (struct Seed *s, const char *src, int len);
 /**
@@ -581,7 +583,7 @@ int
 cseed_uniappd (struct Seed *s, const char *src, int len)
 {
   int rw = 0;
-  while (len > 0 && *src)
+  while (len != 0 && *src)
     {
       if (*src == '\0')
         break;
@@ -595,14 +597,14 @@ cseed_uniappd (struct Seed *s, const char *src, int len)
         }
       s->cseed[s->cseed_len] = *src;
       s->cseed_len++;
-      rw++;
 
     END_OF_LOOP:
       src++;
       len--;
+      rw++;
     }
 
-  return rw;
+  return (rw) ? rw - 1 : 0;
 }
 
 void
