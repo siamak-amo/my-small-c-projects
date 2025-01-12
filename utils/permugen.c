@@ -325,7 +325,7 @@ wseed_fileappd (const struct Opt *, struct Seed *s, FILE *f);
  *    '/tmp/wl.txt', '~/wl.txt', './wl.txt', '../wl.txt', '.wl.txt'
  *    using `-` as file path means to read from the stdin
  **/
-void parse_seed_regex (const struct Opt *, struct Seed *s,
+void parse_seed_regex (struct Opt *, struct Seed *s,
                        const char *input);
 
 /* Internal */
@@ -1216,206 +1216,47 @@ main (int argc, char **argv)
  *  Word Seed regex parser
  *  inside `{...}`  -  comma-separated words
  *  wseed_uniappd call will backslash interpret the result
- *  returns a pointer to the end of the expression: `}`
- **/
-const char * pparse_wseed_regex (const struct Opt *,
-                                 struct Seed *s, const char *p);
+ *  This function uses special_tk and special_src for parsing
+ */
+static inline void
+pparse_wseed_regex (struct Opt *, struct Seed *dst_seed);
 /**
  *  Character Seed regex parser
  *  inside: `[...]`
- *  It does not backslash interpret @p
- *  returns a pointer to the end of the expression: `]`
+ *  It backslash interprets the result if not disabled
+ *  This function uses special_tk and special_src for parsing
  */
-const char * pparse_cseed_regex (struct Seed *s, const char *p);
+static inline void
+pparse_cseed_regex (struct Opt *, struct Seed *dst_seed);
+/**
+ *  Detects file paths, previous seed indexes (\N)
+ *  and other shortcuts like \d, \u, and \U
+ *  This function uses special_tk and special_src for parsing
+ */
+static inline void
+pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
+                   const char *input);
 /**
  *  Format (prefix & suffix) parser (only in regular mode)
  *  inside: `(...)`
- *  The first call will set the @s->pref and
- *  the next calls will always overwrite @s->suff
- *  returns a pointer to the end of the expression `)`
+ *  The first call sets @dst_seed->pref (prefix) and
+ *  the second call sets @dst_seed->suff (suffix)
  */
-const char * pparse_format_regex (const struct Opt *,
-                                 struct Seed *s, const char *p);
-
-const char *
-pparse_wseed_regex (const struct Opt *opt,
-                    struct Seed *s, const char *p)
-{
-  const char *next_p = p + 1;
-  const char *start = p;
-  size_t len = 0;
-
-#define __forward(n) (p += n, next_p += n)
-#define seedout() do {                          \
-    char *str = malloc (++len);                 \
-    memcpy (str, start, len);                   \
-    str[len - 1] = '\0';                        \
-    wseed_uniappd (opt, s, str);                \
-  } while (0)
-
-  for (char prev_p = *p; *p != '\0'; prev_p = *p, __forward (1))
-    {
-      switch (*p)
-        {
-        case '\0':
-          return p;
-
-        case '}':
-          if (prev_p == '\\')
-            goto Wcontinue;
-          if (len > 0)
-            seedout ();
-          return p+1;
-
-        case ',':
-          if (prev_p == '\\')
-            goto Wcontinue;
-          if (len > 0)
-            seedout ();
-          start = p+1, len = 0;
-          break;
-
-        default:
-        Wcontinue:
-          len++;
-        }
-    }
-  return p;
-#undef __forward
-#undef seedout
-}
-
-const char *
-pparse_cseed_regex (struct Seed *s, const char *p)
-{
-  const char *next_p = p + 1;
-  static char seed = 0;
-
-#define __forward(n) (p += n, next_p += n)
-#define seedout() cseed_uniappd (s, &seed, 1)
-
-  for (; *p != '\0'; __forward (1))
-    {
-      switch (*p)
-        {
-        case '\0':
-          /* End of Regex */
-          return p;
-
-        case '\\':
-          if (*next_p == ']' || *next_p == '[')
-            {
-              seed = *next_p;
-              __forward (1);
-              seedout ();
-            }
-          break;
-
-        case ']':
-          return p;
-
-        case '-':
-          if (*(p - 1) != '[')
-            {
-              if (*next_p != ']' && *next_p != '\\')
-                {
-                  for (seed = *(p - 1); seed <= *next_p; ++seed)
-                    {
-                      seedout ();
-                    }
-                  __forward (1);
-                }
-              else
-                {
-                  seed = *p;
-                  seedout ();
-                }
-            }
-          else
-            {
-              seed = *p;
-              seedout ();
-            }
-          break;
-
-        default:
-          {
-            switch (*next_p)
-              {
-              case '-':
-                break;
-
-              case '\0':
-              case ']':
-              default:
-                seed = *p;
-                seedout ();
-              }
-          }
-        }
-    }
-  return p;
-#undef __forward
-#undef seedout
-}
-
-const char *
-pparse_format_regex (const struct Opt *opt,
-                     struct Seed *s, const char *p)
-{
-  const char *start = NULL;
-  const char *prev_p = p;
-  if (!opt->_regular_mode)
-    {
-      /* not supported in normal mode */
-      warnf ("use --pref and --suff in normal mode");
-      while (*p != '\0')
-        {
-          prev_p = p++;
-          if (*prev_p != '\\' && *p == ')')
-            break;
-        }
-      return p;
-    }
-  start = p;
-
-  while (*p != '\0')
-    {
-      if (*prev_p != '\\' && *p == ')')
-        break;
-      prev_p = p++;
-    }
-
-  int len = p - start;
-  /* this must be freed in free_seed function */
-  char *tmp = malloc (len + 1);
-  *((char *) mempcpy (tmp, start, len)) = 0;
-  if (!opt->escape_disabled)
-    unescape (tmp);
-
-  if (s->pref == NULL)
-    s->pref = tmp;
-  else if (s->suff == NULL)
-    s->suff = tmp;
-  else
-    {
-      /* just overwrite the latest suffix */
-      free (s->suff);
-      s->suff = tmp;
-    }
-  return p;
-}
+static inline void
+pparse_format_regex (struct Opt *, struct Seed *dst_seed,
+                     char *input);
 
 /**
  *  resolves: `~/` , `/../` , `/./`
- *  path is not necessarily null-terminated
  */
 static char *
-path_resolution (const char *path, size_t len)
+path_resolution (const char *path_cstr)
 {
-  static char PATH[PATH_MAX];
   char *tmp;
-  if (*path == '~')
+  size_t len = strlen (path_cstr);
+  static char PATH[PATH_MAX];
+
+  if (*path_cstr == '~')
     {
       const char* home = getenv ("HOME");
       if (!home)
@@ -1426,13 +1267,13 @@ path_resolution (const char *path, size_t len)
       tmp = malloc (len + strlen (home) + 1);
       char *p;
       p = mempcpy (tmp, home, strlen (home));
-      p = mempcpy (p, path + 1, len - 1);
+      p = mempcpy (p, path_cstr + 1, len - 1);
       *p = '\0';
     }
   else
     {
       tmp = malloc (len + 1);
-      *((char *) mempcpy (tmp, path, len)) = '\0';
+      *((char *) mempcpy (tmp, path_cstr, len)) = '\0';
     }
   /* interpret `\<space>` */
   unescape (tmp);
@@ -1450,143 +1291,254 @@ path_resolution (const char *path, size_t len)
     }
 }
 
-void
-parse_seed_regex (const struct Opt *opt,
-                  struct Seed *s, const char *input)
+static inline void
+pparse_cseed_regex (struct Opt *opt, struct Seed *dst_seed)
 {
-  for (char prev_p = 0; *input != '\0'; prev_p = *input)
+  int lastc = 0, dash = 0;
+  Milexer_Token *tmp = &opt->parser.special_tk;
+
+  for (int _ret = 0; !NEXT_SHOULD_END (_ret); )
     {
-      switch (*input)
+      _ret = ml_next (opt->parser.ml,
+                      &opt->parser.special_src,
+                      tmp,
+                      opt->parser.special_flag);
+      if (NEXT_SHOULD_LOAD (_ret))
+        break;
+
+      if (tmp->type == TK_PUNCS && tmp->id == PUNC_DASH)
+        dash++;
+      else if (tmp->type == TK_KEYWORD)
         {
-        case '\0':
-          goto End_of_Parsing;
-
-          /* shortcuts */
-        case '\\':
-          {
-            input++;
-            /**
-             *  check for \n where n is the index of a
-             *  previously provided seed
-             **/
-            if (opt->_regular_mode && IS_NUMBER (*input))
-              {
-                char *p = NULL;
-                int n = strtol (input, &p, 10) - 1;
-                if (p)
-                  input = p;
-                if (n >= 0 && n < opt->_regular_mode - 1)
-                  {
-                    /* valid index */
-                    struct Seed *_src = opt->reg_seeds[n];
-                    /* append csseds */
-                    cseed_uniappd (s, _src->cseed, _src->cseed_len);
-                    /* append wseeds */
-                    for (da_idx i=0; i < da_sizeof(_src->wseed); ++i)
-                      {
-                        wseed_uniappd (opt, s, _src->wseed[i]);
-                      }
-                  }
-                else
-                  { /* invalid index */
-                    if (n == opt->_regular_mode - 1)
-                      warnf ("circular append was ignored");
-                    else if (n >= opt->_regular_mode)
-                      warnf ("seed index %d is out of bound", n+1);
-                    else if (n < 0)
-                      warnf ("invalid seed index");
-                  }
-                goto End_of_Shortcut_Parsing;
-              }
-
-            /* when n is not a number */
-            switch (*input)
-              {
-              case 'd': /* digits 0-9 */
-                cseed_uniappd (s, charseed_09.c, charseed_09.len);
-                break;
-              case 'l': /* lowercase letters */
-              case 'a':
-                cseed_uniappd (s, charseed_az.c, charseed_az.len);
-                break;
-              case 'U': /* uppercase letters */
-              case 'u':
-              case 'A':
-                cseed_uniappd (s, charseed_AZ.c, charseed_AZ.len);
-                break;
-
-              default:
-                warnf ("invalid shortcut \\%c was ignored", *input);
-              }
-
-          End_of_Shortcut_Parsing:
-            input++;
-            break;
-          }
-
-          /* file path */
-        case '.':
-        case '/':
-        case '~':
-          {
-            const char *__input = input;
-            size_t inplen = 0;
-            for (; *__input != '\0'; __input++)
-              {
-                if (*__input == ' ' && *(__input-1) != '\\')
-                  break;
-                inplen++;
-              }
-            if (*__input != '\0')
-              __input++;
-
-            char *path = path_resolution (input, inplen);
-            if (path)
-              {
-                FILE *f = safe_fopen (path, "r");
-                if (f)
-                  {
-                    wseed_fileappd (opt, s, f);
-                    if (f != stdin)
-                      fclose (f);
-                  }
-              }
-            input = __input; /* update the input pointer */
-            break;
-          }
-
-        case '-': /* read from stdin */
-          {
-            wseed_fileappd (opt, s, stdin);
-            input++;
-            break;
-          }
-
-        case '[':
-          if (prev_p != '\\')
+          char *p = tmp->cstr;
+          if (dash == 0)
             {
-              input = pparse_cseed_regex (s, ++input);
+            got_section:
+              if (*p)
+                {
+                  if (!opt->escape_disabled)
+                    unescape (p);
+                  int len = cseed_uniappd (dst_seed, p, -1);
+                  lastc = p[len];
+                }
+            }
+          else
+            {
+              if (tmp->cstr[0] && lastc)
+                {
+                  for (char c = lastc; c <= *tmp->cstr; ++c)
+                    cseed_uniappd (dst_seed, &c, 1);
+                  dash--;
+                  lastc = 0;
+                  p = tmp->cstr + 1;
+                  goto got_section;
+                }
+              else
+                {
+                  p = tmp->cstr;
+                  goto got_section;
+                }
+            }
+        }
+    }
+  if (dash)
+    cseed_uniappd (dst_seed, "-", 1);
+}
+
+static inline void
+pparse_wseed_regex (struct Opt *opt, struct Seed *dst_seed)
+{
+  Milexer_Token *tmp = &opt->parser.special_tk;
+  for (int _ret = 0; !NEXT_SHOULD_END (_ret); )
+    {
+      _ret = ml_next (opt->parser.ml,
+                      &opt->parser.special_src,
+                      tmp,
+                      opt->parser.special_flag);
+      if (NEXT_SHOULD_LOAD (_ret))
+        break;
+
+      if (tmp->type == TK_KEYWORD)
+        {
+          /* this must be freed in free_seed function */
+          wseed_uniappd (opt, dst_seed, strdup (tmp->cstr));
+        }
+    }
+}
+
+static inline void
+pparse_format_regex (struct Opt *opt, struct Seed *dst_seed,
+                     char *input)
+{
+  if (!opt->escape_disabled)
+    unescape (input);
+
+  if (dst_seed->pref == NULL)
+    dst_seed->pref = strdup (input);
+  else if (dst_seed->suff == NULL)
+    dst_seed->suff = strdup (input);
+  else
+    warnf ("extra format was ignored");
+}
+
+static inline void
+pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
+                   const char *input)
+{
+  switch (*input)
+    {
+    case '\0':
+      break;
+
+      /* shortcuts */
+    case '\\':
+      {
+        /**
+         *  check for \N where N is the index of a
+         *  previously provided seed
+         */
+        input++;
+        if (opt->_regular_mode && IS_NUMBER (*input))
+          {
+            int n = strtol (input, NULL, 10) - 1;
+            if (n >= 0 && n < opt->_regular_mode - 1)
+              {
+                /* valid index */
+                struct Seed *_src = opt->reg_seeds[n];
+                /* append csseds */
+                cseed_uniappd (dst_seed,
+                               _src->cseed, _src->cseed_len);
+                /* append wseeds */
+                for (da_idx i=0; i < da_sizeof(_src->wseed); ++i)
+                  {
+                    wseed_uniappd (opt, dst_seed, _src->wseed[i]);
+                  }
+              }
+            else
+              { /* invalid index */
+                if (n == opt->_regular_mode - 1)
+                  warnf ("circular append was ignored");
+                else if (n >= opt->_regular_mode)
+                  warnf ("seed index %d is out of bound", n+1);
+                else if (n < 0)
+                  warnf ("invalid seed index");
+              }
+            break;
+          }
+
+        /* got \N where N is not a number */
+        switch (*input)
+          {
+          case 'd': /* digits 0-9 */
+            cseed_uniappd (dst_seed,
+                           charseed_09.c, charseed_09.len);
+            break;
+
+          case 'l': /* lowercase letters */
+          case 'a':
+            cseed_uniappd (dst_seed,
+                           charseed_az.c, charseed_az.len);
+            break;
+
+          case 'U': /* uppercase letters */
+          case 'u':
+          case 'A':
+            cseed_uniappd (dst_seed,
+                           charseed_AZ.c, charseed_AZ.len);
+            break;
+
+          default:
+            warnf ("invalid shortcut \\%c was ignored", *input);
+          }
+      }
+      break;
+
+      /* file path */
+    case '.':
+    case '/':
+    case '~':
+      char *path;
+      if ((path = path_resolution (input)))
+        {
+          FILE *f = safe_fopen (path, "r");
+          if (f)
+            {
+              wseed_fileappd (opt, dst_seed, f);
+              if (f != stdin)
+                fclose (f);
+            }
+        }
+      break;
+
+    default:
+      break;
+    }
+}
+
+void
+parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
+                  const char *input)
+{
+  Milexer_Token *tmp = &opt->parser.general_tk;
+  /* mini-lexer internal initialization */
+  SET_ML_SLICE (&opt->parser.general_src,
+                input, strlen (input));
+
+  int ret = 0;
+  while (!NEXT_SHOULD_END (ret))
+    {
+      ret = ml_next (opt->parser.ml,
+                     &opt->parser.general_src,
+                     tmp,
+                     opt->parser.general_flag);
+
+      switch (tmp->type)
+        {
+        case TK_KEYWORD:
+          /**
+           *  keyword tokens may be path to a wordlist
+           *  or `-` to read from stdin
+           */
+          pparse_keys_regex (opt, dst_seed, tmp->cstr);
+          break;
+
+        case TK_PUNCS:
+          if (tmp->id == PUNC_DASH)
+            {
+              /* read from stdin */
+              wseed_fileappd (opt, dst_seed, stdin);
             }
           break;
 
-        case '{':
-          if (prev_p != '\\')
+        case TK_EXPRESSION:
+          char *__cstr = tmp->cstr;
+          SET_ML_SLICE (&opt->parser.special_src,
+                        __cstr,
+                        strlen (__cstr));
+          switch (tmp->id)
             {
-              input = pparse_wseed_regex (opt, s, ++input);
-            }
-          break;
+            case EXP_SBRACKET:
+              /* parsing contents of `[xxx]` as cssed */
+              pparse_cseed_regex (opt, dst_seed);
+              break;
 
-        case '(':
-          if (prev_p != '\\')
-            {
-              input = pparse_format_regex (opt, s, ++input);
+            case EXP_CBRACE:
+              /* parsing contents of `{xxx}` as wseed */
+              pparse_wseed_regex (opt, dst_seed);
+              break;
+
+            case EXP_PAREN:
+              /* parsing `(xxx)` as seed prefix OR suffix */
+              pparse_format_regex (opt, dst_seed, tmp->cstr);
+              break;
+
+            default:
+              break;
             }
           break;
 
         default:
-          input++;
-          continue;
+          break;
         }
     }
- End_of_Parsing:
 }
