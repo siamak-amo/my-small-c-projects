@@ -1295,7 +1295,6 @@ typedef struct
 
 /* testing token */
 static Milexer_Token tk;
-static Milexer_Slice src = {0};
 
 int
 do_test__H (test_t *t, Milexer_Slice *src)
@@ -1367,6 +1366,7 @@ do_test (test_t *t, const char *msg, Milexer_Slice *src)
 int
 main (void)
 {
+  static Milexer_Slice src = {.lazy = 1};
 #define DO_TEST(test, msg)                         \
   if (do_test (test, msg, &src) != -1)             \
     { ret = 1; goto eo_main; }
