@@ -19,7 +19,12 @@
  *  created on: 16 Dec 2024
  *
  *  Mini-Lexer
- *  Minimal chunk-based lexer
+ *  A minimal lexical tokenization library based on
+ *  a customizable rule-based language
+ *
+ *  ** Disclaimer **
+ *   This library was developed for my personal use and may not be 
+ *   suitable for tokenizing any specific language or regex.
  *
  *
  *  Usage Example:
@@ -41,21 +46,21 @@
  *        EXP_STR = 0,
  *        ...
  *        // single-line & multi-line comment
- *        SL_COMM_1 = 0,
+ *        SL_SL_COMM_1 = 0,
  *        ...
- *        ML_COMM_1 = 0,
+ *        ML_SL_COMM_1 = 0,
  *        ...
  *      };
  *
  *    static const char *Keywords[] = { [KEY_IF] = "if", ... };
  *    static const char *Puncs[] = { [PUNC_COMMA] = ",", ... };
- *    static const char *SL_Comments[] = { [SL_COMM_1] = "#", ...};
+ *    static const char *SL_Comments[] = { [SL_SL_COMM_1] = "#", ...};
  *
  *    static struct Milexer_exp_ Expressions[] = {
  *      [EXP_STR] = {"'", "'"}, ...
  *    };
  *    static struct Milexer_exp_ ML_Comments[] = {
- *      [ML_COMM_1] = {"-(", ")-"}, ...
+ *      [ML_SL_COMM_1] = {"-(", ")-"}, ...
  *    };
  *
  *    // Define delimiter ranges if deeded
@@ -1083,17 +1088,17 @@ enum LANG
     PUNC_NEQUAL,
     /* expressions */
     EXP_PAREN = 0,
-    EXP_BRACE,
+    EXP_CBRACE,
     EXP_STR,
     EXP_STR2,
     EXP_LONG,
     /* single-line comments */
-    COMM_1 = 0,
-    COMM_2,
+    SL_COMM_1 = 0,
+    SL_COMM_2,
     /* multi-line comments */
-    COMM_ml = 0,
+    ML_COMM_1 = 0,
   };
-static const char *Keys[] = {
+static const char *Keywords[] = {
   [LANG_IF]         = "if",
   [LANG_ELSE]       = "else",
   [LANG_FI]         = "fi",
@@ -1107,27 +1112,27 @@ static const char *Puncs[] = {
   [PUNC_EQUAL]      = "=", /* you cannot have "==" */
   [PUNC_NEQUAL]     = "!=", /* also "!===" */
 };
-static struct Milexer_exp_ Exp[] = {
+static struct Milexer_exp_ Expressions[] = {
   [EXP_PAREN]       = {"(", ")"},
-  [EXP_BRACE]       = {"{", "}"},
+  [EXP_CBRACE]      = {"{", "}"},
   [EXP_STR]         = {"\"", "\""},
   [EXP_STR2]        = {"'", "'"},
   [EXP_LONG]        = {"<<", ">>"},
 };
-static const char *Comm[] = {
-  [COMM_1]          = "#",
-  [COMM_2]          = "//",
+static const char *SL_Comments[] = {
+  [SL_COMM_1]          = "#",
+  [SL_COMM_2]          = "//",
 };
-static struct Milexer_exp_ Comm_ml[] = {
-  [COMM_ml]         = {"/*", "*/"},
+static struct Milexer_exp_ ML_Comments[] = {
+  [ML_COMM_1]         = {"/*", "*/"},
 };
 //-- Milexer main configuration --------//
 static Milexer ml = {
     .puncs       = GEN_MKCFG (Puncs),
-    .keywords    = GEN_MKCFG (Keys),
-    .expression  = GEN_MKCFG (Exp),
-    .b_comment   = GEN_MKCFG (Comm),
-    .a_comment   = GEN_MKCFG (Comm_ml),
+    .keywords    = GEN_MKCFG (Keywords),
+    .expression  = GEN_MKCFG (Expressions),
+    .b_comment   = GEN_MKCFG (SL_Comments),
+    .a_comment   = GEN_MKCFG (ML_Comments),
   };
 //--------------------------------------//
 #endif /* defined (ML_EXAMPLE_1) || defined (ML_TEST_1) */
@@ -1140,7 +1145,7 @@ static Milexer ml = {
 #ifdef ML_EXAMPLE_1
 static const char *exp_cstr[] = {
   [EXP_PAREN]       = "(*)",
-  [EXP_BRACE]       = "{*}",
+  [EXP_CBRACE]       = "{*}",
   [EXP_STR]         = "\"*\"",
   [EXP_STR2]        = "'*'",
 };
