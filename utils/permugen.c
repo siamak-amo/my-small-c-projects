@@ -104,12 +104,13 @@
 #include <limits.h>
 #include <errno.h>
 
-/**  Using header-only libraries
- **  These files are available in `../libs`
- **    buffered_io.h:  to improve performance
- **    unescape.h:     backslash interpretation
- **    dyna.h:         dynamic array
- **    mini-lexer.c:   parsing regex
+/**
+ **  Using header-only libraries:
+ **  The following files are available in `../libs`:
+ **    buffered_io.h:  Provides performance improvements
+ **    unescape.h:     Handles backslash interpretation
+ **    dyna.h:         Implements dynamic arrays
+ **    mini-lexer.c:   Facilitates regex parsing
  **/
 #ifdef _USE_BIO
 #  ifndef _BMAX
@@ -267,6 +268,8 @@ struct permugex
   /* result tokens */
   Milexer_Token general_tk, special_tk;
 };
+
+#define TOKEN_MAX_BUF_LEN 128 /* 129 bytes malloc */
 
 /* Permugen's main configuration */
 struct Opt
@@ -447,8 +450,8 @@ usage ()
 #endif
 
 /**
- *  Main logic of normal mode
- *  you need to call it in a loop from
+ *  The main logic of normal mode
+ *  It should be called it in a loop from
  *  depth=min_depth to depth=max_depth
  */
 int
@@ -520,8 +523,8 @@ perm (const int depth, const struct Opt *opt)
 }
 
 /**
- *  Main logic of regular mode
- *  only call it by the regular_perm function
+ *  The main logic of regular mode
+ *  It should be called by the `regular_perm` function
  */
 int
 __regular_perm (struct Opt *opt, int *depths, int depth)
@@ -978,33 +981,33 @@ init_opt (int argc, char **argv, struct Opt *opt)
     { /* regular mode */
     }
   else
-  { /* normal mode */
-    if (opt->global_seeds->cseed_len == 0 && using_default_seed)
-      {
-        /* initializing with the default seed [a-z0-9] */
-        cseed_uniappd (opt->global_seeds,
-                       charseed_az.c, charseed_az.len);
-        cseed_uniappd (opt->global_seeds,
-                       charseed_09.c, charseed_09.len);
-      }
+    { /* normal mode */
+      if (opt->global_seeds->cseed_len == 0 && using_default_seed)
+        {
+          /* initializing with the default seed [a-z0-9] */
+          cseed_uniappd (opt->global_seeds,
+                         charseed_az.c, charseed_az.len);
+          cseed_uniappd (opt->global_seeds,
+                         charseed_09.c, charseed_09.len);
+        }
 
-    if (opt->from_depth <= 0 && opt->to_depth <= 0)
-      {
-        /* using the default values when not specified */
-        opt->from_depth = DEF_DEPTH;
-        opt->to_depth = DEF_DEPTH;
-      }
-    else if (opt->to_depth <= 0)
-      {
-        /* only from_depth is specified OR `-D` is being used */
-        opt->to_depth = opt->from_depth;
-      }
-    if (opt->from_depth > opt->to_depth)
-      {
-        /* invalid min and max depths */
-        opt->to_depth = opt->from_depth;
-      }
-  }
+      if (opt->from_depth <= 0 && opt->to_depth <= 0)
+        {
+          /* using the default values when not specified */
+          opt->from_depth = DEF_DEPTH;
+          opt->to_depth = DEF_DEPTH;
+        }
+      else if (opt->to_depth <= 0)
+        {
+          /* only from_depth is specified OR `-D` is being used */
+          opt->to_depth = opt->from_depth;
+        }
+      if (opt->from_depth > opt->to_depth)
+        {
+          /* invalid min and max depths */
+          opt->to_depth = opt->from_depth;
+        }
+    }
   /* Interpret backslash characters */
   if (!opt->escape_disabled)
     {
@@ -1077,12 +1080,12 @@ main (int argc, char **argv)
       .general_src   = {.lazy = 0},
       .special_src   = {.lazy = 0},
 
-      .general_tk    = TOKEN_ALLOC (128),
-      .special_tk    = TOKEN_ALLOC (64),
+      .general_tk    = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN),
+      .special_tk    = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN),
     };
   }
 
-  { /* initializing options */
+  { /* Initializing options */
     opt.global_seeds = mk_seed (CSEED_MAXLEN, 1);
     if (init_opt (argc, argv, &opt))
       goto EndOfMain;
@@ -1096,7 +1099,7 @@ main (int argc, char **argv)
             goto EndOfMain;
           }
       }
-    else /* normal mode */
+    else /* Normal mode */
       if (opt.global_seeds->cseed_len == 0 &&
              da_sizeof (opt.global_seeds->wseed) == 0)
       {
@@ -1105,6 +1108,10 @@ main (int argc, char **argv)
       }
   }
 
+  /**
+   *  Print some debug information
+   *  To enable this feature, define `_DEBUG`
+   */
 #ifdef _USE_BIO
   int cap = _BMAX;
   BIO_t __bio = bio_new (cap, malloc (cap), fileno (opt.outf));
@@ -1114,7 +1121,6 @@ main (int argc, char **argv)
   dprintf ("- compiled without buffered_io\n");
 # endif /* _USE_BIO */
 
-  /* print some debug information */
   if (opt._regular_mode)
     {
       da_idx len = da_sizeof (opt.reg_seeds);
@@ -1151,7 +1157,7 @@ main (int argc, char **argv)
   dprintf ("* permutations:\n");
 
 
-  /* the main logic of making permutations */
+  /* Generating permutations */
   if (opt._regular_mode > 0)
     {
       regular_perm (&opt);
@@ -1175,16 +1181,16 @@ main (int argc, char **argv)
  EndOfMain:
   {
     /**
-     *  global_seed itself is not a dynamic array
-     *  and is allocated using malloc
+     * `global_seed` is not a dynamic array.
+     *  It should have been allocated using malloc
      */
     free_seed (opt.global_seeds);
     free (opt.global_seeds);
 
     /**
-     *  reg_seeds is a dynamic array
-     *  and each seed of it must be freed
-     *  also they are allocated with `seeddup`
+     *  `reg_seeds` is a dynamic array (using dyna.h)
+     *  Each element of this array must be freed
+     *  The elements are allocated using `seeddup`
      */
     if (opt.reg_seeds)
       {
@@ -1197,13 +1203,15 @@ main (int argc, char **argv)
       }
 
     /**
-     *  we have allocated 2 tokens for parsing
-     *  regex that should be freed
+     *  Two tokens have been allocated for regex parsing
      */
     TOKEN_FREE (&opt.parser.general_tk);
     TOKEN_FREE (&opt.parser.special_tk);
   }
-  /* close any non-stdout file descriptors */
+  
+  /**
+   *  Close any non-stdout file descriptors
+   */
   if (opt.outf && fileno (opt.outf) != 1)
     fclose (opt.outf);
 
@@ -1247,7 +1255,8 @@ pparse_format_regex (struct Opt *, struct Seed *dst_seed,
                      char *input);
 
 /**
- *  resolves: `~/` , `/../` , `/./`
+ *  Path resolver
+ *  Supported formats: '~/' , '../' , '/./'
  */
 static char *
 path_resolution (const char *path_cstr)
@@ -1275,7 +1284,8 @@ path_resolution (const char *path_cstr)
       tmp = malloc (len + 1);
       *((char *) mempcpy (tmp, path_cstr, len)) = '\0';
     }
-  /* interpret `\<space>` */
+
+  /* Interpret `\<space>` */
   unescape (tmp);
 
   if (realpath (tmp, PATH))
@@ -1360,7 +1370,7 @@ pparse_wseed_regex (struct Opt *opt, struct Seed *dst_seed)
 
       if (tmp->type == TK_KEYWORD)
         {
-          /* this must be freed in free_seed function */
+          /* This must be freed in free_seed function */
           wseed_uniappd (opt, dst_seed, strdup (tmp->cstr));
         }
     }
@@ -1390,11 +1400,11 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
     case '\0':
       break;
 
-      /* shortcuts */
+      /* Shortcuts */
     case '\\':
       {
         /**
-         *  check for \N where N is the index of a
+         *  Check for \N where N represents the index of a
          *  previously provided seed
          */
         input++;
@@ -1415,7 +1425,7 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
                   }
               }
             else
-              { /* invalid index */
+              { /* Invalid index */
                 if (n == opt->_regular_mode - 1)
                   warnf ("circular append was ignored");
                 else if (n >= opt->_regular_mode)
@@ -1426,7 +1436,7 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
             break;
           }
 
-        /* got \N where N is not a number */
+        /* Got \N where N is not a number */
         switch (*input)
           {
           case 'd': /* digits 0-9 */
@@ -1453,7 +1463,7 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
       }
       break;
 
-      /* file path */
+      /* File path */
     case '.':
     case '/':
     case '~':
@@ -1480,7 +1490,7 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
                   const char *input)
 {
   Milexer_Token *tmp = &opt->parser.general_tk;
-  /* mini-lexer internal initialization */
+  /* Mini-lexer internal initialization */
   SET_ML_SLICE (&opt->parser.general_src,
                 input, strlen (input));
 
@@ -1496,7 +1506,7 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
         {
         case TK_KEYWORD:
           /**
-           *  keyword tokens may be path to a wordlist
+           *  These tokens may be path to a wordlist
            *  or `-` to read from stdin
            */
           pparse_keys_regex (opt, dst_seed, tmp->cstr);
@@ -1505,7 +1515,7 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
         case TK_PUNCS:
           if (tmp->id == PUNC_DASH)
             {
-              /* read from stdin */
+              /* Read from stdin */
               wseed_fileappd (opt, dst_seed, stdin);
             }
           break;
@@ -1518,17 +1528,17 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
           switch (tmp->id)
             {
             case EXP_SBRACKET:
-              /* parsing contents of `[xxx]` as cssed */
+              /* Parsing contents of `[xxx]` as cssed */
               pparse_cseed_regex (opt, dst_seed);
               break;
 
             case EXP_CBRACE:
-              /* parsing contents of `{xxx}` as wseed */
+              /* Parsing contents of `{xxx}` as wseed */
               pparse_wseed_regex (opt, dst_seed);
               break;
 
             case EXP_PAREN:
-              /* parsing `(xxx)` as seed prefix OR suffix */
+              /* Parsing `(xxx)` as seed prefix OR suffix */
               pparse_format_regex (opt, dst_seed, tmp->cstr);
               break;
 
