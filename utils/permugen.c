@@ -105,12 +105,12 @@
 #include <errno.h>
 
 /**
- **  Using header-only libraries:
  **  The following files are available in `../libs`:
- **    buffered_io.h:  Provides performance improvements
- **    unescape.h:     Handles backslash interpretation
- **    dyna.h:         Implements dynamic arrays
- **    mini-lexer.c:   Facilitates regex parsing
+ **
+ **   - buffered_io.h:  Performance improvement for write syscalls
+ **   - unescape.h:     Handles backslash interpretation
+ **   - dyna.h:         Implements dynamic arrays
+ **   - mini-lexer.c:   Regex parsing
  **/
 #ifdef _USE_BIO
 #  ifndef _BMAX
