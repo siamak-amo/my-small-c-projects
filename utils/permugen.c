@@ -84,6 +84,9 @@
  *     - The first component uses {} and the second one uses ()
  *     $ permugen -r "({) {One} (})"  "(\()  {Two}  (\))"
  *
+ * Compilation:
+ *   cc -ggdb -O3 -Wall -Wextra -Werror -I../libs \
+ *      -o permugen permugen.c
  *
  *  Compilation:
  *    cc -ggdb -O3 -Wall -Wextra -Werror \
@@ -112,13 +115,13 @@
  **   - dyna.h:         Implements dynamic arrays
  **   - mini-lexer.c:   Regex parsing
  **/
-#ifdef _USE_BIO
+#ifndef _NO_BIO
 #  ifndef _BMAX
-#    define _BMAX (sysconf (_SC_PAGESIZE) / 2) // 2kb
+#    define _BMAX 2048 // page_size / 2 bytes
 #  endif
 #  define BIO_IMPLEMENTATION
 #  include "buffered_io.h"
-#endif
+#endif /* _NO_BIO */
 
 #define UNESCAPE_IMPLEMENTATION
 #include "unescape.h"
@@ -293,7 +296,7 @@ struct Opt
   char *separator; /* between components of permutations */
 
   /* buffered_io */
-#ifdef _USE_BIO
+#ifndef _NO_BIO
   BIO_t *bio;
 #endif
 
@@ -437,7 +440,7 @@ usage ()
  *  Pputc:   writes a character @c (as unsigned char)
  *  Pputln:  writes a newline
  */
-#ifndef _USE_BIO
+#ifdef _NO_BIO
 #  define Pfputs(str, opt) fputs (str, opt->outf)
 #  define Pfputc(c, opt) putc (c, opt->outf)
 #  define Pputln(opt) Pfputc ('\n', opt)
@@ -505,7 +508,7 @@ perm (const int depth, const struct Opt *opt)
 
   if (pos < 0) /* End of Permutations */
     {
-#ifdef _USE_BIO
+#ifndef _NO_BIO
       if (bio_err (opt->bio))
         {
           /* buffered_io write error */
@@ -515,7 +518,7 @@ perm (const int depth, const struct Opt *opt)
         return 0;
 #else
       return 0;
-#endif
+#endif /* _NO_BIO */
     }
 
   idxs[pos]++;
@@ -588,7 +591,7 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
 
   if (pos < 0) /* End of Permutations */
     {
-#ifdef _USE_BIO
+#ifndef _NO_BIO
       if (bio_err (opt->bio))
         {
           /* buffered_io write error */
@@ -603,7 +606,7 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
 #else
       ret = 0;
       goto Reg_Return;
-#endif
+#endif /* _NO_BIO */
     }
 
   idxs[pos]++;
@@ -1112,14 +1115,14 @@ main (int argc, char **argv)
    *  Print some debug information
    *  To enable this feature, define `_DEBUG`
    */
-#ifdef _USE_BIO
+#ifndef _NO_BIO
   int cap = _BMAX;
   BIO_t __bio = bio_new (cap, malloc (cap), fileno (opt.outf));
   opt.bio = &__bio;
-  dprintf ("* buffer length of buffered_io: %ld bytes\n", _BMAX);
+  dprintf ("* buffer length of buffered_io: %d bytes\n", _BMAX);
 #else
   dprintf ("- compiled without buffered_io\n");
-# endif /* _USE_BIO */
+# endif /* _NO_BIO */
 
   if (opt._regular_mode)
     {
@@ -1172,7 +1175,7 @@ main (int argc, char **argv)
         }
     }
 
-#ifdef _USE_BIO
+#ifndef _NO_BIO
   bio_flush (opt.bio);
   free (opt.bio->buffer);
 #endif
