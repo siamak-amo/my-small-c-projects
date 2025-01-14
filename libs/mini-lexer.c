@@ -1050,7 +1050,6 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
       tk->type = TK_KEYWORD; 
       ml_set_keyword_id (ml, tk);
     }
-  TOKEN_FINISH (tk);
   return NEXT_NEED_LOAD;
 }
 
