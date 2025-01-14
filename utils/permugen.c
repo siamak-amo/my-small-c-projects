@@ -88,16 +88,13 @@
  *   cc -ggdb -O3 -Wall -Wextra -Werror -I../libs \
  *      -o permugen permugen.c
  *
- *  Compilation:
- *    cc -ggdb -O3 -Wall -Wextra -Werror \
- *       -D_USE_BIO -I../libs \
- *       -o permugen permugen.c
- *
- *  Options:
- *    - To enable debug: pass `-D_DEBUG`
- *    - To disable buffered IO (less performance): remove `-D_USE_BIO`
- *    - To change the default buffered IO buffer length:
- *      add `-D_BMAX="(1024 * 1)"`  (in bytes)
+ * Options:
+ *  - To enable printing of debug information,
+ *     define `_DEBUG`
+ *  - To disable buffered IO (which reduces performance)
+ *     define `_NO_BIO`
+ *  - To change the default buffered I/O buffer capacity,
+ *     define `_BMAX="(1024 * 1)"` (=1024 bytes)
  **/
 #include <stdio.h>
 #include <stdlib.h>
