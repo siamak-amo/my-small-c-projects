@@ -247,8 +247,6 @@ static const Milexer ML = {
 struct permugex
 {
   const Milexer *ml;
-  /* parser flags */
-  int general_flag, special_flag;
   /* input source */
   Milexer_Slice general_src, special_src;
   /* result tokens */
@@ -323,7 +321,7 @@ void parse_seed_regex (struct Opt *, struct Seed *s,
 #undef IS_NUMBER
 #define IS_NUMBER(c) (c >= '0' && c <= '9')
 /* ASCII-printable, Non-white-space */
-#define IS_ASCII_PR(c) (c >= 0x21 && c <= 0x7E)
+#define IS_ASCII_PR(c) (c >= 0x20 && c <= 0x7E)
 
 void
 usage ()
@@ -364,8 +362,8 @@ usage ()
            "          --raw-wseed         to add a single word to global seeds\n"
            "\n"
            "ARGUMENTS:\n"
-           "  Argument values of --format, --prefix, --suffix, --raw-xxx, and --delimiter\n"
-           "  will be backslash-interpreted by default (disable it by `-E`)\n"
+           "  All argument values will be backslash-interpreted by default\n"
+           "  disable this feature with `-E`\n"
            "\n"
            "  Seed: argument value of `-s, --seed` and `-r, --regular`\n"
            "        accepts any combination of the following patterns\n"
@@ -1059,9 +1057,6 @@ main (int argc, char **argv)
     opt.parser = (struct permugex) {
       .ml = &ML,
 
-      .general_flag  = PFLAG_INEXP,
-      .special_flag  = PFLAG_IGSPACE,
-
       .general_src   = {.lazy = 0},
       .special_src   = {.lazy = 0},
 
@@ -1294,13 +1289,16 @@ pparse_cseed_regex (struct Opt *opt, struct Seed *dst_seed)
 
   for (int _ret = 0; !NEXT_SHOULD_END (_ret); )
     {
+      /* parsing with IGSPACE to allow space character */
       _ret = ml_next (opt->parser.ml,
                       &opt->parser.special_src,
                       tmp,
-                      opt->parser.special_flag);
+                      PFLAG_IGSPACE);
       if (NEXT_SHOULD_LOAD (_ret))
         break;
 
+      if (!opt->escape_disabled)
+        unescape (tmp->cstr);
       if (tmp->type == TK_PUNCS && tmp->id == PUNC_DASH)
         dash++;
       else if (tmp->type == TK_KEYWORD)
@@ -1349,7 +1347,7 @@ pparse_wseed_regex (struct Opt *opt, struct Seed *dst_seed)
       _ret = ml_next (opt->parser.ml,
                       &opt->parser.special_src,
                       tmp,
-                      opt->parser.special_flag);
+                      PFLAG_DEFAULT);
       if (NEXT_SHOULD_LOAD (_ret))
         break;
 
@@ -1365,6 +1363,9 @@ static inline void
 pparse_format_regex (struct Opt *opt, struct Seed *dst_seed,
                      char *input)
 {
+  if (!input || *input == '\0')
+    return;
+
   if (!opt->escape_disabled)
     unescape (input);
 
@@ -1485,8 +1486,7 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
       ret = ml_next (opt->parser.ml,
                      &opt->parser.general_src,
                      tmp,
-                     opt->parser.general_flag);
-
+                     PFLAG_INEXP);
       switch (tmp->type)
         {
         case TK_KEYWORD:
