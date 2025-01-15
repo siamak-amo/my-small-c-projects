@@ -302,6 +302,7 @@ const char *milexer_next_cstr[] = {
 
 
 #define __flag__(n) (1 << (n))
+#define HAS_FLAG(n, flag) (n & (flag))
 enum milexer_parsing_flag_t
   {
     /* Default behavior */
@@ -507,16 +508,16 @@ __detect_delim (const Milexer *ml, unsigned char p, int flags)
 {
   if (p == 0)
     return -1;
-  if (ml->delim_ranges.len == 0 || (flags & PFLAG_ALLDELIMS))
+  if (ml->delim_ranges.len == 0 || HAS_FLAG (flags, PFLAG_ALLDELIMS))
     {
       /* default delimiters */
       if (p < ' ' ||
-          (p == ' ' && !(flags & PFLAG_IGSPACE)))
+          (p == ' ' && !HAS_FLAG (flags, PFLAG_IGSPACE)))
         {
           return p;
         }
     }
-  if (ml->delim_ranges.len > 0 || (flags & PFLAG_ALLDELIMS))
+  if (ml->delim_ranges.len > 0 || HAS_FLAG (flags, PFLAG_ALLDELIMS))
     {
       for (int i=0; i < ml->delim_ranges.len; ++i)
         {
@@ -707,7 +708,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
   switch (src->state)
     {
     case SYN_NO_DUMMY__:
-      if (!(flags & PFLAG_INEXP) && src->__last_exp_idx != -1)
+      if (!HAS_FLAG (flags, PFLAG_INEXP) && src->__last_exp_idx != -1)
         {
           /* certainly the token type is expression */
           tk->type = TK_EXPRESSION;
@@ -736,7 +737,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
       break;
 
     case SYN_ML_COMM:
-      if (src->__last_comm && (flags & PFLAG_INCOMMENT))
+      if (src->__last_comm && HAS_FLAG (flags, PFLAG_INCOMMENT))
         {
           tk->type = TK_COMMENT;
           size_t len = strlen (src->__last_comm);
@@ -777,7 +778,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
       if (tk->__idx == tk->cap)
         {
           if ((src->state != SYN_COMM && src->state != SYN_ML_COMM)
-              || (flags & PFLAG_INCOMMENT))
+              || HAS_FLAG (flags, PFLAG_INCOMMENT))
             {
               if (tk->type == TK_NOT_SET ||
                   src->state == SYN_DUMMY || src->state == SYN_DONE)
@@ -822,7 +823,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
               ST_STATE (src, SYN_DUMMY);
               tk->type = TK_COMMENT;
               TOKEN_FINISH (tk);
-              if (flags & PFLAG_INCOMMENT)
+              if (HAS_FLAG (flags, PFLAG_INCOMMENT))
                 {
                   *(dst) = '\0';
                   return NEXT_MATCH;
@@ -839,7 +840,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
             {
               ST_STATE (src, SYN_DUMMY);
               TOKEN_FINISH (tk);
-              if (flags & PFLAG_INCOMMENT)
+              if (HAS_FLAG (flags, PFLAG_INCOMMENT))
                 {
                   tk->type = TK_COMMENT;
                   return NEXT_MATCH;
@@ -864,7 +865,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
               if (__ptr == tk->cstr)
                 {
                   ST_STATE (src, SYN_NO_DUMMY);
-                  if (flags & PFLAG_INEXP)
+                  if (HAS_FLAG (flags, PFLAG_INEXP))
                     {
                       TOKEN_FINISH (tk);
                     }
@@ -994,7 +995,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
               else
                 {
                   tk->type = TK_EXPRESSION;
-                  if (flags & PFLAG_INEXP)
+                  if (HAS_FLAG (flags, PFLAG_INEXP))
                     TOKEN_FINISH (tk);
                   ST_STATE (src, SYN_NO_DUMMY);
                 }
@@ -1005,7 +1006,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
           if ((__ptr = __is_expression_suff (ml, src, tk)))
             {
               tk->type = TK_EXPRESSION;
-              if (flags & PFLAG_INEXP)
+              if (HAS_FLAG (flags, PFLAG_INEXP))
                 *__ptr = '\0';
               ST_STATE (src, SYN_DUMMY);
               TOKEN_FINISH (tk);
