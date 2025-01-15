@@ -93,7 +93,7 @@
  *     define `_DEBUG`
  *  - To disable buffered IO (which reduces performance)
  *     define `_NO_BIO`
- *  - To change the default buffered I/O buffer capacity,
+ *  - To change the default buffered IO buffer capacity,
  *     define `_BMAX="(1024 * 1)"` (=1024 bytes)
  **/
 #include <stdio.h>
@@ -114,7 +114,7 @@
  **/
 #ifndef _NO_BIO
 #  ifndef _BMAX
-#    define _BMAX 2048 // page_size / 2 bytes
+#    define _BMAX 2048 // (page_size / 2) (bytes)
 #  endif
 #  define BIO_IMPLEMENTATION
 #  include "buffered_io.h"
@@ -141,16 +141,17 @@ static const char *__PROGVERSION__ = "v2.6";
 #ifdef _DEBUG /* debug macro */
 #undef dprintf
 #define dprintf(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
-/** Debug printf for arrays helper
- *  @T: printf format for typeof @arr and @len: sizeof @arr
+/** Helper macro to print arrays with seperator & end suffix
+ *  @T: printf format for @arr members, @len: length of @arr
  */
 #  define printd_arr__H(arr, T, len, sep, end)  \
   for (int __idx = 0; __idx < len; __idx++) {   \
     dprintf (T"%s", arr[__idx],                 \
              (__idx < len-1) ? sep : end);      \
   }
-/** Debug printf for arrays
+/** Debug macro to print arrays of type @T and length @len
  *  Ex: to print `int arr[7]`:  `printd_arr (arr, "%d", 7);`
+ *  Output format: 'arr[.7] = {0,1, ..., 6}'
  */
 #  define printd_arr(arr, T, len)               \
   if (len > 0 && arr) {                         \
@@ -181,10 +182,10 @@ const struct char_seed charseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 const struct char_seed charseed_09 = {"0123456789", 10};
 
 /**
- *  Seeds container
- *  to get the length of wseed, use `da_sizeof`
- *  cseed,pref,suff must be allocated using malloc
- *  wseed must be allocated using da_new (dyna.h)
+ *  Seeds Container 
+ *  To get the length of `wseed`, use `da_sizeof`.
+ *  `cseed`, `pref`, and `suff` must be allocated using `malloc`
+ *  `wseed` must be allocated using `da_new` (dyna.h)
  */
 struct Seed
 {
