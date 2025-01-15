@@ -141,7 +141,8 @@ static const char *__PROGVERSION__ = "v2.6";
 #ifdef _DEBUG /* debug macro */
 #undef dprintf
 #define dprintf(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
-/** Helper macro to print arrays with seperator & end suffix
+/**
+ *  Helper macro to print arrays with seperator & end suffix
  *  @T: printf format for @arr members, @len: length of @arr
  */
 #  define printd_arr__H(arr, T, len, sep, end)  \
@@ -149,7 +150,8 @@ static const char *__PROGVERSION__ = "v2.6";
     dprintf (T"%s", arr[__idx],                 \
              (__idx < len-1) ? sep : end);      \
   }
-/** Debug macro to print arrays of type @T and length @len
+/**
+ *  Debug macro to print arrays of type @T and length @len
  *  Ex: to print `int arr[7]`:  `printd_arr (arr, "%d", 7);`
  *  Output format: 'arr[.7] = {0,1, ..., 6}'
  */
@@ -644,7 +646,7 @@ cseed_uniappd (struct Seed *s, const char *src, int len)
       rw++;
     }
 
-  return (rw) ? rw - 1 : 0;
+  return (rw > 0) ? rw - 1 : 0;
 }
 
 void
