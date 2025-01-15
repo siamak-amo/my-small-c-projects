@@ -205,23 +205,8 @@ struct Seed
 /* To make new seed and dynamic seed array */
 static inline struct Seed * mk_seed (int c_len, int w_len);
 #define mk_seed_arr(n) da_newn (struct Seed *, n)
-/**
- *  To make a duplicate seed of @s (must be freed by free_seed)
- *  This does NOT strdup the fields pref and suff of @s
- */
-static inline struct Seed * seeddup (const struct Seed *s);
 /* To free the seed @s, allocated by the mk_seed function */
 static inline void free_seed (struct Seed *s);
-/**
- *  This macro is used to zero out temporary seeds
- *  This does not free any memory, to free memory use free_seed
- */
-#define drop_seeds(seed_ptr) do {               \
-    (seed_ptr)->pref = NULL;                    \
-    (seed_ptr)->suff = NULL;                    \
-    (seed_ptr)->cseed_len = 0;                  \
-    da_drop ((seed_ptr)->wseed);                \
-  } while (0)
 
 /**
  *  Mini-Lexer language
@@ -325,10 +310,9 @@ wseed_fileappd (const struct Opt *, struct Seed *s, FILE *f);
 /**
  *  Parses the @input regex and stores the result in @s
  *  @input: "(prefix) [Cseed] {Wseed} /path/to/file (suffix)"
- *  supported file path formats:
- *    '/tmp/wl.txt', '~/wl.txt', './wl.txt', '../wl.txt', '.wl.txt'
- *    using `-` as file path means to read from the stdin
- **/
+ *  If `prefix` and `suffix` are not NULL, they are allocated using
+ *  `strdup`, and `wseed` is appended using `wseed_uniappd` function
+ */
 void parse_seed_regex (struct Opt *, struct Seed *s,
                        const char *input);
 
@@ -926,7 +910,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
 
         case 'r': /* regular mode */
-          struct Seed *tmp = mk_seed (CSEED_MAXLEN, 1);
           int end_of_options = 0;
           using_default_seed = 0;
           opt->_regular_mode = 1;
@@ -951,17 +934,18 @@ init_opt (int argc, char **argv, struct Opt *opt)
                 }
               else
                 {
-                  drop_seeds (tmp);
                   optind++;
+                  struct Seed *tmp = mk_seed (CSEED_MAXLEN, 1);
                   parse_seed_regex (opt, tmp, argv[i]);
                   if (tmp->cseed_len == 0 && da_sizeof (tmp->wseed) == 0)
                     {
                       warnf ("empty regular seed configuration was ignored");
+                      free_seed (tmp);
                     }
                   else
                     {
                       opt->_regular_mode++;
-                      da_appd (opt->reg_seeds, seeddup (tmp));
+                      da_appd (opt->reg_seeds, tmp);
                     }
                 }
             }
