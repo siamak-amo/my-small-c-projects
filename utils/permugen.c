@@ -104,6 +104,12 @@
 #include <limits.h>
 #include <errno.h>
 
+#define PROGRAM_NAME "permugen"
+#define Version "2.6"
+#define CLI_IMPLEMENTATION
+#define CLI_NO_GETOPT /* we handle options ourselves */
+#include "clistd.h"
+
 /**
  **  The following files are available in `../libs`:
  **
@@ -128,9 +134,6 @@
 
 #define ML_IMPLEMENTATION
 #include "mini-lexer.c"
-
-static const char *__PROGNAME__ = "permugen";
-static const char *__PROGVERSION__ = "v2.6";
 
 /* default permutaiton depth (normal mode) */
 #define DEF_DEPTH 3
@@ -168,9 +171,6 @@ static const char *__PROGVERSION__ = "v2.6";
 #  define printd_arr(arr, T, len) (void)(arr)
 #endif /* _DEBUG */
 
-#undef warnf
-#define warnf(format, ...) \
-  fprintf (stderr, "%s: "format"\n", __PROGNAME__, ##__VA_ARGS__)
 #define warnfun(format, ...) \
   warnf ("%s failed -- "format, __func__, ##__VA_ARGS__)
 
@@ -326,10 +326,10 @@ void parse_seed_regex (struct Opt *, struct Seed *s,
 #define IS_ASCII_PR(c) (c >= 0x20 && c <= 0x7E)
 
 void
-usage ()
+usage (int ecode)
 {
   fprintf (stdout,
-           "Permugen %s, permutation generator utility\n\n"
+           "%s %s, permutation generator utility\n\n"
            "Usage:\n"
            "   normal mode: any possible permutation of given seed(s)\n"
            "       permugen [OPTIONS] [ARGUMENTS]\n\n"
@@ -410,7 +410,10 @@ usage ()
            "       \\x:  for \\t, \\v, \\r, \\a, \\b, \\f, \\n \n"
            "     \\xHH:  byte with hexadecimal value HH (1 to 2 digits)\n"
            "    \\0NNN:  byte with octal value NNN (1 to 3 digits)\n"
-           ,__PROGVERSION__);
+           , program_name, Version);
+
+  if (ecode >= 0)
+    exit (ecode);
 }
 
 /**
@@ -818,7 +821,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
       switch (flag)
         {
         case 'h':
-          usage ();
+          usage (EXIT_SUCCESS);
           return 1;
         case 'E':
           opt->escape_disabled = 1;
@@ -1054,6 +1057,7 @@ int
 main (int argc, char **argv)
 {
   struct Opt opt = {0};
+  set_program_name (*argv);
 
   { /* initializing the parser */
     opt.parser = (struct permugex) {
