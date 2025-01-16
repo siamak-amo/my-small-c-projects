@@ -99,13 +99,13 @@
  *
  *          case NEXT_MATCH:   // match
  *          case NEXT_CHUNK:   // you are receiving a chunk of the result
- *          case NEXT_ZTERN:   // the parser has encountered a null-byte
+ *          case NEXT_ZTERM:   // the parser has encountered a null-byte
  *            printf ("got `%s` of type %s\n", tk.cstr,
  *                    milexer_token_type_cstr[tk.type]);
  *            break;
- *          }
  *
  *          default: break;
+ *          }
  *      }
  *    TOKEN_FREE (&tk);
  *  ```
