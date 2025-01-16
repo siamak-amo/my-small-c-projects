@@ -22,7 +22,9 @@
 #include <errno.h>
 #include <string.h>
 
-static const char *__progname__ = "tee";
+#define CLI_IMPLEMENTATION
+#define CLI_NO_GETOPT /* we handle options ourselves */
+#include "clistd.h"
 
 /* max buffer length */
 #ifndef _BMAX
@@ -45,9 +47,6 @@ static mode_t out_mode = 0644;
 static int *out_fds = NULL;
 static int in_fd = STDIN_FILENO;
 
-#undef errorf
-#define errorf(msg, ...) \
-  fprintf (stderr, "%s: "msg"\n", __progname__, ##__VA_ARGS__)
 #undef fdebug
 #define fdebug(msg, ...) \
   fprintf (stderr, msg, ##__VA_ARGS__)
@@ -68,7 +67,7 @@ out_open (const char *out_pathname)
   int fd = open (out_pathname, out_flags, out_mode);
   if (fd == -1)
     {
-      errorf ("%s: %s", out_pathname, strerror (errno));
+      warnf ("%s: %s", out_pathname, strerror (errno));
       return FOPEN_ERR;
     }
   da_appd (out_fds, fd);
@@ -110,7 +109,7 @@ parse_args (int argc, char **argv)
 
             default:
             Invalid_Opt:
-              errorf ("invalid option -- %c", opt);
+              warnf ("invalid option -- %c", opt);
               return OPT_ERR;
             }
         }
@@ -140,6 +139,7 @@ parse_args (int argc, char **argv)
 int
 main (int argc, char **argv)
 {
+  set_program_name (*argv);
   out_fds = da_new (int);
   /* parse options and open output files */
   int ret;
@@ -196,7 +196,7 @@ main (int argc, char **argv)
               ssize_t _w = write (fd, buffer, _r);
               if (_w < 0 || _w != _r)
                 {
-                  errorf ("write error -- %s", strerror (errno));
+                  warnf ("write error -- %s", strerror (errno));
                   goto End_of_Main;
                 }
             }
