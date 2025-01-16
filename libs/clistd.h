@@ -2,6 +2,7 @@
 #define CLI_STD__H__
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifndef CLI_NO_GETOPT
