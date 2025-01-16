@@ -4,47 +4,90 @@
  *
  *  yes! program
  *  
- *  compilation:
- *    CC -Wall -o y yes.c    (use aligned_alloc)
- *    -D ALIGN_NO            (use normal malloc) 
- *    -D USE_STACK           (only use stack)
+ * compilation:
+ *   cc -Wall -Wextra -Werror yes.c -I../libs -o yes
+ * options:
+ *   -D ALIGN_NO: to use normal malloc, not aligned alloc
  **/
 
 #include <stdio.h>
 #include <unistd.h>
+# include <stdlib.h>
 
-#ifndef USE_STACK
-#include <stdlib.h>
-#endif
+#define KB 1024 // 1Kb
+#define BUFSIZE (2 * KB)  // half of a page
 
-#define BUF_S 1024
-static int pg_size = -1;  /* memory page size */
+#define Version "2"
+#define CLI_IMPLEMENTATION
+#include "clistd.h"
 
+void
+usage (int status)
+{
+  printf ("\
+Usage: %s [STRING]...\n\
+  or:  %s OPTION\n\
+",
+          program_name, program_name);
+
+  if (status >= 0)
+    exit (status);
+}
 
 int
-main (void)
+main (int argc, char **argv)
 {
-#ifdef USE_STACK
-    char buf[BUF_S];
-#elif ALIGN_NO
-    char *buf = (char*) malloc (BUF_S);
+  set_program_name (*argv);
+  parse_std_options_only (argc, argv, program_name, Version, usage);
+
+  /* Argument strings of the output */
+  char **strs = argv + optind;
+  if (optind == argc)
+    {
+      /* When no argument is passed */
+      *strs = "y";
+      argc++;
+    }
+
+  size_t cat_len = 0;
+  for (int i=0; i < argc - optind; ++i)
+    {
+      cat_len += strlen (strs[i]) + 1;
+    }
+
+  size_t buf_size = BUFSIZE;
+  if (cat_len > buf_size)
+    buf_size = 2*cat_len;
+
+#ifdef ALIGN_NO
+    char *buf = (char*) malloc (buf_size);
 #else
-    pg_size = getpagesize();
-    char *buf = (char*) aligned_alloc (pg_size, BUF_S);
+    int pg_size = getpagesize();
+    char *buf = (char*) aligned_alloc (pg_size, buf_size);
 #endif
-    
-    /* fprintf (stderr, "buf_addr=%p - page_size=%d\n", buf, pg_size); */
 
-    for (size_t i=0; i < BUF_S - 1;)
-    {
-        buf[i++] = 'y';
-        buf[i++] = '\n';
-    }
+    size_t buf_used = 0, arglen = 0;
+    for (int i=0; i < argc - optind; ++i)
+      {
+        arglen = strlen (strs[i]);
+        memcpy (buf + buf_used, strs[i], arglen);
+        buf_used += arglen;
+      buf[buf_used++] = ' ';
+      }
+    buf[buf_used - 1] = '\n';
 
-    while (1)
-    {
-        fwrite (buf, 1, BUF_S, stdout);
-    }
+    size_t copy_len = buf_used;
+    for (size_t i = buf_size / copy_len; --i != 0; )
+      {
+        memcpy (buf + buf_used, buf, copy_len);
+        buf_used += copy_len;
+      }
+
+    int ret = 0;
+    while (ret >= 0)
+      {
+        ret = write (STDOUT_FILENO, buf, buf_used);
+      }
 
 #ifndef USE_STACK
     free (buf);
