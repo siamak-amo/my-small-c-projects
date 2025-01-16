@@ -13,7 +13,7 @@
  *
  *  Compilation:
  *    cc -ggdb -O3 -Wall -Wextra -Werror \
- *       -o tee tee.c
+ *       -I../libs -o tee tee.c
  */
 #include <stdio.h>
 #include <unistd.h>
