@@ -19,6 +19,27 @@
 # include "buffered_io.h"
 #endif
 
+#define Version "2"
+#define PROGRAM_NAME "key_extractor"
+#define CLI_IMPLEMENTATION
+#define CLI_NO_GETOPT /* we handle options ourselves */
+#include "clistd.h"
+#include <getopt.h>
+static struct option const long_options[] =
+{
+  {"help",      no_argument,       NULL, 'h'},
+  {"version",   no_argument,       NULL, 'v'},
+  /* input /output file path */
+  {"in",        required_argument, NULL, 'i'},
+  {"if",        required_argument, NULL, 'i'},
+  {"input",     required_argument, NULL, 'i'},
+  {"out",       required_argument, NULL, 'o'},
+  {"of",        required_argument, NULL, 'o'},
+  {"output",    required_argument, NULL, 'o'},
+  /* output append */
+  {"oa",        required_argument, NULL, 'a'},
+  {"oA",        required_argument, NULL, 'a'},
+  {NULL,        0,                 NULL,  0 },
 
 enum LANG
   {
@@ -83,10 +104,102 @@ static BIO_t bio;
 # define Putln() dprintf (ofd, "\n")
 #endif /* _USE_BIO */
 
+void
+usage (int)
+{
+  printf ("\
+Usage: %s [OPTIONS]\n\
+",
+          program_name);
+
+  printf ("\
+Extracts alphanumeric keywords from the given input.\n\
+If no input file is provided, it uses stdin and stdout\n\
+");
+
+  printf ("\n\
+OPTIONS:\n\
+     -i, --if          input file path\n\
+     -o, --output      output file path\n\
+     -a, --oA          output file path to append\n\
+     -s                include strings\n\
+     -n                include numbers\n\
+");
+}
 
 int
-main (void)
+safe_open (const char *restrict pathname, const char *restrict mode)
 {
+  FILE *f;
+  if (!pathname || !mode)
+    {
+      warnf ("invalud filename");
+      return -1;
+    }
+  if ((f = fopen (pathname, mode)) == NULL)
+    {
+      warnf ("could not open file -- (%s:%s)", mode, pathname);
+      return -1;
+    }
+  return fileno (f);
+}
+
+int
+parse_args (int argc, char **argv)
+{
+  int c;
+  const char *params = "+i:o:a:vhns";
+  while (1)
+    {
+      c = getopt_long (argc, argv, params, long_options, NULL);
+      if (c == -1)
+        break;
+      switch (c)
+        {
+        case 'v':
+          version_etc (stdout, program_name, Version);
+          return 0;
+
+        case 'h':
+          usage (-1);
+          return 0;
+
+        case 'n':
+          allow_numbers = true;
+          break;
+
+        case 's':
+          allow_strings = true;
+          break;
+
+        case 'i':
+          if (infd != STDIN_FILENO)
+            close (infd);
+          if ((infd = safe_open (optarg, "r")) == -1)
+            return 1;
+          break;
+
+        case 'o':
+          if (ofd != STDOUT_FILENO)
+            close (ofd);
+          if ((ofd = safe_open (optarg, "w")) == -1)
+            return 1;
+          break;
+
+        case 'a':
+          if (ofd != STDOUT_FILENO)
+            close (ofd);
+          if ((ofd = safe_open (optarg, "a")) == -1)
+            return 1;
+          break;
+
+        default:
+          break;
+        }
+    }
+  return 0;
+}
+
 static inline int
 token_out (const char *cstr)
 {
@@ -114,6 +227,15 @@ token_out (const char *cstr)
   return -1; /* unreachable */
 }
 
+  if (parse_args (argc, argv))
+    return 1;
+
+  if (infd == ofd)
+    {
+      warnf ("output file was changed to stdout");
+      close (ofd);
+      ofd = STDOUT_FILENO;
+    }
   int buf_len = TOKEN_MAX_BUF_LEN;
   char *buf = malloc (buf_len);
   Milexer_Token tk = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN);
