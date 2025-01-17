@@ -84,6 +84,7 @@
  *     - The first component uses {} and the second one uses ()
  *     $ permugen -r "({) {One} (})"  "(\()  {Two}  (\))"
  *
+ *
  * Compilation:
  *   cc -ggdb -O3 -Wall -Wextra -Werror -I../libs \
  *      -o permugen permugen.c
@@ -106,6 +107,7 @@
 
 #define PROGRAM_NAME "permugen"
 #define Version "2.8"
+
 #define CLI_IMPLEMENTATION
 #define CLI_NO_GETOPT /* we handle options ourselves */
 #include "clistd.h"
@@ -394,13 +396,6 @@ ARGUMENTS:\n\
       to also read from stdin:\n\
        \'- [ab0-9] {foo,bar} ~/wordlist.txt\'\n\
 \n\
-  Format: argument value of the common options `-f, --format`\n\
-    \'AAA\':     to use AAA as the output prefix\n\
-    \'AAA BBB\'  to use AAA as the prefix and BBB the as suffix\n\
-    \' BBB\'     to use BBB as the output suffix\n\
-               BBB might contain white-space character(s)\n\
-    to have white-space in AAA, either use `\\x20` or --prefix and --suffix\n\
-\n\
   Raw: backslash interpretation usage\n\
        \\\\:  to pass a single `\\`\n\
             some shells might eliminate them, so it would be more convenient\n\
@@ -681,7 +676,7 @@ wseed_fileappd (const struct Opt *opt, struct Seed *s, FILE *f)
         {
           if (freopen ("/dev/tty", "r", stdin) == NULL)
             {
-              warnf ("could not read from stdin -- %s", strerror (errno));
+              warnf ("could not open stdin -- %s", strerror (errno));
               return;
             }
         }
@@ -749,7 +744,7 @@ safe_fopen (const char *restrict pathname, const char *restrict mode)
     }
   if ((tmp = fopen (pathname, mode)) == NULL)
     {
-      warnf ("could not open file -- (%s:%s)", mode, pathname);
+      warnf ("could not open file %s:%s", mode, pathname);
     }
   return tmp;
 }
@@ -791,7 +786,7 @@ const struct option lopts[] = {
   /* regular mode */
   {"regular",          no_argument,       NULL, 'r'},
   /* end of options */
-  {NULL, 0, NULL, 0}
+  {NULL,               0,                 NULL,  0 },
 };
 
 int
@@ -884,11 +879,13 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
 
         case '0': /* raw seed */
-          CASE_NOT_IN_REG_MODE(argv[optind-2]);
-          using_default_seed = 0;
-          if (!opt->escape_disabled)
-            unescape (optarg);
-          cseed_uniappd (opt->global_seeds, optarg, strlen (optarg));
+          {
+            CASE_NOT_IN_REG_MODE(argv[optind-2]);
+            using_default_seed = 0;
+            if (!opt->escape_disabled)
+              unescape (optarg);
+            cseed_uniappd (opt->global_seeds, optarg, strlen (optarg));
+          }
           break;
 
         case '5': /* raw word seed */
@@ -897,45 +894,47 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
 
         case 'r': /* regular mode */
-          int end_of_options = 0;
-          using_default_seed = 0;
-          opt->_regular_mode = 1;
-          if (opt->reg_seeds)
-            break;
-           opt->reg_seeds = mk_seed_arr (1);
+          {
+            int end_of_options = 0;
+            using_default_seed = 0;
+            opt->_regular_mode = 1;
+            if (opt->reg_seeds)
+              break;
+            opt->reg_seeds = mk_seed_arr (1);
 
-          for (int i=optind; i < argc; ++i)
-            {
-              if (*argv[i] == '-' && !end_of_options)
-                {
-                  if (argv[i][1] == '-' && argv[i][2] == '\0')
-                    {
-                      optind++;
-                      end_of_options = 1;
-                    }
-                  else
-                    {
-                      /* end of `-r` arguments */
-                      break;
-                    }
-                }
-              else
-                {
-                  optind++;
-                  struct Seed *tmp = mk_seed (CSEED_MAXLEN, 1);
-                  parse_seed_regex (opt, tmp, argv[i]);
-                  if (tmp->cseed_len == 0 && da_sizeof (tmp->wseed) == 0)
-                    {
-                      warnf ("empty regular seed configuration was ignored");
-                      free_seed (tmp);
-                    }
-                  else
-                    {
-                      opt->_regular_mode++;
-                      da_appd (opt->reg_seeds, tmp);
-                    }
-                }
-            }
+            for (int i=optind; i < argc; ++i)
+              {
+                if (*argv[i] == '-' && !end_of_options)
+                  {
+                    if (argv[i][1] == '-' && argv[i][2] == '\0')
+                      {
+                        optind++;
+                        end_of_options = 1;
+                      }
+                    else
+                      {
+                        /* end of `-r` arguments */
+                        break;
+                      }
+                  }
+                else
+                  {
+                    optind++;
+                    struct Seed *tmp = mk_seed (CSEED_MAXLEN, 1);
+                    parse_seed_regex (opt, tmp, argv[i]);
+                    if (tmp->cseed_len == 0 && da_sizeof (tmp->wseed) == 0)
+                      {
+                        warnf ("empty regular seed configuration was ignored");
+                        free_seed (tmp);
+                      }
+                    else
+                      {
+                        opt->_regular_mode++;
+                        da_appd (opt->reg_seeds, tmp);
+                      }
+                  }
+              }
+          }
           break;
 
         default:
@@ -950,10 +949,12 @@ init_opt (int argc, char **argv, struct Opt *opt)
     opt->outf = stdout;
 
   if (opt->_regular_mode > 0)
-    { /* regular mode */
+    {
+      /* regular mode */
     }
   else
-    { /* normal mode */
+    {
+      /* normal mode */
       if (opt->global_seeds->cseed_len == 0 && using_default_seed)
         {
           /* initializing with the default seed [a-z0-9] */
@@ -1097,7 +1098,8 @@ main (int argc, char **argv)
   set_program_name (*argv);
   on_exit (cleanup, &opt);
 
-  { /* initializing the parser */
+  {
+    /* initializing the parser */
     opt.parser = (struct permugex) {
       .ml = &ML,
 
@@ -1109,26 +1111,30 @@ main (int argc, char **argv)
     };
   }
 
-  { /* Initializing options */
+  {
+    /* Initializing options */
     opt.global_seeds = mk_seed (CSEED_MAXLEN, 1);
     if (init_opt (argc, argv, &opt))
       return EXIT_FAILURE;
 
     if (opt._regular_mode > 0)
       {
-        /* _regular_mode = 1 + length of seeds */
+        /* Regular mode, _regular_mode = 1 + length of reg_seeds */
         if (opt._regular_mode == 1)
           {
             warnf ("empty regular permutation");
             return EXIT_FAILURE;
           }
       }
-    else /* Normal mode */
-      if (opt.global_seeds->cseed_len == 0 &&
-             da_sizeof (opt.global_seeds->wseed) == 0)
+    else
       {
-        warnf ("empty permutation");
-        return EXIT_FAILURE;
+        /* Normal mode */
+        if (opt.global_seeds->cseed_len == 0 &&
+            da_sizeof (opt.global_seeds->wseed) == 0)
+          {
+            warnf ("empty permutation");
+            return EXIT_FAILURE;
+          }
       }
   }
 
@@ -1341,7 +1347,10 @@ pparse_cseed_regex (struct Opt *opt, struct Seed *dst_seed)
         }
     }
   if (dash)
-    cseed_uniappd (dst_seed, "-", 1);
+    {
+      /* Extra dash means the dash character itself */
+      cseed_uniappd (dst_seed, "-", 1);
+    }
 }
 
 static inline void
@@ -1417,7 +1426,8 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
                   }
               }
             else
-              { /* Invalid index */
+              {
+                /* Invalid index */
                 if (n == opt->_regular_mode - 1)
                   warnf ("circular append was ignored");
                 else if (n >= opt->_regular_mode)
