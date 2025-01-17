@@ -58,6 +58,9 @@ static const char *Delimiters[] = {
   "\x7B\xFF",   /* after 'Z' */
 };
 
+int allow_numbers = false;
+int allow_strings = false;
+
 static const Milexer ML = {
   .expression   = GEN_MKCFG (Expressions),
   .delim_ranges = GEN_MKCFG (Delimiters),
@@ -141,14 +144,17 @@ token_out (const char *cstr)
           break; 
  
         case NEXT_CHUNK:
-          if (tk.type == TK_KEYWORD)
+          if (allow_strings || tk.type == TK_KEYWORD)
             token_out (tk.cstr);
           break;
+
         case NEXT_MATCH:
         case NEXT_ZTERM:
-          if (tk.type == TK_KEYWORD)
+          if (allow_strings || tk.type == TK_KEYWORD)
+            {
               if (token_out (tk.cstr))
                 Putln ();
+            }
           break;
 
         default: break;
