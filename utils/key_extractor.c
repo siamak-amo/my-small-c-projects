@@ -48,9 +48,11 @@ enum LANG
  *  causes conflicts and affects the expected behavior
  */
 static const char *Delimiters[] = {
-  "\x00\x21"    /* below '"' */
+  "\x00\x21",    /* below '"' */
   "\x23\x2F",   /* between '"' and '0' */
-  "\x40\x3A",   /* after '9' and before 'A' */
+  "\x3A\x40",   /* after '9' and before 'A' */
+  "\x5B",       /* '[' */
+  "\x5D",       /* ']' */
   "\x5E",       /* '^' */
   "\x60",       /* '`' */
   "\x7B\xFF",   /* after 'Z' */
