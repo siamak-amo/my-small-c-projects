@@ -7,10 +7,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#define TOKEN_MAX_BUF_LEN (512) // 0.5Kb
-#define ML_IMPLEMENTATION
-#include "mini-lexer.c"
-
 #ifdef _USE_BIO
 # ifndef _BMAX
 #  define _BMAX (1024) // 1Kb
@@ -40,6 +36,12 @@ static struct option const long_options[] =
   {"oa",        required_argument, NULL, 'a'},
   {"oA",        required_argument, NULL, 'a'},
   {NULL,        0,                 NULL,  0 },
+};
+
+
+#define TOKEN_MAX_BUF_LEN (512) // 0.5Kb
+#define ML_IMPLEMENTATION
+#include "mini-lexer.c"
 
 enum LANG
   {
@@ -227,6 +229,10 @@ token_out (const char *cstr)
   return -1; /* unreachable */
 }
 
+int
+main (int argc, char **argv)
+{
+  set_program_name (*argv);
   if (parse_args (argc, argv))
     return 1;
 
@@ -236,6 +242,7 @@ token_out (const char *cstr)
       close (ofd);
       ofd = STDOUT_FILENO;
     }
+
   int buf_len = TOKEN_MAX_BUF_LEN;
   char *buf = malloc (buf_len);
   Milexer_Token tk = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN);
@@ -251,6 +258,11 @@ token_out (const char *cstr)
   int bio_cap = _BMAX;
   bio = bio_new (bio_cap, malloc (bio_cap), ofd);
 #endif
+
+  if (infd == STDIN_FILENO)
+    {
+      puts ("reading from stdin until EOF");
+    }
 
   int len;
   for (int ret = 0; !NEXT_SHOULD_END (ret); )
