@@ -36,10 +36,12 @@ static struct Milexer_exp_ Expressions[] = {
 
 // Fixme: conflict with "" and '' and ``
 static const char *Delimiters[] = {
-  "\x00\x2F",   /* below '0' in ascii table */
+  "\x00\x21"    /* below '"' */
+  "\x23\x2F",   /* between '"' and '0' */
   "\x40\x3A",   /* after '9' and before 'A' */
-  "\x5B\x60",   /* between 'Z' and 'a' */
-  "\x7B\xFF",   /* after 'z' */
+  "\x5E",       /* '^' */
+  "\x60",       /* '`' */
+  "\x7B\xFF",   /* after 'Z' */
 };
 
 static const Milexer ML = {
