@@ -53,6 +53,13 @@ parse_std_options_only (int argc, char **argv,
 
 #endif /* CLI_NO_GETOPT */
 
+/**
+ *  From: 'gnulib/lib/version-etc.c':version_etc_arn
+ *  Prints version
+ */
+__cli_def__ void
+version_etc (FILE *stream,
+             const char *command_name, const char *version);
 
 #ifdef CLI_IMPLEMENTATION
 __cli_def__ void
