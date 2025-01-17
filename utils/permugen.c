@@ -21,8 +21,8 @@
  *  Permugen, permutation generator utility
  *  Generates customizable permutations from specified seeds
  *
- *  Usage:  ./permugen [OPTIONS] [ARGUMENTS]
- *          ./permugen -r [seed_1] ... [seed_N] [OPTIONS] [ARGUMENTS]
+ *  Usage:  ./permugen [OPTIONS] [SEED_CONF]
+ *          ./permugen [OPTIONS] -r (SEED_CONF)...
  *    see help function by `-h` option, for more details:
  *    $ ./permugen -h
  *
@@ -105,7 +105,7 @@
 #include <errno.h>
 
 #define PROGRAM_NAME "permugen"
-#define Version "2.6"
+#define Version "2.8"
 #define CLI_IMPLEMENTATION
 #define CLI_NO_GETOPT /* we handle options ourselves */
 #include "clistd.h"
@@ -330,12 +330,12 @@ usage (int ecode)
   fprintf (stdout,"\
 %s %s, permutation generator utility\n\n\
 Usage:\n\
-   normal mode: any possible permutation of given seed(s)\n\
-       permugen [OPTIONS] [ARGUMENTS]\n\n\
+  normal mode: any possible permutation of given seed(s)\n\
+      permugen [OPTIONS] [SEED_CONF]\n\n\
   regular mode: to specify seed(s) of each component manually\n\
-    generated permutations will have exactly N components\n\
-       permugen -r [SEED 1] ... [SEED N] [OPTIONS]\n\
-       permugen [OPTIONS] -r -- [SEED 1] ... [SEED N]\n\
+  generated permutations will have exactly N components\n\
+      permugen -r (SEED_CONF)... [OPTIONS]\n\
+      permugen [OPTIONS] -r -- (SEED_CONF)...\n\
 \n\
 OPTIONS:\n\
   Common options:\n\
