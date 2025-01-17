@@ -1053,11 +1053,65 @@ mk_seed (int c_len, int w_len)
   return s;
 }
 
+/**
+ *  Frees all allocated memory and closes all open files
+ *  This function should be called by `on_exit`
+ *  The pointer `__opt` *MUST* be accessible
+ *  outside of the main function's scope
+ */
+void
+cleanup (int, void *__opt)
+{
+  struct Opt *opt = (struct Opt *)__opt;
+  /**
+   * `global_seed` is not a dynamic array.
+   *  It should have been allocated using malloc
+   */
+  free_seed (opt->global_seeds);
+  free (opt->global_seeds);
+
+  /**
+   *  `reg_seeds` is a dynamic array (using dyna.h)
+   *  Each element of this array must be freed
+   *  The elements are allocated using `seeddup`
+   */
+  if (opt->reg_seeds)
+    {
+      for (da_idx i=0; i < da_sizeof (opt->reg_seeds); ++i)
+        {
+          free_seed (opt->reg_seeds[i]);
+          free (opt->reg_seeds[i]);
+        }
+      da_free (opt->reg_seeds);
+    }
+
+  /**
+   *  Two tokens have been allocated for regex parsing
+   */
+  TOKEN_FREE (&opt->parser.general_tk);
+  TOKEN_FREE (&opt->parser.special_tk);
+
+  /**
+   *  Close any open file descriptors
+   */
+  if (opt->outf && opt->outf != stdout)
+    {
+      fflush (opt->outf);
+      fclose (opt->outf);
+    }
+  if (stdout)
+    {
+      fflush (stdout);
+      fclose (stdout);
+    }
+}
+
 int
 main (int argc, char **argv)
 {
-  struct Opt opt = {0};
+  static struct Opt opt = {0};
   set_program_name (*argv);
+  on_exit (cleanup, &opt);
 
   { /* initializing the parser */
     opt.parser = (struct permugex) {
@@ -1074,7 +1128,7 @@ main (int argc, char **argv)
   { /* Initializing options */
     opt.global_seeds = mk_seed (CSEED_MAXLEN, 1);
     if (init_opt (argc, argv, &opt))
-      goto EndOfMain;
+      return EXIT_FAILURE;
 
     if (opt._regular_mode > 0)
       {
@@ -1082,7 +1136,7 @@ main (int argc, char **argv)
         if (opt._regular_mode == 1)
           {
             warnf ("empty regular permutation");
-            goto EndOfMain;
+            return EXIT_FAILURE;
           }
       }
     else /* Normal mode */
@@ -1090,7 +1144,7 @@ main (int argc, char **argv)
              da_sizeof (opt.global_seeds->wseed) == 0)
       {
         warnf ("empty permutation");
-        goto EndOfMain;
+        return EXIT_FAILURE;
       }
   }
 
@@ -1162,44 +1216,6 @@ main (int argc, char **argv)
   bio_flush (opt.bio);
   free (opt.bio->buffer);
 #endif
-
-
- EndOfMain:
-  {
-    /**
-     * `global_seed` is not a dynamic array.
-     *  It should have been allocated using malloc
-     */
-    free_seed (opt.global_seeds);
-    free (opt.global_seeds);
-
-    /**
-     *  `reg_seeds` is a dynamic array (using dyna.h)
-     *  Each element of this array must be freed
-     *  The elements are allocated using `seeddup`
-     */
-    if (opt.reg_seeds)
-      {
-        for (da_idx i=0; i < da_sizeof (opt.reg_seeds); ++i)
-          {
-            free_seed (opt.reg_seeds[i]);
-            free (opt.reg_seeds[i]);
-          }
-        da_free (opt.reg_seeds);
-      }
-
-    /**
-     *  Two tokens have been allocated for regex parsing
-     */
-    TOKEN_FREE (&opt.parser.general_tk);
-    TOKEN_FREE (&opt.parser.special_tk);
-  }
-  
-  /**
-   *  Close any non-stdout file descriptors
-   */
-  if (opt.outf && fileno (opt.outf) != 1)
-    fclose (opt.outf);
 
   return 0;
 }
