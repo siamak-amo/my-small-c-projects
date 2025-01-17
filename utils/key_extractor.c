@@ -98,11 +98,13 @@ main (void)
           break; 
  
         case NEXT_CHUNK:
-          Print (tk.cstr);
+          if (tk.type == TK_KEYWORD)
+            Print (tk.cstr);
           break;
         case NEXT_MATCH:
         case NEXT_ZTERM:
-          Println (tk.cstr);
+          if (tk.type == TK_KEYWORD)
+            Println (tk.cstr);
           break;
 
         default: break;
