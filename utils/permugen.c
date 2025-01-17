@@ -327,88 +327,89 @@ void parse_seed_regex (struct Opt *, struct Seed *s,
 void
 usage (int ecode)
 {
-  fprintf (stdout,
-           "%s %s, permutation generator utility\n\n"
-           "Usage:\n"
-           "   normal mode: any possible permutation of given seed(s)\n"
-           "       permugen [OPTIONS] [ARGUMENTS]\n\n"
-           "  regular mode: to specify seed(s) of each component manually\n"
-           "    generated permutations will have exactly N components\n"
-           "       permugen -r [SEED 1] ... [SEED N] [OPTIONS]\n"
-           "       permugen [OPTIONS] -r -- [SEED 1] ... [SEED N]\n"
-           "\n"
-           "OPTIONS:\n"
-           "  Common options:\n"
-           "      -E                      disable backslash interpretation\n"
-           "      -e                      enable backslash interpretation (default)\n"
-           "      -r, --regular           regular mode\n"
-           "      -o, --output            output file\n"
-           "  -a,-oA, --append            append to file\n"
-           "      -p, --delimiter         permutations component separator\n"
-           "      -f, --format            output format (see ARGUMENTS)\n"
-           "          --prefix            output prefix\n"
-           "          --suffix            output suffix\n"
-           "\n"
-           "  Only in normal mode:\n"
-           "      -d, --depth             specify depth\n"
-           "      -D, --depth-range       depth range\n"
-           "     -df, --depth-from        specify min depth\n"
-           "          --min-depth\n"
-           "     -dt, --depth-to          specify max depth\n"
-           "          --max-depth\n"
-           "      -S, --seed-path         word seed path\n"
-           "                              pass - to read from stdin\n"
-           "      -s, --seed              to configure global seeds (see ARGUMENTS)\n"
-           "          --raw-seed          to configure character seeds\n"
-           "          --raw-wseed         to add a single word to global seeds\n"
-           "\n"
-           "ARGUMENTS:\n"
-           "  All argument values will be backslash-interpreted by default\n"
-           "  disable this feature with `-E`\n"
-           "\n"
-           "  Seed: argument value of `-s, --seed` and `-r, --regular`\n"
-           "        accepts any combination of the following patterns\n"
-           "    `{word1,word2}`   to include 'word1' and 'word2'\n"
-           "    `[XYZ]`:          to include characters X,Y,Z\n"
-           "    `[a-f]`:          to include character range a,...,f\n"
-           "    `\\N`:             to reuse (append) previous seeds, only in regular mode\n"
-           "                      where `N` is the index of a prior given seed, starting from 1\n"
-           "    character range shortcuts:\n"
-           "      '\\d' for [0-9],  '\\l','\\a' for [a-z],  '\\u','\\U','\\A' for [A-Z]\n"
-           "    inside these regex's, you might also use:\n"
-           "      '\\{ and \\['       for '{', '}' and '[', ']' characters\n"
-           "      '\\, or \\x2c'      for comma, alternatively use --raw-xxx in normal mode\n"
-           "      '\\xNN or \\0HHH'   hex and octal byte, for example: \\x5c for backslash\n"
-           "                        see the raw section for more details\n"
-           "    `-`:              to read word seeds from the stdin up until Ctrl-D\n"
-           "                      equivalently, an empty line and then the word `EOF`\n"
-           "    `/path/to/file`:  to read words from a file (line by line)\n"
-           "                      lines with '#' will be ignored\n"
-           "    `(pref) (suff)`:  (in regular mode) to add custom prefix and suffix\n"
-           "                      for parenthesis, use: \\( and \\)  or  \\x28 and \\x29\n"
-           "\n"
-           "    Examples:\n"
-           "      to include a,b and 0,...,9 and also words `foo` and `bar`:\n"
-           "       \'[ab0-9] {foo,bar}\'  or equivalently  \'[ab] {foo,bar} [0-9]\'\n"
-           "      to also include words from wordlist.txt:\n"
-           "       \'[ab0-9] {foo,bar} /path/to/wordlist.txt\'\n"
-           "      to also read from stdin:\n"
-           "       \'- [ab0-9] {foo,bar} ~/wordlist.txt\'\n"
-           "\n"
-           "  Format: argument value of the common options `-f, --format`\n"
-           "    \'AAA\':     to use AAA as the output prefix\n"
-           "    \'AAA BBB\'  to use AAA as the prefix and BBB the as suffix\n"
-           "    \' BBB\'     to use BBB as the output suffix\n"
-           "               BBB might contain white-space character(s)\n"
-           "    to have white-space in AAA, either use `\\x20` or --prefix and --suffix\n"
-           "\n"
-           "  Raw: backslash interpretation usage\n"
-           "       \\\\:  to pass a single `\\`\n"
-           "            some shells might eliminate them, so it would be more convenient\n"
-           "            to use this inside single quotes instead of double quotes\n"
-           "       \\x:  for \\t, \\v, \\r, \\a, \\b, \\f, \\n \n"
-           "     \\xHH:  byte with hexadecimal value HH (1 to 2 digits)\n"
-           "    \\0NNN:  byte with octal value NNN (1 to 3 digits)\n"
+  fprintf (stdout,"\
+%s %s, permutation generator utility\n\n\
+Usage:\n\
+   normal mode: any possible permutation of given seed(s)\n\
+       permugen [OPTIONS] [ARGUMENTS]\n\n\
+  regular mode: to specify seed(s) of each component manually\n\
+    generated permutations will have exactly N components\n\
+       permugen -r [SEED 1] ... [SEED N] [OPTIONS]\n\
+       permugen [OPTIONS] -r -- [SEED 1] ... [SEED N]\n\
+\n\
+OPTIONS:\n\
+  Common options:\n\
+      -E                      disable backslash interpretation\n\
+      -e                      enable backslash interpretation (default)\n\
+      -r, --regular           regular mode\n\
+      -o, --output            output file\n\
+  -a,-oA, --append            append to file\n\
+      -p, --delimiter         permutations component separator\n\
+      -f, --format            output format (see ARGUMENTS)\n\
+          --prefix            output prefix\n\
+          --suffix            output suffix\n\
+\n\
+  Only in normal mode:\n\
+      -d, --depth             specify depth\n\
+      -D, --depth-range       depth range\n\
+     -df, --depth-from        specify min depth\n\
+          --min-depth\n\
+     -dt, --depth-to          specify max depth\n\
+          --max-depth\n\
+      -S, --seed-path         word seed path\n\
+                              pass - to read from stdin\n\
+      -s, --seed              to configure global seeds (see ARGUMENTS)\n\
+          --raw-seed          to configure character seeds\n\
+          --raw-wseed         to add a single word to global seeds\n\
+\n\
+ARGUMENTS:\n\
+  All argument values will be backslash-interpreted by default\n\
+  disable this feature with `-E`\n\
+\n\
+  Seed: argument value of `-s, --seed` and `-r, --regular`\n\
+        accepts any combination of the following patterns\n\
+    `{word1,word2}`   to include 'word1' and 'word2'\n\
+    `[XYZ]`:          to include characters X,Y,Z\n\
+    `[a-f]`:          to include character range a,...,f\n\
+    `\\N`:             to reuse (append) previous seeds, only in regular mode\n\
+                      where `N` is the index of a prior given seed, starting from 1\n\
+    character range shortcuts:\n\
+      '\\d' for [0-9],  '\\l','\\a' for [a-z],  '\\u','\\U','\\A' for [A-Z]\n\
+    inside these regex's, you might also use:\n\
+      '\\{ and \\['       for '{', '}' and '[', ']' characters\n\
+      '\\, or \\x2c'      for comma, alternatively use --raw-xxx in normal mode\n\
+      '\\xNN or \\0HHH'   hex and octal byte, for example: \\x5c for backslash\n\
+                        see the raw section for more details\n\
+    `-`:              to read word seeds from the stdin up until Ctrl-D\n\
+                      equivalently, an empty line and then the word `EOF`\n\
+    `/path/to/file`:  to read words from a file (line by line)\n\
+                      lines with '#' will be ignored\n\
+    `(pref) (suff)`:  (in regular mode) to add custom prefix and suffix\n\
+                      for parenthesis, use: \\( and \\)  or  \\x28 and \\x29\n\
+\n\
+    Examples:\n\
+      to include a,b and 0,...,9 and also words `foo` and `bar`:\n\
+       \'[ab0-9] {foo,bar}\'  or equivalently  \'[ab] {foo,bar} [0-9]\'\n\
+      to also include words from wordlist.txt:\n\
+       \'[ab0-9] {foo,bar} /path/to/wordlist.txt\'\n\
+      to also read from stdin:\n\
+       \'- [ab0-9] {foo,bar} ~/wordlist.txt\'\n\
+\n\
+  Format: argument value of the common options `-f, --format`\n\
+    \'AAA\':     to use AAA as the output prefix\n\
+    \'AAA BBB\'  to use AAA as the prefix and BBB the as suffix\n\
+    \' BBB\'     to use BBB as the output suffix\n\
+               BBB might contain white-space character(s)\n\
+    to have white-space in AAA, either use `\\x20` or --prefix and --suffix\n\
+\n\
+  Raw: backslash interpretation usage\n\
+       \\\\:  to pass a single `\\`\n\
+            some shells might eliminate them, so it would be more convenient\n\
+            to use this inside single quotes instead of double quotes\n\
+       \\x:  for \\t, \\v, \\r, \\a, \\b, \\f, \\n \n\
+     \\xHH:  byte with hexadecimal value HH (1 to 2 digits)\n\
+    \\0NNN:  byte with octal value NNN (1 to 3 digits)\n\
+"
            , program_name, Version);
 
   if (ecode >= 0)
