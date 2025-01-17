@@ -524,10 +524,10 @@ __detect_delim (const Milexer *ml, unsigned char p, int flags)
           const char *__p = ml->delim_ranges.exp[i];
           if (__p[1] != '\0')
             {
-              if (p >= __p[0] && p <= __p[1])
+              if (p >= (unsigned char)__p[0] && p <= (unsigned char)__p[1])
                 return p;
             }
-          else if (p == __p[0])
+          else if (p == (unsigned char)__p[0])
             return p;
         }
     }
