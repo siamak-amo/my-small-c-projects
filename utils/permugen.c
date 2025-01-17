@@ -56,8 +56,8 @@
  *     $ permugen -p ", "                          # comma separated
  *     $ permugen -p "\t"                          # tab separated
  *
- *     - Suffix and Prefix (--format or --suff, --pref)
- *     $ permugen --format "www. .com"
+ *     - Global suffix and prefix
+ *     $ permugen --pref "www." --suff ".com"
  *
  *
  *  * Regular Mode
@@ -345,7 +345,6 @@ OPTIONS:\n\
       -o, --output            output file\n\
   -a,-oA, --append            append to file\n\
       -p, --delimiter         permutations component separator\n\
-      -f, --format            output format (see ARGUMENTS)\n\
           --prefix            output prefix\n\
           --suffix            output suffix\n\
 \n\
@@ -785,11 +784,11 @@ const struct option lopts[] = {
   {"to-depth",         required_argument, NULL, '2'},
   {"max-depth",        required_argument, NULL, '2'},
   /* format */
-  {"format",           required_argument, NULL, 'f'},
   {"pref",             required_argument, NULL, '3'},
   {"prefix",           required_argument, NULL, '3'},
   {"suff",             required_argument, NULL, '4'},
   {"suffix",           required_argument, NULL, '4'},
+  /* regular mode */
   {"regular",          no_argument,       NULL, 'r'},
   /* end of options */
   {NULL, 0, NULL, 0}
@@ -807,7 +806,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
   }
 
   /* we use 0,1,2,... as `helper` options and only to use getopt */
-  const char *lopt_cstr = "s:S:o:a:p:d:f:D:0:1:2:3:4:5:hrEe";
+  const char *lopt_cstr = "s:S:o:a:p:d:D:0:1:2:3:4:5:hrEe";
 
   int idx = 0, using_default_seed = 1;
   while (1)
@@ -858,23 +857,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
         case '2': /* depth to */
           opt->to_depth = atoi (optarg);
           break;
-        case 'f': /* format */
-          {
-            opt->prefix = optarg;
-            for (char *p = optarg; *p != '\0'; ++p)
-              {
-                if (*p == ' ')
-                  {
-                    *(p++) = '\0';
-                    if (*p != '\0')
-                      opt->suffix = p;
-                    break;
-                  }
-              }
-            if (opt->prefix && opt->prefix[0] == '\0')
-              opt->prefix = NULL;
-            break;
-          }
+
         case 'S': /* wseed file / stdin */
           {
             CASE_NOT_IN_REG_MODE(argv[optind-2]);
