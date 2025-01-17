@@ -27,14 +27,26 @@ enum LANG
     STR3,
   };
 
-static struct Milexer_exp_ Expressions[] = {
+/**
+ *  Any string types enclosed
+ *  within these delimiters will be ignored
+ */
+ static struct Milexer_exp_ Expressions[] = {
   [STR1]          = {"\"", "\""},
   [STR2]          = {"'", "'"},
   [STR3]          = {"`", "`"},
 };
 
-
-// Fixme: conflict with "" and '' and ``
+/**
+ *  This includes nearly all non-alphanumeric
+ *  ASCII characters
+ *
+ *  It primarily allows only alphanumeric tokens
+ *
+ *  The presence of any prefixes of @ML fields
+ *  (like @Expressions) within this context,
+ *  causes conflicts and affects the expected behavior
+ */
 static const char *Delimiters[] = {
   "\x00\x21"    /* below '"' */
   "\x23\x2F",   /* between '"' and '0' */
