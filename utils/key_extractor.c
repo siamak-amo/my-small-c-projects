@@ -2,6 +2,23 @@
  *  file: key_extractor.c  (old tokenizeIt.c)
  *  created on: 8 Sep 2024
  *
+ *  Keyword Extractor
+ *  Extracts keywords out of the provided input
+ *  It was previously named tokenizeIt
+ *
+ *  Usage:  kextractor [OPTIONS]
+ *  see help for details: `kextractor -h`
+ *
+ * Compilation:
+ *   cc -Wall -Wextra -Werror -ggdb -O3 \
+ *      -D_USE_BIO -I../libs \
+ *      key_extractor.c -o kextractor
+ *
+ * Options:
+ *   -D_USE_BIO:
+ *      To compile with buffered_io.h
+ *   -D_BMAX="(1 * 1024)":
+ *      To max buffer length of buffered IO
  */
 #include <stdio.h>
 #include <unistd.h>
@@ -146,6 +163,11 @@ safe_open (const char *restrict pathname, const char *restrict mode)
   return fileno (f);
 }
 
+/**
+ *  @return:  0 -> success
+ *     negative -> exit with 0 code
+ *     positive -> exit with non-zero exit code
+ */
 int
 parse_args (int argc, char **argv)
 {
@@ -164,7 +186,7 @@ parse_args (int argc, char **argv)
 
         case 'h':
           usage (-1);
-          return 0;
+          return -1;
 
         case 'n':
           allow_numbers = true;
@@ -233,8 +255,10 @@ int
 main (int argc, char **argv)
 {
   set_program_name (*argv);
-  if (parse_args (argc, argv))
-    return 1;
+  int ret = parse_args (argc, argv);
+  if (ret > 0)
+    return ret;
+  else return 0;
 
   if (infd == ofd)
     {
