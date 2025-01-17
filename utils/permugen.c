@@ -750,7 +750,7 @@ safe_fopen (const char *restrict pathname, const char *restrict mode)
     }
   if ((tmp = fopen (pathname, mode)) == NULL)
     {
-      warnf ("fould not open file -- (%s:%s)", mode, pathname);
+      warnf ("could not open file -- (%s:%s)", mode, pathname);
     }
   return tmp;
 }
@@ -806,11 +806,12 @@ init_opt (int argc, char **argv, struct Opt *opt)
     action;                                                             \
   }
 
+  /* we use 0,1,2,... as `helper` options and only to use getopt */
+  const char *lopt_cstr = "s:S:o:a:p:d:f:D:0:1:2:3:4:5:hrEe";
+
   int idx = 0, using_default_seed = 1;
   while (1)
     {
-      /* we use 0,1,2,... as `helper` options and only to use getopt */
-      const char *lopt_cstr = "s:S:o:a:p:d:f:D:0:1:2:3:4:5:hrEe";
       int flag = getopt_long (argc, argv, lopt_cstr, lopts, &idx);
       if (flag == -1)
         {
