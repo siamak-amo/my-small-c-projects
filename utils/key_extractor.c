@@ -1,5 +1,5 @@
 /**
- *  file: key_extractor.c  (old tokenizeIt.c)
+ *  file: key_extractor.c
  *  created on: 8 Sep 2024
  *
  *  Keyword Extractor
@@ -88,7 +88,7 @@ enum LANG
  *  causes conflicts and affects the expected behavior
  */
 static const char *Delimiters[] = {
-  "\x00\x21",    /* below '"' */
+  "\x00\x21",   /* below '"' */
   "\x23\x2F",   /* between '"' and '0' */
   "\x3A\x40",   /* after '9' and before 'A' */
   "\x5B",       /* '[' */
