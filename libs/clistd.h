@@ -34,12 +34,15 @@ __cli_def__ void
 set_program_name (const char *argv0);
 
 
+#define HELP_OPTION_DESCRIPTION    "-h, --help        prints usage\n"
+#define VERSION_OPTION_DESCRIPTION "-v, --version     prints version\n"
+
 #ifndef CLI_NO_GETOPT
 static struct option const long_options[] =
 {
   {"help",      no_argument, NULL, 'h'},
   {"version",   no_argument, NULL, 'v'},
-  {NULL,        0,           NULL, 0}
+  {NULL,        0,           NULL,  0 },
 };
 
 /**
