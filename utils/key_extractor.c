@@ -74,16 +74,43 @@ static BIO_t bio;
 
 #ifdef _USE_BIO
 # define Print(str) bio_fputs (&bio, str)
-# define Println(str) bio_puts (&bio, str)
+# define Putln() bio_puts (&bio, "")
 #else
 # define Print(str) dprintf (ofd, "%s", str)
-# define Println(str) dprintf (ofd, "%s\n", str)
+# define Putln() dprintf (ofd, "\n")
 #endif /* _USE_BIO */
 
 
 int
 main (void)
 {
+static inline int
+token_out (const char *cstr)
+{
+  if (allow_numbers)
+    {
+      Print (cstr);
+      return 1;
+    }
+  else
+    {
+      char *end;
+      /* We assume strings staring with 0x are numbers */
+      if (strncmp (cstr, "0x", 2) == 0)
+        {
+          return 0;
+        }
+      strtol (cstr, &end, 10);
+      if (*(end + 1) == '\0' && errno == 0)
+        {
+          return 0;
+        }
+      Print (cstr);
+      return 1;
+    }
+  return -1; /* unreachable */
+}
+
   int buf_len = TOKEN_MAX_BUF_LEN;
   char *buf = malloc (buf_len);
   Milexer_Token tk = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN);
@@ -115,12 +142,13 @@ main (void)
  
         case NEXT_CHUNK:
           if (tk.type == TK_KEYWORD)
-            Print (tk.cstr);
+            token_out (tk.cstr);
           break;
         case NEXT_MATCH:
         case NEXT_ZTERM:
           if (tk.type == TK_KEYWORD)
-            Println (tk.cstr);
+              if (token_out (tk.cstr))
+                Putln ();
           break;
 
         default: break;
