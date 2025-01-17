@@ -2,9 +2,9 @@
  *  file: buffered_io.h
  *  created on: 5 Sep 2024
  *
- *  Buffered IO
- *  It helps reduce the number of write syscalls and flush calls
- *  (on stdout / files) when writing many short lines
+ *  Buffered I/O
+ *  It helps reduce the number of write system calls
+ *  when writing multiple short lines (on stdout or other files)
  *
  *  usage:
  *  ```c
