@@ -132,6 +132,7 @@
 #define DYNA_IMPLEMENTATION
 #include "dyna.h"
 
+#define TOKEN_MAX_BUF_LEN 128 /* 129 bytes malloc */
 #define ML_IMPLEMENTATION
 #include "mini-lexer.c"
 
@@ -254,8 +255,6 @@ struct permugex
   /* result tokens */
   Milexer_Token general_tk, special_tk;
 };
-
-#define TOKEN_MAX_BUF_LEN 128 /* 129 bytes malloc */
 
 /* Permugen's main configuration */
 struct Opt
