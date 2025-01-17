@@ -29,6 +29,12 @@ Usage: %s [STRING]...\n\
   or:  %s OPTION\n\
 ",
           program_name, program_name);
+  fputs ("\
+Repeatedly output a line with all specified STRING(s), or 'y'.\n\
+", stdout);
+
+  fputs (HELP_OPTION_DESCRIPTION, stdout);
+  fputs (VERSION_OPTION_DESCRIPTION, stdout);
 
   if (status >= 0)
     exit (status);
