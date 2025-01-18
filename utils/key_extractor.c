@@ -285,7 +285,7 @@ main (int argc, char **argv)
   bio = bio_new (bio_cap, malloc (bio_cap), ofd);
 #endif
 
-  if (infd == STDIN_FILENO)
+  if (infd == STDIN_FILENO && isatty (infd))
     {
       puts ("reading from stdin until EOF");
     }
