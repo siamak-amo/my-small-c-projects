@@ -177,7 +177,8 @@ parse_args (int argc, char **argv)
     {
       c = getopt_long (argc, argv, params, long_options, NULL);
       if (c == -1)
-        break;
+        return 0;
+
       switch (c)
         {
         case 'v':
@@ -258,7 +259,8 @@ main (int argc, char **argv)
   int ret = parse_args (argc, argv);
   if (ret > 0)
     return ret;
-  else return 0;
+  else if (ret < 0)
+    return 0;
 
   if (infd == ofd)
     {
