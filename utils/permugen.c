@@ -297,11 +297,12 @@ struct Opt
  */
 int cseed_uniappd (struct Seed *s, const char *src, int len);
 /**
- *  Appends @str_word to @s->wseed after unescape (if not disabled)
+ *  Appends a copy of @str_word (using strdup malloc)
+ *  to @s->wseed after unescaping it (if not disabled)
  *  @s->wseed will have unique words after this call, if it did before
  */
 void wseed_uniappd (const struct Opt *, struct Seed *s,
-                    char *str_word);
+                    const char *str_word);
 /**
  *  Using wseed_uniappd function, appends a word list from @f
  *  to the seed @s, line by line, and ignores commented lines by `#`
@@ -648,19 +649,23 @@ cseed_uniappd (struct Seed *s, const char *src, int len)
 
 void
 wseed_uniappd (const struct Opt *opt,
-               struct Seed *s, char *str_word)
+               struct Seed *s, const char *str_word)
 {
   if (!s->wseed || !str_word)
     return;
+
+  char *word = strdup (str_word);
+  if (!opt->escape_disabled)
+    unescape (word);
   for (da_idx i=0; i < da_sizeof (s->wseed); ++i)
     {
-      if (Strcmp (s->wseed[i], str_word))
-        return;
+      if (Strcmp (s->wseed[i], word))
+        {
+          free (word);
+          return;
+        }
     }
-
-  if (!opt->escape_disabled)
-    unescape (str_word);
-  da_appd (s->wseed, str_word);
+  da_appd (s->wseed, word);
 }
 
 void
