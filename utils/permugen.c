@@ -208,7 +208,6 @@ struct Seed
   char *pref;
   char *suff;
 };
-#define CSEED_MAXLEN 256 /* cseed_len max length */
 
 /* To make new seed and dynamic seed array */
 static inline struct Seed * mk_seed (int c_len, int w_len);
@@ -290,6 +289,19 @@ struct Opt
   /* regex parser */
   struct permugex parser;
 };
+
+/* Maximum length of character seeds */
+#ifndef CSEED_MAXLEN
+# define CSEED_MAXLEN 256
+#endif
+/* Maximum length of a word seed */
+#ifndef WSEED_MAXLEN
+# define WSEED_MAXLEN 511 // 1 byte for null-byte
+#endif
+/* Maximum count of words in a seed */
+#ifndef WSEED_MAXCNT
+# define WSEED_MAXCNT 10000
+#endif
 
 /**
  *  Appends characters from @src to @s->cseed, until \0
@@ -674,10 +686,6 @@ wseed_uniappd (const struct Opt *opt,
 void
 wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
 {
-  size_t __len;
-  char *__line = NULL;
-  int empty_prevline = 0;
-
   if (!f || ferror (f) || feof (f))
     {
       if (f == stdin)
@@ -706,34 +714,33 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
         fprintf (stderr, "Reading words until EOF:\n");
     }
 
+  char *line = malloc (WSEED_MAXLEN);
   while (1)
     {
-      if (getline (&__line, &__len, f) < 0)
+      if (fscanf (f, "%" STR (WSEED_MAXLEN) "s",  line) < 0)
         break;
-      if (__line && *__line &&
-          __line[0] != '#') // commented line
+
+      size_t len;
+      /* ignore empty and commented lines */
+      if ((len = strlen (line)) > 0 && line[0] != '#')
         {
-          int idx = strlen (__line) - 1;
-          for (; idx >= 0; --idx)
+          /* remove non-printable characters */
+          size_t idx = 0;
+          for (; idx < len; ++idx)
             {
-              /* remove non-printable characters */
-              if (__line[idx] > 0 && __line[idx] < 0x20)
-                __line[idx] = '\0';
-              else
-                break;
+              if (line[idx] > 0 && line[idx] < 0x20)
+                {
+                  line[idx] = '\0';
+                  break;
+                }
             }
-          if (idx >= 0)
+          if (idx)
             {
-              if (empty_prevline && Strcmp (__line, "EOF"))
-                break;
-              wseed_uniappd (opt, s, __line);
+              wseed_uniappd (opt, s, line);
             }
-          else
-            empty_prevline = 1;
         }
     }
-  if (__line)
-    free (__line);
+    free (line);
 }
 
 /**
