@@ -144,7 +144,8 @@
 #define DEF_DEPTH 3
 
 #undef STR
-#define STR(var) #var
+#define __STR(var) #var
+#define STR(var) __STR (var)
 
 #ifdef _DEBUG /* debug macro */
 #undef dprintf
