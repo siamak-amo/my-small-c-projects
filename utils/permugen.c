@@ -723,7 +723,7 @@ wseed_fileappd (const struct Opt *opt, struct Seed *s, FILE *f)
             {
               if (empty_prevline && Strcmp (__line, "EOF"))
                 break;
-              wseed_uniappd (opt, s, strdup (__line));
+              wseed_uniappd (opt, s, __line);
             }
           else
             empty_prevline = 1;
@@ -1028,7 +1028,11 @@ free_seed (struct Seed *s)
   if (s->cseed)
     free (s->cseed);
   if (s->wseed)
-    da_free (s->wseed);
+    {
+      for (da_idx i=0; i < da_sizeof (s->wseed); ++i)
+        free (s->wseed[i]);
+      da_free (s->wseed);
+    }
 }
 
 static inline struct Seed *
@@ -1374,7 +1378,7 @@ pparse_wseed_regex (struct Opt *opt, struct Seed *dst_seed)
       if (tmp->type == TK_KEYWORD)
         {
           /* This must be freed in free_seed function */
-          wseed_uniappd (opt, dst_seed, strdup (tmp->cstr));
+          wseed_uniappd (opt, dst_seed, tmp->cstr);
         }
     }
 }
