@@ -307,11 +307,11 @@ int cseed_uniappd (struct Seed *s, const char *src, int len);
 void wseed_uniappd (const struct Opt *, struct Seed *s,
                     const char *str_word);
 /**
- *  Using wseed_uniappd function, appends a word list from @f
+ *  Using wseed_uniappd function, appends words from @f
  *  to the seed @s, line by line, and ignores commented lines by `#`
  */
 void
-wseed_fileappd (const struct Opt *, struct Seed *s, FILE *f);
+wseed_file_uniappd (const struct Opt *, struct Seed *s, FILE *f);
 /**
  *  Parses the @input regex and stores the result in @s
  *  @input: "(prefix) [Cseed] {Wseed} /path/to/file (suffix)"
@@ -672,7 +672,7 @@ wseed_uniappd (const struct Opt *opt,
 }
 
 void
-wseed_fileappd (const struct Opt *opt, struct Seed *s, FILE *f)
+wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
 {
   size_t __len;
   char *__line = NULL;
@@ -870,7 +870,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
               wseed_f = safe_fopen (optarg, "r");
 
             /* read from file and append to wseed */
-            wseed_fileappd (opt, opt->global_seeds, wseed_f);
+            wseed_file_uniappd (opt, opt->global_seeds, wseed_f);
 
             if (wseed_f != stdin)
               fclose (wseed_f);
@@ -1091,9 +1091,7 @@ cleanup (int, void *__opt)
   TOKEN_FREE (&opt->parser.special_tk);
 #endif /* _CLEANUP_NO_FREE */
 
-  /**
-   *  Close any open file descriptors
-   */
+  /* Close all open file descriptors */
   if (opt->outf && opt->outf != stdout)
     {
       fflush (opt->outf);
@@ -1490,7 +1488,7 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
           FILE *f = safe_fopen (path, "r");
           if (f)
             {
-              wseed_fileappd (opt, dst_seed, f);
+              wseed_file_uniappd (opt, dst_seed, f);
               if (f != stdin)
                 fclose (f);
             }
@@ -1532,7 +1530,7 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
           if (tmp->id == PUNC_DASH)
             {
               /* Read from stdin */
-              wseed_fileappd (opt, dst_seed, stdin);
+              wseed_file_uniappd (opt, dst_seed, stdin);
             }
           break;
 
