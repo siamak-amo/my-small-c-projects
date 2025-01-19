@@ -96,6 +96,8 @@
  *     define `_NO_BIO`
  *  - To change the default buffered IO buffer capacity,
  *     define `_BMAX="(1024 * 1)"` (=1024 bytes)
+ *  - To skip freeing allocated memory before quitting
+ *     define `_CLEANUP_NO_FREE`
  **/
 #include <stdio.h>
 #include <stdlib.h>
@@ -1057,6 +1059,8 @@ void
 cleanup (int, void *__opt)
 {
   struct Opt *opt = (struct Opt *)__opt;
+
+#ifndef _CLEANUP_NO_FREE
   /**
    * `global_seed` is not a dynamic array.
    *  It should have been allocated using malloc
@@ -1084,6 +1088,7 @@ cleanup (int, void *__opt)
    */
   TOKEN_FREE (&opt->parser.general_tk);
   TOKEN_FREE (&opt->parser.special_tk);
+#endif /* _CLEANUP_NO_FREE */
 
   /**
    *  Close any open file descriptors
