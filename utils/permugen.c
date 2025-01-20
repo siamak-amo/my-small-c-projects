@@ -26,8 +26,8 @@
  *       For more details, see usage by `-h` option:
  *       $ ./permugen -h
  *
- *  Usage Examples:
- *  * Normal mode:
+ * Usage Examples:
+ * - Normal mode:
  *     Alphanumeric permutations:
  *     $ permugen                                  # a-z and 0-9 of length 3
  *     $ permugen -s "\d"                          # only digits 0-9
@@ -59,21 +59,21 @@
  *     $ permugen --pref "www." --suff ".com"
  *
  *
- *  * Regular Mode
- *    To manually specify components of the output
+ * - Regular Mode (cartesian product)
+ *   To manually specify components of the permutations
  *     Basic Examples:
- *     - Permutations of {0,1,2}x{AA,BB} (cartesian product)
+ *     - Cartesian product of {0,1,2}x{AA,BB}
  *     $ permugen -r "[0-2]" "{AA,BB}"
  *
- *     - Permutations of {dev,prod}x{admin,<wordlist.txt>}
+ *     - {dev,prod}x{admin,<wordlist.txt>}
  *     $ permugen -r "{dev,prod}" "{admin} /path/to/wordlist.txt"
  *     - To also use `.` as separator
  *     $ permugen -p. -r "{dev,prod}" "{admin} /path/to/wordlist.txt"
  *
- *     - To Reuse previously provided seeds (\N where N>=1)
- *       Permutations of {dev,prod}x{2,3}x{2,3}
+ *     - To reuse previously provided seeds (\N starting from 1)
+ *       {dev,prod}x{2,3}x{2,3}
  *     $ permugen -r "{dev,prod}" "[2-3]" "\2"
- *     - Permutation of {dev,prod}x{www,dev,prod} (dot separated)
+ *     - {dev,prod}x{www,dev,prod} (dot separated)
  *     $ permugen -p. -r "{dev,prod}" "{www} \1"
  *
  *     Custom prefix and suffix:
@@ -89,11 +89,11 @@
  *      -o permugen permugen.c
  *
  * Options:
- *  - To enable printing of debug information,
+ *  - To enable printing of debug information
  *     define `_DEBUG`
  *  - To disable buffered IO (which reduces performance)
  *     define `_NO_BIO`
- *  - To change the default buffered IO buffer capacity,
+ *  - To change the default buffered IO buffer capacity
  *     define `_BMAX="(1024 * 1)"` (=1024 bytes)
  *  - To skip freeing allocated memory before quitting
  *     define `_CLEANUP_NO_FREE`
