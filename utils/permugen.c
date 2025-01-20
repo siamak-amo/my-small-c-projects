@@ -407,6 +407,7 @@ ARGUMENTS:\n\
                       lines with '#' will be ignored\n\
     `(pref) (suff)`:  (in regular mode) to add custom prefix and suffix\n\
                       for parenthesis, use: \\( and \\)  or  \\x28 and \\x29\n\
+                      the suffix will overwrite the separator if provided\n\
 \n\
     Examples:\n\
       to include a,b and 0,...,9 and also words `foo` and `bar`:\n\
