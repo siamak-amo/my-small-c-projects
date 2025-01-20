@@ -300,7 +300,9 @@ struct Opt
 #endif
 /* Maximum count of words in a seed */
 #ifndef WSEED_MAXCNT
-# define WSEED_MAXCNT 10000
+/* as our dynamic array grows by a factor of 2,
+   it is better for this number to be a power of 2 */
+# define WSEED_MAXCNT 8192
 #endif
 
 /**
@@ -308,6 +310,7 @@ struct Opt
  *  or !IS_ASCII_PR, returns the number of bytes written
  *  @s->cseed will have unique chars after this call, if it did before
  *  Pass `len = -1` to stop only at the null byte
+ *
  *  Returns the index of the last non-zero byte in @src
  */
 int cseed_uniappd (struct Seed *s, const char *src, int len);
@@ -315,9 +318,11 @@ int cseed_uniappd (struct Seed *s, const char *src, int len);
  *  Appends a copy of @str_word (using strdup malloc)
  *  to @s->wseed after unescaping it (if not disabled)
  *  @s->wseed will have unique words after this call, if it did before
+ *
+ *  Returns -1 on error, 1 on match found, 0 on a successful appending
  */
-void wseed_uniappd (const struct Opt *, struct Seed *s,
-                    const char *str_word);
+int wseed_uniappd (const struct Opt *, struct Seed *s,
+                   const char *str_word);
 /**
  *  Using wseed_uniappd function, appends words from @f
  *  to the seed @s, line by line, and ignores commented lines by `#`
@@ -662,25 +667,30 @@ cseed_uniappd (struct Seed *s, const char *src, int len)
   return (rw > 0) ? rw - 1 : 0;
 }
 
-void
+int
 wseed_uniappd (const struct Opt *opt,
                struct Seed *s, const char *str_word)
 {
   if (!s->wseed || !str_word)
-    return;
+    return -1;
 
   char *word = strdup (str_word);
   if (!opt->escape_disabled)
     unescape (word);
-  for (da_idx i=0; i < da_sizeof (s->wseed); ++i)
+
+  da_idx len = da_sizeof (s->wseed);
+  if (len >= WSEED_MAXCNT)
+    return -1;
+  for (da_idx i=0; i < len; ++i)
     {
       if (Strcmp (s->wseed[i], word))
         {
           free (word);
-          return;
+          return 1;
         }
     }
   da_appd (s->wseed, word);
+  return 0;
 }
 
 void
@@ -736,7 +746,8 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
             }
           if (idx)
             {
-              wseed_uniappd (opt, s, line);
+              if (wseed_uniappd (opt, s, line) < 0)
+                break;
             }
         }
     }
