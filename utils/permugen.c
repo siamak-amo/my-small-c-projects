@@ -118,7 +118,7 @@
  **
  **   - buffered_io.h:  Performance improvement for write syscalls
  **   - unescape.h:     Handles backslash interpretation
- **   - dyna.h:         Implements dynamic arrays
+ **   - dyna.h:         Dynamic array implementation
  **   - mini-lexer.c:   Regex parsing
  **/
 #ifndef _NO_BIO
@@ -139,7 +139,7 @@
 #define ML_IMPLEMENTATION
 #include "mini-lexer.c"
 
-/* default permutaiton depth (normal mode) */
+/* Default permutaiton depth (normal mode) */
 #define DEF_DEPTH 3
 
 #undef STR
@@ -244,11 +244,9 @@ static const Milexer ML = {
 };
 
 /**
- *  Permugen Regex Parser
- *  General parsers handle the input regex from
- *  the `-r` and `-s` arguments,
- *  while special parsers process the contents
- *  inside them (e.g. inside [a-z])
+ *  Permugen Regex Parser (arguments of '-r' and '-s')
+ *  General source and token are used for parsing the
+ *  outer part, while special ones are used for the interior
  */
 struct permugex
 {
