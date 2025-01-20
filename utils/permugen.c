@@ -1408,9 +1408,8 @@ static inline void
 pparse_format_regex (struct Opt *opt, struct Seed *dst_seed,
                      char *input)
 {
-  if (!input || *input == '\0')
+  if (!input)
     return;
-
   if (!opt->escape_disabled)
     unescape (input);
 
