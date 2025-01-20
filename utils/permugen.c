@@ -571,7 +571,14 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
   if (i < depth)
     {
       if (opt->separator)
-        Pfputs (opt->separator, opt);
+        {
+          /**
+           *  Print the separator only when the current seed
+           *  has no suffix (suffix must overwrite the separator)
+           */
+          if (!current_seed->suff || *current_seed->suff == '\0')
+            Pfputs (opt->separator, opt);
+        }
       goto Print_Loop;
     }
   /* End of Printing the current permutation */
