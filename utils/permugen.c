@@ -1274,8 +1274,8 @@ static inline void
 pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
                    const char *input);
 /**
- *  Format (prefix & suffix) parser (only in regular mode)
- *  inside: `(...)`
+ *  Provides prefix and suffix of @dst_seed using strdup,
+ *  inside: `(...)` (only in regular mode)
  *  The first call sets @dst_seed->pref (prefix) and
  *  the second call sets @dst_seed->suff (suffix)
  */
