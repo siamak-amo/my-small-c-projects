@@ -1348,13 +1348,19 @@ pparse_cseed_regex (struct Opt *opt, struct Seed *dst_seed)
       if (!opt->escape_disabled)
         unescape (tmp->cstr);
       if (tmp->type == TK_PUNCS && tmp->id == PUNC_DASH)
-        dash++;
+        {
+          dash++;
+        }
       else if (tmp->type == TK_KEYWORD)
         {
           char *p = tmp->cstr;
           if (dash == 0)
             {
-            got_section:
+              /**
+               *  Case: a simple section with no dash involved
+               *  This appends characters of @p to dst_seed->cseed
+               */
+            simple_section:
               if (*p)
                 {
                   if (!opt->escape_disabled)
@@ -1363,30 +1369,40 @@ pparse_cseed_regex (struct Opt *opt, struct Seed *dst_seed)
                   lastc = p[len];
                 }
             }
-          else
+          else /* dash >= 1 */
             {
-              if (tmp->cstr[0] && lastc)
+              if (*tmp->cstr && lastc)
                 {
-                  for (char c = lastc; c <= *tmp->cstr; ++c)
-                    cseed_uniappd (dst_seed, &c, 1);
+                  /**
+                   *  Case: range of characters
+                   *  from @lastc, to @tmp->cstr[0]
+                   */
+                  if (lastc < *tmp->cstr)
+                    {
+                      /* valid range, append the range */
+                      p = tmp->cstr + 1;
+                      for (char c = lastc; c <= *tmp->cstr; ++c)
+                        cseed_uniappd (dst_seed, &c, 1);
+                    }
+                  else /* invalid range, treat as a simple section */
+                    p = tmp->cstr;
                   dash--;
                   lastc = 0;
-                  p = tmp->cstr + 1;
-                  goto got_section;
+                  /* the rest of tmp->cstr is a simple section */
+                  goto simple_section;
                 }
               else
                 {
+                  /* Extra dash and then, a simple section */
                   p = tmp->cstr;
-                  goto got_section;
+                  goto simple_section;
                 }
             }
         }
     }
-  if (dash)
-    {
-      /* Extra dash means the dash character itself */
-      cseed_uniappd (dst_seed, "-", 1);
-    }
+  /* Extra dash means the dash character itself */
+  if (dash > 0)
+    cseed_uniappd (dst_seed, "-", 1);
 }
 
 static inline void
