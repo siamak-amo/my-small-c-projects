@@ -163,13 +163,13 @@
  *  Ex: to print `int arr[7]`:  `printd_arr (arr, "%d", 7);`
  *  Output format: 'arr[.7] = {0,1, ..., 6}'
  */
-#  define printd_arr(arr, T, len)               \
+#  define printd_arr(arr, T, len) do {          \
   if (len > 0 && arr) {                         \
     dprintf (#arr"[.%d] = {", len);             \
     printd_arr__H (arr, T, len, ", ", "}\n");   \
   } else {                                      \
     dprintf (#arr" is empty\n");                \
-  }
+  }} while (0)
 #else
 #  undef dprintf
 #  define dprintf(format, ...) (void)(format)
@@ -246,7 +246,7 @@ static const Milexer ML = {
 /**
  *  Permugen Regex Parser
  *  General parsers handle the input regex from
- *  the -r and -s arguments,
+ *  the `-r` and `-s` arguments,
  *  while special parsers process the contents
  *  inside them (e.g. inside [a-z])
  */
