@@ -21,11 +21,10 @@
  *  Permugen, permutation generator utility
  *  Generates customizable permutations from specified seeds
  *
- *  Usage:  ./permugen [OPTIONS] [SEED_CONF]
+ *  Usage:  ./permugen [OPTIONS] -s [SEED_CONF]
  *          ./permugen [OPTIONS] -r (SEED_CONF)...
- *    see help function by `-h` option, for more details:
- *    $ ./permugen -h
- *
+ *       For more details, see usage by `-h` option:
+ *       $ ./permugen -h
  *
  *  Usage Examples:
  *  * Normal mode:
@@ -354,7 +353,7 @@ usage (int ecode)
 %s %s, permutation generator utility\n\n\
 Usage:\n\
   normal mode: any possible permutation of given seed(s)\n\
-      permugen [OPTIONS] [SEED_CONF]\n\n\
+      permugen [OPTIONS] -s [SEED_CONF]\n\n\
   regular mode: to specify seed(s) of each component manually\n\
   generated permutations will have exactly N components\n\
       permugen -r (SEED_CONF)... [OPTIONS]\n\
