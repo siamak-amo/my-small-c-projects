@@ -68,12 +68,12 @@ main (int argc, char **argv)
 
             case 'v':
             VERSION_OPT:
-              warnf ("non-standard base64 program v%s", Version);
+              warnln ("non-standard base64 program v%s", Version);
               goto End_of_Main;
 
             default:
             INVALID_OPT:
-              warnf ("invalid option '%c' was ignored", argv[0][1]);
+              warnln ("invalid option '%c' was ignored", argv[0][1]);
             }
         }
       else
@@ -82,13 +82,13 @@ main (int argc, char **argv)
             {
               FILE *f = fopen (*argv, "r");
               if (!f)
-                warnf ("%s: %s", *argv, strerror (errno));
+                warnln ("%s: %s", *argv, strerror (errno));
               else
                 infd = fileno (f);
             }
           else
             {
-              warnf ("extra operand '%s'", *argv);
+              warnln ("extra operand '%s'", *argv);
             }
         }
     }
@@ -113,12 +113,12 @@ main (int argc, char **argv)
         break;
 
       case INVALID_B64:
-        warnf ("invalid input");
+        warnln ("invalid input");
         break;
 
       case EOBUFFER_B64:
       default:
-        warnf ("internal error");
+        warnln ("internal error");
         break;
       }
   }

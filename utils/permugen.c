@@ -177,7 +177,7 @@
 #endif /* _DEBUG */
 
 #define warnfun(format, ...) \
-  warnf ("%s failed -- "format, __func__, ##__VA_ARGS__)
+  warnln ("%s failed -- "format, __func__, ##__VA_ARGS__)
 
 struct char_seed
 {
@@ -707,13 +707,13 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
         {
           if (freopen ("/dev/tty", "r", stdin) == NULL)
             {
-              warnf ("could not open stdin -- %s", strerror (errno));
+              warnln ("could not open stdin -- %s", strerror (errno));
               return;
             }
         }
       else
         {
-          warnf ("could not read from file -- %s", strerror (errno));
+          warnln ("could not read from file -- %s", strerror (errno));
           return;
         }
     }
@@ -770,12 +770,12 @@ safe_fopen (const char *restrict pathname, const char *restrict mode)
   FILE *tmp;
   if (!pathname || !mode)
     {
-      warnf ("invalud filename");
+      warnln ("invalud filename");
       return NULL;
     }
   if ((tmp = fopen (pathname, mode)) == NULL)
     {
-      warnf ("could not open file %s:%s", mode, pathname);
+      warnln ("could not open file %s:%s", mode, pathname);
     }
   return tmp;
 }
@@ -827,7 +827,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
   NOT_IN_REG_MODE (option, break)
 #define NOT_IN_REG_MODE(option, action)                                 \
   if (opt->_regular_mode) {                                             \
-    warnf ("wrong regular mode option (%s) was ignored", option);       \
+    warnln ("wrong regular mode option (%s) was ignored", option);       \
     action;                                                             \
   }
 
@@ -955,7 +955,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                     parse_seed_regex (opt, tmp, argv[i]);
                     if (tmp->cseed_len == 0 && da_sizeof (tmp->wseed) == 0)
                       {
-                        warnf ("empty regular seed configuration was ignored");
+                        warnln ("empty regular seed configuration was ignored");
                         free_seed (tmp);
                       }
                     else
@@ -1158,7 +1158,7 @@ main (int argc, char **argv)
         /* Regular mode, _regular_mode = 1 + length of reg_seeds */
         if (opt._regular_mode == 1)
           {
-            warnf ("empty regular permutation");
+            warnln ("empty regular permutation");
             return EXIT_FAILURE;
           }
       }
@@ -1168,7 +1168,7 @@ main (int argc, char **argv)
         if (opt.global_seeds->cseed_len == 0 &&
             da_sizeof (opt.global_seeds->wseed) == 0)
           {
-            warnf ("empty permutation");
+            warnln ("empty permutation");
             return EXIT_FAILURE;
           }
       }
@@ -1440,7 +1440,7 @@ pparse_format_regex (struct Opt *opt, struct Seed *dst_seed,
   else if (dst_seed->suff == NULL)
     dst_seed->suff = strdup (input);
   else
-    warnf ("extra format was ignored");
+    warnln ("extra format was ignored");
 }
 
 static inline void
@@ -1480,11 +1480,11 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
               {
                 /* Invalid index */
                 if (n == opt->_regular_mode - 1)
-                  warnf ("circular append was ignored");
+                  warnln ("circular append was ignored");
                 else if (n >= opt->_regular_mode)
-                  warnf ("seed index %d is out of bound", n+1);
+                  warnln ("seed index %d is out of bound", n+1);
                 else if (n < 0)
-                  warnf ("invalid seed index");
+                  warnln ("invalid seed index");
               }
             break;
           }
@@ -1511,7 +1511,7 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
             break;
 
           default:
-            warnf ("invalid shortcut \\%c was ignored", *input);
+            warnln ("invalid shortcut \\%c was ignored", *input);
           }
       }
       break;

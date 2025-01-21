@@ -17,7 +17,10 @@ const char *program_name = NULL;
 
 #undef warnf
 #define warnf(format, ...) \
-  fprintf (stderr, "%s: "format"\n", program_name, ##__VA_ARGS__)
+  fprintf (stderr, "%s: "format, program_name, ##__VA_ARGS__)
+#undef warnln
+#define warnln(format, ...) \
+  warnf (format "\n", ##__VA_ARGS__)
 
 /**
  *  The usage function prints usage of your program

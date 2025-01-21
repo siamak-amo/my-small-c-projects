@@ -67,7 +67,7 @@ out_open (const char *out_pathname)
   int fd = open (out_pathname, out_flags, out_mode);
   if (fd == -1)
     {
-      warnf ("%s: %s", out_pathname, strerror (errno));
+      warnln ("%s: %s", out_pathname, strerror (errno));
       return FOPEN_ERR;
     }
   da_appd (out_fds, fd);
@@ -109,7 +109,7 @@ parse_args (int argc, char **argv)
 
             default:
             Invalid_Opt:
-              warnf ("invalid option -- %c", opt);
+              warnln ("invalid option -- %c", opt);
               return OPT_ERR;
             }
         }
@@ -196,7 +196,7 @@ main (int argc, char **argv)
               ssize_t _w = write (fd, buffer, _r);
               if (_w < 0 || _w != _r)
                 {
-                  warnf ("write error -- %s", strerror (errno));
+                  warnln ("write error -- %s", strerror (errno));
                   goto End_of_Main;
                 }
             }

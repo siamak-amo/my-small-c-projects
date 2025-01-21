@@ -152,12 +152,12 @@ safe_open (const char *restrict pathname, const char *restrict mode)
   FILE *f;
   if (!pathname || !mode)
     {
-      warnf ("invalud filename");
+      warnln ("invalud filename");
       return -1;
     }
   if ((f = fopen (pathname, mode)) == NULL)
     {
-      warnf ("could not open file -- (%s:%s)", mode, pathname);
+      warnln ("could not open file -- (%s:%s)", mode, pathname);
       return -1;
     }
   return fileno (f);
@@ -264,7 +264,7 @@ main (int argc, char **argv)
 
   if (infd == ofd)
     {
-      warnf ("output file was changed to stdout");
+      warnln ("output file was changed to stdout");
       close (ofd);
       ofd = STDOUT_FILENO;
     }
