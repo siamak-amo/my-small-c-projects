@@ -159,17 +159,17 @@ typedef struct
 } dyna_t;
 
 
-/* internal __offsetof macro, to give offset of @member in struct @T */
-#define __offsetof(T, member) ((size_t)((T *)(0))->member)
+/* internal __OFFSETOF macro, to give offset of @member in struct @T */
+#define __OFFSETOF(T, member) ((size_t)((T *)(0))->member)
 
 /** internal container_of macro
  *  users don't use this macro directly
  *  this macro, gives a pointer to the 'parent'
  *  struct of @arr the array pointer
  */
-#define __da_containerof(arr_ptr) ({                    \
-      const char *__ptr = (const char *)(arr_ptr);      \
-      (dyna_t *)(__ptr - __offsetof (dyna_t, arr));     \
+#define __DA_CONTAINEROF(arr_ptr) ({                      \
+      const char *__ptr__ = (const char *)(arr_ptr);      \
+      (dyna_t *)(__ptr__ - __OFFSETOF (dyna_t, arr));     \
     })
 
 /**
@@ -197,9 +197,9 @@ DADEFF void * __da_dup (void **);
 
 // to get length and capacity of @arr
 #define da_sizeof(arr)                                  \
-  (DA_NNULL (arr) ? __da_containerof (arr)->size : 0)
+  (DA_NNULL (arr) ? __DA_CONTAINEROF (arr)->size : 0)
 #define da_capof(arr) \
-  (DA_NNULL (arr) ? __da_containerof (arr)->cap : 0)
+  (DA_NNULL (arr) ? __DA_CONTAINEROF (arr)->cap : 0)
 
 // gives how many cells left until the next reallocation (at overflow)
 #define da_leftof(arr) \
@@ -290,7 +290,7 @@ __da_appd (void **arr)
   dyna_t *da;
   size_t new_size;
 
-  if (!(da = __da_containerof (*arr)))
+  if (!(da = __DA_CONTAINEROF (*arr)))
     return -1;
 
   if (da->size >= da->cap)
@@ -328,7 +328,7 @@ __da_funappd (void **arr, da_sidx cell_bytes)
 DADEFF void *
 __da_dup (void **arr)
 {
-  dyna_t *da = __da_containerof (*arr);
+  dyna_t *da = __DA_CONTAINEROF (*arr);
   size_t lenof_da = da->size * da->cell_bytes + sizeof (dyna_t);
   dyna_t *new_da = malloc (lenof_da);
   memcpy (new_da, da, lenof_da);
