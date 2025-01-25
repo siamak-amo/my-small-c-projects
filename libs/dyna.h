@@ -188,11 +188,11 @@ DADEFF void * __da_dup (void **);
  *  to be used by users
  */
 // to free dynamic array @arr
-#define da_free(arr) do {                       \
-    if (DA_NNULL (arr)) {                       \
-      dyna_t *__d = __da_containerof (arr);     \
-      da_dprintf ("destroying %p\n", __d);      \
-      dyna_free (__d);                          \
+#define da_free(arr) do {                          \
+    if (DA_NNULL (arr)) {                          \
+      dyna_t *__da__ = __DA_CONTAINEROF (arr);     \
+      da_dprintf ("destroying %p\n", __da__);      \
+      dyna_free (__da__);                          \
     }} while (0)
 
 // to get length and capacity of @arr
@@ -213,9 +213,9 @@ DADEFF void * __da_dup (void **);
  *    only use `da_xxx` macros to append to it or free it
  */
 #define da_new(T) da_newn (T, DA_INICAP)
-#define da_newn(T, n) ({                        \
-      dyna_t *__da = __mk_da (sizeof (T), n);   \
-      (T *)(__da->arr);                         \
+#define da_newn(T, n) ({                          \
+      dyna_t *__da__ = __mk_da (sizeof (T), n);   \
+      (T *)(__da__->arr);                         \
     })
 
 /**
@@ -230,20 +230,20 @@ DADEFF void * __da_dup (void **);
  *  @arr: the pointer that da_new has provided
  *  @val: value of type T, type of the array
  */
-#define da_appd(arr, val) do {                          \
-    da_sidx i;                                          \
-    if ((i = __da_appd ((void **)&arr)) != -1) {        \
-      arr[i] = val;                                     \
+#define da_appd(arr, val) do {                              \
+    da_sidx __da_idx__;                                     \
+    if ((__da_idx__ = __da_appd ((void **)&arr)) != -1) {   \
+      arr[__da_idx__] = val;                                \
     }} while (0)
 
 /**
  *  drop array
  *  only sets size of @arr to zero
  */
-#define da_drop(arr) do {                       \
-    if (DA_NNULL (arr)) {                       \
-      dyna_t *da = __da_containerof (arr);      \
-      da->size = 0;                             \
+#define da_drop(arr) do {                           \
+    if (DA_NNULL (arr)) {                           \
+      dyna_t *__da__ = __DA_CONTAINEROF (arr);      \
+      __da__->size = 0;                             \
     }} while (0)
 
 /**
@@ -255,9 +255,9 @@ DADEFF void * __da_dup (void **);
  *  of the primary array
  */
 #define da_funappd(arr, val) do {                       \
-    typeof (val) *__arr;                                \
-    if ((__arr = __da_funappd (arr, sizeof (val))))     \
-      *__arr = val;                                     \
+    typeof (val) *__arr__;                              \
+    if ((__arr__ = __da_funappd (arr, sizeof (val))))   \
+      *__arr__ = val;                                   \
   } while (0)
 
 
