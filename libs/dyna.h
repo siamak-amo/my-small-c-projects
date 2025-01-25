@@ -106,8 +106,10 @@
 
 /* array index types */
 #ifndef da_idx
-# define da_sidx int
 # define da_idx unsigned int
+#endif
+#ifndef da_sidx
+# define da_sidx int
 #endif
 
 
