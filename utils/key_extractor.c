@@ -52,6 +52,18 @@ static struct option const long_options[] =
   /* output append */
   {"oa",        required_argument, NULL, 'a'},
   {"oA",        required_argument, NULL, 'a'},
+  /* append extra delimiter */
+  {"add-delim", required_argument, NULL, 'd'},
+  {"ext-delim", required_argument, NULL, 'd'},
+  /* overwrite delimiters */
+  {"set-delim", required_argument, NULL, 'D'},
+  /* allow numbers and strings */
+  {"num",       no_argument,       NULL, 'n'},
+  {"nums",      no_argument,       NULL, 'n'},
+  {"numbers",   no_argument,       NULL, 'n'},
+  {"strings",   no_argument,       NULL, 's'},
+  {"str",       no_argument,       NULL, 's'},
+  {"full-str",  no_argument,       NULL, 'S'},
   {NULL,        0,                 NULL,  0 },
 };
 
@@ -98,12 +110,23 @@ static const char *Delimiters[] = {
   "\x7B\xFF",   /* after 'Z' */
 };
 
-int allow_numbers = false;
-int allow_strings = false;
+int kflags = 0;
 
-static const Milexer ML = {
+enum key_flags_t
+  {
+    DEFAULTS = 0,
+    /* also include numbers as token */
+    ALLOW_NUMBERS = 0x1,
+    /* also include strings */
+    ALLOW_STRINGS = 0x2,
+    FULL_STRINGS = 0x4,
+    /* user has provided additional delimiters */
+    EXT_DELIMS = 0x8,
+    OVERWRITE_DELIMS = 0x10,
+  };
+
+static Milexer ML = {
   .expression   = GEN_MKCFG (Expressions),
-  .delim_ranges = GEN_MKCFG (Delimiters),
 };
 
 typedef ssize_t (*loader) (int, void *, size_t);
@@ -172,7 +195,7 @@ int
 parse_args (int argc, char **argv)
 {
   int c;
-  const char *params = "+i:o:a:vhns";
+  const char *params = "+i:o:a:d:D:vhnsS";
   while (1)
     {
       c = getopt_long (argc, argv, params, long_options, NULL);
@@ -190,11 +213,22 @@ parse_args (int argc, char **argv)
           return -1;
 
         case 'n':
-          allow_numbers = true;
+          kflags |= ALLOW_NUMBERS;
           break;
 
         case 's':
-          allow_strings = true;
+          kflags |= ALLOW_STRINGS;
+          break;
+        case 'S':
+          kflags |= ALLOW_STRINGS;
+          kflags |= FULL_STRINGS;
+          break;
+
+        case 'd':
+          kflags |= EXT_DELIMS;
+          break;
+        case 'D':
+          kflags |= OVERWRITE_DELIMS;
           break;
 
         case 'i':
@@ -228,7 +262,7 @@ parse_args (int argc, char **argv)
 static inline int
 token_out (const char *cstr)
 {
-  if (allow_numbers)
+  if (kflags & ALLOW_NUMBERS)
     {
       Print (cstr);
       return 1;
@@ -269,6 +303,30 @@ main (int argc, char **argv)
       ofd = STDOUT_FILENO;
     }
 
+  /* Delimiters */
+  if ((kflags & EXT_DELIMS) || (kflags & OVERWRITE_DELIMS))
+    {
+      warnf ("Not implemented yet!");
+    }
+  else
+    {
+      /* no external delimiter */
+      ML.delim_ranges.exp = Delimiters;
+      ML.delim_ranges.len = GEN_LENOF (Delimiters);
+    }
+
+  /* Parsing flags */
+  int parse_flg;;
+  if (kflags & FULL_STRINGS)
+    {
+      parse_flg = PFLAG_DEFAULT;
+    }
+  else
+    {
+      /* get contents of strings */
+      parse_flg = PFLAG_INEXP;
+    }
+
   int buf_len = TOKEN_MAX_BUF_LEN;
   char *buf = malloc (buf_len);
   Milexer_Token tk = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN);
@@ -293,7 +351,7 @@ main (int argc, char **argv)
   int len;
   for (int ret = 0; !NEXT_SHOULD_END (ret); )
     {
-      ret = ml_next (&ML, &src, &tk, PFLAG_DEFAULT);
+      ret = ml_next (&ML, &src, &tk, parse_flg);
       switch (ret)
         {
         case NEXT_NEED_LOAD:
@@ -304,13 +362,13 @@ main (int argc, char **argv)
           break; 
  
         case NEXT_CHUNK:
-          if (allow_strings || tk.type == TK_KEYWORD)
+          if ((kflags & ALLOW_STRINGS) || tk.type == TK_KEYWORD)
             token_out (tk.cstr);
           break;
 
         case NEXT_MATCH:
         case NEXT_ZTERM:
-          if (allow_strings || tk.type == TK_KEYWORD)
+          if ((kflags & ALLOW_STRINGS) || tk.type == TK_KEYWORD)
             {
               if (token_out (tk.cstr))
                 Putln ();
