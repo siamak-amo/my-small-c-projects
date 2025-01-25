@@ -168,8 +168,12 @@ OPTIONS:\n\
      -i, --if          input file path\n\
      -o, --output      output file path\n\
      -a, --oA          output file path to append\n\
-     -s                include strings\n\
-     -n                include numbers\n\
+     -n, --nums        include numbers\n\
+     -s, --str         include inner strings\n\
+     -S, --full-str    include whole strings\n\
+     -d, --add-delim   to add extra delimiter(s)\n\
+                       Example:  `-d_ -d \"ad\"` means `_` and `a`,...,`d`\n\
+     -D                to overwrite the default delimiters\n\
 ");
 }
 
