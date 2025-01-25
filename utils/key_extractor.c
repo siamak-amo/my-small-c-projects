@@ -64,6 +64,7 @@ static struct option const long_options[] =
   {"strings",   no_argument,       NULL, 's'},
   {"str",       no_argument,       NULL, 's'},
   {"full-str",  no_argument,       NULL, 'S'},
+  {"no-str",    no_argument,       NULL, 'z'},
   {NULL,        0,                 NULL,  0 },
 };
 
@@ -124,9 +125,10 @@ enum key_flags_t
     /* also include strings */
     ALLOW_STRINGS = 0x2,
     FULL_STRINGS = 0x4,
+    NO_STRINGS = 0x8,
     /* user has provided additional delimiters */
-    EXT_DELIMS = 0x8,
-    OVERWRITE_DELIMS = 0x10,
+    EXT_DELIMS = 0x10,
+    OVERWRITE_DELIMS = 0x20,
   };
 
 static Milexer ML = {
@@ -169,6 +171,7 @@ OPTIONS:\n\
      -o, --output      output file path\n\
      -a, --oA          output file path to append\n\
      -n, --nums        include numbers\n\
+     -z, --no-str      treat strings as normal tokens\n\
      -s, --str         include inner strings\n\
      -S, --full-str    include whole strings\n\
      -d, --add-delim   to add extra delimiter(s)\n\
@@ -203,7 +206,7 @@ int
 parse_args (int argc, char **argv)
 {
   int c;
-  const char *params = "+i:o:a:d:DvhnsS";
+  const char *params = "+i:o:a:d:DvhnsSz";
   while (1)
     {
       c = getopt_long (argc, argv, params, long_options, NULL);
@@ -231,14 +234,13 @@ parse_args (int argc, char **argv)
           kflags |= ALLOW_STRINGS;
           kflags |= FULL_STRINGS;
           break;
+        case 'z':
+          kflags |= NO_STRINGS;
+          break;
 
         case 'd':
-          {
-            kflags |= EXT_DELIMS;
-            if (!Extra_Delims)
-              Extra_Delims = da_new (const char *);
-            da_appd (Extra_Delims, optarg);
-          }
+          kflags |= EXT_DELIMS;
+          da_appd (Extra_Delims, optarg);
           break;
 
         case 'D':
@@ -304,6 +306,7 @@ int
 main (int argc, char **argv)
 {
   set_program_name (*argv);
+  Extra_Delims = da_new (const char *);
   int ret = parse_args (argc, argv);
   if (ret > 0)
     return ret;
@@ -321,25 +324,35 @@ main (int argc, char **argv)
   if (kflags & OVERWRITE_DELIMS)
     {
       ML.delim_ranges.exp = Extra_Delims;
-      ML.delim_ranges.len = da_sizeof (Extra_Delims);
-    }
-  else if (kflags & EXT_DELIMS)
-    {
-      for (size_t i=0; i < GEN_LENOF (Delimiters); ++i)
-        {
-          da_appd (Extra_Delims, Delimiters[i]);
-        }
-
-      ML.delim_ranges.exp = Extra_Delims;
-      ML.delim_ranges.len = da_sizeof (Extra_Delims);
     }
   else
     {
-      /* no external delimiter */
-      ML.delim_ranges.exp = Delimiters;
-      ML.delim_ranges.len = GEN_LENOF (Delimiters);
+      for (size_t i=0; i < GEN_LENOF (Delimiters); ++i)
+        da_appd (Extra_Delims, Delimiters[i]);
+      ML.delim_ranges.exp = Extra_Delims;
     }
 
+  if (kflags & NO_STRINGS)
+    {
+      /**
+       *  When the NO_STRINGS flag is set, we must treat strings
+       *  as normal tokens, which means, Milexer should not presses
+       *  expressions, as they are responsible for parsing strings
+       */
+      ML.expression.len = 0;
+      ML.expression.exp = NULL;
+
+      /**
+       *  Append string all prefixes to Milexer delimiters
+       *  so, they will no appear in the output
+       */
+      for (size_t i=0; i < GEN_LENOF (Expressions); ++i)
+        da_appd (Extra_Delims, Expressions[i].begin);
+    }
+
+  /* Update the length of delimiter ranges */
+  ML.delim_ranges.len = da_sizeof (Extra_Delims);
+  
   /* Parsing flags */
   int parse_flg;
   if (kflags & FULL_STRINGS)
