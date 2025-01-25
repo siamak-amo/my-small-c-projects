@@ -67,6 +67,8 @@ static struct option const long_options[] =
   {NULL,        0,                 NULL,  0 },
 };
 
+#define DYNA_IMPLEMENTATION
+#include "dyna.h"
 
 #define TOKEN_MAX_BUF_LEN (512) // 0.5Kb
 #define ML_IMPLEMENTATION
@@ -109,6 +111,8 @@ static const char *Delimiters[] = {
   "\x60",       /* '`' */
   "\x7B\xFF",   /* after 'Z' */
 };
+/* Extra delimiters, dynamic array (using dyna.h) */
+static const char **Extra_Delims = NULL;
 
 int kflags = 0;
 
@@ -195,7 +199,7 @@ int
 parse_args (int argc, char **argv)
 {
   int c;
-  const char *params = "+i:o:a:d:D:vhnsS";
+  const char *params = "+i:o:a:d:DvhnsS";
   while (1)
     {
       c = getopt_long (argc, argv, params, long_options, NULL);
@@ -225,8 +229,14 @@ parse_args (int argc, char **argv)
           break;
 
         case 'd':
-          kflags |= EXT_DELIMS;
+          {
+            kflags |= EXT_DELIMS;
+            if (!Extra_Delims)
+              Extra_Delims = da_new (const char *);
+            da_appd (Extra_Delims, optarg);
+          }
           break;
+
         case 'D':
           kflags |= OVERWRITE_DELIMS;
           break;
@@ -304,9 +314,20 @@ main (int argc, char **argv)
     }
 
   /* Delimiters */
-  if ((kflags & EXT_DELIMS) || (kflags & OVERWRITE_DELIMS))
+  if (kflags & OVERWRITE_DELIMS)
     {
-      warnf ("Not implemented yet!");
+      ML.delim_ranges.exp = Extra_Delims;
+      ML.delim_ranges.len = da_sizeof (Extra_Delims);
+    }
+  else if (kflags & EXT_DELIMS)
+    {
+      for (size_t i=0; i < GEN_LENOF (Delimiters); ++i)
+        {
+          da_appd (Extra_Delims, Delimiters[i]);
+        }
+
+      ML.delim_ranges.exp = Extra_Delims;
+      ML.delim_ranges.len = da_sizeof (Extra_Delims);
     }
   else
     {
@@ -316,7 +337,7 @@ main (int argc, char **argv)
     }
 
   /* Parsing flags */
-  int parse_flg;;
+  int parse_flg;
   if (kflags & FULL_STRINGS)
     {
       parse_flg = PFLAG_DEFAULT;
