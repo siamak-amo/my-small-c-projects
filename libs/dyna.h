@@ -10,6 +10,13 @@
  *  #include <stdio.h>
  *  #include <stdlib.h>
  *
+ *  // Optionally, you can define these macros to determine
+ *  // how the dynamic array grows.
+ *  // In this example, capacity increases by DA_GFACT at each overflow
+ *  // By default, it grows exponentially by a factor of 2
+ *  #define DA_GFACT 8
+ *  #define DA_DO_GROW(cap) ((cap) += DA_GFACT)
+ *
  *  #define DYNA_IMPLEMENTATION
  *  #include "dyna.h"
  *
