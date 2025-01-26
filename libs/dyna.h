@@ -7,55 +7,77 @@
  *
  *  Usage:
  *  ```c
- *    #define DYNA_IMPLEMENTATION
- *    #include "dyna.h"
+ *  #include <stdio.h>
+ *  #include <stdlib.h>
  *
- *    int
- *    main (void)
- *    {
- *      // char array
- *      char *carr = da_new (char);
+ *  #define DYNA_IMPLEMENTATION
+ *  #include "dyna.h"
  *
- *      for (char c ='a'; c <= 'z'; ++c)
- *        da_appd (carr, c);
- *      da_appd (carr, '\0');
+ *  int
+ *  main (void)
+ *  {
+ *    // Character Array, with initial capacity 10
+ *    char *carr = da_newn (char, 10);
  *
- *      puts (carr); // must print ab...z
- *      da_free (carr);
+ *    for (char c ='a'; c <= 'z'; ++c)
+ *      da_appd (carr, c);
+ *    da_appd (carr, '\0');
  *
- *
- *      // C string array
- *      char **cstr = da_new (char *);
- *
- *      da_appd (cstr, "string0");
- *      da_appd (cstr, "string1");
- *      da_appd (cstr, "string2");
- *
- *      for (da_idx i=0; i < da_sizeof (cstr); ++i)
- *        printf ("str%lu: {%s}\n", i, cstr[i]);
- *
- *      da_free (cstr);
+ *    puts (carr); // must print ab...z
+ *    da_free (carr);
  *
  *
- *      // struct array
- *      struct data {
- *        int num;
- *      };
- *      struct data *arr = da_newn (struct data, 4);
+ *    // C string array
+ *    char **cstr = da_new (char *);
  *
- *      for (int i=0; i<7; ++i)
+ *    da_appd (cstr, "string0");
+ *    da_appd (cstr, "string1");
+ *    da_appd (cstr, "string2");
+ *
+ *    // Print & Free
+ *    for (da_idx i=0; i < da_sizeof (cstr); ++i)
+ *      printf ("str%lu: {%s}\n", i, cstr[i]);
+ *    da_free (cstr);
+ *
+ *
+ *    // Generic struct array
+ *    struct data {
+ *      int index;
+ *    };
+ *    struct data *arr = da_new (struct data);
+ *    // Copying local structs to @arr
+ *    for (int i=0; i<7; ++i)
  *      {
- *        struct data tmp = {i};
+ *        struct data tmp = {.index=i};
  *        da_appd (arr, tmp);
  *      }
  *
- *      for (int i=0; i<7; ++i)
- *        printf ("data[%i] - num: %d\n", i, arr[i].num);
+ *    // Print & Free
+ *    for (int i=0; i<7; ++i)
+ *      printf ("struct arr[%i] - index: %d\n", i, arr[i].index);
+ *    da_free (arr);
  *
- *      da_free (arr);
  *
- *      return 0;
- *    }
+ *    // Pointer Array
+ *    struct data **ptr_arr = da_new (struct data *);
+ *    // Allocate data and append
+ *    for (int i=0; i<7; ++i)
+ *      {
+ *        struct data *tmp = malloc (sizeof (struct data));
+ *        *tmp = (struct data){.index=i};
+ *        da_appd (ptr_arr, tmp);
+ *      }
+ *
+ *    // Print & Free
+ *    for (int i=0; i<7; ++i)
+ *      {
+ *        printf ("ptr_arr[%i] - index: %d\n", i, ptr_arr[i]->index);
+ *        free (ptr_arr[i]);
+ *      }
+ *    da_free (ptr_arr);
+ *
+ *    return 0;
+ *  }
  *  ```
  *
  *  Options:
