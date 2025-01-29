@@ -113,6 +113,26 @@
 #define CLI_NO_GETOPT /* we handle options ourselves */
 #include "clistd.h"
 
+/* Default permutaiton depth (normal mode) */
+#define DEF_DEPTH 3
+
+/* Maximum length of character seeds */
+#ifndef CSEED_MAXLEN
+# define CSEED_MAXLEN 256
+#endif
+
+/* Maximum length of a word seed */
+#ifndef WSEED_MAXLEN
+# define WSEED_MAXLEN 511 // 1 byte for null-byte
+#endif
+
+/* Maximum count of words in a seed */
+#ifndef WSEED_MAXCNT
+/* As our dynamic array grows by a factor of 2,
+   it's more efficient for the max count to be a power of 2 */
+# define WSEED_MAXCNT 8192
+#endif
+
 /**
  **  The following files are available in `../libs`:
  **
@@ -140,9 +160,6 @@
 #define TOKEN_MAX_BUF_LEN (WSEED_MAXLEN + 1)
 #define ML_IMPLEMENTATION
 #include "mini-lexer.c"
-
-/* Default permutaiton depth (normal mode) */
-#define DEF_DEPTH 3
 
 #undef STR
 #define __STR(var) #var
@@ -289,20 +306,6 @@ struct Opt
   struct permugex parser;
 };
 
-/* Maximum length of character seeds */
-#ifndef CSEED_MAXLEN
-# define CSEED_MAXLEN 256
-#endif
-/* Maximum length of a word seed */
-#ifndef WSEED_MAXLEN
-# define WSEED_MAXLEN 511 // 1 byte for null-byte
-#endif
-/* Maximum count of words in a seed */
-#ifndef WSEED_MAXCNT
-/* as our dynamic array grows by a factor of 2,
-   it is better for this number to be a power of 2 */
-# define WSEED_MAXCNT 8192
-#endif
 
 /**
  *  Appends characters from @src to @s->cseed, until \0
@@ -1420,9 +1423,14 @@ pparse_wseed_regex (struct Opt *opt, struct Seed *dst_seed)
       if (NEXT_SHOULD_LOAD (_ret))
         break;
 
+      /**
+       *  As the length of @tmp->cstr is >= to WSEED_MAXLEN,
+       *  we handle fragmentation (NEXT_CHUNK) as
+       *  if we have received a new wseed (each chunk)
+       */
       if (tmp->type == TK_KEYWORD)
         {
-          /* This must be freed in free_seed function */
+          /* This must be freed in the free_seed function */
           wseed_uniappd (opt, dst_seed, tmp->cstr);
         }
     }
