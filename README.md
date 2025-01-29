@@ -31,12 +31,9 @@ Data structure and Memory management
 ### dyna.h
 Generic dynamic array implementation
 
-dependency of: `permugen.c`
-
 
 ### leven.c
 Levenshtein Distance  
-dependency of: `codeM`
 
 
 ### buffered_io.h
@@ -44,13 +41,10 @@ It helps to buffer IO-required calls such as `putc` and `puts` to reduce the num
 
 Additionally, it's python C extension, `buffered_io_py.c` is available.
 
-dependency of: `permugen.c`, `tokenizeIt.c` and `tr_ng.c`
-
 
 ### unescape.h
 Interpreters backslash characters in the given input, both in-place and out-of-place
 
-dependency of: `permugen.c`
 
 
 ## Utils
