@@ -21,13 +21,11 @@
  *  Permugen, permutation generator utility
  *  Generates customizable permutations from specified seeds
  *
- *  Usage:  permugen [OPTIONS] -s [SEED_CONF]
- *          permugen [OPTIONS] -r (SEED_CONF)...
- *        For more details, see usage by `-h` option:
- *        $ permugen -h
+ * Usage:
+ *   For details, see help by `-h` option:
+ *     $ permugen -h
  *
- * Usage Examples:
- * - Normal mode:
+ *   Normal mode:  permugen [OPTIONS] -s [SEED_CONFIG]
  *     Alphanumeric permutations:
  *     $ permugen                                  # a-z and 0-9 of length 3
  *     $ permugen -s "\d"                          # only digits 0-9
@@ -59,8 +57,10 @@
  *     $ permugen --pref "www." --suff ".com"
  *
  *
- * - Regular Mode (cartesian product)
+ *   Regular Mode (cartesian product)
  *   To manually specify components of the permutations
+ *     permugen [OPTIONS] -r [SEED_CONFIG]...
+ *
  *     Basic Examples:
  *     - Cartesian product of {0,1,2}x{AA,BB}
  *     $ permugen -r "[0-2]" "{AA,BB}"
