@@ -146,7 +146,7 @@ main (int argc, char **argv)
   if ((ret = parse_args (argc, argv)) != 0)
     return ret;
   /* number of output files */
-  da_idx out_count = da_sizeof (out_fds);
+  size_t out_count = da_sizeof (out_fds);
 
   char *buffer = malloc (_BMAX);
   if (!buffer)
@@ -156,7 +156,7 @@ main (int argc, char **argv)
   debugf ("buffer length: %lu\n", _BMAX);
   debugf ("input fileno: %d\n", in_fd);
   debugf ("output fileno's: ");
-  for (da_idx i=0; i < out_count; ++i)
+  for (size_t i=0; i < out_count; ++i)
     fdebug ("%d ", out_fds[i]);
   fdebug ("\n");
   if (isatty (in_fd))
@@ -190,7 +190,7 @@ main (int argc, char **argv)
 #endif
           /* write on output file(s) */
           int fd;
-          for (da_idx i=0; i < out_count; ++i)
+          for (size_t i=0; i < out_count; ++i)
             {
               fd = out_fds[i];
               ssize_t _w = write (fd, buffer, _r);

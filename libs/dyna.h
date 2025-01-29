@@ -42,7 +42,7 @@
  *    da_appd (cstr, "string2");
  *
  *    // Print & Free
- *    for (da_idx i=0; i < da_sizeof (cstr); ++i)
+ *    for (size_t i=0; i < da_sizeof (cstr); ++i)
  *      printf ("str%lu: {%s}\n", i, cstr[i]);
  *    da_free (cstr);
  *
@@ -135,10 +135,8 @@
 
 /* array index types */
 #ifndef da_idx
-# define da_idx unsigned int
-#endif
-#ifndef da_sidx
-# define da_sidx int
+# define da_idx size_t
+# define da_sidx ssize_t
 #endif
 
 

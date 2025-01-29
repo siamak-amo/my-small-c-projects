@@ -683,10 +683,10 @@ wseed_uniappd (const struct Opt *opt,
   if (!opt->escape_disabled)
     unescape (word);
 
-  da_idx len = da_sizeof (s->wseed);
+  size_t len = da_sizeof (s->wseed);
   if (len >= WSEED_MAXCNT)
     return -1;
-  for (da_idx i=0; i < len; ++i)
+  for (size_t i=0; i < len; ++i)
     {
       if (Strcmp (s->wseed[i], word))
         {
@@ -1055,7 +1055,7 @@ free_seed (struct Seed *s)
     free (s->cseed);
   if (s->wseed)
     {
-      for (da_idx i=0; i < da_sizeof (s->wseed); ++i)
+      for (size_t i=0; i < da_sizeof (s->wseed); ++i)
         free (s->wseed[i]);
       da_free (s->wseed);
     }
@@ -1099,7 +1099,7 @@ cleanup (int, void *__opt)
    */
   if (opt->reg_seeds)
     {
-      for (da_idx i=0; i < da_sizeof (opt->reg_seeds); ++i)
+      for (size_t i=0; i < da_sizeof (opt->reg_seeds); ++i)
         {
           free_seed (opt->reg_seeds[i]);
           free (opt->reg_seeds[i]);
@@ -1189,10 +1189,10 @@ main (int argc, char **argv)
 
   if (opt._regular_mode)
     {
-      da_idx len = da_sizeof (opt.reg_seeds);
+      size_t len = da_sizeof (opt.reg_seeds);
       dprintf ("* regular mode\n");
       dprintf ("* %s[.%lu] = {\n", STR (opt.reg_seeds), (size_t)len);
-      for (da_idx i=0; i < len; ++i)
+      for (size_t i=0; i < len; ++i)
         {
           struct Seed *s = opt.reg_seeds[i];
           dprintf ("    %s[%d] = {\n      ", STR (opt.reg_seeds), i);
@@ -1471,7 +1471,7 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
                 cseed_uniappd (dst_seed,
                                _src->cseed, _src->cseed_len);
                 /* append wseeds */
-                for (da_idx i=0; i < da_sizeof(_src->wseed); ++i)
+                for (size_t i=0; i < da_sizeof(_src->wseed); ++i)
                   {
                     wseed_uniappd (opt, dst_seed, _src->wseed[i]);
                   }
