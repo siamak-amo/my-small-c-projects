@@ -655,9 +655,9 @@ cseed_uniappd (struct Seed *s, const char *src, int len)
       if (!IS_ASCII_PR (*src))
         goto END_OF_LOOP;
 
-      for (int __i = s->cseed_len - 1; __i >= 0; __i--)
+      for (int idx = s->cseed_len - 1; idx >= 0; idx--)
         {
-          if (*src == s->cseed[__i])
+          if (*src == s->cseed[idx])
             goto END_OF_LOOP;
         }
       s->cseed[s->cseed_len] = *src;
