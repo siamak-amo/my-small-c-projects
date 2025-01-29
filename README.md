@@ -36,6 +36,10 @@ Generic dynamic array implementation
 Levenshtein Distance  
 
 
+### mini-lexer.c
+A minimal, chunk based, language independent lexer.
+
+
 ### buffered_io.h
 It helps to buffer IO-required calls such as `putc` and `puts` to reduce the number of `write` syscalls, resulting in better performance.
 
@@ -53,9 +57,9 @@ Permutation Generator
 generates word lists for fuzzing based on some given seeds
 
 
-### tokenizeIt.c
+### key_extractor.c
 Text Tokenizer  
-helps to extract words (tokens) from the given input
+helps to extract words (tokens) from the given input (based on mini-lexer.c)
 
 could be used together with the permugen program to
 generate customized word lists
