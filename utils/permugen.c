@@ -135,7 +135,9 @@
 #define DYNA_IMPLEMENTATION
 #include "dyna.h"
 
-#define TOKEN_MAX_BUF_LEN 128 /* 129 bytes malloc */
+/* To prevent wseed fragmentation, this should be
+   bigger than wseed max length  */
+#define TOKEN_MAX_BUF_LEN (WSEED_MAXLEN + 1)
 #define ML_IMPLEMENTATION
 #include "mini-lexer.c"
 
@@ -729,7 +731,7 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
         fprintf (stderr, "Reading words until EOF:\n");
     }
 
-  char *line = malloc (WSEED_MAXLEN);
+  char *line = malloc (WSEED_MAXLEN + 1);
   while (1)
     {
       if (fscanf (f, "%" STR (WSEED_MAXLEN) "s",  line) < 0)
