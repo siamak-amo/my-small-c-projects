@@ -263,8 +263,8 @@ static const Milexer ML = {
 
 /**
  *  Permugen Regex Parser (arguments of '-r' and '-s')
- *  General source and token are used for parsing the
- *  outer part, while special ones are used for the interior
+ *  general_{src,tk}: for parsing arguments themselves
+ *  special_{src,tk}: when contents need parsing (like '{A,B}')
  */
 struct permugex
 {
