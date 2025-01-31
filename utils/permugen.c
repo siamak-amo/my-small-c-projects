@@ -269,10 +269,8 @@ static const Milexer ML = {
 struct permugex
 {
   const Milexer *ml;
-  /* input source */
-  Milexer_Slice general_src, special_src;
-  /* result tokens */
-  Milexer_Token general_tk, special_tk;
+  Milexer_Slice general_src, special_src; /* input sources */
+  Milexer_Token general_tk, special_tk;   /* result tokens */
 };
 
 /* Permugen's main configuration */
@@ -281,7 +279,7 @@ struct Opt
   /* General configuration */
   int escape_disabled; /* to disable backslash interpretation */
   int from_depth; /* min depth */
-  int to_depth; /* max depth */
+  int to_depth;   /* max depth */
 
   /* Seed Configuration (Normal mode) */
   struct Seed *global_seeds;
@@ -304,7 +302,6 @@ struct Opt
   /* regex parser */
   struct permugex parser;
 };
-
 
 /**
  *  Appends characters from @src to @s->cseed, until \0
@@ -339,12 +336,14 @@ wseed_file_uniappd (const struct Opt *, struct Seed *s, FILE *f);
 void parse_seed_regex (struct Opt *, struct Seed *s,
                        const char *input);
 
-/* Internal */
+/* Internal Macros */
 #define Strcmp(s1, s2)                          \
   ((s1) != NULL && (s2) != NULL &&              \
    strcmp ((s1), (s2)) == 0)
+
 #undef IS_NUMBER
 #define IS_NUMBER(c) (c >= '0' && c <= '9')
+
 /* ASCII-printable, Non-white-space */
 #define IS_ASCII_PR(c) (c >= 0x20 && c <= 0x7E)
 
@@ -631,6 +630,7 @@ regular_perm (struct Opt *opt)
 {
   int ret = 0;
   struct Seed *s = NULL;
+
   /* count of seed configurations */
   int seeds_count = (int) da_sizeof (opt->reg_seeds);
   /* len(cseed)+len(wseed) of each configuration */
@@ -1157,6 +1157,7 @@ main (int argc, char **argv)
     if (init_opt (argc, argv, &opt))
       return EXIT_FAILURE;
 
+    /* Generate permutations */
     if (opt._regular_mode > 0)
       {
         /* Regular mode, _regular_mode = 1 + length of reg_seeds */
