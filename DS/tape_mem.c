@@ -1,70 +1,53 @@
-/* This file is part of my-small-c-projects <https://gitlab.com/SI.AMO/>
-
-  This program is free software: you can redistribute it and/or modify it
-  under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License,
-  or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-  See the GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program. If not, see <https://www.gnu.org/licenses/>.
- */
-
-/**
- *  file: tape_mem.c
- *  created on: 24 Jun 2024
- *
- *  Tape like memory allocator
- *
- *  This library does not allocate the memory itself, and doing so
- *  is up to users so they can do it in a way they prefer
- *  This library does not include either stdlib or mmap
- *  Reallocating that memory is possible but it most likely makes
- *  all your pointers invalid, instead you may allocate a large amount
- *  of memory, and let your operation system handle it
- *
- *  Compilation:
- *    to compile the test program:
- *      cc -ggdb -Wall -Wextra -Werror \
- *         -D TAPE_MEM_IMPLEMENTATION  \
- *         -D TAPE_MEM_TEST \
- *         -o test.out tape_mem.c
- *
- *    to include in other files:
- *    ```c
- *    #include <stlib.h>
- *
- *    #define TAPE_MEM_IMPLEMENTATION
- *    #include "tape_mem.c"
- *
- *    int
- *    main (void)
- *    {
- *      DBuffer tmp = {0};
- *      Tape mem = new_tape (1 * 1024 * 1024); // 1G
- *
- *      // allocate memory in a way you prefer
- *      // large enough for your usage
- *      // it wont get consumed until you start using it
- *      mem.data = malloc (mem.cap);
- *
- *      // do something here
- *      // see the example in the test program
- *      tmp.len = 4;
- *      tmp.data = "One";
- *      tape_append (&mem, &tmp);
- *
- *      char *d = tape_get (1);
- *      DBuffer *db = bufferof (d);
- *      printf ("len: %lu, val: %s\n", db->len, d);
- *
- *      return 0;
- *    }
- *    ```
+/** file: tape_mem.c
+    created on: 24 Jun 2024
+  
+    Tape like memory allocator
+  
+    This library does not allocate the memory itself, and doing so
+    is up to users so they can do it in a way they prefer
+    This library does not include either stdlib or mmap
+    Reallocating that memory is possible but it most likely makes
+    all your pointers invalid, instead you may allocate a large amount
+    of memory, and let your operation system handle it
+  
+    Compilation:
+      to compile the test program:
+        cc -ggdb -Wall -Wextra -Werror \
+           -D TAPE_MEM_IMPLEMENTATION  \
+           -D TAPE_MEM_TEST \
+           -o test.out tape_mem.c
+  
+      to include in other files:
+      ```c
+      #include <stlib.h>
+  
+      #define TAPE_MEM_IMPLEMENTATION
+      #include "tape_mem.c"
+  
+      int
+      main (void)
+      {
+        DBuffer tmp = {0};
+        Tape mem = new_tape (1 * 1024 * 1024); // 1G
+  
+        // allocate memory in a way you prefer
+        // large enough for your usage
+        // it wont get consumed until you start using it
+        mem.data = malloc (mem.cap);
+  
+        // do something here
+        // see the example in the test program
+        tmp.len = 4;
+        tmp.data = "One";
+        tape_append (&mem, &tmp);
+  
+        char *d = tape_get (1);
+        DBuffer *db = bufferof (d);
+        printf ("len: %lu, val: %s\n", db->len, d);
+  
+        return 0;
+      }
+      ```
  **/
 #ifndef TAPE_MEM__H__
 #define TAPE_MEM__H__

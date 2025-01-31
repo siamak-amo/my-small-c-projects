@@ -1,13 +1,12 @@
-/**
- *  file: yes.c
- *  created on: 8 Oct 2023
- *
- *  yes! program
- *  
- * compilation:
- *   cc -Wall -Wextra -Werror yes.c -I../libs -o yes
- * options:
- *   -D ALIGN_NO: to use normal malloc, not aligned alloc
+/** file: yes.c
+    created on: 8 Oct 2023
+  
+    yes! program
+    
+   compilation:
+     cc -Wall -Wextra -Werror yes.c -I../libs -o yes
+   options:
+     -D ALIGN_NO: to use normal malloc, not aligned alloc
  **/
 
 #include <stdio.h>

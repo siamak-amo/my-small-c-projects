@@ -14,65 +14,64 @@
   along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-/**
- *  file: ptable.c
- *  created on: 16 Jul 2024
- *
- *  Pointer Table, unordered pointer array
- *  This data structure allows for appending and deleting
- *  void pointers in O(1) time and memory complexity
- *  It does not allocate or free memory; instead, keeps track of
- *  indices, making it remap and realloc safe
- *  It can be used as a dynamic table (see the CLI program)
- *  with O(1) amortized time and memory complexity
- *  It also can be used as an stack (see pt_push and pt_pop)
- *
- *  In 64-bit machines, always has memory protection feature
- *  In 32-bit machines, with memory protection, the maximum length
- *  of table <= 0xffff=65535  ~512Mb
- *  you can define _NO_DFREE_PROTECTION to disable
- *  memory protection and get full table size
- *  In other platforms, there is no memory protection,
- *  and double free can happen with undefined behavior
- *
- *  Compilation:
- *    to compile the CLI program:
- *    cc -ggdb -Wall -Wextra -Werror ptable.c \
- *       $(pkg-config --cflags readline)
- *       -D PTABLE_IMPLEMENTATION \
- *       -D PTABLE_CLI -D PTABLE_TEST \
- *       -o test.out $(pkg-config --libs readline)
- *
- *    to compile the test program:
- *    cc -ggdb -Wall -Wextra -Werror ptable.c \
- *       -D PTABLE_IMPLEMENTATION \
- *       -D PTABLE_TEST \
- *       -o test.out
- *
- *    to include in c files:
- *    ```c
- *    #include <stdio.h>
- *    #include <stdlib.h>
- *
- *    #define PTABLE_IMPLEMENTATION
- *    #include "ptable.c"
- *
- *    int
- *    main (void)
- *    {
- *      PTable pt = new_ptable (32); // length 32
- *      // using malloc, you can use mmap instead
- *      pt_alloc (&pt, malloc (cap));
- *
- *      {
- *        // do something here
- *        // call pa_append or pa_delete_by_idx
- *      }
- *
- *      pt_free (&pt, free (mem));
- *      return 0;
- *    }
- *    ```
+/** file: ptable.c
+    created on: 16 Jul 2024
+  
+    Pointer Table, unordered pointer array
+    This data structure allows for appending and deleting
+    void pointers in O(1) time and memory complexity
+    It does not allocate or free memory; instead, keeps track of
+    indices, making it remap and realloc safe
+    It can be used as a dynamic table (see the CLI program)
+    with O(1) amortized time and memory complexity
+    It also can be used as an stack (see pt_push and pt_pop)
+  
+    In 64-bit machines, always has memory protection feature
+    In 32-bit machines, with memory protection, the maximum length
+    of table <= 0xffff=65535  ~512Mb
+    you can define _NO_DFREE_PROTECTION to disable
+    memory protection and get full table size
+    In other platforms, there is no memory protection,
+    and double free can happen with undefined behavior
+  
+    Compilation:
+      to compile the CLI program:
+      cc -ggdb -Wall -Wextra -Werror ptable.c \
+         $(pkg-config --cflags readline)
+         -D PTABLE_IMPLEMENTATION \
+         -D PTABLE_CLI -D PTABLE_TEST \
+         -o test.out $(pkg-config --libs readline)
+  
+      to compile the test program:
+      cc -ggdb -Wall -Wextra -Werror ptable.c \
+         -D PTABLE_IMPLEMENTATION \
+         -D PTABLE_TEST \
+         -o test.out
+  
+      to include in c files:
+      ```c
+      #include <stdio.h>
+      #include <stdlib.h>
+  
+      #define PTABLE_IMPLEMENTATION
+      #include "ptable.c"
+  
+      int
+      main (void)
+      {
+        PTable pt = new_ptable (32); // length 32
+        // using malloc, you can use mmap instead
+        pt_alloc (&pt, malloc (cap));
+  
+        {
+          // do something here
+          // call pa_append or pa_delete_by_idx
+        }
+  
+        pt_free (&pt, free (mem));
+        return 0;
+      }
+      ```
  **/
 #ifndef PTABLE__H__
 #define PTABLE__H__

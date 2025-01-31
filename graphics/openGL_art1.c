@@ -1,26 +1,25 @@
-/**
- *  file: openGL_art1.c
- *  created on: 14 Apr 2024
- *
- *  OpenGL Art 1:  Polygonal Animation
- *    number of sides and colors changes
- *    until it almost looks like a circle
- *
- *    keyboard events:
- *      p, space    pause
- *      r           resume
- *      [, {        increase the spped
- *      ], }        decrease the speed
- *      q           quit
- *    mouse events:
- *      <left>      pause
- *      <right>     resume
- *
- *  Compilation:
- *    cc -ggdb -O3 -Wall -Wextra -Werror openGL_art1.c \
- *      $(pkg-config --cflags glut opengl) \
- *      $(pkg-config --libs glut opengl) -lm \
- *      -o glArt1.out
+/** file: openGL_art1.c
+    created on: 14 Apr 2024
+  
+    OpenGL Art 1:  Polygonal Animation
+      number of sides and colors changes
+      until it almost looks like a circle
+  
+      keyboard events:
+        p, space    pause
+        r           resume
+        [, {        increase the spped
+        ], }        decrease the speed
+        q           quit
+      mouse events:
+        <left>      pause
+        <right>     resume
+  
+    Compilation:
+      cc -ggdb -O3 -Wall -Wextra -Werror openGL_art1.c \
+        $(pkg-config --cflags glut opengl) \
+        $(pkg-config --libs glut opengl) -lm \
+        -o glArt1.out
  **/
 #include <GL/gl.h>
 #include <GL/glut.h>

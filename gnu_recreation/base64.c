@@ -1,18 +1,17 @@
-/**
- *  file: base64.c
- *  created on: 4 Nov 2024
- *
- *  Base64 utility
- *
- *  Usage:
- *    base64 [OPTIONS]... [FILE]
- *  Options:
- *    -d, --decode       to decode
- *        --version      print the version
- *
- *  Compilation:
- *    cc -ggdb -O3 -Wall -Wextra -Werror \
- *       -I../libs -o base64 base64.c
+/** file: base64.c
+    created on: 4 Nov 2024
+  
+    Base64 utility
+  
+    Usage:
+      base64 [OPTIONS]... [FILE]
+    Options:
+      -d, --decode       to decode
+          --version      print the version
+  
+    Compilation:
+      cc -ggdb -O3 -Wall -Wextra -Werror \
+         -I../libs -o base64 base64.c
  **/
 #include <stdio.h>
 #include <string.h>

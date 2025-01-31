@@ -1,15 +1,13 @@
-/**
- *    file: ttyART.c
- *    created on: 7 Oct 2023
- *
- *    compilation:
- *      first provide olive.c file,
- *      ref: https://github.com/tsoding/olive.c.git
- *      then:
- *          cc -o ttyART ttyART.c -lm
- *
- *      run it on tty (display server must be detached)
- *
+/*  file: ttyART.c
+    created on: 7 Oct 2023
+
+    compilation:
+      first provide olive.c file,
+      ref: https://github.com/tsoding/olive.c.git
+      then:
+          cc -o ttyART ttyART.c -lm
+
+      run it on tty (display server must be detached)  
  **/
 #include <stdio.h>
 #include <stdlib.h>

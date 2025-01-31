@@ -1,16 +1,15 @@
-/**
- *  file: unlink_ng.c
- *  created on: 30 Oct 2024
- *
- *  unlink new generation
- *  call the unlink function to remove the specified file(s)
- *
- *  Usage:
- *    unlink [FILE]...
- *
- *  Compilation:
- *    cc -ggdb -O3 -Wall -Wextra -Werror \
- *       -o unlink unlink_ng.c
+/** file: unlink_ng.c
+    created on: 30 Oct 2024
+  
+    unlink new generation
+    call the unlink function to remove the specified file(s)
+  
+    Usage:
+      unlink [FILE]...
+  
+    Compilation:
+      cc -ggdb -O3 -Wall -Wextra -Werror \
+         -o unlink unlink_ng.c
  **/
 #include <unistd.h>
 #include <stdio.h>

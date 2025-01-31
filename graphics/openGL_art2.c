@@ -1,39 +1,38 @@
-/**
- *  file: openGL_art2.c
- *  created on: 17 Sep 2024
- *
- *  OpenGL Art 2:  Snowflake
- *    Terms:
- *      RF factor    controls how the color changes
- *      D factor     controls how fast the edges get thinner
- *      N            number of clusters
- *
- *    keyboard events:
- *      d, D           increase / decrease the D factor
- *      +, -           same as d, but more accurate
- *      n, N           increase / decrease the N by 1
- *
- *      r, R           increase / decrease the RF Red factor
- *      g, G           increase / decrease the RF Green factor
- *      b, B           increase / decrease the RF Blue factor
- *      <space>        to revert to defaults
- *      q              quit
- *
- *    mouse events:
- *      Scroll UP      increade the D factor
- *      Scroll Down    decrease the D factor
- *
- *  Usage:
- *    ./glart2.out [N] [D factor]
- *
- *  Compilation:
- *    cc -ggdb -O3 -Wall -Wextra -Werror openGL_art2.c \
- *      $(pkg-config --cflags glut opengl) \
- *      $(pkg-config --libs glut opengl) -lm \
- *      -o glart2.out
- *  Options:
- *    define `-D TRI_FAC=0.2` to make lines (triangles) thicker
- *    default is 0.15
+/** file: openGL_art2.c
+    created on: 17 Sep 2024
+  
+    OpenGL Art 2:  Snowflake
+      Terms:
+        RF factor    controls how the color changes
+        D factor     controls how fast the edges get thinner
+        N            number of clusters
+  
+      keyboard events:
+        d, D           increase / decrease the D factor
+        +, -           same as d, but more accurate
+        n, N           increase / decrease the N by 1
+  
+        r, R           increase / decrease the RF Red factor
+        g, G           increase / decrease the RF Green factor
+        b, B           increase / decrease the RF Blue factor
+        <space>        to revert to defaults
+        q              quit
+  
+      mouse events:
+        Scroll UP      increade the D factor
+        Scroll Down    decrease the D factor
+  
+    Usage:
+      ./glart2.out [N] [D factor]
+  
+    Compilation:
+      cc -ggdb -O3 -Wall -Wextra -Werror openGL_art2.c \
+        $(pkg-config --cflags glut opengl) \
+        $(pkg-config --libs glut opengl) -lm \
+        -o glart2.out
+    Options:
+      define `-D TRI_FAC=0.2` to make lines (triangles) thicker
+      default is 0.15
  **/
 #include <stdio.h>
 #include <stdlib.h>

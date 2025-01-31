@@ -1,20 +1,19 @@
-/**
- *  file: tee.c
- *  created on: 26 Oct 2024
- *
- *  tee - read from standard input and
- *  write to standard output and files
- *
- *  Usage:
- *    tee [OPTIONS]... [FILE]...
- *  Options:
- *    -a, --append     append to given files
- *                     do not overwrite
- *
- *  Compilation:
- *    cc -ggdb -O3 -Wall -Wextra -Werror \
- *       -I../libs -o tee tee.c
- */
+/** file: tee.c
+    created on: 26 Oct 2024
+  
+    tee - read from standard input and
+    write to standard output and files
+  
+    Usage:
+      tee [OPTIONS]... [FILE]...
+    Options:
+      -a, --append     append to given files
+                       do not overwrite
+  
+    Compilation:
+      cc -ggdb -O3 -Wall -Wextra -Werror \
+         -I../libs -o tee tee.c
+ **/
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>

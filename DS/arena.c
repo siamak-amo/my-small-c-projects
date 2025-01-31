@@ -14,54 +14,53 @@
   along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-/**
- *  file: arena.c
- *  created on: 22 Jun 2024
- *
- *  Arena, Region based memory allocator
- *
- *  Compilation:
- *    to compile the test program:
- *      cc -ggdb -Wall -Wextra -Werror \
- *         -D_ARENA_DEBUG \
- *         -D ARENA_IMPLEMENTATION
- *         -o test.out arena.c
- *
- *    to include in other files:
- *    ```c
- *    #define ARENA_IMPLEMENTATION
- *    #include "arena.c"
- *
- *    int
- *    main (...)
- *    {
- *       Arena A = new_arena ();
- *
- *       // do something here
- *       // see allocation flags AUSE_xxx
- *       char *p1 = arena_alloc (&A, 500, AUSE_MALLOC);
- *
- *       return 0;
- *    }
- *    ```
- *
- *  Allocation flags:
- *   `AUSE_MMAP`:
- *     to use mmap for memory allocations
- *   `AUSE_MALLOC`:
- *     to use malloc
- *   `AUSE_ALIGNEDALLOC`:
- *     it tries to allocate aligned memory, you can change
- *     the alignment facro by defining `ALIGNMENT_FACTOR`
- *     before including the library
- *
- *  Options:
- *    define `ARENA_NO_LIBC_ALLOC`
- *      to disable using malloc
- *    define `ARENA_NO_MMAP`
- *      to disable using mmap
- *    define `ALIGNMENT_FACTOR`
- *      to be used for alignment = 2^ALIGNMENT_FACTOR
+/** file: arena.c
+    created on: 22 Jun 2024
+  
+    Arena, Region based memory allocator
+  
+    Compilation:
+      to compile the test program:
+        cc -ggdb -Wall -Wextra -Werror \
+           -D_ARENA_DEBUG \
+           -D ARENA_IMPLEMENTATION
+           -o test.out arena.c
+  
+      to include in other files:
+      ```c
+      #define ARENA_IMPLEMENTATION
+      #include "arena.c"
+  
+      int
+      main (...)
+      {
+         Arena A = new_arena ();
+  
+         // do something here
+         // see allocation flags AUSE_xxx
+         char *p1 = arena_alloc (&A, 500, AUSE_MALLOC);
+  
+         return 0;
+      }
+      ```
+  
+    Allocation flags:
+     `AUSE_MMAP`:
+       to use mmap for memory allocations
+     `AUSE_MALLOC`:
+       to use malloc
+     `AUSE_ALIGNEDALLOC`:
+       it tries to allocate aligned memory, you can change
+       the alignment facro by defining `ALIGNMENT_FACTOR`
+       before including the library
+  
+    Options:
+      define `ARENA_NO_LIBC_ALLOC`
+        to disable using malloc
+      define `ARENA_NO_MMAP`
+        to disable using mmap
+      define `ALIGNMENT_FACTOR`
+        to be used for alignment = 2^ALIGNMENT_FACTOR
  **/
 #ifndef ARENA_H__
 #define ARENA_H__

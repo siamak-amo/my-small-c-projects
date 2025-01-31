@@ -1,30 +1,29 @@
-/**
- *   file: linked_list.c
- *   created on: 17 Oct 2023
- *
- *   implements linked list (in Linux naming format)
- *
- *   some of the functionalities are avilable in
- *   both macro and function implementations
- *
- *
- *   compilation:
- *     to compile executable test program:
- *        cc -Wall -Wextra -o test -D LINK_TEST
- *                 -D LINK_IMPLEMENTATION linked_list.c
- *
- *     define LINK_ONLY_MACRO and remove LINK_IMPLEMENTATION
- *     to use only macro's instead of function calls.
- *
- *     to include in other c files:
- *     `
- *        #define LINK_IMPLEMENTATION
- *        #include "linked_list.c"
- *     `
- *     remove LINK_IMPLEMENTATION macro to get only headers.
- *     using implementation macro in some files and
- *     LINK_ONLY_MACRO in others, will cause compile error.
- */
+/**  file: linked_list.c
+     created on: 17 Oct 2023
+  
+     implements linked list (in Linux naming format)
+  
+     some of the functionalities are avilable in
+     both macro and function implementations
+  
+  
+     compilation:
+       to compile executable test program:
+          cc -Wall -Wextra -o test -D LINK_TEST
+                   -D LINK_IMPLEMENTATION linked_list.c
+  
+       define LINK_ONLY_MACRO and remove LINK_IMPLEMENTATION
+       to use only macro's instead of function calls.
+  
+       to include in other c files:
+       `
+          #define LINK_IMPLEMENTATION
+          #include "linked_list.c"
+       `
+       remove LINK_IMPLEMENTATION macro to get only headers.
+       using implementation macro in some files and
+       LINK_ONLY_MACRO in others, will cause compile error.
+ **/
 #ifndef LINK__H__
 #define LINK__H__
 

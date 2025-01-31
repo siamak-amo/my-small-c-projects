@@ -1,38 +1,37 @@
-/**
- *  file: tr_ng.c
- *  created on: 7 Sep 2024
- *
- *  Tr command (new generation!)
- *  Translate or delete characters
- *
- *  Usage:
- *    ./tr char1 char2 ...
- *
- *    Example:
- *      # to map a to b  and  A to B
- *      ./tr 'a' 'b' 'A' 'B'
- *
- *      # to map '\n' to ','  and  remove any tab '\t' character
- *      ./tr '\n' ',' '\t' '\0'
- *
- *      # using hex values to map B to C
- *      ./tr '\x42' 'C'
- *      ./tr '\x42' '\x43'
- *
- *    Interpreted sequences:
- *      \a, \b, \t, \n, \v, \f, \r
- *              see ASCII table for more details
- *
- *      \xNN    character with hex value 0xNN (1 to 2 digits)
- *              in range 0 to 255=0xFF
- *
- *  Compilation:
- *    replace `-I../` with path to `buffered_io.h` file:
- *      cc -ggdb -O3 -Wall -Wextra -Werror \
- *         -D_USE_BIO -I../ \
- *         -o tr tr_ng.c
- *    or remove `-D_USE_BIO` to compile without buffered_io
- *
+/** file: tr_ng.c
+    created on: 7 Sep 2024
+  
+    Tr command (new generation!)
+    Translate or delete characters
+  
+    Usage:
+      ./tr char1 char2 ...
+  
+      Example:
+        # to map a to b  and  A to B
+        ./tr 'a' 'b' 'A' 'B'
+  
+        # to map '\n' to ','  and  remove any tab '\t' character
+        ./tr '\n' ',' '\t' '\0'
+  
+        # using hex values to map B to C
+        ./tr '\x42' 'C'
+        ./tr '\x42' '\x43'
+  
+      Interpreted sequences:
+        \a, \b, \t, \n, \v, \f, \r
+                see ASCII table for more details
+  
+        \xNN    character with hex value 0xNN (1 to 2 digits)
+                in range 0 to 255=0xFF
+  
+    Compilation:
+      replace `-I../` with path to `buffered_io.h` file:
+        cc -ggdb -O3 -Wall -Wextra -Werror \
+           -D_USE_BIO -I../ \
+           -o tr tr_ng.c
+      or remove `-D_USE_BIO` to compile without buffered_io
+  
  **/
 #include <unistd.h>
 

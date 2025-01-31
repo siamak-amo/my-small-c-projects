@@ -14,68 +14,67 @@
   along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-/**
- *  file: hashtab.c
- *  created on: 25 Jun 2024
- *
- *  A Simple Hash Table Implementation
- *
- *  by default it uses uint32_t for indices and hash values
- *  insert and lookup keys, by index, in O(1) time and memory
- *  or make a hash table of an arbitrary struct, then
- *  access their indices via key (see the example program)
- *
- *  Compilation:
- *    to compile the test program:
- *    cc -ggdb -Wall -Wextra -Werror \
- *       -D HASHTAB_IMPLEMENTATION \
- *       -D HASHTAB_TEST hashtab.c -o test.out
- *
- *    to compile the example program:
- *    cc -ggdb -Wall -Wextra -Werror \
- *       -D HASHTAB_IMPLEMENTATION \
- *       -D HASHTAB_EXAMPLE hashtab.c -o test.out -lreadline
- *
- *    to include in c files:
- *    (see the example program for more advanced usage)
- *    ```c
- *    #define HASHTAB_IMPLEMENTATION
- *    #include "hashtab.c"
- *
- *    int
- *    main (void)
- *    {
- *      // allocate your data structure
- *      // see examples
- *      Type data = ...;
- *
- *      // allocate hashtab
- *      // where: capacity=10, delta_l=1
- *      HashTable t = new_hashtab (10, data, 1);
- *
- *      // set hasher and is_equal functions
- *      // pass them NULL to use defaults
- *      ht_set_funs (&t, NULL, NULL);
- *
- *      // allocate main memory to store hashes
- *      // you might use mmap
- *      idx_t *mem = malloc (ht_sizeof (&t));
- *      if (0 != ht_init (&t, mem))
- *        {
- *          puts ("hashtab initialization failed.");
- *          return -1;
- *        }
- *
- *      {
- *        // do something here
- *        // use ht_insert, ht_idxof functions
- *      }
- *
- *      // free the hash table
- *      ht_free (&t, free (mem));
- *      return 0;
- *    }
- *    ```
+/** file: hashtab.c
+    created on: 25 Jun 2024
+  
+    A Simple Hash Table Implementation
+  
+    by default it uses uint32_t for indices and hash values
+    insert and lookup keys, by index, in O(1) time and memory
+    or make a hash table of an arbitrary struct, then
+    access their indices via key (see the example program)
+  
+    Compilation:
+      to compile the test program:
+      cc -ggdb -Wall -Wextra -Werror \
+         -D HASHTAB_IMPLEMENTATION \
+         -D HASHTAB_TEST hashtab.c -o test.out
+  
+      to compile the example program:
+      cc -ggdb -Wall -Wextra -Werror \
+         -D HASHTAB_IMPLEMENTATION \
+         -D HASHTAB_EXAMPLE hashtab.c -o test.out -lreadline
+  
+      to include in c files:
+      (see the example program for more advanced usage)
+      ```c
+      #define HASHTAB_IMPLEMENTATION
+      #include "hashtab.c"
+  
+      int
+      main (void)
+      {
+        // allocate your data structure
+        // see examples
+        Type data = ...;
+  
+        // allocate hashtab
+        // where: capacity=10, delta_l=1
+        HashTable t = new_hashtab (10, data, 1);
+  
+        // set hasher and is_equal functions
+        // pass them NULL to use defaults
+        ht_set_funs (&t, NULL, NULL);
+  
+        // allocate main memory to store hashes
+        // you might use mmap
+        idx_t *mem = malloc (ht_sizeof (&t));
+        if (0 != ht_init (&t, mem))
+          {
+            puts ("hashtab initialization failed.");
+            return -1;
+          }
+  
+        {
+          // do something here
+          // use ht_insert, ht_idxof functions
+        }
+  
+        // free the hash table
+        ht_free (&t, free (mem));
+        return 0;
+      }
+      ```
  **/
 #ifndef HASHTAB__H__
 #define HASHTAB__H__
