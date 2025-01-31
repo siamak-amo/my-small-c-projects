@@ -1,25 +1,24 @@
-/**
- *  file: key_extractor.c
- *  created on: 8 Sep 2024
- *
- *  Keyword Extractor
- *  Extracts keywords out of the provided input
- *  It was previously named tokenizeIt
- *
- *  Usage:  kextractor [OPTIONS]
- *  see help for details: `kextractor -h`
- *
- * Compilation:
- *   cc -Wall -Wextra -Werror -ggdb -O3 \
- *      -D_USE_BIO -I../libs \
- *      key_extractor.c -o kextractor
- *
- * Options:
- *   -D_USE_BIO:
- *      To compile with buffered_io.h
- *   -D_BMAX="(1 * 1024)":
- *      To max buffer length of buffered IO
- */
+/** file: key_extractor.c
+    created on: 8 Sep 2024
+  
+    Keyword Extractor
+    Extracts keywords out of the provided input
+    It was previously named tokenizeIt
+  
+    Usage:  kextractor [OPTIONS]
+    see help for details: `kextractor -h`
+  
+   Compilation:
+     cc -Wall -Wextra -Werror -ggdb -O3 \
+        -D_USE_BIO -I../libs \
+        key_extractor.c -o kextractor
+  
+   Options:
+     -D_USE_BIO:
+        To compile with buffered_io.h
+     -D_BMAX="(1 * 1024)":
+        To max buffer length of buffered IO
+ **/
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>

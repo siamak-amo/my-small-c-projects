@@ -14,89 +14,88 @@
   along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-/**
- *  file: permugen.c
- *  created on: 4 Sep 2024
- *
- *  Permugen, permutation generator utility
- *  Generates customizable permutations from specified seeds
- *
- * Usage:
- *   For details, see help by `-h` option:
- *     $ permugen -h
- *
- *   Normal mode:  permugen [OPTIONS] -s [SEED_CONFIG]
- *     Alphanumeric permutations:
- *     $ permugen                                  # a-z and 0-9 of length 3
- *     $ permugen -s "\d"                          # only digits 0-9
- *     $ permugen -s "\d \u"                       # 0-9 and A-Z
- *     $ permugen -s "\d \u \l"                    # 0-9 and A-Z and a-z
- *
- *     Permutations of A,B,C, and a,...,f:
- *     $ permugen -s "[ABC] [a-f]" -d4             # of length 4
- *     $ permugen -s "[ABCa-f]" -d4                # equivalent
- *     $ permugen -s "[ABCa-f]" -D4                # depth range 1,...,4
- *     $ permugen --min-depth 3 --max-depth 5      # depth range 3,...,5
- *
- *     To include word(s) in permutations
- *     $ permugen -s "{foo,bar}"
- *     $ permugen -s "/path/to/wlist.txt"          # or use `-S`
- *     $ permugen -s "-"                           # read from stdin
- *
- *     Combined Examples:
- *     $ permugen -s "{foo,bar} [x-z] [0-3]"       # foo,bar,x,y,z,0,1,2,3
- *     $ permugen -s "{foo,bar} [x-z0-3]"          # equivalent
- *     $ permugen -s "{foo,bar} [x-z0-3] -"        # also read from stdin
- *
- *     Output Format:
- *     - Permutation components separator (-p, --delim)
- *     $ permugen -p ", "                          # comma separated
- *     $ permugen -p "\t"                          # tab separated
- *
- *     - Global suffix and prefix
- *     $ permugen --pref "www." --suff ".com"
- *
- *
- *   Regular Mode (cartesian product)
- *   To manually specify components of the permutations
- *     permugen [OPTIONS] -r [SEED_CONFIG]...
- *
- *     Basic Examples:
- *     - Cartesian product of {0,1,2}x{AA,BB}
- *     $ permugen -r "[0-2]" "{AA,BB}"
- *
- *     - {dev,prod}x{admin,<wordlist.txt>}
- *     $ permugen -r "{dev,prod}" "{admin} /path/to/wordlist.txt"
- *     - To also use `.` as separator
- *     $ permugen -p. -r "{dev,prod}" "{admin} /path/to/wordlist.txt"
- *
- *     - To reuse previously provided seeds (\N starting from 1)
- *       {dev,prod}x{2,3}x{2,3}
- *     $ permugen -r "{dev,prod}" "[2-3]" "\2"
- *     - {dev,prod}x{www,dev,prod} (dot separated)
- *     $ permugen -p. -r "{dev,prod}" "{www} \1"
- *
- *     Custom prefix and suffix:
- *     - The first component has `xxx` as suffix and
- *       the second component has `yyy` as prefix
- *     $ permugen -r "() {One} (xxx)"  "(yyy)  {Two}  ()"
- *     - The first component uses {} and the second one uses ()
- *     $ permugen -r "({) {One} (})"  "(\()  {Two}  (\))"
- *
- *
- * Compilation:
- *   cc -ggdb -O3 -Wall -Wextra -Werror -I../libs \
- *      -o permugen permugen.c
- *
- * Options:
- *  - To enable printing of debug information
- *     define `_DEBUG`
- *  - To disable buffered IO (which reduces performance)
- *     define `_NO_BIO`
- *  - To change the default buffered IO buffer capacity
- *     define `_BMAX="(1024 * 1)"` (=1024 bytes)
- *  - To skip freeing allocated memory before quitting
- *     define `_CLEANUP_NO_FREE`
+/** file: permugen.c
+    created on: 4 Sep 2024
+  
+    Permugen, permutation generator utility
+    Generates customizable permutations from specified seeds
+  
+   Usage:
+     For details, see help by `-h` option:
+       $ permugen -h
+  
+     Normal mode:  permugen [OPTIONS] -s [SEED_CONFIG]
+       Alphanumeric permutations:
+       $ permugen                                  # a-z and 0-9 of length 3
+       $ permugen -s "\d"                          # only digits 0-9
+       $ permugen -s "\d \u"                       # 0-9 and A-Z
+       $ permugen -s "\d \u \l"                    # 0-9 and A-Z and a-z
+  
+       Permutations of A,B,C, and a,...,f:
+       $ permugen -s "[ABC] [a-f]" -d4             # of length 4
+       $ permugen -s "[ABCa-f]" -d4                # equivalent
+       $ permugen -s "[ABCa-f]" -D4                # depth range 1,...,4
+       $ permugen --min-depth 3 --max-depth 5      # depth range 3,...,5
+  
+       To include word(s) in permutations
+       $ permugen -s "{foo,bar}"
+       $ permugen -s "/path/to/wlist.txt"          # or use `-S`
+       $ permugen -s "-"                           # read from stdin
+  
+       Combined Examples:
+       $ permugen -s "{foo,bar} [x-z] [0-3]"       # foo,bar,x,y,z,0,1,2,3
+       $ permugen -s "{foo,bar} [x-z0-3]"          # equivalent
+       $ permugen -s "{foo,bar} [x-z0-3] -"        # also read from stdin
+  
+       Output Format:
+       - Permutation components separator (-p, --delim)
+       $ permugen -p ", "                          # comma separated
+       $ permugen -p "\t"                          # tab separated
+  
+       - Global suffix and prefix
+       $ permugen --pref "www." --suff ".com"
+  
+  
+     Regular Mode (cartesian product)
+     To manually specify components of the permutations
+       permugen [OPTIONS] -r [SEED_CONFIG]...
+  
+       Basic Examples:
+       - Cartesian product of {0,1,2}x{AA,BB}
+       $ permugen -r "[0-2]" "{AA,BB}"
+  
+       - {dev,prod}x{admin,<wordlist.txt>}
+       $ permugen -r "{dev,prod}" "{admin} /path/to/wordlist.txt"
+       - To also use `.` as separator
+       $ permugen -p. -r "{dev,prod}" "{admin} /path/to/wordlist.txt"
+  
+       - To reuse previously provided seeds (\N starting from 1)
+         {dev,prod}x{2,3}x{2,3}
+       $ permugen -r "{dev,prod}" "[2-3]" "\2"
+       - {dev,prod}x{www,dev,prod} (dot separated)
+       $ permugen -p. -r "{dev,prod}" "{www} \1"
+  
+       Custom prefix and suffix:
+       - The first component has `xxx` as suffix and
+         the second component has `yyy` as prefix
+       $ permugen -r "() {One} (xxx)"  "(yyy)  {Two}  ()"
+       - The first component uses {} and the second one uses ()
+       $ permugen -r "({) {One} (})"  "(\()  {Two}  (\))"
+  
+  
+   Compilation:
+     cc -ggdb -O3 -Wall -Wextra -Werror -I../libs \
+        -o permugen permugen.c
+  
+   Options:
+    - To enable printing of debug information
+       define `_DEBUG`
+    - To disable buffered IO (which reduces performance)
+       define `_NO_BIO`
+    - To change the default buffered IO buffer capacity
+       define `_BMAX="(1024 * 1)"` (=1024 bytes)
+    - To skip freeing allocated memory before quitting
+       define `_CLEANUP_NO_FREE`
  **/
 #include <stdio.h>
 #include <stdlib.h>

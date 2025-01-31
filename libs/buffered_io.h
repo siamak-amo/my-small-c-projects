@@ -1,36 +1,35 @@
-/**
- *  file: buffered_io.h
- *  created on: 5 Sep 2024
- *
- *  Buffered I/O
- *  It helps reduce the number of write system calls
- *  when writing multiple short lines (on stdout or other files)
- *
- *  usage:
- *  ```c
- *  #include <stdio.h>
- *  #include <stdlib.h>
- *  #define BIO_IMPLEMENTATION
- *  #include "buffered_io.h"
- *
- *  #define BMAX 64
- *
- *  int
- *  main (void)
- *  {
- *    BIO_t bio = bio_newf (BMAX, malloc (BMAX), stdout);
- *
- *    // do something here
- *    // like calling bio_putxx in a loop
- *    // and check for errors via bio_errxx
- *
- *    // at the end flush the buffer and then free it
- *    bio_flushln (&bio);
- *    free (bio.buffer);
- *
- *    return 0;
- *  }
- *  ```
+/** file: buffered_io.h
+    created on: 5 Sep 2024
+  
+    Buffered I/O
+    It helps reduce the number of write system calls
+    when writing multiple short lines (on stdout or other files)
+  
+    usage:
+    ```c
+    #include <stdio.h>
+    #include <stdlib.h>
+    #define BIO_IMPLEMENTATION
+    #include "buffered_io.h"
+  
+    #define BMAX 64
+  
+    int
+    main (void)
+    {
+      BIO_t bio = bio_newf (BMAX, malloc (BMAX), stdout);
+  
+      // do something here
+      // like calling bio_putxx in a loop
+      // and check for errors via bio_errxx
+  
+      // at the end flush the buffer and then free it
+      bio_flushln (&bio);
+      free (bio.buffer);
+  
+      return 0;
+    }
+    ```
  **/
 #ifndef BUFFERED_IO__H
 #define BUFFERED_IO__H

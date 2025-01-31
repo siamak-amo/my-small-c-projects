@@ -1,45 +1,44 @@
-/**
- *  file: libbase64.d
- *  created on: 3 Nov 2024
- *
- *  Base64 implementation
- *  self test included
- *
- *
- *  Usage:
- *  ```c
- *    #define B64_IMPLEMENTATION
- *    #include "libbase64.c"
- *
- *    int
- *    main (void)
- *    {
- *      int err;
- *
- *      // encode
- *      char tmp[16];
- *      b64_encode ("test\n", 5, tmp, 16, &err);
- *      printf ("encoder: %s\n", tmp);
- *
- *      // decode
- *      char buf[16];
- *      b64_decode (tmp, strlen (tmp), buf, 16, &err);
- *      printf ("decoder: %s\n", buf);
- *
- *      return 0;
- *    }
- *  ```
- *
- *  Options:
- *    define `B64_NO_STREAM`: to not include stream
- *      encoder and decoder functions
- *    `EOBUFFER_B64` and `INVALID_B64`: to check errors
- *
- *  Compilation (self test program):
- *    cc -ggdb -Wall -Wextra -Werror \
- *       -D B64_IMPLEMENTATION \
- *       -D B64_TEST \
- *       -o test.out libbase64.c
+/** file: libbase64.d
+    created on: 3 Nov 2024
+  
+    Base64 implementation
+    self test included
+  
+  
+    Usage:
+    ```c
+      #define B64_IMPLEMENTATION
+      #include "libbase64.c"
+  
+      int
+      main (void)
+      {
+        int err;
+  
+        // encode
+        char tmp[16];
+        b64_encode ("test\n", 5, tmp, 16, &err);
+        printf ("encoder: %s\n", tmp);
+  
+        // decode
+        char buf[16];
+        b64_decode (tmp, strlen (tmp), buf, 16, &err);
+        printf ("decoder: %s\n", buf);
+  
+        return 0;
+      }
+    ```
+  
+    Options:
+      define `B64_NO_STREAM`: to not include stream
+        encoder and decoder functions
+      `EOBUFFER_B64` and `INVALID_B64`: to check errors
+  
+    Compilation (self test program):
+      cc -ggdb -Wall -Wextra -Werror \
+         -D B64_IMPLEMENTATION \
+         -D B64_TEST \
+         -o test.out libbase64.c
  **/
 #ifndef B64__H__
 #define B64__H__

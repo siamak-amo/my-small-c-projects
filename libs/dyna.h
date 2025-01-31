@@ -1,127 +1,126 @@
-/**
- *  file: dyna.h
- *  created on: 8 Oct 2024
- *
- *  Dynamic Arrya implementation
- *  based on `templates/slice.c` within this repository
- *
- *  Usage:
- *  ```c
- *  #include <stdio.h>
- *  #include <stdlib.h>
- *
- *  // Optionally, you can define these macros to determine
- *  // how the dynamic array grows.
- *  // In this example, capacity increases by DA_GFACT at each overflow
- *  // By default, it grows exponentially by a factor of 2
- *  #define DA_GFACT 8
- *  #define DA_DO_GROW(cap) ((cap) += DA_GFACT)
- *
- *  #define DYNA_IMPLEMENTATION
- *  #include "dyna.h"
- *
- *  int
- *  main (void)
- *  {
- *    // Character Array, with initial capacity 10
- *    char *carr = da_newn (char, 10);
- *
- *    for (char c ='a'; c <= 'z'; ++c)
- *      da_appd (carr, c);
- *    da_appd (carr, '\0');
- *
- *    puts (carr); // must print ab...z
- *    da_free (carr);
- *
- *
- *    // C string array
- *    char **cstr = da_new (char *);
- *
- *    da_appd (cstr, "string0");
- *    da_appd (cstr, "string1");
- *    da_appd (cstr, "string2");
- *
- *    // Print & Free
- *    for (size_t i=0; i < da_sizeof (cstr); ++i)
- *      printf ("str%lu: {%s}\n", i, cstr[i]);
- *    da_free (cstr);
- *
- *
- *    // Generic struct array
- *    struct data {
- *      int index;
- *    };
- *    struct data *arr = da_new (struct data);
- *    // Copying local structs to @arr
- *    for (int i=0; i<7; ++i)
- *      {
- *        struct data tmp = {.index=i};
- *        da_appd (arr, tmp);
- *      }
- *
- *    // Print & Free
- *    for (int i=0; i<7; ++i)
- *      printf ("struct arr[%i] - index: %d\n", i, arr[i].index);
- *    da_free (arr);
- *
- *
- *    // Pointer Array
- *    struct data **ptr_arr = da_new (struct data *);
- *    // Allocate data and append
- *    for (int i=0; i<7; ++i)
- *      {
- *        struct data *tmp = malloc (sizeof (struct data));
- *        *tmp = (struct data){.index=i};
- *        da_appd (ptr_arr, tmp);
- *      }
- *
- *    // Print & Free
- *    for (int i=0; i<7; ++i)
- *      {
- *        printf ("ptr_arr[%i] - index: %d\n", i, ptr_arr[i]->index);
- *        free (ptr_arr[i]);
- *      }
- *    da_free (ptr_arr);
- *
- *    return 0;
- *  }
- *  ```
- *
- *  Options:
- *    `_DA_DEBUG`:  to print some debugging information
- *    `DA_INICAP`:  the default initial capacity of arrays
- *    `DA_DO_GRO`:  to define how arrays grow
- *    `DA_GFACT`:   growth factor (see the source code)
- *
- *  WARNING:
- *    If an instance of this dynamic array, is being stored
- *    outside of scope of a function (F), you *MUST NOT* use
- *    `da_appd` inside F, because if an overflow occurs,
- *    `da_appd` will need to reallocate it's entire memory
- *    and so the original pointer might get freed and
- *    potentially causes use after free or SEGFAULT
- *
- *    A solution would be to store the reference inside
- *    some struct and pass the reference of it the function F
- *    so `da_appd` will update the reference properly
- *
- *    Another solution would be to use `da_funappd` macro:
- *    ```c
- *      // scope 1
- *      {
- *        T val = {0};
- *        T *arr = da_new (T);
- *        my_function ((void **) &arr, val);
- *      }
- *
- *      void
- *      my_function (void **array, T data)
- *      {
- *        // append data to array
- *        // this might update @arr in scope 1
- *        da_funappd (array, data);
- *      }
- *    ```
+/** file: dyna.h
+    created on: 8 Oct 2024
+  
+    Dynamic Arrya implementation
+    based on `templates/slice.c` within this repository
+  
+    Usage:
+    ```c
+    #include <stdio.h>
+    #include <stdlib.h>
+  
+    // Optionally, you can define these macros to determine
+    // how the dynamic array grows.
+    // In this example, capacity increases by DA_GFACT at each overflow
+    // By default, it grows exponentially by a factor of 2
+    #define DA_GFACT 8
+    #define DA_DO_GROW(cap) ((cap) += DA_GFACT)
+  
+    #define DYNA_IMPLEMENTATION
+    #include "dyna.h"
+  
+    int
+    main (void)
+    {
+      // Character Array, with initial capacity 10
+      char *carr = da_newn (char, 10);
+  
+      for (char c ='a'; c <= 'z'; ++c)
+        da_appd (carr, c);
+      da_appd (carr, '\0');
+  
+      puts (carr); // must print ab...z
+      da_free (carr);
+  
+  
+      // C string array
+      char **cstr = da_new (char *);
+  
+      da_appd (cstr, "string0");
+      da_appd (cstr, "string1");
+      da_appd (cstr, "string2");
+  
+      // Print & Free
+      for (size_t i=0; i < da_sizeof (cstr); ++i)
+        printf ("str%lu: {%s}\n", i, cstr[i]);
+      da_free (cstr);
+  
+  
+      // Generic struct array
+      struct data {
+        int index;
+      };
+      struct data *arr = da_new (struct data);
+      // Copying local structs to @arr
+      for (int i=0; i<7; ++i)
+        {
+          struct data tmp = {.index=i};
+          da_appd (arr, tmp);
+        }
+  
+      // Print & Free
+      for (int i=0; i<7; ++i)
+        printf ("struct arr[%i] - index: %d\n", i, arr[i].index);
+      da_free (arr);
+  
+  
+      // Pointer Array
+      struct data **ptr_arr = da_new (struct data *);
+      // Allocate data and append
+      for (int i=0; i<7; ++i)
+        {
+          struct data *tmp = malloc (sizeof (struct data));
+          *tmp = (struct data){.index=i};
+          da_appd (ptr_arr, tmp);
+        }
+  
+      // Print & Free
+      for (int i=0; i<7; ++i)
+        {
+          printf ("ptr_arr[%i] - index: %d\n", i, ptr_arr[i]->index);
+          free (ptr_arr[i]);
+        }
+      da_free (ptr_arr);
+  
+      return 0;
+    }
+    ```
+  
+    Options:
+      `_DA_DEBUG`:  to print some debugging information
+      `DA_INICAP`:  the default initial capacity of arrays
+      `DA_DO_GRO`:  to define how arrays grow
+      `DA_GFACT`:   growth factor (see the source code)
+  
+    WARNING:
+      If an instance of this dynamic array, is being stored
+      outside of scope of a function (F), you *MUST NOT* use
+      `da_appd` inside F, because if an overflow occurs,
+      `da_appd` will need to reallocate it's entire memory
+      and so the original pointer might get freed and
+      potentially causes use after free or SEGFAULT
+  
+      A solution would be to store the reference inside
+      some struct and pass the reference of it the function F
+      so `da_appd` will update the reference properly
+  
+      Another solution would be to use `da_funappd` macro:
+      ```c
+        // scope 1
+        {
+          T val = {0};
+          T *arr = da_new (T);
+          my_function ((void **) &arr, val);
+        }
+  
+        void
+        my_function (void **array, T data)
+        {
+          // append data to array
+          // this might update @arr in scope 1
+          da_funappd (array, data);
+        }
+      ```
  **/
 #ifndef DYNAMIC_ARRAY__H__
 #define DYNAMIC_ARRAY__H__

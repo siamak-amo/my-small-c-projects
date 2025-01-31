@@ -14,42 +14,41 @@
   along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-/**
- *  file: leven.c
- *  created on: 3 Mar 2024
- *
- *  Levenshtein Distance Algorithm Implementation
- *
- *  implementation details:
- *    leven(s1[.n], s2[.m]):
- *      time: O(n*m)
- *      memory: O(Min(n,m))
- *  this implementation simply uses n for all memory allocations,
- *  so provide the smaller string first or use LEVEN_SMALLERx macros
- *
- *  compile the test program:
- *    cc -ggdb -Wall -Wextra -Werror \
- *       -D LEVEN_IMPLEMENTATION \
- *       -D LEVEN_TEST -o test leven.c
- *
- *  to include in c files:
- *    `
- *    #define LEVEN_IMPLEMENTATION
- *    #include "leven.c"
- *
- *    // immediate call
- *    size_t d = leven_imm (s1, s2);
- *
- *    // for small s1, use stack
- *    size_t d = leven_stk (s1, s2);
- *
- *    // when distance of s1 and s is needed
- *    // for fixed s1 and some s in a list
- *    LARR_t *_tmp = leven_alloc (s1);
- *    for (s in list)
- *      leven_H (s1, s, _tmp);
- *    leven_free (_tmp);
- *    `
+/** file: leven.c
+    created on: 3 Mar 2024
+  
+    Levenshtein Distance Algorithm Implementation
+  
+    implementation details:
+      leven(s1[.n], s2[.m]):
+        time: O(n*m)
+        memory: O(Min(n,m))
+    this implementation simply uses n for all memory allocations,
+    so provide the smaller string first or use LEVEN_SMALLERx macros
+  
+    compile the test program:
+      cc -ggdb -Wall -Wextra -Werror \
+         -D LEVEN_IMPLEMENTATION \
+         -D LEVEN_TEST -o test leven.c
+  
+    to include in c files:
+      `
+      #define LEVEN_IMPLEMENTATION
+      #include "leven.c"
+  
+      // immediate call
+      size_t d = leven_imm (s1, s2);
+  
+      // for small s1, use stack
+      size_t d = leven_stk (s1, s2);
+  
+      // when distance of s1 and s is needed
+      // for fixed s1 and some s in a list
+      LARR_t *_tmp = leven_alloc (s1);
+      for (s in list)
+        leven_H (s1, s, _tmp);
+      leven_free (_tmp);
+      `
  **/
 
 #ifndef LEVEN__H__
