@@ -1030,22 +1030,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
   return 0;
 }
 
-static inline struct Seed *
-seeddup (const struct Seed *s)
-{
-  int clen = s->cseed_len;
-  int wlen = da_sizeof (s->wseed);
-
-  struct Seed *res = mk_seed (clen, wlen);
-  res->pref = s->pref;
-  res->suff = s->suff;
-  res->cseed_len = clen;
-  memcpy (res->cseed, s->cseed, clen);
-  res->wseed = da_dup (s->wseed);
-
-  return res;
-}
-
 static inline void
 free_seed (struct Seed *s)
 {
@@ -1098,8 +1082,8 @@ cleanup (int, void *__opt)
 
   /**
    *  `reg_seeds` is a dynamic array (using dyna.h)
-   *  Each element of this array must be freed
-   *  The elements are allocated using `seeddup`
+   *  Each element of this array must is a seed pointer,
+   *  allocated via `mk_seed` and must be freed using `free_seed`
    */
   if (opt->reg_seeds)
     {
