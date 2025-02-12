@@ -72,6 +72,11 @@
        define -D_DEBUG
      To disable buffering in pipes:
        define -D IMMID_PIPE
+
+   Known issues:
+     - The ps command exits with exit code 1
+       (probably because of it's unwanted child)
+     - Redirecting 2>&1 does not work
  **/
 #include <stdio.h>
 #include <stdlib.h>
