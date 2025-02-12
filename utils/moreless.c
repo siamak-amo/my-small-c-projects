@@ -152,8 +152,6 @@ main_hook (int argc, char **argv, char **envp)
   /**
    *  `( -> )`  means only passing through
    *  `(less)`  means actually creating extra pipes
-   *
-   *  TODO: Turn this comment to a proper help function.
    */
   fprintf (stderr, "moreless(%s): handling %s\n",
            (iam_parent) ? " -> " : "less", *argv);
