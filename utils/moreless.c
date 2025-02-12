@@ -54,7 +54,6 @@
            echo "moreless disabled."
            ;;
          *)
-           export MORELESS_EXCLUD="less:tmux:screen:mpv:vim"
            export LD_PRELOAD="/path/to/moreless.so"
            echo "moreless enabled."
            ;;
