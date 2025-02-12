@@ -180,8 +180,8 @@ alter_main (int argc, char **argv, char **envp)
    */
   unsetenv ("LD_PRELOAD");
 
-  // TODO: provide a way to pass less option(s).
-  int ret = execlp (less, less, NULL);
+  // TODO: provide a way to pass less options
+  int ret = execlp (less, less, "-S", NULL);
   if (ret < 0)
     {
       fprintf (stderr, LESS" itself failed.\n");
