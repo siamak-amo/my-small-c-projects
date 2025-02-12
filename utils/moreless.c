@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <dlfcn.h>
+#include <string.h>
 
 #ifndef LESS
 #  define LESS "less"
@@ -18,50 +19,6 @@ static int (*original_main)(int, char **, char **);
 void
 __attribute__((constructor)) init()
 {
-  pid_t pid;
-  int pipefd[2];
-
-  /**
-   *  When stdout is not a tty, there is a pipe already
-   *  so we should not affect moreless there
-   */
-  if (!isatty (STDOUT_FILENO))
-    {
-      iam_parent = 1;
-      return;
-    }
-  
-  if (pipe (pipefd) < 0)
-    {
-      perror ("pipe");
-      return;
-    }
-
-  pid = fork ();
-  if (pid < 0)
-    {
-      perror ("fork");
-      return;
-    }
-
-  if (pid == 0)
-    { /* Child process */
-      close (pipefd[1]);
-      dup2 (pipefd[0], STDIN_FILENO);
-      close (pipefd[0]);
-    }
-  else
-    { /* Parent process */
-      // TODO: maybe provide a way to also pass stderr through.
-      close (pipefd[0]);
-      dup2 (pipefd[1], STDOUT_FILENO);
-      close (pipefd[1]);
-      iam_parent = 1;
-
-#ifdef IMMID_PIPE
-      setvbuf (stdout, NULL, _IONBF, 0);
-#endif
-    } 
 }
 
 void
@@ -96,6 +53,8 @@ alter_main (int argc, char **argv, char **envp)
   /**
    *  DO *NOT* DELETE ME
    *  This will prevent recursive moreless
+   *  Without unsetenv, moreless will be injected again
+   *  in the less command and will call itself recursively
    *
    *  TODO: This must only delete /path/to/moreless.so
    *        not the whole of the env variable.
@@ -121,6 +80,66 @@ alter_main (int argc, char **argv, char **envp)
 int
 main_hook (int argc, char **argv, char **envp)
 {
+  pid_t pid;
+  int pipefd[2];
+
+  /**
+   *  When stdout is not a tty, there is a pipe already
+   *  so we should not affect moreless there
+   */
+  if (!isatty (STDOUT_FILENO))
+    {
+      goto __original_main;
+    }
+  /**
+   *  Exclude commands that need tty
+   *
+   *  TODO: Make this configurable.
+   */
+  const char *cmd = argv[0];
+  if (cmd)
+    {
+      if (0 == strcmp (cmd, "less") ||
+          0 == strcmp (cmd, "tmux") ||
+          0 == strcmp (cmd, "mplayer") ||
+          0 == strcmp (cmd, "mpv") ||
+          0)
+        {
+          unsetenv ("LD_PRELOAD");
+          goto __original_main;
+        }
+    }
+
+  if (pipe (pipefd) < 0)
+    {
+      perror ("pipe");
+      return EXIT_FAILURE;
+    }
+  if ((pid = fork ()) < 0)
+    {
+      perror ("fork");
+      return EXIT_FAILURE;
+    }
+
+  if (pid == 0)
+    { /* Child process */
+      close (pipefd[1]);
+      dup2 (pipefd[0], STDIN_FILENO);
+      close (pipefd[0]);
+    }
+  else
+    { /* Parent process */
+      // TODO: maybe provide a way to also pass stderr through.
+      close (pipefd[0]);
+      dup2 (pipefd[1], STDOUT_FILENO);
+      close (pipefd[1]);
+      iam_parent = 1;
+
+#ifdef IMMID_PIPE
+      setvbuf (stdout, NULL, _IONBF, 0);
+#endif
+    }
+
 #ifdef _DEBUG
   /**
    *  `( -> )`  means only passing through
@@ -131,8 +150,10 @@ main_hook (int argc, char **argv, char **envp)
   fprintf (stderr, "moreless(%s): handling %s\n",
            (iam_parent) ? " -> " : "less", *argv);
 #endif /* _DEBUG */
+
   if (iam_parent)
     {
+    __original_main:
       /**
        *  Continue to the real main function
        *
