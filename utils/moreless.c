@@ -27,10 +27,10 @@
 
    Usage:
      For a single command:
-       $ LD_PRELOAD=/path/to/moreless.so ls -ltrh
+       $ LD_PRELOAD="/path/to/moreless.so" ls -ltrh
 
      To make it permanent:
-       $ export LD_PRELOAD=/path/to/moreless.so
+       $ export LD_PRELOAD="/path/to/moreless.so"
        Then run your commands.
 
      To exclude command(s) from moreless:
