@@ -298,11 +298,6 @@ main_hook (int argc, char **argv, char **envp)
     }
   else __Parent__ /* Parent process */
     {
-      /**
-       *  TODO: Maybe provide a way to also pass
-       *  stderr through.
-       *  currently, 2>&1 does not work
-       */
       close (pipefd[0]);
       dup2 (pipefd[1], STDOUT_FILENO);
       close (pipefd[1]);
