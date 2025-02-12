@@ -18,7 +18,8 @@
     created on: 11 Feb 2025
 
    More Less
-   A simple tool to view programs output using the less command
+   A simple tool to view program's output
+   through the less command
 
    ** This only works with the GNU C Library (glibc)
       For other libc implementations, you need to overwrite
@@ -36,8 +37,30 @@
        $ export MORELESS_EXCLUDE="less:tmux:mpv"
        Colon separated command names in the
        `MORELESS_EXCLUDE` environment variable.
-       By default it excludes less, tmux, screen.
+       By default it excludes less, tmux, screen and vi.
 
+
+   Here is a simple bash function to toggle moreless:
+     You might want to eliminate /path/to/moreless.so
+     from LD_PRELOAD instead of using `unset LD_PRELOAD`
+
+     ```{bash}
+     function moreless ()
+       {
+         case $LD_PRELOAD in
+         *"moreless.so"*)
+           unset MORELESS_EXCLUD
+           unset LD_PRELOAD
+           echo "moreless disabled."
+           ;;
+         *)
+           export MORELESS_EXCLUD="less:tmux:screen:mpv:vim"
+           export LD_PRELOAD="/path/to/moreless.so"
+           echo "moreless enabled."
+           ;;
+         esac
+       }
+     ```
 
    Compilation:
      cc -O3 -Wall -Wextra -fPIC -shared \
