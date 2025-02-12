@@ -61,7 +61,7 @@
 
 #ifndef DEFAULT_EXCLUDES
 #  define DEFAULT_EXCLUDES \
-  "less:tmux:screen"
+  "less:tmux:screen:vi:vim:nvim"
 #endif
 
 #undef UNUSED
