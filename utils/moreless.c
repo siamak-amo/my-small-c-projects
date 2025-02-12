@@ -182,7 +182,7 @@ strchrnull (const char *s, int c)
   return s; /* s[0] must be equal to 0 */
 }
 
-int
+int _Parent _Child
 main_hook (int argc, char **argv, char **envp)
 {
   pid_t pid;
@@ -300,7 +300,7 @@ main_hook (int argc, char **argv, char **envp)
  *  Wrapper for __libc_start_main() that replaces the real main
  *  function with our hooked version.
  */
-int _Parent
+int _Parent _Child
 __libc_start_main (
     int (* main)(int, char **, char **),
     int argc, char **argv,
