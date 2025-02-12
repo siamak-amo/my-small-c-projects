@@ -174,6 +174,7 @@ main_hook (int argc, char **argv, char **envp)
     }
 }
 
+#if defined(__GLIBC__) /* GNU Libc (glibc) */
 /**
  *  This code was stolen from:
  *    <https://gist.github.com/apsun/1e144bf7639b22ff0097171fa0f8c6b1>
@@ -192,9 +193,13 @@ __libc_start_main (
     /* Save the real main function address */
     original_main = main;
     /* Find the real __libc_start_main()... */
-    typeof (&__libc_start_main) origin =
+    typeof (&__libc_start_main) super =
       dlsym (RTLD_NEXT, "__libc_start_main");
     /* ... and call it with our custom main function */
-    return origin (main_hook, argc, argv,
-                   init, fini, rtld_fini, stack_end);
+    return super (main_hook, argc, argv,
+                  init, fini, rtld_fini, stack_end);
 }
+#else
+#  error "Your libc is not supported!"
+// TODO: support them
+#endif
