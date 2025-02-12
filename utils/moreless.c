@@ -260,23 +260,27 @@ main_hook (int argc, char **argv, char **envp)
 #endif
     }
 
-#ifdef _DEBUG
   /**
    *  `( -> )`  means only passing through
    *  `(less)`  means actually creating extra pipes
    */
-  fprintf (stderr, "moreless(%s): handling %s\n",
-           (iam_parent) ? " -> " : "less", *argv);
-#endif /* _DEBUG */
-
-  if (iam_parent) _PARENT
+  if (is_parent) _PARENT
     {
     __original_main:
+#ifdef _DEBUG
+      if (is_parent == P_ESCAPED)
+        fprintf (stderr, "moreless[escaped] -> %s\n", *argv);
+      else
+        fprintf (stderr, "moreless[parent] --> %s\n", *argv);
+#endif
       /* Continue to the real main function */
       return original_main (argc, argv, envp);
     }
   else _CHILD
     {
+#ifdef _DEBUG
+      fprintf (stderr, "moreless[child] less %s\n", *argv);
+#endif
       /* The less command lives here */
       return alter_main (argc, argv, envp);
     }
