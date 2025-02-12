@@ -32,11 +32,21 @@
        $ export LD_PRELOAD=/path/to/moreless.so
        Then run your commands.
 
+     To exclude command(s) from moreless:
+       $ export MORELESS_EXCLUDE="less:tmux:mpv"
+       Colon separated command names in the
+       `MORELESS_EXCLUDE` environment variable.
+       By default it excludes less, tmux, screen.
+
+
    Compilation:
      cc -O3 -Wall -Wextra -fPIC -shared \
         -o moreless.so moreless.c
 
-     For debugging, define -D_DEBUG
+     For debugging:
+       define -D_DEBUG
+     To disable buffering in pipes:
+       define -D IMMID_PIPE
  **/
 #include <stdio.h>
 #include <stdlib.h>
