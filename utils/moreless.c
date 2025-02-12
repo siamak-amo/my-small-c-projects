@@ -83,7 +83,7 @@
 
 #ifndef DEFAULT_EXCLUDES
 #  define DEFAULT_EXCLUDES \
-  "less" \
+  "less:man" \
   ":cp:mv:dd:rm:rmdir:chmod:chown:sudo" \
   ":tmux:screen" \
   ":vi:vim:nvim:nano:hexedit" \
@@ -120,9 +120,9 @@ void __Parent__
 __attribute__((destructor)) cleanup()
 {
   fflush (stdout);
+  wait (NULL);
   fclose (stdout);
   fclose (stderr);
-  wait (NULL);
 }
 
 int __Child__
