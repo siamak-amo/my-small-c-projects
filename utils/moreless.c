@@ -242,9 +242,10 @@ main_hook (int argc, char **argv, char **envp)
   const char *cmd = argv[0];
 
   /**
-   *  Exclude commands that need tty
-   *  Command names, `:` separated, from
-   *  the MORELESS_EXCLUDE environment variable
+   *  Exclude commands that need tty and
+   *  included in MORELESS_EXCLUDE environment variable
+   *  If MORELESS_EXCLUDE starts with `:`, then
+   *  also exclude the default_excludes
    */
   const char *excludes = getenv ("MORELESS_EXCLUDE");
 
