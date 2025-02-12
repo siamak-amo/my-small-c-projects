@@ -1,4 +1,43 @@
-#define _GNU_SOURCE // TODO: what about BSD / MAC ??
+/* This file is part of my-small-c-projects <https://gitlab.com/SI.AMO/>
+
+  Moreless is free software: you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License,
+  or (at your option) any later version.
+
+  Moreless is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  See the GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/** file: moreless.c
+    created on: 11 Feb 2025
+
+   More Less
+   A simple tool to view programs output using the less command
+
+   ** This only works with the GNU C Library (glibc)
+      For other libc implementations, you need to overwrite
+      the equivalent `__libc_start_main` function **
+
+   Usage:
+     For a single command:
+       $ LD_PRELOAD=/path/to/moreless.so ls -ltrh
+
+     To make it permanent:
+       $ export LD_PRELOAD=/path/to/moreless.so
+       Then run your commands.
+
+   Compilation:
+     cc -O3 -Wall -Wextra -fPIC -shared \
+        -o moreless.so moreless.c
+
+     For debugging, define -D_DEBUG
+ **/
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -173,7 +212,17 @@ main_hook (int argc, char **argv, char **envp)
       return alter_main (argc, argv, envp);
     }
 }
-
+/**
+ *  Libc-dependent function name
+ *
+ *  This section should overwrite the function
+ *  that calls the actual main function.
+ *
+ *  It should initialize the global variable `original_main`
+ *  with the address of the actual main function and
+ *  then execute it's original (super) function, which
+ *  can be found this way: `dlsym(RTLD_NEXT, "func_name")`.
+ */
 #if defined(__GLIBC__) /* GNU Libc (glibc) */
 /**
  *  This code was stolen from:
