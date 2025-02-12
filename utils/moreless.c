@@ -13,15 +13,24 @@
 #undef UNUSED
 #define UNUSED(x) (void)(x)
 
-int iam_parent = 0;
-static int (*original_main)(int, char **, char **);
+#define _PARENT /* belongs to the parent */
+#define _CHILD /* belongs to the forked process */
 
-void
+int iam_parent = 0;
+
+/* These functions call the real main function */
+typedef int(*pre_main_t)(int argc, char **argv, char **envp);
+
+/* Belongs to the actual binary (parent) */
+static _PARENT pre_main_t original_main;
+
+
+void _PARENT
 __attribute__((constructor)) init()
 {
 }
 
-void
+void _PARENT
 __attribute__((destructor)) cleanup()
 {
   fflush (stdout);
@@ -30,7 +39,7 @@ __attribute__((destructor)) cleanup()
   wait (NULL);
 }
 
-int
+int _CHILD
 alter_main (int argc, char **argv, char **envp)
 {
   UNUSED (argc);
@@ -77,7 +86,7 @@ alter_main (int argc, char **argv, char **envp)
   return -1; /* unreachable */
 }
 
-int
+int _PARENT
 main_hook (int argc, char **argv, char **envp)
 {
   pid_t pid;
@@ -174,7 +183,7 @@ main_hook (int argc, char **argv, char **envp)
  *  Wrapper for __libc_start_main() that replaces the real main
  *  function with our hooked version.
  */
-int
+int _PARENT
 __libc_start_main (
     int (* main)(int, char **, char **),
     int argc, char **argv,
