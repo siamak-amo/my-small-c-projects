@@ -76,6 +76,7 @@
 #include <sys/wait.h>
 #include <dlfcn.h>
 #include <string.h>
+#include <fcntl.h>
 
 #ifndef LESS
 #  define LESS "less"
@@ -111,6 +112,21 @@ typedef int(*pre_main_t)(int argc, char **argv, char **envp);
 static pre_main_t __Parent__ original_main;
 
 
+static inline void
+safe_fclose (FILE *f)
+{
+  int fd;
+  if (f)
+    {
+      if ((fd = fileno (f)) < 0)
+        return;
+      if (fcntl (fd, F_GETFD) < 0)
+        return;
+      fflush (f);
+      fclose (f);
+    }
+}
+
 void __Parent__
 __attribute__((constructor)) init()
 {
@@ -119,10 +135,9 @@ __attribute__((constructor)) init()
 void __Parent__
 __attribute__((destructor)) cleanup()
 {
-  fflush (stdout);
+  safe_fclose (stdout);
+  safe_fclose (stderr);
   wait (NULL);
-  fclose (stdout);
-  fclose (stderr);
 }
 
 int __Child__
@@ -160,9 +175,6 @@ alter_main (int argc, char **argv, char **envp)
   if (ret < 0)
     {
       fprintf (stderr, LESS" itself failed.\n");
-      fflush (stdout);
-      fclose (stdout);
-      fclose (stdin);
       return -ret;
     }
 
