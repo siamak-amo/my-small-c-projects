@@ -49,6 +49,11 @@
 #  define LESS "less"
 #endif
 
+#ifndef DEFAULT_EXCLUDES
+#  define DEFAULT_EXCLUDES \
+  "less:tmux:screen"
+#endif
+
 #undef UNUSED
 #define UNUSED(x) (void)(x)
 
@@ -124,11 +129,28 @@ alter_main (int argc, char **argv, char **envp)
   return -1; /* unreachable */
 }
 
+/**
+ *  The `strchrnul` function is like `strchr` except  that
+ *  if @c is not found in @s, then it returns a pointer to
+ *  the null byte at the end of @s, rather than NULL.
+ */
+static inline const char *
+strchrnull (const char *s, int c)
+{
+  for (int chr = *s; chr != 0; chr = *(++s))
+    {
+      if (chr == c)
+        return s;
+    }
+  return s; /* s[0] must be equal to 0 */
+}
+
 int _PARENT
 main_hook (int argc, char **argv, char **envp)
 {
   pid_t pid;
   int pipefd[2];
+  const char *cmd = argv[0];
 
   /**
    *  When stdout is not a tty, there is a pipe already
@@ -138,19 +160,24 @@ main_hook (int argc, char **argv, char **envp)
     {
       goto __original_main;
     }
+
   /**
    *  Exclude commands that need tty
-   *
-   *  TODO: Make this configurable.
+   *  Command names, `:` separated, from
+   *  the MORELESS_EXCLUDE environment variable
    */
-  const char *cmd = argv[0];
-  if (cmd)
+  const char *excludes = getenv ("MORELESS_EXCLUDE");
+  if (!excludes)
+    excludes = DEFAULT_EXCLUDES;
+  const char *p = excludes;
+
+  for (ssize_t n = 0;
+       excludes != NULL && *p != 0;
+       excludes += n+1)
     {
-      if (0 == strcmp (cmd, "less") ||
-          0 == strcmp (cmd, "tmux") ||
-          0 == strcmp (cmd, "mplayer") ||
-          0 == strcmp (cmd, "mpv") ||
-          0)
+      p = strchrnull (excludes, ':');
+      n = p - excludes;
+      if (n > 0 && 0 == strncmp (cmd, excludes, n))
         {
           unsetenv ("LD_PRELOAD");
           goto __original_main;
@@ -212,6 +239,7 @@ main_hook (int argc, char **argv, char **envp)
       return alter_main (argc, argv, envp);
     }
 }
+
 /**
  *  Libc-dependent function name
  *
