@@ -99,7 +99,6 @@ enum parent_t
     P_PARENT =1,
     P_ESCAPED
   };
-int is_parent = P_CHILD;
 
 /* These functions call the real main function */
 typedef int(*pre_main_t)(int argc, char **argv, char **envp);
@@ -189,6 +188,7 @@ main_hook (int argc, char **argv, char **envp)
 {
   pid_t pid;
   int pipefd[2];
+  int mode = P_CHILD;
   const char *cmd = argv[0];
 
   /**
@@ -209,7 +209,7 @@ main_hook (int argc, char **argv, char **envp)
       n = p - excludes;
       if (n > 0 && 0 == strncmp (cmd, excludes, n))
         {
-          is_parent = P_ESCAPED;
+          mode = P_ESCAPED;
           unsetenv ("LD_PRELOAD");
           goto __original_main;
         }
@@ -221,7 +221,7 @@ main_hook (int argc, char **argv, char **envp)
    */
   if (!isatty (STDOUT_FILENO))
     {
-      is_parent = P_PARENT;
+      mode = P_PARENT;
       goto __original_main;
     }
 
@@ -253,22 +253,18 @@ main_hook (int argc, char **argv, char **envp)
       close (pipefd[0]);
       dup2 (pipefd[1], STDOUT_FILENO);
       close (pipefd[1]);
-      is_parent = P_PARENT;
+      mode = P_PARENT;
 
 #ifdef IMMID_PIPE
       setvbuf (stdout, NULL, _IONBF, 0);
 #endif
     }
 
-  /**
-   *  `( -> )`  means only passing through
-   *  `(less)`  means actually creating extra pipes
-   */
-  if (is_parent) _PARENT
+  if (mode) _PARENT
     {
     __original_main:
 #ifdef _DEBUG
-      if (is_parent == P_ESCAPED)
+      if (mode == P_ESCAPED)
         fprintf (stderr, "moreless[escaped] -> %s\n", *argv);
       else
         fprintf (stderr, "moreless[parent] --> %s\n", *argv);
