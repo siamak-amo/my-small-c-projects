@@ -155,7 +155,7 @@ strchrnull (const char *s, int c)
   return s; /* s[0] must be equal to 0 */
 }
 
-int _PARENT
+int
 main_hook (int argc, char **argv, char **envp)
 {
   pid_t pid;
@@ -194,6 +194,7 @@ main_hook (int argc, char **argv, char **envp)
         }
     }
 
+  /* Create pipe and do fork */
   if (pipe (pipefd) < 0)
     {
       perror ("pipe");
@@ -205,15 +206,19 @@ main_hook (int argc, char **argv, char **envp)
       return EXIT_FAILURE;
     }
 
-  if (pid == 0)
-    { /* Child process */
+  if (pid == 0) _CHILD  /* Child process */
+    {
       close (pipefd[1]);
       dup2 (pipefd[0], STDIN_FILENO);
       close (pipefd[0]);
     }
-  else
-    { /* Parent process */
-      // TODO: maybe provide a way to also pass stderr through.
+  else _PARENT /* Parent process */
+    {
+      /**
+       *  TODO: Maybe provide a way to also pass
+       *  stderr through.
+       *  currently, 2>&1 does not work
+       */
       close (pipefd[0]);
       dup2 (pipefd[1], STDOUT_FILENO);
       close (pipefd[1]);
@@ -233,19 +238,15 @@ main_hook (int argc, char **argv, char **envp)
            (iam_parent) ? " -> " : "less", *argv);
 #endif /* _DEBUG */
 
-  if (iam_parent)
+  if (iam_parent) _PARENT
     {
     __original_main:
-      /**
-       *  Continue to the real main function
-       *
-       *  TODO: redirecting 2>&1 does not work.
-       */
+      /* Continue to the real main function */
       return original_main (argc, argv, envp);
     }
-  else
+  else _CHILD
     {
-      /* `less` command lives here */
+      /* The less command lives here */
       return alter_main (argc, argv, envp);
     }
 }
