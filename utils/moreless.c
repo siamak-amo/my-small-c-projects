@@ -48,14 +48,13 @@ alter_main (int argc, char **argv, char **envp)
 
 #ifdef _DEBUG
   int c;
-  puts ("---------------------------------");
+  puts ("===============");
   while ((c = getc (stdin)) > 0)
     {
       printf ("%c", (c > 0) ? c : '?');
     }
-  puts ("--EOF----------------------------\n");
+  puts ("======EOF======\n");
   return 0;
-
 #else /* _DEBUG */
 
   const char *less = LESS;
