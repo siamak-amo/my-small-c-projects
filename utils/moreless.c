@@ -28,14 +28,13 @@
    Usage:
      For a single command:
        $ LD_PRELOAD="/path/to/moreless.so" ls -ltrh
-
-     To make it permanent:
+     Or make it permanent:
        $ export LD_PRELOAD="/path/to/moreless.so"
        Then run your commands.
 
      To exclude command(s) from moreless:
        To append to the default excludes:
-       $ export MORELESS_EXCLUDE=":ls"
+       $ export MORELESS_EXCLUDE=":ls:mpv"
 
        To overwrite the default excludes:
        $ export MORELESS_EXCLUDE="less:tmux:mpv"
@@ -44,9 +43,6 @@
 
 
    Here is a simple bash function to toggle moreless:
-     You might want to eliminate /path/to/moreless.so
-     from LD_PRELOAD instead of using `unset LD_PRELOAD`
-
      ```{bash}
      function moreless ()
        {
@@ -63,6 +59,9 @@
          esac
        }
      ```
+     You might want to eliminate /path/to/moreless.so
+     from LD_PRELOAD instead of using `unset LD_PRELOAD`.
+
 
    Compilation:
      cc -O3 -Wall -Wextra -fPIC -shared \
