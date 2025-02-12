@@ -90,14 +90,16 @@
 #  define LESS "less"
 #endif
 
-#ifndef DEFAULT_EXCLUDES
-#  define DEFAULT_EXCLUDES \
+#ifndef _DEFAULT_EXCLUDES
+#  define _DEFAULT_EXCLUDES \
   "less:man" \
   ":cp:mv:dd:rm:rmdir:chmod:chown:sudo" \
   ":tmux:screen" \
   ":vi:vim:nvim:nano:hexedit" \
   ":mpv:mplayer"
 #endif
+
+static const char *default_excludes = _DEFAULT_EXCLUDES;
 
 #undef UNUSED
 #define UNUSED(x) (void)(x)
@@ -247,11 +249,11 @@ main_hook (int argc, char **argv, char **envp)
   const char *excludes = getenv ("MORELESS_EXCLUDE");
 
   if (!excludes)
-    excludes = DEFAULT_EXCLUDES;
+    excludes = default_excludes;
   if (*excludes == ':')
     {
       if (excludestr (excludes, cmd) ||
-          excludestr (DEFAULT_EXCLUDES, cmd))
+          excludestr (default_excludes, cmd))
         {
         __do_escape:
           {
