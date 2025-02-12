@@ -84,8 +84,10 @@
 #ifndef DEFAULT_EXCLUDES
 #  define DEFAULT_EXCLUDES \
   "less" \
+  ":cp:mv:dd:rm:rmdir:chmod:chown:sudo" \
   ":tmux:screen" \
-  ":vi:vim:nvim:nano:hexedit"
+  ":vi:vim:nvim:nano:hexedit" \
+  ":mpv:mplayer"
 #endif
 
 #undef UNUSED
