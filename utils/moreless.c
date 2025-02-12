@@ -89,8 +89,9 @@
 #undef UNUSED
 #define UNUSED(x) (void)(x)
 
-#define _Parent /* belongs to the parent */
-#define _Child /* belongs to the forked process */
+/* Annotations */
+#define __Parent__
+#define __Child__
 
 enum parent_t
   {
@@ -103,15 +104,15 @@ enum parent_t
 typedef int(*pre_main_t)(int argc, char **argv, char **envp);
 
 /* Belongs to the actual binary (parent) */
-static _Parent pre_main_t original_main;
+static pre_main_t __Parent__ original_main;
 
 
-void _Parent
+void __Parent__
 __attribute__((constructor)) init()
 {
 }
 
-void _Parent
+void __Parent__
 __attribute__((destructor)) cleanup()
 {
   fflush (stdout);
@@ -120,7 +121,7 @@ __attribute__((destructor)) cleanup()
   wait (NULL);
 }
 
-int _Child
+int __Child__
 alter_main (int argc, char **argv, char **envp)
 {
   UNUSED (argc);
@@ -182,7 +183,7 @@ strchrnull (const char *s, int c)
   return s; /* s[0] must be equal to 0 */
 }
 
-int _Parent _Child
+int __Parent__ __Child__
 main_hook (int argc, char **argv, char **envp)
 {
   pid_t pid;
@@ -236,13 +237,13 @@ main_hook (int argc, char **argv, char **envp)
       return EXIT_FAILURE;
     }
 
-  if (pid == 0) _Child  /* Child process */
+  if (pid == 0) __Child__  /* Child process */
     {
       close (pipefd[1]);
       dup2 (pipefd[0], STDIN_FILENO);
       close (pipefd[0]);
     }
-  else _Parent /* Parent process */
+  else __Parent__ /* Parent process */
     {
       /**
        *  TODO: Maybe provide a way to also pass
@@ -259,7 +260,7 @@ main_hook (int argc, char **argv, char **envp)
 #endif
     }
 
-  if (mode) _Parent
+  if (mode) __Parent__
     {
     __original_main:
 #ifdef _DEBUG
@@ -271,7 +272,7 @@ main_hook (int argc, char **argv, char **envp)
       /* Continue to the real main function */
       return original_main (argc, argv, envp);
     }
-  else _Child
+  else __Child__
     {
 #ifdef _DEBUG
       fprintf (stderr, "moreless[child] less %s\n", *argv);
@@ -300,7 +301,7 @@ main_hook (int argc, char **argv, char **envp)
  *  Wrapper for __libc_start_main() that replaces the real main
  *  function with our hooked version.
  */
-int _Parent _Child
+int __Parent__ __Child__
 __libc_start_main (
     int (* main)(int, char **, char **),
     int argc, char **argv,
