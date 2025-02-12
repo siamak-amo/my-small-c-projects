@@ -34,10 +34,13 @@
        Then run your commands.
 
      To exclude command(s) from moreless:
+       To append to the default excludes:
+       $ export MORELESS_EXCLUDE=":ls"
+
+       To overwrite the default excludes:
        $ export MORELESS_EXCLUDE="less:tmux:mpv"
-       Colon separated command names in the
-       `MORELESS_EXCLUDE` environment variable.
-       By default it excludes less, tmux, screen and vi.
+
+       See the default excludes in `DEFAULT_EXCLUDES`.
 
 
    Here is a simple bash function to toggle moreless:
@@ -199,6 +202,30 @@ strchrnull (const char *s, int c)
   return s; /* s[0] must be equal to 0 */
 }
 
+/**
+ *  Checks if the specified string @needle is found
+ *  in the colon-separated string @haystack
+ */
+static inline int
+excludestr (const char *restrict haystack,
+            const char *restrict needle)
+{
+  const char *p = haystack;
+  for (ssize_t n = 0;
+       haystack != NULL && *p != 0;
+       haystack += n+1)
+    {
+      p = strchrnull (haystack, ':');
+      n = p - haystack;
+      if (n > 0 &&
+          0 == strncmp (needle, haystack, n))
+        {
+          return 1;
+        }
+    }
+  return 0;
+}
+
 int __Parent__ __Child__
 main_hook (int argc, char **argv, char **envp)
 {
@@ -213,23 +240,25 @@ main_hook (int argc, char **argv, char **envp)
    *  the MORELESS_EXCLUDE environment variable
    */
   const char *excludes = getenv ("MORELESS_EXCLUDE");
+
   if (!excludes)
     excludes = DEFAULT_EXCLUDES;
-  const char *p = excludes;
-
-  for (ssize_t n = 0;
-       excludes != NULL && *p != 0;
-       excludes += n+1)
+  if (*excludes == ':')
     {
-      p = strchrnull (excludes, ':');
-      n = p - excludes;
-      if (n > 0 && 0 == strncmp (cmd, excludes, n))
+      if (excludestr (excludes, cmd) ||
+          excludestr (DEFAULT_EXCLUDES, cmd))
         {
-          mode = P_ESCAPED;
-          unsetenv ("LD_PRELOAD");
-          goto __original_main;
+        __do_escape:
+          {
+            mode = P_ESCAPED;
+            unsetenv ("LD_PRELOAD");
+            goto __original_main;
+          }
         }
     }
+  else if (excludestr (excludes, cmd))
+    goto __do_escape;
+
 
   /**
    *  When stdout is not a tty, there is a pipe already
