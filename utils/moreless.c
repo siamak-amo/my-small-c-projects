@@ -193,7 +193,7 @@ alter_main (int argc, char **argv, char **envp)
 }
 
 /**
- *  The `strchrnul` function is like `strchr` except  that
+ *  The `strchrnull` function is like `strchr` except  that
  *  if @c is not found in @s, then it returns a pointer to
  *  the null byte at the end of @s, rather than NULL.
  */
