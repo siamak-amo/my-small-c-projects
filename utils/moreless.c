@@ -93,7 +93,13 @@
 #define _PARENT /* belongs to the parent */
 #define _CHILD /* belongs to the forked process */
 
-int iam_parent = 0;
+enum parent_t
+  {
+    P_CHILD = 0,
+    P_PARENT =1,
+    P_ESCAPED
+  };
+int is_parent = P_CHILD;
 
 /* These functions call the real main function */
 typedef int(*pre_main_t)(int argc, char **argv, char **envp);
@@ -186,15 +192,6 @@ main_hook (int argc, char **argv, char **envp)
   const char *cmd = argv[0];
 
   /**
-   *  When stdout is not a tty, there is a pipe already
-   *  so we should not affect moreless there
-   */
-  if (!isatty (STDOUT_FILENO))
-    {
-      goto __original_main;
-    }
-
-  /**
    *  Exclude commands that need tty
    *  Command names, `:` separated, from
    *  the MORELESS_EXCLUDE environment variable
@@ -212,9 +209,20 @@ main_hook (int argc, char **argv, char **envp)
       n = p - excludes;
       if (n > 0 && 0 == strncmp (cmd, excludes, n))
         {
+          is_parent = P_ESCAPED;
           unsetenv ("LD_PRELOAD");
           goto __original_main;
         }
+    }
+
+  /**
+   *  When stdout is not a tty, there is a pipe already
+   *  so we should not affect moreless there
+   */
+  if (!isatty (STDOUT_FILENO))
+    {
+      is_parent = P_PARENT;
+      goto __original_main;
     }
 
   /* Create pipe and do fork */
@@ -245,7 +253,7 @@ main_hook (int argc, char **argv, char **envp)
       close (pipefd[0]);
       dup2 (pipefd[1], STDOUT_FILENO);
       close (pipefd[1]);
-      iam_parent = 1;
+      is_parent = P_PARENT;
 
 #ifdef IMMID_PIPE
       setvbuf (stdout, NULL, _IONBF, 0);
