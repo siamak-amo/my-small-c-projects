@@ -294,8 +294,9 @@ main_hook (int argc, char **argv, char **envp)
  */
 #if defined(__GLIBC__) /* GNU Libc (glibc) */
 /**
- *  This code was stolen from:
- *    <https://gist.github.com/apsun/1e144bf7639b22ff0097171fa0f8c6b1>
+ *  This code is stolen from:
+ *   <https://gist.github.com/apsun/1e144bf7639b22ff0097171fa0f8c6b1>
+ *
  *  Wrapper for __libc_start_main() that replaces the real main
  *  function with our hooked version.
  */
