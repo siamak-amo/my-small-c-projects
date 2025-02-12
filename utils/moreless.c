@@ -90,8 +90,8 @@
 #undef UNUSED
 #define UNUSED(x) (void)(x)
 
-#define _PARENT /* belongs to the parent */
-#define _CHILD /* belongs to the forked process */
+#define _Parent /* belongs to the parent */
+#define _Child /* belongs to the forked process */
 
 enum parent_t
   {
@@ -104,15 +104,15 @@ enum parent_t
 typedef int(*pre_main_t)(int argc, char **argv, char **envp);
 
 /* Belongs to the actual binary (parent) */
-static _PARENT pre_main_t original_main;
+static _Parent pre_main_t original_main;
 
 
-void _PARENT
+void _Parent
 __attribute__((constructor)) init()
 {
 }
 
-void _PARENT
+void _Parent
 __attribute__((destructor)) cleanup()
 {
   fflush (stdout);
@@ -121,7 +121,7 @@ __attribute__((destructor)) cleanup()
   wait (NULL);
 }
 
-int _CHILD
+int _Child
 alter_main (int argc, char **argv, char **envp)
 {
   UNUSED (argc);
@@ -237,13 +237,13 @@ main_hook (int argc, char **argv, char **envp)
       return EXIT_FAILURE;
     }
 
-  if (pid == 0) _CHILD  /* Child process */
+  if (pid == 0) _Child  /* Child process */
     {
       close (pipefd[1]);
       dup2 (pipefd[0], STDIN_FILENO);
       close (pipefd[0]);
     }
-  else _PARENT /* Parent process */
+  else _Parent /* Parent process */
     {
       /**
        *  TODO: Maybe provide a way to also pass
@@ -260,7 +260,7 @@ main_hook (int argc, char **argv, char **envp)
 #endif
     }
 
-  if (mode) _PARENT
+  if (mode) _Parent
     {
     __original_main:
 #ifdef _DEBUG
@@ -272,7 +272,7 @@ main_hook (int argc, char **argv, char **envp)
       /* Continue to the real main function */
       return original_main (argc, argv, envp);
     }
-  else _CHILD
+  else _Child
     {
 #ifdef _DEBUG
       fprintf (stderr, "moreless[child] less %s\n", *argv);
@@ -300,7 +300,7 @@ main_hook (int argc, char **argv, char **envp)
  *  Wrapper for __libc_start_main() that replaces the real main
  *  function with our hooked version.
  */
-int _PARENT
+int _Parent
 __libc_start_main (
     int (* main)(int, char **, char **),
     int argc, char **argv,
