@@ -73,9 +73,17 @@
        define -D IMMID_PIPE
 
    Known issues:
+     - Each iteration of for/while of bash, runs
+       a separate less program
+
+     - Redirecting 2>&1 does not work
+
+     - Some programs might look different
+       we've overwritten isatty function, but some
+       programs ignore it (like grep)
+
      - The ps command exits with exit code 1
        (probably because of it's unwanted child)
-     - Redirecting 2>&1 does not work
  **/
 #include <stdio.h>
 #include <stdlib.h>
@@ -84,6 +92,8 @@
 #include <dlfcn.h>
 #include <string.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #ifndef LESS
 #  define LESS "less"
@@ -130,6 +140,15 @@ const char *mode_cstr[] = {
 };
 #endif /* _DEBUG */
 
+/**
+ *  $ command_1 | command_2 | ... | last_command
+ *    ^           ^                 ^
+ *    P_ESCAPED   P_ESCAPED         P_PARENT
+ *
+ *  mode of the less process will be P_CHILD
+ */
+int mode = P_CHILD;
+
 /* These functions call the real main function */
 typedef int(*pre_main_t)(int argc, char **argv, char **envp);
 
@@ -163,6 +182,25 @@ __attribute__((destructor)) cleanup()
   safe_fclose (stdout);
   safe_fclose (stderr);
   wait (NULL);
+}
+
+
+/**
+ *  We overwrite isatty function to trick the parent
+ *  process to consider the stdout always a tty
+ *  This will cause them to look normal and have color
+ */
+__Parent__ __Child__ int
+isatty (int fd)
+{
+  struct stat buf;
+
+  if (mode == P_PARENT && fd == STDOUT_FILENO)
+    return 1;
+
+  if (fstat (fd, &buf) == -1)
+    return 0;
+  return S_ISCHR (buf.st_mode);
 }
 
 __Child__ int
@@ -253,7 +291,6 @@ main_hook (int argc, char **argv, char **envp)
 {
   pid_t pid;
   int pipefd[2];
-  int mode = P_CHILD;
   const char *cmd = argv[0];
 
   /**
@@ -289,7 +326,7 @@ main_hook (int argc, char **argv, char **envp)
    */
   if (!isatty (STDOUT_FILENO))
     {
-      mode = P_PARENT;
+      mode = P_ESCAPED;
       goto __original_main;
     }
 
