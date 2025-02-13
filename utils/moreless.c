@@ -89,6 +89,14 @@
 #  define LESS "less"
 #endif
 
+#ifndef _LESS_OPTS
+#  define _LESS_OPTS                             \
+/* command name argv[0] */                 LESS, \
+/* enable RAW more (to support color) */   "-R", \
+/* disable always cleaning the screen */   "-X", \
+/* truncate long lones */                  "-S"
+#endif
+
 #ifndef _EXCLUDES
 #  define _EXCLUDES \
   "less:man" \
@@ -188,7 +196,7 @@ alter_main (int argc, char **argv, char **envp)
   unsetenv ("LD_PRELOAD");
 
   // TODO: provide a way to pass less options
-  int ret = execlp (less, less, "-S", NULL);
+  int ret = execlp (less, _LESS_OPTS, NULL);
   if (ret < 0)
     {
       fprintf (stderr, LESS" itself failed.\n");
