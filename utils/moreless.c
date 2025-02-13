@@ -118,7 +118,7 @@ enum parent_t
 typedef int(*pre_main_t)(int argc, char **argv, char **envp);
 
 /* Belongs to the actual binary (parent) */
-static pre_main_t __Parent__ original_main;
+static __Parent__ pre_main_t original_main;
 
 
 static inline void
@@ -136,12 +136,12 @@ safe_fclose (FILE *f)
     }
 }
 
-void __Parent__
+__Parent__ void
 __attribute__((constructor)) init()
 {
 }
 
-void __Parent__
+__Parent__ void
 __attribute__((destructor)) cleanup()
 {
   safe_fclose (stdout);
@@ -149,7 +149,7 @@ __attribute__((destructor)) cleanup()
   wait (NULL);
 }
 
-int __Child__
+__Child__ int
 alter_main (int argc, char **argv, char **envp)
 {
   UNUSED (argc);
@@ -232,7 +232,7 @@ excludestr (const char *restrict haystack,
   return 0;
 }
 
-int __Parent__ __Child__
+__Parent__ __Child__ int
 main_hook (int argc, char **argv, char **envp)
 {
   pid_t pid;
@@ -340,7 +340,7 @@ main_hook (int argc, char **argv, char **envp)
  *  then execute it's original (super) function, which
  *  can be found this way: `dlsym(RTLD_NEXT, "func_name")`.
  */
-#if defined(__GLIBC__) /* GNU Libc (glibc) */
+#if defined (__GLIBC__) /* GNU Libc (glibc) */
 /**
  *  This code is stolen from:
  *   <https://gist.github.com/apsun/1e144bf7639b22ff0097171fa0f8c6b1>
@@ -348,7 +348,7 @@ main_hook (int argc, char **argv, char **envp)
  *  Wrapper for __libc_start_main() that replaces the real main
  *  function with our hooked version.
  */
-int __Parent__ __Child__
+__Parent__ __Child__ int
 __libc_start_main (
     int (* main)(int, char **, char **),
     int argc, char **argv,
