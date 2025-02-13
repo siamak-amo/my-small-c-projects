@@ -89,8 +89,8 @@
 #  define LESS "less"
 #endif
 
-#ifndef _DEFAULT_EXCLUDES
-#  define _DEFAULT_EXCLUDES \
+#ifndef _EXCLUDES
+#  define _EXCLUDES \
   "less:man" \
   ":cp:mv:dd:rm:rmdir:chmod:chown:sudo" \
   ":tmux:screen" \
@@ -98,7 +98,7 @@
   ":mpv:mplayer"
 #endif
 
-static const char *default_excludes = _DEFAULT_EXCLUDES;
+static const char *default_excludes = _EXCLUDES;
 
 #undef UNUSED
 #define UNUSED(x) (void)(x)
@@ -113,6 +113,14 @@ enum parent_t
     P_PARENT =1,
     P_ESCAPED
   };
+
+#ifdef _DEBUG
+const char *mode_cstr[] = {
+  [P_CHILD]     = "child",
+  [P_PARENT]    = "parent",
+  [P_ESCAPED]   = "ignore",
+};
+#endif /* _DEBUG */
 
 /* These functions call the real main function */
 typedef int(*pre_main_t)(int argc, char **argv, char **envp);
@@ -311,10 +319,7 @@ main_hook (int argc, char **argv, char **envp)
     {
     __original_main:
 #ifdef _DEBUG
-      if (mode == P_ESCAPED)
-        fprintf (stderr, "moreless[escaped] -> %s\n", *argv);
-      else
-        fprintf (stderr, "moreless[parent] --> %s\n", *argv);
+      fprintf (stderr, "moreless[%s] --> %s\n", mode_cstr[mode], *argv);
 #endif
       /* Continue to the real main function */
       return original_main (argc, argv, envp);
@@ -322,7 +327,7 @@ main_hook (int argc, char **argv, char **envp)
   else __Child__
     {
 #ifdef _DEBUG
-      fprintf (stderr, "moreless[child] less %s\n", *argv);
+      fprintf (stderr, "moreless[%s] less %s\n", mode_cstr[mode], *argv);
 #endif
       /* The less command lives here */
       return alter_main (argc, argv, envp);
