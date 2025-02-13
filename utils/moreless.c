@@ -350,15 +350,16 @@ main_hook (int argc, char **argv, char **envp)
  */
 __Parent__ __Child__ int
 __libc_start_main (
-    int (* main)(int, char **, char **),
+    pre_main_t main, // the real main function
     int argc, char **argv,
-    int (* init)(int, char **, char **),
+    pre_main_t init,
     void (* fini)(void),
     void (* rtld_fini)(void),
     void *stack_end)
 {
     /* Save the real main function address */
     original_main = main;
+
     /* Find the real __libc_start_main()... */
     typeof (&__libc_start_main) super =
       dlsym (RTLD_NEXT, "__libc_start_main");
