@@ -127,6 +127,7 @@ static const char *default_excludes = _EXCLUDES;
 /* Annotations */
 #define __Parent__
 #define __Child__
+#define __Overwrite__
 
 enum parent_t
   {
@@ -195,6 +196,7 @@ __attribute__((destructor)) cleanup()
  */
 __Parent__ __Child__ int
 isatty (int fd)
+  __Overwrite__
 {
   struct stat buf;
 
@@ -237,7 +239,11 @@ alter_main (int argc, char **argv, char **envp)
    */
   unsetenv ("LD_PRELOAD");
 
-  // TODO: provide a way to pass less options
+  /**
+   *  TODO: Is there any efficient way to accept
+   *        these LESS_OPTS options dynamically?
+   *        maybe from the some environment variable
+   */
   int ret = execlp (less, LESS_OPTS, NULL);
   if (ret < 0)
     {
@@ -251,6 +257,9 @@ alter_main (int argc, char **argv, char **envp)
 }
 
 /**
+ *  The strchrnull function was available only via _GNU_SOURCE,
+ *  so we have implemented our version.
+ *
  *  The `strchrnull` function is like `strchr` except  that
  *  if @c is not found in @s, then it returns a pointer to
  *  the null byte at the end of @s, rather than NULL.
@@ -382,9 +391,9 @@ main_hook (int argc, char **argv, char **envp)
       return alter_main (argc, argv, envp);
     }
 }
-
+__Overwrite__
 /**
- **  Libc-dependent section
+ **  Libc-dependent function overwrite
  **
  **  This section should overwrite the function
  **  that calls the real main function.
@@ -410,6 +419,7 @@ __libc_start_main (
     void (* fini)(void),
     void (* rtld_fini)(void),
     void *stack_end)
+  __Overwrite__
 {
     /* Save the real main function address */
     original_main = main;
