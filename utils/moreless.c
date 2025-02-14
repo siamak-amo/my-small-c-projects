@@ -67,25 +67,28 @@
      cc -O3 -Wall -Wextra -fPIC -shared \
         -o moreless.so moreless.c
 
+     Options to pass to the less process:
+       define -D_LESS_OPTS='"-S", "-R", "-X"'
      For debugging:
        define -D_DEBUG
      To disable buffering in pipes:
        define -D IMMID_PIPE
+     To disable overwriting isatty function
+       define -D_DO_NOT_TRICK_ISATTY
 
    Known issues:
-     - Each iteration of for/while loops (bash), runs a separate less program
-       A simple solution would be to redirect to less or cat:
-       $ ... | while read ln; do ls --color $ln; done | less
-       Or using some bash tricks to unset LD_PRELOAD inside loops
+   - Each iteration of for/while loops in Bash runs a separate instance of
+     the less program. A simple solution is to redirect output to less or cat:
+     $ ... | while read ln; do ls --color "$ln"; done | less
 
-     - Redirecting 2>&1 does not work
+   - Redirecting 2>&1 does not work (I don't know how to detect redirection)
 
-     - Some programs might look different (e.g. no color)
-       Although we've overwritten isatty function, some programs have
-       their own isatty implementation, so ours wont affect them (like grep)
+   - Some programs may look different (e.g. without color).
+     Although we have overridden the isatty function, some programs have their own
+     isatty implementation, which our override will not affect (like: grep).
 
-     - The ps command exits with exit code 1
-       (probably because of it's unwanted child)
+   - The ps command exits with an exit code of 1 (EXIT_FAILURE).
+     (likely because of it's unwanted child)
  **/
 #include <stdio.h>
 #include <stdlib.h>
