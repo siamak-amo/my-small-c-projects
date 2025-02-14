@@ -384,16 +384,16 @@ main_hook (int argc, char **argv, char **envp)
 }
 
 /**
- *  Libc-dependent function name
- *
- *  This section should overwrite the function
- *  that calls the actual main function.
- *
- *  It should initialize the global variable `original_main`
- *  with the address of the actual main function and
- *  then execute it's original (super) function, which
- *  can be found this way: `dlsym(RTLD_NEXT, "func_name")`.
- */
+ **  Libc-dependent section
+ **
+ **  This section should overwrite the function
+ **  that calls the real main function.
+ **
+ **  It should initialize the global variable `original_main`
+ **  with the address of the real main function and
+ **  then execute it's original (super) function, which
+ **  can be found this way: `dlsym(RTLD_NEXT, "func_name")`.
+ **/
 #if defined (__GLIBC__) /* GNU Libc (glibc) */
 /**
  *  This code is stolen from:
