@@ -102,9 +102,10 @@
 #endif
 
 #ifndef _LESS_OPTS
-#  define _LESS_OPTS \
-  LESS, "-R", "-X", "-S"
+#  define _LESS_OPTS "-R", "-X", "-S"
 #endif
+
+#define LESS_OPTS LESS, _LESS_OPTS
 
 #ifndef _EXCLUDES
 #  define _EXCLUDES \
@@ -183,7 +184,7 @@ __attribute__((destructor)) cleanup()
   wait (NULL);
 }
 
-
+#ifndef _DO_NOT_TRICK_ISATTY
 /**
  *  We overwrite isatty function to trick the parent
  *  process to consider the stdout always a tty
@@ -201,6 +202,7 @@ isatty (int fd)
     return 0;
   return S_ISCHR (buf.st_mode);
 }
+#endif /* _DO_NOT_TRICK_ISATTY */
 
 __Child__ int
 alter_main (int argc, char **argv, char **envp)
@@ -233,7 +235,7 @@ alter_main (int argc, char **argv, char **envp)
   unsetenv ("LD_PRELOAD");
 
   // TODO: provide a way to pass less options
-  int ret = execlp (less, _LESS_OPTS, NULL);
+  int ret = execlp (less, LESS_OPTS, NULL);
   if (ret < 0)
     {
       fprintf (stderr, LESS" itself failed.\n");
