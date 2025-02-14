@@ -73,14 +73,16 @@
        define -D IMMID_PIPE
 
    Known issues:
-     - Each iteration of for/while of bash, runs
-       a separate less program
+     - Each iteration of for/while loops (bash), runs a separate less program
+       A simple solution would be to redirect to less or cat:
+       $ ... | while read ln; do ls --color $ln; done | less
+       Or using some bash tricks to unset LD_PRELOAD inside loops
 
      - Redirecting 2>&1 does not work
 
-     - Some programs might look different
-       we've overwritten isatty function, but some
-       programs ignore it (like grep)
+     - Some programs might look different (e.g. no color)
+       Although we've overwritten isatty function, some programs have
+       their own isatty implementation, so ours wont affect them (like grep)
 
      - The ps command exits with exit code 1
        (probably because of it's unwanted child)
@@ -100,11 +102,8 @@
 #endif
 
 #ifndef _LESS_OPTS
-#  define _LESS_OPTS                             \
-/* command name argv[0] */                 LESS, \
-/* enable RAW more (to support color) */   "-R", \
-/* disable always cleaning the screen */   "-X", \
-/* truncate long lones */                  "-S"
+#  define _LESS_OPTS \
+  LESS, "-R", "-X", "-S"
 #endif
 
 #ifndef _EXCLUDES
@@ -350,10 +349,10 @@ main_hook (int argc, char **argv, char **envp)
     }
   else __Parent__ /* Parent process */
     {
+      mode = P_PARENT;
       close (pipefd[0]);
       dup2 (pipefd[1], STDOUT_FILENO);
       close (pipefd[1]);
-      mode = P_PARENT;
 
 #ifdef IMMID_PIPE
       setvbuf (stdout, NULL, _IONBF, 0);
