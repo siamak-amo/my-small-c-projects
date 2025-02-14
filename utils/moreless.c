@@ -219,7 +219,7 @@ alter_main (int argc, char **argv, char **envp)
   puts ("===============");
   while ((c = getc (stdin)) > 0)
     {
-      printf ("%c", (c > 0) ? c : '?');
+      putc ((c > 0) ? c : '?', stdout);
     }
   puts ("======EOF======\n");
   return 0;
