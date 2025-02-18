@@ -140,9 +140,9 @@ static const char *shells = _SHELLS;
 #define UNUSED(x) (void)(x)
 
 /* Annotations */
-#define __Parent__
-#define __Child__
-#define __Overwrite__
+#define __Parent__ /* used by the parent process */
+#define __Child__ /* used by the child process */
+#define __Overwrite__ /* when we overwrite a libc function */
 
 enum parent_t
   {
