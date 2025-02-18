@@ -41,6 +41,9 @@
 
        See the default excludes in `DEFAULT_EXCLUDES`.
 
+       Alternatively, set the environment variable `NO_LESS`
+       to disable moreless
+
 
    Here is a simple bash function to toggle moreless:
      ```{bash}
@@ -338,6 +341,8 @@ main_hook (int argc, char **argv, char **envp)
         }
     }
   else if (excludestr (excludes, cmd))
+    goto __do_escape;
+  else if (getenv ("NO_LESS"))
     goto __do_escape;
 
   /**
