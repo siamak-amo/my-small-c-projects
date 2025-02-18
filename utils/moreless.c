@@ -18,8 +18,7 @@
     created on: 11 Feb 2025
 
    More Less
-   A simple tool to view program's output
-   through the less command
+   A simple tool to view standard output through the less program
 
    ** This only works with the GNU C Library (glibc)
       For other libc implementations, you need to overwrite
@@ -80,8 +79,11 @@
        define -D_DO_NOT_TRICK_ISATTY
 
    Known issues:
-   - Each iteration of for/while loops in Bash runs a separate instance of
-     the less program. A simple solution is to redirect output to less or cat:
+   - It does not work with the bash builtin functions (like: echo, pwd)
+
+   - Each iteration of for/while loops in Bash runs a separate instance
+     of the less program.
+     A simple solution is to redirect the output:
      $ ... | while read ln; do ls --color "$ln"; done | less
 
      A better solution is using `bash -c`:
@@ -123,7 +125,8 @@
   ":tmux:screen" \
   ":vi:vim:nvim:nano:hexedit" \
   ":mpv:mplayer"
-#endif
+#endif /* _EXCLUDES */
+
 #ifndef _SHELLS
 #  define _SHELLS \
   "sh:dash:bash:zsh:fish:csh"
@@ -201,7 +204,7 @@ __attribute__((destructor)) cleanup()
 
 #ifndef _DO_NOT_TRICK_ISATTY
 /**
- *  We overwrite isatty function to trick the parent
+ *  We overwrite the isatty function to trick the parent
  *  process to consider the stdout always a tty
  *  This will cause them to look normal and have color
  */
@@ -239,6 +242,7 @@ alter_main (int argc, char **argv, char **envp)
 #else /* _DEBUG */
 
   const char *less = LESS;
+
   /**
    *  DO *NOT* DELETE ME
    *  This will prevent recursive moreless
@@ -379,13 +383,13 @@ main_hook (int argc, char **argv, char **envp)
       return EXIT_FAILURE;
     }
 
-  if (pid == 0) __Child__  /* Child process */
+  if (pid == 0) __Child__
     {
       close (pipefd[1]);
       dup2 (pipefd[0], STDIN_FILENO);
       close (pipefd[0]);
     }
-  else __Parent__ /* Parent process */
+  else __Parent__
     {
       mode = P_PARENT;
       close (pipefd[0]);
