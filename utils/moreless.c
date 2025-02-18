@@ -121,9 +121,10 @@
 #ifndef _EXCLUDES
 #  define _EXCLUDES \
   "less:man" \
+  ":clear:cls:exit:reboot:shutdown" \
   ":cp:mv:dd:rm:rmdir:chmod:chown:sudo" \
   ":tmux:screen" \
-  ":vi:vim:nvim:nano:hexedit" \
+  ":emacs:vi:vim:nvim:nano:hexedit" \
   ":mpv:mplayer"
 #endif /* _EXCLUDES */
 
