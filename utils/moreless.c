@@ -207,7 +207,7 @@ __attribute__((destructor)) cleanup()
 /**
  *  We overwrite the isatty function to trick the parent
  *  process to consider the stdout always a tty
- *  This will cause them to look normal and have color
+ *  This makes them to look normal and have color
  */
 __Parent__ __Child__ int
 isatty (int fd)
@@ -246,19 +246,19 @@ alter_main (int argc, char **argv, char **envp)
 
   /**
    *  DO *NOT* DELETE ME
-   *  This will prevent recursive moreless
+   *  This prevents recursive moreless
    *  Without unsetenv, moreless will be injected again
    *  in the less command and will call itself recursively
    *
-   *  TODO: This must only delete /path/to/moreless.so
-   *        not the whole of the env variable.
+   *  TODO: We must only eliminate /path/to/moreless.so,
+   *        Not the whole of the environment variable.
    */
   unsetenv ("LD_PRELOAD");
 
   /**
    *  TODO: Is there any efficient way to accept
    *        these LESS_OPTS options dynamically?
-   *        maybe from the some environment variable
+   *        Maybe from the some environment variable.
    */
   int ret = execlp (less, LESS_OPTS, NULL);
   if (ret < 0)
@@ -293,7 +293,7 @@ strchrnull (const char *s, int c)
 
 /**
  *  Checks if the specified string @needle is found
- *  in the colon-separated string @haystack
+ *  in the colon-separated string @haystack.
  */
 static inline int
 excludestr (const char *restrict haystack,
@@ -325,8 +325,8 @@ main_hook (int argc, char **argv, char **envp)
   /**
    *  Exclude commands that need tty and
    *  included in MORELESS_EXCLUDE environment variable
-   *  If MORELESS_EXCLUDE starts with `:`, then
-   *  also exclude the default_excludes
+   *  If MORELESS_EXCLUDE starts with `:`, then this
+   *  must overwrite default_excludes
    */
   const char *excludes = getenv ("MORELESS_EXCLUDE");
 
@@ -363,8 +363,8 @@ main_hook (int argc, char **argv, char **envp)
     }
 
   /**
-   *  When stdout is not a tty, there is a pipe already
-   *  so we should not affect moreless there
+   *  When the stdout is not a tty, the program is part of
+   *  a pipe chain, so we should not run an unnecessary less process
    */
   if (!isatty (STDOUT_FILENO))
     {
@@ -433,6 +433,7 @@ __Overwrite__
  **  can be found this way: `dlsym(RTLD_NEXT, "func_name")`.
  **/
 #if defined (__GLIBC__) /* GNU Libc (glibc) */
+
 /**
  *  This code is stolen from:
  *   <https://gist.github.com/apsun/1e144bf7639b22ff0097171fa0f8c6b1>
@@ -450,15 +451,15 @@ __libc_start_main (
     void *stack_end)
   __Overwrite__
 {
-    /* Save the real main function address */
-    original_main = main;
+  /* Save the real main function address */
+  original_main = main;
 
-    /* Find the real __libc_start_main()... */
-    typeof (&__libc_start_main) super =
-      dlsym (RTLD_NEXT, "__libc_start_main");
-    /* ... and call it with our custom main function */
-    return super (main_hook, argc, argv,
-                  init, fini, rtld_fini, stack_end);
+  /* Find the real __libc_start_main()... */
+  typeof (&__libc_start_main) super =
+    dlsym (RTLD_NEXT, "__libc_start_main");
+  /* ... and call it with our custom main function */
+  return super (main_hook, argc, argv,
+                init, fini, rtld_fini, stack_end);
 }
 #else
 #  error "Your libc is not supported!"
