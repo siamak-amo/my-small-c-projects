@@ -81,6 +81,9 @@
      the less program. A simple solution is to redirect output to less or cat:
      $ ... | while read ln; do ls --color "$ln"; done | less
 
+     A better solution is using `bash -c`:
+     $ ... | bash -c 'while read ln; do ls "$ln"; done'
+
    - Redirecting 2>&1 does not work (I don't know how to detect redirection)
 
    - Some programs may look different (e.g. without color).
@@ -118,8 +121,13 @@
   ":vi:vim:nvim:nano:hexedit" \
   ":mpv:mplayer"
 #endif
+#ifndef _SHELLS
+#  define _SHELLS \
+  "sh:dash:bash:zsh:fish:csh"
+#endif /* _SHELLS */
 
 static const char *default_excludes = _EXCLUDES;
+static const char *shells = _SHELLS;
 
 #undef UNUSED
 #define UNUSED(x) (void)(x)
@@ -332,6 +340,17 @@ main_hook (int argc, char **argv, char **envp)
   else if (excludestr (excludes, cmd))
     goto __do_escape;
 
+  /**
+   *  When the user tries to run an interactive shell
+   *  moreless shoud not less the output
+   *
+   *  TODO: Is this a good way to detect interactive shells?
+   */
+  if (excludestr (shells, cmd))
+    {
+      if (argc == 1) /* this is an interactive shell */
+        goto __do_escape;
+    }
 
   /**
    *  When stdout is not a tty, there is a pipe already
