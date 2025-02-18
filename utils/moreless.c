@@ -32,16 +32,15 @@
        Then run your commands.
 
      To exclude command(s) from moreless:
+       See the default excludes in `DEFAULT_EXCLUDES`.
+
        To append to the default excludes:
        $ export MORELESS_EXCLUDE=":ls:mpv"
-
        To overwrite the default excludes:
        $ export MORELESS_EXCLUDE="less:tmux:mpv"
 
-       See the default excludes in `DEFAULT_EXCLUDES`.
-
        Alternatively, set the environment variable `NO_LESS`
-       to disable moreless
+       to disable moreless.
 
 
    Here is a simple bash function to toggle moreless:
@@ -50,7 +49,6 @@
        {
          case $LD_PRELOAD in
          *"moreless.so"*)
-           unset MORELESS_EXCLUD
            unset LD_PRELOAD
            echo "moreless disabled."
            ;;
@@ -83,13 +81,14 @@
 
    - Each iteration of for/while loops in Bash runs a separate instance
      of the less program.
-     A simple solution is to redirect the output:
+
+     A simple solution is to redirect the output to an another program:
      $ ... | while read ln; do ls --color "$ln"; done | less
 
      A better solution is using `bash -c`:
      $ ... | bash -c 'while read ln; do ls "$ln"; done'
 
-   - Redirecting 2>&1 does not work (I don't know how to detect redirection)
+   - Redirecting 2>&1 does not work (I don't know how to detect this redirection)
 
    - Some programs may look different (e.g. without color).
      Although we have overridden the isatty function, some programs have their own
@@ -101,12 +100,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/wait.h>
-#include <dlfcn.h>
 #include <string.h>
+
+#include <dlfcn.h>
 #include <fcntl.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #ifndef LESS
 #  define LESS "less"
