@@ -82,11 +82,11 @@
    - Each iteration of for/while loops in Bash runs a separate instance
      of the less program.
 
-     A simple solution is to redirect the output to an another program:
-     $ ... | while read ln; do ls --color "$ln"; done | less
-
-     A better solution is using `bash -c`:
+     A simple solution is using `bash -c`:
      $ ... | bash -c 'while read ln; do ls "$ln"; done'
+
+     Another solution is to redirect the output to an another program:
+     $ ... | while read ln; do ls --color "$ln"; done | less
 
    - Redirecting 2>&1 does not work (I don't know how to detect this redirection)
 
@@ -258,7 +258,7 @@ alter_main (int argc, char **argv, char **envp)
   /**
    *  TODO: Is there any efficient way to accept
    *        these LESS_OPTS options dynamically?
-   *        Maybe from the some environment variable.
+   *        maybe from an environment variable.
    */
   int ret = execlp (less, LESS_OPTS, NULL);
   if (ret < 0)
