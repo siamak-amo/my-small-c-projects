@@ -146,7 +146,7 @@
  **                     `_IOFBF` for the output stream instead
  **   - unescape.h:     Handles backslash interpretation
  **   - dyna.h:         Dynamic array implementation
- **   - mini-lexer.c:   Regex parsing
+ **   - mini-lexer.c:   Lexer (used for regex parsing)
  **/
 #ifdef _USE_BIO
 #  define BIO_IMPLEMENTATION
@@ -159,8 +159,10 @@
 #define DYNA_IMPLEMENTATION
 #include "dyna.h"
 
-/* To prevent wseed fragmentation, this should be
-   bigger than wseed max length  */
+/**
+ *  To prevent wseed fragmentation, this should be
+ *  bigger than wseed max length
+ */
 #define TOKEN_MAX_BUF_LEN (WSEED_MAXLEN + 1)
 #define ML_IMPLEMENTATION
 #include "mini-lexer.c"
@@ -170,8 +172,10 @@
 #define STR(var) __STR (var)
 
 #ifdef _DEBUG /* debug macro */
+
 #undef dprintf
 #define dprintf(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
+
 /**
  *  Helper macro to print arrays with seperator & end suffix
  *  @T: printf format for @arr members, @len: length of @arr
@@ -181,6 +185,7 @@
     dprintf (T"%s", arr[__idx],                 \
              (__idx < len-1) ? sep : end);      \
   }
+
 /**
  *  Debug macro to print arrays of type @T and length @len
  *  Ex: to print `int arr[7]`:  `printd_arr (arr, "%d", 7);`
@@ -193,7 +198,8 @@
   } else {                                      \
     dprintf (#arr" is empty\n");                \
   }} while (0)
-#else
+
+#else /* _DEBUG */
 #  undef dprintf
 #  define dprintf(format, ...) (void)(format)
 #  define printd_arr(arr, T, len) (void)(arr)
@@ -659,7 +665,7 @@ int
 cseed_uniappd (struct Seed *s, const char *src, int len)
 {
   int rw = 0;
-  while (len != 0 && *src)
+  while (0 != len && *src)
     {
       if (*src == '\0')
         break;
@@ -836,10 +842,11 @@ init_opt (int argc, char **argv, struct Opt *opt)
 {
 #define CASE_NOT_IN_REG_MODE(option) \
   NOT_IN_REG_MODE (option, break)
-#define NOT_IN_REG_MODE(option, action)                                 \
-  if (opt->_regular_mode) {                                             \
-    warnln ("wrong regular mode option (%s) was ignored", option);       \
-    action;                                                             \
+
+#define NOT_IN_REG_MODE(option, action)                             \
+  if (opt->_regular_mode) {                                         \
+    warnln ("wrong regular mode option (%s) was ignored", option);  \
+    action;                                                         \
   }
 
   /* we use 0,1,2,... as `helper` options and only to use getopt */
@@ -1198,7 +1205,7 @@ main (int argc, char **argv)
       for (size_t i=0; i < len; ++i)
         {
           struct Seed *s = opt.reg_seeds[i];
-          dprintf ("    %s[%d] = {\n      ", STR (opt.reg_seeds), i);
+          dprintf ("    %s[%lu] = {\n      ", STR (opt.reg_seeds), i);
           printd_arr (s->cseed, "`%c`", s->cseed_len);
           dprintf ("      ");
           printd_arr (s->wseed, "`%s`", (int)da_sizeof (s->wseed));
