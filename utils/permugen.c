@@ -443,22 +443,22 @@ ARGUMENTS:\n\
  *  Output of characters and strings
  *  These macros write @str on @opt->outf
  *
- *  Pfputs:  writes @str without its terminating null byte
- *  Pputs:   writes @str like @Pfputs and a trailing newline
- *  Pputc:   writes a character @c (as unsigned char)
- *  Pputln:  writes a newline
+ *  Fputs:  writes @str without its terminating null byte
+ *  Puts:   writes @str like @Fputs and a trailing newline
+ *  Putc:   writes a character @c (as unsigned char)
+ *  Newln:  writes a newline
  */
-#ifdef _NO_BIO
-#  define Pfputs(str, opt) fputs (str, opt->outf)
-#  define Pfputc(c, opt) putc (c, opt->outf)
-#  define Pputln(opt) Pfputc ('\n', opt)
-#  define Pputs(str, opt) (Pfputs (str, opt), Pputln(opt))
+#ifndef _USE_BIO
+#  define Fputs(str, opt) fputs (str, opt->outf)
+#  define Putc(c, opt) putc (c, opt->outf)
+#  define Puts(str, opt) fprintf (opt->outf, "%s\n", str)
+#  define Newln(opt) Putc ('\n', opt);
 #else
-#  define Pfputs(str, opt) bio_fputs (opt->bio, str)
-#  define Pfputc(c, opt) bio_putc (opt->bio, c)
-#  define Pputln(opt) bio_ln (opt->bio);
-#  define Pputs(str, opt) bio_puts (opt->bio, str)
-#endif
+#  define Fputs(str, opt) bio_fputs (opt->bio, str)
+#  define Putc(c, opt) bio_putc (opt->bio, c)
+#  define Puts(str, opt) bio_puts (opt->bio, str)
+#  define Newln(opt) Putc ('\n', opt);
+#endif /* _USE_BIO */
 
 /**
  *  The main logic of normal mode
@@ -476,34 +476,34 @@ perm (const int depth, const struct Opt *opt)
  Perm_Loop: /* O(seeds^depth) */
   int i = 0;
   if (opt->prefix)
-    Pfputs (opt->prefix, opt);
+    Fputs (opt->prefix, opt);
  Print_Loop: /* O(depth) */
   {
     int idx = idxs[i];
     if (idx < opt->global_seeds->cseed_len)
       {
         /* range of character seeds */
-        Pfputc (opt->global_seeds->cseed[idx], opt);
+        Putc (opt->global_seeds->cseed[idx], opt);
       }
     else
       {
         /* range of word seeds */
         idx -= opt->global_seeds->cseed_len;
-        Pfputs (opt->global_seeds->wseed[idx], opt);
+        Fputs (opt->global_seeds->wseed[idx], opt);
       }
     i++;
   }
   if (i < depth)
     {
       if (opt->separator)
-        Pfputs (opt->separator, opt);
+        Fputs (opt->separator, opt);
       goto Print_Loop;
     }
   /* End of Printing the current permutation */
   if (opt->suffix)
-    Pputs (opt->suffix, opt);
+    Puts (opt->suffix, opt);
   else
-    Pputln (opt);
+    Newln (opt);
 
 
   int pos;
@@ -554,29 +554,29 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
   int i = 0;
   struct Seed *current_seed;
   if (opt->prefix)
-    Pfputs (opt->prefix, opt);
+    Fputs (opt->prefix, opt);
 
  Print_Loop: /* O(S_i) */
   {
     int idx = idxs[i];
     current_seed = s[i];
     if (current_seed->pref)
-      Pfputs (current_seed->pref, opt);
+      Fputs (current_seed->pref, opt);
     if (idx < current_seed->cseed_len)
       {
         /* range of character seeds */
-        Pfputc (current_seed->cseed[idx], opt);
+        Putc (current_seed->cseed[idx], opt);
       }
     else
       {
         /* range of word seeds */
         idx -= current_seed->cseed_len;
-        Pfputs (current_seed->wseed[idx], opt);
+        Fputs (current_seed->wseed[idx], opt);
       }
     i++;
   }
   if (current_seed->suff)
-    Pfputs (current_seed->suff, opt);
+    Fputs (current_seed->suff, opt);
   if (i < depth)
     {
       if (opt->separator)
@@ -586,15 +586,15 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
            *  has no suffix (suffix must overwrite the separator)
            */
           if (!current_seed->suff || *current_seed->suff == '\0')
-            Pfputs (opt->separator, opt);
+            Fputs (opt->separator, opt);
         }
       goto Print_Loop;
     }
   /* End of Printing the current permutation */
   if (opt->suffix)
-    Pputs (opt->suffix, opt);
+    Puts (opt->suffix, opt);
   else
-    Pputln (opt);
+    Newln (opt);
 
   int pos;
   for (pos = depth-1;
