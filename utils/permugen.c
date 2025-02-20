@@ -1079,7 +1079,25 @@ cleanup (int, void *__opt)
 {
   struct Opt *opt = (struct Opt *)__opt;
 
+  /* flush the output stream */
+#ifdef _USE_BIO
+  bio_flush (opt->bio);
+#endif
+
+  fflush (opt->outf);
+  fclose (opt->outf);
+  /** Do *NOT* use stdio after this line! **/
+
 #ifndef _CLEANUP_NO_FREE
+
+  /* Free output stream buffers */
+#ifdef _USE_BIO
+  free (opt->bio->buffer);
+  free (opt->bio);
+#else
+  free (opt->streamout_buff);
+#endif /* _USE_BIO */
+
   /**
    * `global_seed` is not a dynamic array.
    *  It should have been allocated using malloc
@@ -1108,18 +1126,6 @@ cleanup (int, void *__opt)
   TOKEN_FREE (&opt->parser.general_tk);
   TOKEN_FREE (&opt->parser.special_tk);
 #endif /* _CLEANUP_NO_FREE */
-
-  /* Close all open file descriptors */
-  if (opt->outf && opt->outf != stdout)
-    {
-      fflush (opt->outf);
-      fclose (opt->outf);
-    }
-  if (stdout)
-    {
-      fflush (stdout);
-      fclose (stdout);
-    }
 }
 
 int
