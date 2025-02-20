@@ -141,9 +141,9 @@
  **  The following files are available in `../libs`:
  **
  **   - buffered_io.h:  --DEPRECATED--
- **                     To improve performance by buffering
- **                     the output stream, by default we use
- **                     `_IOFBF` for the output stream instead
+ **                     To improve performance by buffering the
+ **                     output stream (slightly faster then the default
+ **                     setup which uses _IOFBF for the output stream)
  **   - unescape.h:     Handles backslash interpretation
  **   - dyna.h:         Dynamic array implementation
  **   - mini-lexer.c:   Lexer (used for regex parsing)
