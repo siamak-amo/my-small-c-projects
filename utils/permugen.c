@@ -90,8 +90,8 @@
    Options:
     - To enable printing of debug information
        define `_DEBUG`
-    - To disable buffered IO (which reduces performance)
-       define `_NO_BIO`
+    - To use buffered IO library (deprecated)
+       define `_USE_BIO`
     - To change the default buffered IO buffer capacity
        define `_BMAX="(1024 * 1)"` (=1024 bytes)
     - To skip freeing allocated memory before quitting
@@ -106,7 +106,7 @@
 #include <errno.h>
 
 #define PROGRAM_NAME "permugen"
-#define Version "2.8"
+#define Version "2.10"
 
 #define CLI_IMPLEMENTATION
 #define CLI_NO_GETOPT /* we handle options ourselves */
@@ -125,6 +125,11 @@
 # define WSEED_MAXLEN 511 // 1 byte for null-byte
 #endif
 
+/* stdout buffer length */
+#ifndef _BMAX
+# define _BMAX 2048 // (page_size / 2) (bytes)
+#endif
+
 /* Maximum count of words in a seed */
 #ifndef WSEED_MAXCNT
 /* As our dynamic array grows by a factor of 2,
@@ -135,18 +140,18 @@
 /**
  **  The following files are available in `../libs`:
  **
- **   - buffered_io.h:  Performance improvement for write syscalls
+ **   - buffered_io.h:  --DEPRECATED--
+ **                     To improve performance by buffering
+ **                     the output stream, by default we use
+ **                     `_IOFBF` for the output stream instead
  **   - unescape.h:     Handles backslash interpretation
  **   - dyna.h:         Dynamic array implementation
  **   - mini-lexer.c:   Regex parsing
  **/
-#ifndef _NO_BIO
-#  ifndef _BMAX
-#    define _BMAX 2048 // (page_size / 2) (bytes)
-#  endif
+#ifdef _USE_BIO
 #  define BIO_IMPLEMENTATION
 #  include "buffered_io.h"
-#endif /* _NO_BIO */
+#endif /* _USE_BIO */
 
 #define UNESCAPE_IMPLEMENTATION
 #include "unescape.h"
@@ -294,9 +299,11 @@ struct Opt
   char *suffix;
   char *separator; /* between components of permutations */
 
-  /* buffered_io */
-#ifndef _NO_BIO
+  /* Output stream buffer */
+#ifdef _USE_BIO
   BIO_t *bio;
+#else
+  char *streamout_buff;
 #endif
 
   /* regex parser */
@@ -509,7 +516,7 @@ perm (const int depth, const struct Opt *opt)
 
   if (pos < 0) /* End of Permutations */
     {
-#ifndef _NO_BIO
+#ifdef _USE_BIO
       if (bio_err (opt->bio))
         {
           /* buffered_io write error */
@@ -519,7 +526,7 @@ perm (const int depth, const struct Opt *opt)
         return 0;
 #else
       return 0;
-#endif /* _NO_BIO */
+#endif /* _USE_BIO */
     }
 
   idxs[pos]++;
@@ -599,7 +606,7 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
 
   if (pos < 0) /* End of Permutations */
     {
-#ifndef _NO_BIO
+#ifdef _USE_BIO
       if (bio_err (opt->bio))
         {
           /* buffered_io write error */
@@ -614,7 +621,7 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
 #else
       ret = 0;
       goto Reg_Return;
-#endif /* _NO_BIO */
+#endif /* _USE_BIO */
     }
 
   idxs[pos]++;
@@ -1163,18 +1170,19 @@ main (int argc, char **argv)
       }
   }
 
-  /**
-   *  Print some debug information
-   *  To enable this feature, define `_DEBUG`
-   */
-#ifndef _NO_BIO
-  int cap = _BMAX;
-  BIO_t __bio = bio_new (cap, malloc (cap), fileno (opt.outf));
-  opt.bio = &__bio;
-  dprintf ("* buffer length of buffered_io: %d bytes\n", _BMAX);
+  /* Initializing the output stream buffer */
+#ifndef _USE_BIO
+  opt.streamout_buff = malloc (_BMAX);
+  if (!!setvbuf (opt.outf, opt.streamout_buff, _IOFBF, _BMAX))
+    {
+      warnln ("failed to set buffer for stdout");
+      exit (EXIT_FAILURE);
+    }
 #else
-  dprintf ("- compiled without buffered_io\n");
-# endif /* _NO_BIO */
+  opt.bio = malloc (sizeof (BIO_t));
+  *opt.bio = bio_new (_BMAX, malloc (_BMAX), fileno (opt.outf));
+  dprintf ("* buffer length of buffered_io: %d bytes\n", _BMAX);
+# endif /* _USE_BIO */
 
   if (opt._regular_mode)
     {
@@ -1222,15 +1230,10 @@ main (int argc, char **argv)
       int rw_err = 0;
       for (int d = opt.from_depth; d <= opt.to_depth; ++d)
         {
-          if ((rw_err = perm (d, &opt)) != 0)
+          if (0 != (rw_err = perm (d, &opt)))
             break;
         }
     }
-
-#ifndef _NO_BIO
-  bio_flush (opt.bio);
-  free (opt.bio->buffer);
-#endif
 
   return 0;
 }
