@@ -268,8 +268,11 @@ static struct Milexer_exp_ Expressions[] = {
 };
 
 static const Milexer ML = {
-  .puncs       = GEN_MKCFG (Puncs),
-  .expression  = GEN_MKCFG (Expressions),
+  .expression = GEN_MKCFG (Expressions),
+};
+
+static const Milexer ML_IN = {
+  .puncs = GEN_MKCFG (Puncs),
 };
 
 /**
@@ -1145,7 +1148,8 @@ main (int argc, char **argv)
   {
     /* initializing the parser */
     opt.parser = (struct permugex) {
-      .ml = &ML,
+      .ml    = &ML,
+      .ml_in = &ML_IN,
 
       .general_src   = {.lazy = 0},
       .special_src   = {.lazy = 0},
@@ -1343,7 +1347,7 @@ pparse_cseed_regex (struct Opt *opt, struct Seed *dst_seed)
   for (int _ret = 0; !NEXT_SHOULD_END (_ret); )
     {
       /* parsing with IGSPACE to allow space character */
-      _ret = ml_next (opt->parser.ml,
+      _ret = ml_next (opt->parser.ml_in,
                       &opt->parser.special_src,
                       tmp,
                       PFLAG_IGSPACE);
@@ -1416,7 +1420,7 @@ pparse_wseed_regex (struct Opt *opt, struct Seed *dst_seed)
   Milexer_Token *tmp = &opt->parser.special_tk;
   for (int _ret = 0; !NEXT_SHOULD_END (_ret); )
     {
-      _ret = ml_next (opt->parser.ml,
+      _ret = ml_next (opt->parser.ml_in,
                       &opt->parser.special_src,
                       tmp,
                       PFLAG_DEFAULT);
