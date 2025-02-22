@@ -23,9 +23,13 @@
   
     ** Disclaimer **
      This library was developed for my personal use and may not be 
-     suitable for tokenizing any specific language or regex.
-  
-  
+     suitable for tokenizing any arbitrary language or regex.
+
+    Known issues:
+     - Unicode/utf8 is NOT supported.
+     - Token fragmentation (when it's buffer overflows) breaks the
+       logic of punctuation and expression detection.
+
     Usage Example:
     ```{c}
       #define ML_IMPLEMENTATION
@@ -157,6 +161,9 @@
   
         } while (!NEXT_SHOULD_LOAD (ret));
     ```
+
+    If you need to receive the whole token, not a chunk of if
+    see the `ml_catcstr` function.
   
     Compilation:
      The test program:
@@ -494,6 +501,15 @@ int ml_set_keyword_id (const Milexer *, Milexer_Token *t);
 int ml_next (const Milexer *,
              Milexer_Slice *src, Milexer_Token *t,
              int flags);
+
+/**
+ *  Concatenates @src to @dst[0]
+ *  It uses malloc to allocate @dst[0], and it should be freed by free()
+ *  This call returns NULL while @ret is equal to NEXT_CHUNK and
+ *  otherwise returns @dst[0]
+ */
+char * ml_catcstr (char **restrict dst, const char *restrict src,
+            enum milexer_next_t ret);
 
 
 /**
@@ -1051,6 +1067,24 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
       ml_set_keyword_id (ml, tk);
     }
   return NEXT_NEED_LOAD;
+}
+
+char *
+ml_catcstr (char **restrict dst, const char *restrict src,
+            enum milexer_next_t ret)
+{
+  if (*dst == NULL)
+    *dst = strdup (src);
+  else
+    {
+      *dst = realloc (*dst, strlen (*dst) + strlen (src));
+      strcat (*dst, src);
+    }
+
+  if (ret == NEXT_CHUNK)
+    return NULL;
+  else
+    return *dst;
 }
 
 #endif /* ML_IMPLEMENTATION */

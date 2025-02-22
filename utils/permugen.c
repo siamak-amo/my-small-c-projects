@@ -255,8 +255,11 @@ static inline void free_seed (struct Seed *s);
  */
 enum LANG
   {
+    /* General parser */
     PUNC_COMMA = 0,
     PUNC_DASH,
+
+    /* Special parser */
     EXP_PAREN = 0,     /* (xxx) */
     EXP_CBRACE,        /* {xxx} */
     EXP_SBRACKET,      /* [xxx] */
