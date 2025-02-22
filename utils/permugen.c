@@ -1560,6 +1560,7 @@ void
 parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
                   const char *input)
 {
+  char *extended_token = NULL;
   Milexer_Token *tmp = &opt->parser.general_tk;
   /* Mini-lexer internal initialization */
   SET_ML_SLICE (&opt->parser.general_src,
@@ -1572,14 +1573,19 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
                      &opt->parser.general_src,
                      tmp,
                      PFLAG_INEXP);
+
       switch (tmp->type)
         {
         case TK_KEYWORD:
           /**
            *  These tokens may be path to a wordlist
            *  or `-` to read from stdin
+           *  Since the `pparse_keys_regex` function is not fragment-safe,
+           *  we should receive the entire token using the `catstr` function
            */
-          pparse_keys_regex (opt, dst_seed, tmp->cstr);
+          if (!!ml_catcstr (&extended_token, tmp->cstr, ret))
+            break;
+          pparse_keys_regex (opt, dst_seed, extended_token);
           break;
 
         case TK_PUNCS:
@@ -1591,7 +1597,7 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
           break;
 
         case TK_EXPRESSION:
-          char *__cstr = tmp->cstr;
+          char *__cstr = extended_token;
           SET_ML_SLICE (&opt->parser.special_src,
                         __cstr,
                         strlen (__cstr));
@@ -1621,4 +1627,5 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
           break;
         }
     }
+  safe_free (extended_token);
 }
