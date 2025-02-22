@@ -21,7 +21,7 @@
     Generates customizable permutations from specified seeds
 
     Usage:
-       For details, see help by `-h` option:
+       For more details, use the `-h` option:
        $ permugen -h
 
     Normal mode:  permugen [OPTIONS] -s [SEED_CONFIG]
@@ -55,6 +55,7 @@
 
        - Global suffix and prefix
        $ permugen --pref "www." --suff ".com"
+
 
     Regular Mode:  permugen [OPTIONS] -r [SEED_CONFIG]...
     To manually specify components of the permutations
