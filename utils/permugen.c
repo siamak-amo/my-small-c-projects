@@ -171,8 +171,17 @@
 #define __STR(var) #var
 #define STR(var) __STR (var)
 
-#ifdef _DEBUG /* debug macro */
+#ifdef _CLEANUP_NO_FREE
+# define safe_free(ptr)
+#else
+# define safe_free(ptr) do {                    \
+    if (ptr) {                                  \
+      free (ptr);                               \
+      ptr = NULL;                               \
+    }} while (0)
+#endif /* _CLEANUP_NO_FREE */
 
+#ifdef _DEBUG /* debug macro */
 #undef dprintf
 #define dprintf(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
 
@@ -635,7 +644,7 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
   goto Reg_Perm_Loop;
 
  Reg_Return:
-  free (idxs);
+  safe_free (idxs);
   return ret;
 }
 
@@ -658,7 +667,7 @@ regular_perm (struct Opt *opt)
 
   ret = __regular_perm (opt, depths, seeds_count);
  _return:
-  free (depths);
+  safe_free (depths);
   return ret;
 }
 
@@ -708,7 +717,7 @@ wseed_uniappd (const struct Opt *opt,
     {
       if (Strcmp (s->wseed[i], word))
         {
-          free (word);
+          safe_free (word);
           return 1;
         }
     }
@@ -774,7 +783,7 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
             }
         }
     }
-    free (line);
+    safe_free (line);
 }
 
 /**
@@ -1050,16 +1059,13 @@ free_seed (struct Seed *s)
 {
   if (!s)
     return;
-  if (s->pref)
-    free (s->pref);
-  if (s->suff)
-    free (s->suff);
-  if (s->cseed)
-    free (s->cseed);
+  safe_free (s->pref);
+  safe_free (s->suff);
+  safe_free (s->cseed);
   if (s->wseed)
     {
       for (size_t i=0; i < da_sizeof (s->wseed); ++i)
-        free (s->wseed[i]);
+        safe_free (s->wseed[i]);
       da_free (s->wseed);
     }
 }
@@ -1100,10 +1106,10 @@ cleanup (int, void *__opt)
 
   /* Free output stream buffers */
 #ifdef _USE_BIO
-  free (opt->bio->buffer);
-  free (opt->bio);
+  safe_free (opt->bio->buffer);
+  safe_free (opt->bio);
 #else
-  free (opt->streamout_buff);
+  safe_free (opt->streamout_buff);
 #endif /* _USE_BIO */
 
   /**
@@ -1111,7 +1117,7 @@ cleanup (int, void *__opt)
    *  It should have been allocated using malloc
    */
   free_seed (opt->global_seeds);
-  free (opt->global_seeds);
+  safe_free (opt->global_seeds);
 
   /**
    *  `reg_seeds` is a dynamic array (using dyna.h)
@@ -1123,7 +1129,7 @@ cleanup (int, void *__opt)
       for (size_t i=0; i < da_sizeof (opt->reg_seeds); ++i)
         {
           free_seed (opt->reg_seeds[i]);
-          free (opt->reg_seeds[i]);
+          safe_free (opt->reg_seeds[i]);
         }
       da_free (opt->reg_seeds);
     }
@@ -1325,13 +1331,13 @@ path_resolution (const char *path_cstr)
 
   if (realpath (tmp, PATH))
     {
-      free (tmp);
+      safe_free (tmp);
       return PATH;
     }
   else
     {
       warnln ("path resolution failed -- %s (%s)", strerror (errno), tmp);
-      free (tmp);
+      safe_free (tmp);
       return NULL;
     }
 }
