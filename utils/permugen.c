@@ -205,9 +205,6 @@
 #  define printd_arr(arr, T, len) (void)(arr)
 #endif /* _DEBUG */
 
-#define warnfun(format, ...) \
-  warnln ("%s failed -- "format, __func__, ##__VA_ARGS__)
-
 struct char_seed
 {
   const char *c;
@@ -282,7 +279,8 @@ static const Milexer ML_IN = {
  */
 struct permugex
 {
-  const Milexer *ml;
+  /* ml parses general_xxx and ml_in parses special_xxx */
+  const Milexer *ml, *ml_in;
   Milexer_Slice general_src, special_src; /* input sources */
   Milexer_Token general_tk, special_tk;   /* result tokens */
 };
@@ -1307,7 +1305,7 @@ path_resolution (const char *path_cstr)
       const char* home = getenv ("HOME");
       if (!home)
         {
-          warnfun ("$HOME is null");
+          warnln ("$HOME is null");
           return NULL;
         }
       tmp = malloc (len + strlen (home) + 1);
@@ -1332,7 +1330,7 @@ path_resolution (const char *path_cstr)
     }
   else
     {
-      warnfun ("%s (%s)", strerror (errno), tmp);
+      warnln ("path resolution failed -- %s (%s)", strerror (errno), tmp);
       free (tmp);
       return NULL;
     }
