@@ -323,6 +323,16 @@ main_hook (int argc, char **argv, char **envp)
   const char *cmd = argv[0];
 
   /**
+   *  When the stdout is not a tty, the current program is part of
+   *  a pipe chain, so we should not run an unnecessary less process
+   */
+  if (!isatty (STDOUT_FILENO))
+    {
+      mode = P_ESCAPED;
+      goto __original_main;
+    }
+
+  /**
    *  Exclude commands that need tty and
    *  included in MORELESS_EXCLUDE environment variable
    *  If MORELESS_EXCLUDE starts with `:`, then this
@@ -360,16 +370,6 @@ main_hook (int argc, char **argv, char **envp)
     {
       if (argc == 1) /* this is an interactive shell */
         goto __do_escape;
-    }
-
-  /**
-   *  When the stdout is not a tty, the program is part of
-   *  a pipe chain, so we should not run an unnecessary less process
-   */
-  if (!isatty (STDOUT_FILENO))
-    {
-      mode = P_ESCAPED;
-      goto __original_main;
     }
 
   /* Create pipe and do fork */
