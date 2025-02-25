@@ -1587,7 +1587,7 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
            *  Since the `pparse_keys_regex` function is not fragment-safe,
            *  we should receive the entire token using the `catstr` function
            */
-          if (!!ml_catcstr (&extended_token, tmp->cstr, ret))
+          if (!ml_catcstr (&extended_token, tmp->cstr, ret))
             break;
           pparse_keys_regex (opt, dst_seed, tmp->cstr);
           break;
