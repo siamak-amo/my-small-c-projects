@@ -1581,24 +1581,30 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
       switch (tmp->type)
         {
         case TK_KEYWORD:
-          /**
-           *  These tokens may be path to a wordlist
-           *  or `-` to read from stdin
-           *  Since the `pparse_keys_regex` function is not fragment-safe,
-           *  we should receive the entire token using the `catstr` function
-           */
-          if (!ml_catcstr (&extended_token, tmp->cstr, ret))
+          {
+            /**
+             *  These tokens may represent a file path
+             *  or `-`, which indicates reading from stdin.
+             *  We assume that file paths do not start with `-`.
+             */
+            if ('-' == *tmp->cstr)
+              {
+                /* Read from stdin */
+                wseed_file_uniappd (opt, dst_seed, stdin);
+              }
+            else
+              {
+                /**
+                 *  Since the `pparse_keys_regex` function is NOT
+                 *  fragment-safe, we should receive the entire token using
+                 *  the `catstr` function from the mini-lexer library.
+                 */
+                if (!ml_catcstr (&extended_token, tmp->cstr, ret))
+                  break;
+                pparse_keys_regex (opt, dst_seed, tmp->cstr);
+              }
             break;
-          pparse_keys_regex (opt, dst_seed, tmp->cstr);
-          break;
-
-        case TK_PUNCS:
-          if (tmp->id == PUNC_DASH)
-            {
-              /* Read from stdin */
-              wseed_file_uniappd (opt, dst_seed, stdin);
-            }
-          break;
+          }
 
         case TK_EXPRESSION:
           char *__cstr = tmp->cstr;
