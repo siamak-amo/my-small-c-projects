@@ -1,18 +1,17 @@
 /** file: key_extractor.c
     created on: 8 Sep 2024
-  
+
     Keyword Extractor
     Extracts keywords out of the provided input
     It was previously named tokenizeIt
-  
+
     Usage:  kextractor [OPTIONS]
       see help for details: `kextractor -h`
-  
+
    Compilation:
-     cc -Wall -Wextra -Werror -ggdb -O3 \
-        -I../libs \
+     cc -Wall -Wextra -Werror -ggdb -O3 -I../libs \
         key_extractor.c -o kextractor
-  
+
    Options:
      -D_BMAX="(1 * 1024)":
         Output buffer capacity in bytes
@@ -20,12 +19,15 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <getopt.h>
 #include <ctype.h>
 
 #define Version "2"
 #define PROGRAM_NAME "key_extractor"
+
+#define CLI_IMPLEMENTATION
+#define CLI_NO_GETOPT /* we handle options ourselves */
 #include "clistd.h"
-#include <getopt.h>
 
 #define isbdigit(x) ((x)=='0' || (x)=='1')
 
@@ -33,8 +35,6 @@
 #  define _BMAX (4 * 1024) // 4Kb = 1 disk sector
 # endif
 
-#define CLI_IMPLEMENTATION
-#define CLI_NO_GETOPT /* we handle options ourselves */
 
 static struct option const long_options[] =
 {
@@ -493,7 +493,7 @@ main (int argc, char **argv)
         default:
           break;
         }
-     }
+    }
   
   TOKEN_FREE (&tk);
   return 0;
