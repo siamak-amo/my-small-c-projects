@@ -1068,7 +1068,7 @@ free_seed (struct Seed *s)
   safe_free (s->cseed);
   if (s->wseed)
     {
-      for (size_t i=0; i < da_sizeof (s->wseed); ++i)
+      for (ssize_t i=0; i < da_sizeof (s->wseed); ++i)
         safe_free (s->wseed[i]);
       da_free (s->wseed);
     }
@@ -1130,7 +1130,7 @@ cleanup (int, void *__opt)
    */
   if (opt->reg_seeds)
     {
-      for (size_t i=0; i < da_sizeof (opt->reg_seeds); ++i)
+      for (ssize_t i=0; i < da_sizeof (opt->reg_seeds); ++i)
         {
           free_seed (opt->reg_seeds[i]);
           safe_free (opt->reg_seeds[i]);
@@ -1493,7 +1493,7 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
                 cseed_uniappd (dst_seed,
                                _src->cseed, _src->cseed_len);
                 /* append wseeds */
-                for (size_t i=0; i < da_sizeof(_src->wseed); ++i)
+                for (ssize_t i=0; i < da_sizeof(_src->wseed); ++i)
                   {
                     wseed_uniappd (opt, dst_seed, _src->wseed[i]);
                   }
