@@ -10,14 +10,11 @@
   
    Compilation:
      cc -Wall -Wextra -Werror -ggdb -O3 \
-        -D_USE_BIO -I../libs \
         key_extractor.c -o kextractor
   
    Options:
-     -D_USE_BIO:
-        To compile with buffered_io.h
      -D_BMAX="(1 * 1024)":
-        To max buffer length of buffered IO
+        Output buffer capacity in bytes
  **/
 #include <stdio.h>
 #include <unistd.h>
@@ -26,13 +23,10 @@
 
 #define isbdigit(x) ((x)=='0' || (x)=='1')
 
-#ifdef _USE_BIO
+
 # ifndef _BMAX
-#  define _BMAX (1024) // 1Kb
+#  define _BMAX (4 * 1024) // 4Kb = 1 disk sector
 # endif
-# define BIO_IMPLEMENTATION
-# include "buffered_io.h"
-#endif
 
 #define Version "2"
 #define PROGRAM_NAME "key_extractor"
@@ -144,17 +138,8 @@ typedef ssize_t (*loader) (int, void *, size_t);
 int infd = STDIN_FILENO;
 int ofd = STDOUT_FILENO;
 
-#ifdef _USE_BIO
-static BIO_t bio;
-#endif
-
-#ifdef _USE_BIO
-# define Print(str) bio_fputs (&bio, str)
-# define Putln() bio_puts (&bio, "")
-#else
-# define Print(str) dprintf (ofd, "%s", str)
-# define Putln() dprintf (ofd, "\n")
-#endif /* _USE_BIO */
+#define Outstr(str) fprintf (out_stream, "%s", str)
+#define Outln() Outstr ("\n")
 
 void
 usage (int)
@@ -452,16 +437,6 @@ main (int argc, char **argv)
   Milexer_Token tk = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN);
   Milexer_Slice src = {.lazy = true};
 
-  /**
-   *  Initializing buffered IO
-   *  As this uses `ofd` for output file descriptor
-   *  of `bio`, this must be done after any parsing argument
-   *  that might change ofd
-   */
-#ifdef _USE_BIO
-  int bio_cap = _BMAX;
-  bio = bio_new (bio_cap, malloc (bio_cap), ofd);
-#endif
 
   if (infd == STDIN_FILENO && isatty (infd))
     {
@@ -498,12 +473,5 @@ main (int argc, char **argv)
      }
   
   TOKEN_FREE (&tk);
-  free (buf);
-
-#ifdef _USE_BIO
-  bio_flush (&bio);
-  free (bio.buffer);
-#endif
-
   return 0;
 }
