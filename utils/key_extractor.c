@@ -133,10 +133,12 @@ static Milexer ML = {
   .expression   = GEN_MKCFG (Expressions),
 };
 
-typedef ssize_t (*loader) (int, void *, size_t);
+FILE *in_stream = NULL;
+FILE *out_stream = NULL;
+char *out_buff = NULL; // out_stream buffer
 
-int infd = STDIN_FILENO;
-int ofd = STDOUT_FILENO;
+int in_buff_len = TOKEN_MAX_BUF_LEN;
+char *in_buff = NULL; // milexer token buffer
 
 #define Outstr(str) fprintf (out_stream, "%s", str)
 #define Outln() Outstr ("\n")
@@ -171,21 +173,22 @@ OPTIONS:\n\
 ");
 }
 
-int
-safe_open (const char *restrict pathname, const char *restrict mode)
+FILE *
+safe_open (const char *restrict pathname,
+           const char *restrict mode)
 {
   FILE *f;
   if (!pathname || !mode)
     {
       warnln ("invalud filename");
-      return -1;
+      return NULL;
     }
   if ((f = fopen (pathname, mode)) == NULL)
     {
       warnln ("could not open file -- (%s:%s)", mode, pathname);
-      return -1;
+      return NULL;
     }
-  return fileno (f);
+  return f;
 }
 
 /**
@@ -224,23 +227,23 @@ parse_args (int argc, char **argv)
           break;
 
         case '0':
-          if (infd != STDIN_FILENO)
-            close (infd);
-          if ((infd = safe_open (optarg, "r")) == -1)
+          if ((in_stream = safe_open (optarg, "r")))
+            fclose (in_stream);
+          else
             return 1;
           break;
 
         case '1':
-          if (ofd != STDOUT_FILENO)
-            close (ofd);
-          if ((ofd = safe_open (optarg, "w")) == -1)
+          if ((out_stream = safe_open (optarg, "w")))
+            fclose (out_stream);
+          else
             return 1;
           break;
 
         case 'a':
-          if (ofd != STDOUT_FILENO)
-            close (ofd);
-          if ((ofd = safe_open (optarg, "a")) == -1)
+          if ((out_stream = safe_open (optarg, "a")))
+            fclose (out_stream);
+          else
             return 1;
           break;
 
@@ -331,7 +334,7 @@ token_out (const Milexer_Token *tk)
       /* string */
       if (HAS_FLG (kflags, O_ALLOW_STR))
         {
-          Print (tk->cstr);
+          Outstr (tk->cstr);
           return 1;
         }
     }
@@ -341,7 +344,7 @@ token_out (const Milexer_Token *tk)
         {
           if (HAS_FLG (kflags, O_ALLOW_NUM))
             {
-              Print (tk->cstr);
+              Outstr (tk->cstr);
               return 1;
             }
         }
@@ -349,7 +352,7 @@ token_out (const Milexer_Token *tk)
         {
           if (HAS_FLG (kflags, O_ALLOW_KEY))
             {
-              Print (tk->cstr);
+              Outstr (tk->cstr);
               return 1;
             }
         }
@@ -357,10 +360,22 @@ token_out (const Milexer_Token *tk)
   return 0;
 }
 
+void
+cleanup (int, void *)
+{
+  fflush (out_stream);
+  /* Do NOT use stdout after this line! */
+  fclose (out_stream);
+  free (out_buff);
+  free (in_buff);
+}
+
 int
 main (int argc, char **argv)
 {
   set_program_name (*argv);
+  on_exit (cleanup, NULL);
+
   Extra_Delims = da_new (const char *);
   int ret = parse_args (argc, argv);
   if (ret > 0)
@@ -381,13 +396,6 @@ main (int argc, char **argv)
     {
       warnln ("empty output, provide output flag");
       return 1;
-    }
-
-  if (infd == ofd)
-    {
-      warnln ("output file was changed to stdout");
-      close (ofd);
-      ofd = STDOUT_FILENO;
     }
 
   /* Delimiters */
@@ -432,15 +440,24 @@ main (int argc, char **argv)
       parse_flg = PFLAG_INEXP;
     }
 
-  int buf_len = TOKEN_MAX_BUF_LEN;
-  char *buf = malloc (buf_len);
   Milexer_Token tk = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN);
   Milexer_Slice src = {.lazy = true};
 
+  /* Initialize IO buffers */
+  {
+    out_buff = malloc (_BMAX);
+    in_buff = malloc (in_buff_len);
+    if (!in_stream)
+      in_stream = stdin;
+    if (!out_stream)
+      out_stream = stdout;
+    if (setvbuf (out_stream, out_buff, _IOFBF, _BMAX) < 0)
+      return 1;
+  }
 
-  if (infd == STDIN_FILENO && isatty (infd))
+  if (in_stream == stdin && isatty (fileno (in_stream)))
     {
-      puts ("reading from stdin until EOF");
+      warnln ("reading from stdin until EOF");
     }
 
   /* Update the length of delimiter ranges */
@@ -453,8 +470,11 @@ main (int argc, char **argv)
       switch (ret)
         {
         case NEXT_NEED_LOAD:
-          if ((len = read (infd, buf, buf_len)) > 0)
-            SET_ML_SLICE (&src, buf, len);
+          len = read (fileno (in_stream),
+                      in_buff,
+                      in_buff_len);
+          if (len > 0)
+            SET_ML_SLICE (&src, in_buff, in_buff_len);
           else
             END_ML_SLICE (&src);
           break; 
@@ -465,10 +485,11 @@ main (int argc, char **argv)
         case NEXT_MATCH:
         case NEXT_ZTERM:
           if (token_out (&tk))
-            Putln ();
+            Outln ();
           break;
 
-        default: break;
+        default:
+          break;
         }
      }
   
