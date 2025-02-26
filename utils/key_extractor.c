@@ -6,10 +6,11 @@
     It was previously named tokenizeIt
   
     Usage:  kextractor [OPTIONS]
-    see help for details: `kextractor -h`
+      see help for details: `kextractor -h`
   
    Compilation:
      cc -Wall -Wextra -Werror -ggdb -O3 \
+        -I../libs \
         key_extractor.c -o kextractor
   
    Options:
@@ -114,12 +115,12 @@ enum ke_flag_t
     NOT_SET = 0,
 
     /* Output format */
-    O_ALLOW_KEY  = FLG (1),
-    O_ALLOW_NUM  = FLG (2),
-    O_ALLOW_STR  = FLG (3),
-    O_FULL_STR   = FLG (4),
-    O_DIS_STR    = FLG (5),
-    O_PROVIDED   = FLG (15), // bound
+    O_ALLOW_KEY     = FLG (1),
+    O_ALLOW_NUM     = FLG (2),
+    O_ALLOW_STR     = FLG (3),
+    O_FULL_STR      = FLG (4),
+    O_DIS_STR       = FLG (5),
+    O_PROVIDED      = FLG (15), // bound
 
     /* User configurations */
     C_EXT_DELIMS    = FLG (16),
