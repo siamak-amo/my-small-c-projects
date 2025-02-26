@@ -22,19 +22,20 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#define isbdigit(x) ((x)=='0' || (x)=='1')
+#define Version "2"
+#define PROGRAM_NAME "key_extractor"
+#include "clistd.h"
+#include <getopt.h>
 
+#define isbdigit(x) ((x)=='0' || (x)=='1')
 
 # ifndef _BMAX
 #  define _BMAX (4 * 1024) // 4Kb = 1 disk sector
 # endif
 
-#define Version "2"
-#define PROGRAM_NAME "key_extractor"
 #define CLI_IMPLEMENTATION
 #define CLI_NO_GETOPT /* we handle options ourselves */
-#include "clistd.h"
-#include <getopt.h>
+
 static struct option const long_options[] =
 {
   {"help",      no_argument,       NULL, 'h'},
