@@ -127,17 +127,33 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #ifndef DADEFF
 # define DADEFF static inline
 #endif
 
-/* array index types */
+/**
+ *  Ensure `da_idx` is a type with the size of
+ *  your machine's word (default is `intptr_t`),
+ *  to guarantee memory alignment of `dyna_t -> arr`.
+ *  Otherwise, storing structs in `arr` may not be safe.
+ */
 #ifndef da_idx
-# define da_idx size_t
-# define da_sidx ssize_t
+# define da_idx intptr_t
+# define da_sidx intptr_t
 #endif
 
+/* users don't need to work with this struct */
+typedef struct
+{
+  da_idx cap; /* capacity of array */
+  da_idx size; /* length of array */
+  da_idx cell_bytes; /* size of each cell */
+
+  /* actual bytes of array */
+  char arr[];
+} dyna_t;
 
 #ifdef _DA_DEBUG
 # include <stdio.h>
@@ -174,18 +190,6 @@
 # define dyna_realloc(p, news) realloc (p, news)
 # define dyna_free(p) free (p)
 #endif
-
-/* users don't need to work with this struct */
-typedef struct
-{
-  da_idx cap; /* capacity of array */
-  da_idx size; /* length of array */
-  da_idx cell_bytes; /* size of each cell */
-
-  /* actual bytes of array */
-  char arr[];
-} dyna_t;
-
 
 /* internal __OFFSETOF macro, to give offset of @member in struct @T */
 #define __OFFSETOF(T, member) ((size_t)((T *)(0))->member)
