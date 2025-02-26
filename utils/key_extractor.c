@@ -172,15 +172,17 @@ If no input file is provided, it uses stdin and stdout\n\
   printf ("\n\
 OPTIONS:\n\
      -i, --if          input file path\n\
-     -o, --output      output file path\n\
+         --output      output file path\n\
      -a, --oA          output file path to append\n\
-     -n, --nums        include numbers\n\
-     -z, --no-str      treat strings as normal tokens\n\
-     -s, --str         include inner strings\n\
-     -S, --full-str    include whole strings\n\
      -d, --add-delim   to add extra delimiter(s)\n\
                        Example:  `-d_ -d \"ad\"` means `_` and `a`,...,`d`\n\
      -D                to overwrite the default delimiters\n\
+     -o, --format      output format, `-o FLAG1:FLAG2:...`\n\
+                           k:  enable keywords\n\
+                         s,S:  enable strings and full strings\n\
+                           z:  treat strings as normal tokens\n\
+                           n:  include numbers\n\
+                       Example: '-o Str:key:num'\n\
 ");
 }
 
@@ -453,7 +455,7 @@ main (int argc, char **argv)
   /**
    *  Initializing buffered IO
    *  As this uses `ofd` for output file descriptor
-   *  of `bio`, Is must be done after any parsing argument
+   *  of `bio`, this must be done after any parsing argument
    *  that might change ofd
    */
 #ifdef _USE_BIO
