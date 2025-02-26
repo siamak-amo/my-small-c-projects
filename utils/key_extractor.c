@@ -22,6 +22,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <ctype.h>
+
+#define isbdigit(x) ((x)=='0' || (x)=='1')
 
 #ifdef _USE_BIO
 # ifndef _BMAX
@@ -42,12 +45,12 @@ static struct option const long_options[] =
   {"help",      no_argument,       NULL, 'h'},
   {"version",   no_argument,       NULL, 'v'},
   /* input /output file path */
-  {"in",        required_argument, NULL, 'i'},
-  {"if",        required_argument, NULL, 'i'},
-  {"input",     required_argument, NULL, 'i'},
-  {"out",       required_argument, NULL, 'o'},
-  {"of",        required_argument, NULL, 'o'},
-  {"output",    required_argument, NULL, 'o'},
+  {"in",        required_argument, NULL, '0'},
+  {"if",        required_argument, NULL, '0'},
+  {"input",     required_argument, NULL, '0'},
+  {"out",       required_argument, NULL, '1'},
+  {"of",        required_argument, NULL, '1'},
+  {"output",    required_argument, NULL, '1'},
   /* output append */
   {"oa",        required_argument, NULL, 'a'},
   {"oA",        required_argument, NULL, 'a'},
@@ -56,14 +59,9 @@ static struct option const long_options[] =
   {"ext-delim", required_argument, NULL, 'd'},
   /* overwrite delimiters */
   {"set-delim", required_argument, NULL, 'D'},
-  /* allow numbers and strings */
-  {"num",       no_argument,       NULL, 'n'},
-  {"nums",      no_argument,       NULL, 'n'},
-  {"numbers",   no_argument,       NULL, 'n'},
-  {"strings",   no_argument,       NULL, 's'},
-  {"str",       no_argument,       NULL, 's'},
-  {"full-str",  no_argument,       NULL, 'S'},
-  {"no-str",    no_argument,       NULL, 'z'},
+  /* output format */
+  {"format",    required_argument, NULL, 'o'},
+  /* do not delete me */
   {NULL,        0,                 NULL,  0 },
 };
 
@@ -114,21 +112,28 @@ static const char *Delimiters[] = {
 /* Extra delimiters, dynamic array (using dyna.h) */
 static const char **Extra_Delims = NULL;
 
-int kflags = 0;
+#define FLG(n) (1<<(n))
+#define HAS_FLG(t, flg) ((t) & (flg))
 
-enum key_flags_t
+enum ke_flag_t
   {
-    DEFAULTS = 0,
-    /* also include numbers as token */
-    ALLOW_NUMBERS = 0x1,
-    /* also include strings */
-    ALLOW_STRINGS = 0x2,
-    FULL_STRINGS = 0x4,
-    NO_STRINGS = 0x8,
-    /* user has provided additional delimiters */
-    EXT_DELIMS = 0x10,
-    OVERWRITE_DELIMS = 0x20,
+    NOT_SET = 0,
+
+    /* Output format */
+    O_ALLOW_KEY  = FLG (1),
+    O_ALLOW_NUM  = FLG (2),
+    O_ALLOW_STR  = FLG (3),
+    O_FULL_STR   = FLG (4),
+    O_DIS_STR    = FLG (5),
+    O_PROVIDED   = FLG (15), // bound
+
+    /* User configurations */
+    C_EXT_DELIMS    = FLG (16),
+    C_OVERW_DELIMS  = FLG (17),
+    C_PROVIDED      = FLG (31), // bound
   };
+
+int kflags = 0;
 
 static Milexer ML = {
   .expression   = GEN_MKCFG (Expressions),
@@ -205,7 +210,7 @@ int
 parse_args (int argc, char **argv)
 {
   int c;
-  const char *params = "+i:o:a:d:DvhnsSz";
+  const char *params = "+o:a:d:Dvh";
   while (1)
     {
       c = getopt_long (argc, argv, params, long_options, NULL);
@@ -222,38 +227,23 @@ parse_args (int argc, char **argv)
           usage (-1);
           return -1;
 
-        case 'n':
-          kflags |= ALLOW_NUMBERS;
-          break;
-
-        case 's':
-          kflags |= ALLOW_STRINGS;
-          break;
-        case 'S':
-          kflags |= ALLOW_STRINGS;
-          kflags |= FULL_STRINGS;
-          break;
-        case 'z':
-          kflags |= NO_STRINGS;
-          break;
-
         case 'd':
-          kflags |= EXT_DELIMS;
+          kflags |= C_EXT_DELIMS;
           da_appd (Extra_Delims, optarg);
           break;
 
         case 'D':
-          kflags |= OVERWRITE_DELIMS;
+          kflags |= C_OVERW_DELIMS;
           break;
 
-        case 'i':
+        case '0':
           if (infd != STDIN_FILENO)
             close (infd);
           if ((infd = safe_open (optarg, "r")) == -1)
             return 1;
           break;
 
-        case 'o':
+        case '1':
           if (ofd != STDOUT_FILENO)
             close (ofd);
           if ((ofd = safe_open (optarg, "w")) == -1)
@@ -267,6 +257,36 @@ parse_args (int argc, char **argv)
             return 1;
           break;
 
+        case 'o':
+          kflags |= O_PROVIDED;
+          const char *p = optarg;
+          do
+            {
+              switch (*p)
+                {
+                case 'k':
+                case 'K':
+                  kflags |= O_ALLOW_KEY;
+                  break;
+                case 's':
+                  kflags |= O_ALLOW_STR;
+                  break;
+                case 'S':
+                  kflags |= O_FULL_STR | O_ALLOW_STR;
+                  break;
+                case 'z':
+                case 'Z':
+                  kflags |= O_DIS_STR;
+                  break;
+                case 'n':
+                case 'N':
+                  kflags |= O_ALLOW_NUM;
+                  break;
+                }
+            }
+          while ((p = strchr (p, ':')) && *(++p));
+          return 0;
+
         default:
           break;
         }
@@ -275,30 +295,79 @@ parse_args (int argc, char **argv)
 }
 
 static inline int
-token_out (const char *cstr)
+cstr_isanumber (const char *s)
 {
-  if (kflags & ALLOW_NUMBERS)
+  if (*s != '0')
     {
-      Print (cstr);
+      for (; *s != '\0'; ++s)
+        {
+          if (!isdigit (*s))
+            return 0;
+        }
       return 1;
     }
-  else
+
+  switch (*(++s))
     {
-      char *end;
-      /* We assume strings staring with 0x are numbers */
-      if (strncmp (cstr, "0x", 2) == 0)
-        {
-          return 0;
-        }
-      strtol (cstr, &end, 10);
-      if (*(end + 1) == '\0' && errno == 0)
-        {
-          return 0;
-        }
-      Print (cstr);
+    case 'x':
+      {
+        for (++s; *s != '\0'; ++s)
+          {
+            if (!isxdigit (*s))
+              return 0;
+          }
+      }
       return 1;
+
+    case 'b':
+      {
+        for (++s; *s != '\0'; ++s)
+          {
+            if (!isbdigit (*s))
+              return 0;
+          }
+      }
+      return 1;
+
+    default:
+      /* We assume 0??? is not a number */
+      return 0;
     }
-  return -1; /* unreachable */
+  return 0;
+}
+
+static inline int
+token_out (const Milexer_Token *tk)
+{
+  if (tk->type == TK_EXPRESSION)
+    {
+      /* string */
+      if (HAS_FLG (kflags, O_ALLOW_STR))
+        {
+          Print (tk->cstr);
+          return 1;
+        }
+    }
+  else if (tk->type == TK_KEYWORD)
+    {
+      if (cstr_isanumber (tk->cstr))
+        {
+          if (HAS_FLG (kflags, O_ALLOW_NUM))
+            {
+              Print (tk->cstr);
+              return 1;
+            }
+        }
+      else
+        {
+          if (HAS_FLG (kflags, O_ALLOW_KEY))
+            {
+              Print (tk->cstr);
+              return 1;
+            }
+        }
+    }
+  return 0;
 }
 
 int
@@ -312,6 +381,21 @@ main (int argc, char **argv)
   else if (ret < 0)
     return 0;
 
+  /* Default output configuration */
+  if (! HAS_FLG (kflags, O_PROVIDED))
+    {
+      kflags = O_ALLOW_KEY | O_ALLOW_STR;
+    }
+
+  /* Check empty output */
+  if (!HAS_FLG (kflags, O_ALLOW_KEY) &&
+      !HAS_FLG (kflags, O_ALLOW_STR) &&
+      !HAS_FLG (kflags, O_ALLOW_NUM))
+    {
+      warnln ("empty output, provide output flag");
+      return 1;
+    }
+
   if (infd == ofd)
     {
       warnln ("output file was changed to stdout");
@@ -320,7 +404,7 @@ main (int argc, char **argv)
     }
 
   /* Delimiters */
-  if (kflags & OVERWRITE_DELIMS)
+  if (HAS_FLG (kflags, C_OVERW_DELIMS))
     {
       ML.delim_ranges.exp = Extra_Delims;
     }
@@ -331,13 +415,13 @@ main (int argc, char **argv)
       ML.delim_ranges.exp = Extra_Delims;
     }
 
-  if (kflags & NO_STRINGS)
+  /**
+   *  When the disable string flag is set, we must treat strings
+   *  as normal tokens, which means, Milexer should not presses
+   *  expressions, as they are responsible for parsing strings
+   */
+  if (HAS_FLG (kflags, O_DIS_STR))
     {
-      /**
-       *  When the NO_STRINGS flag is set, we must treat strings
-       *  as normal tokens, which means, Milexer should not presses
-       *  expressions, as they are responsible for parsing strings
-       */
       ML.expression.len = 0;
       ML.expression.exp = NULL;
 
@@ -349,12 +433,9 @@ main (int argc, char **argv)
         da_appd (Extra_Delims, Expressions[i].begin);
     }
 
-  /* Update the length of delimiter ranges */
-  ML.delim_ranges.len = da_sizeof (Extra_Delims);
-  
   /* Parsing flags */
   int parse_flg;
-  if (kflags & FULL_STRINGS)
+  if (HAS_FLG (kflags, O_FULL_STR))
     {
       parse_flg = PFLAG_DEFAULT;
     }
@@ -385,6 +466,9 @@ main (int argc, char **argv)
       puts ("reading from stdin until EOF");
     }
 
+  /* Update the length of delimiter ranges */
+  ML.delim_ranges.len = da_sizeof (Extra_Delims);
+
   int len;
   for (int ret = 0; !NEXT_SHOULD_END (ret); )
     {
@@ -399,17 +483,12 @@ main (int argc, char **argv)
           break; 
  
         case NEXT_CHUNK:
-          if ((kflags & ALLOW_STRINGS) || tk.type == TK_KEYWORD)
-            token_out (tk.cstr);
+          token_out (&tk);
           break;
-
         case NEXT_MATCH:
         case NEXT_ZTERM:
-          if ((kflags & ALLOW_STRINGS) || tk.type == TK_KEYWORD)
-            {
-              if (token_out (tk.cstr))
-                Putln ();
-            }
+          if (token_out (&tk))
+            Putln ();
           break;
 
         default: break;
