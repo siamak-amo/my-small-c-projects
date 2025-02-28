@@ -362,14 +362,23 @@ token_out (const Milexer_Token *tk)
   return 0;
 }
 
+#define safe_free(malloc_ptr) do {              \
+  if (malloc_ptr) {                             \
+    free (malloc_ptr);                          \
+    malloc_ptr = NULL;                          \
+  }} while (0)
+
 void
 cleanup (int, void *)
 {
-  fflush (out_stream);
-  /* Do NOT use stdout after this line! */
-  fclose (out_stream);
-  free (out_buff);
-  free (in_buff);
+  if (out_stream)
+    {
+      fflush (out_stream);
+      /* Do NOT use stdout after this line! */
+      fclose (out_stream);
+    }
+  safe_free (out_buff);
+  safe_free (in_buff);
 }
 
 int
@@ -454,7 +463,10 @@ main (int argc, char **argv)
     if (!out_stream)
       out_stream = stdout;
     if (setvbuf (out_stream, out_buff, _IOFBF, _BMAX) < 0)
-      return 1;
+      {
+        warnln ("could not set _IOFBF for output stream");
+        safe_free (out_buff);
+      }
   }
 
   if (in_stream == stdin && isatty (fileno (in_stream)))
