@@ -8,13 +8,13 @@
     Usage:  kextractor [OPTIONS]
       see help for details: `kextractor -h`
 
-   Compilation:
-     cc -Wall -Wextra -Werror -ggdb -O3 -I../libs \
+    Compilation:
+      cc -ggdb -O3 -Wall -Wextra -Werror -I../libs \
         key_extractor.c -o kextractor
 
-   Options:
-     -D_BMAX="(1 * 1024)":
-        Output buffer capacity in bytes
+    Options:
+      Output buffer capacity in bytes:
+        `-D_BMAX="(1 * 1024)"`
  **/
 #include <stdio.h>
 #include <unistd.h>
@@ -301,7 +301,7 @@ cstr_isanumber (const char *s)
 
   switch (*(++s))
     {
-    case 'x':
+    case 'x': /* Hexadecimal value 0x??? */
       {
         for (++s; *s != '\0'; ++s)
           {
@@ -311,7 +311,7 @@ cstr_isanumber (const char *s)
       }
       return 1;
 
-    case 'b':
+    case 'b': /* Binary number 0b??? */
       {
         for (++s; *s != '\0'; ++s)
           {
@@ -321,8 +321,7 @@ cstr_isanumber (const char *s)
       }
       return 1;
 
-    default:
-      /* We assume 0??? is not a number */
+    default: /* 0??? is not a number (like: 0123) */
       return 0;
     }
   return 0;
