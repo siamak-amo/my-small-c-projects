@@ -67,14 +67,12 @@
 
        - {dev,prod}x{admin,<wordlist.txt>}
        $ permugen -r "{dev,prod}"  "{admin} /path/to/wordlist.txt"
-       - To also use `.` as separator
-       $ permugen -p. -r "{dev,prod}"  "{admin} /path/to/wordlist.txt"
 
        - To reuse previously provided seeds (\N starting from 1)
+         {dev,prod}x{www,dev,prod}
+       $ permugen -p. -r "{dev,prod}"  "{www} \1"
          {dev,prod}x{2,3}x{2,3}
        $ permugen -r "{dev,prod}"  "[2-3]" "\2"
-       - {dev,prod}x{www,dev,prod} (dot separated)
-       $ permugen -p. -r "{dev,prod}"  "{www} \1"
 
      * Custom prefix and suffix:
        - The first component has `xxx` as suffix and
