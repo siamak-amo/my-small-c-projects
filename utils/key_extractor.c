@@ -129,7 +129,9 @@ enum ke_flag_t
     C_PROVIDED      = FLG (31), // bound
   };
 
+/* Output flags */
 int kflags = 0;
+int parse_flg = 0;
 
 static Milexer ML = {
   .expression   = GEN_MKCFG (Expressions),
@@ -381,18 +383,8 @@ cleanup (int, void *)
 }
 
 int
-main (int argc, char **argv)
+kinit (void)
 {
-  set_program_name (*argv);
-  on_exit (cleanup, NULL);
-
-  Extra_Delims = da_new (const char *);
-  int ret = parse_args (argc, argv);
-  if (ret > 0)
-    return ret;
-  else if (ret < 0)
-    return 0;
-
   /* Default output configuration */
   if (! HAS_FLG (kflags, O_PROVIDED))
     {
@@ -438,8 +430,6 @@ main (int argc, char **argv)
         da_appd (Extra_Delims, Expressions[i].begin);
     }
 
-  /* Parsing flags */
-  int parse_flg;
   if (HAS_FLG (kflags, O_FULL_STR))
     {
       parse_flg = PFLAG_DEFAULT;
@@ -449,6 +439,24 @@ main (int argc, char **argv)
       /* get contents of strings */
       parse_flg = PFLAG_INEXP;
     }
+  return 0;
+}
+
+int
+main (int argc, char **argv)
+{
+  int ret;
+  set_program_name (*argv);
+  on_exit (cleanup, NULL);
+
+  /* extra delimiter (dynamic array) */
+  Extra_Delims = da_new (const char *);
+
+  if ((ret = parse_args (argc, argv)))
+    return (ret > 0) ? ret : 0;
+
+  if ((ret = kinit ()))
+    return ret;
 
   Milexer_Token tk = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN);
   Milexer_Slice src = {.lazy = true};
