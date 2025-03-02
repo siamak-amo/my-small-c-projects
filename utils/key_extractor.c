@@ -177,22 +177,27 @@ OPTIONS:\n\
 ");
 }
 
-FILE *
+int
 safe_open (const char *restrict pathname,
-           const char *restrict mode)
+           const char *restrict mode,
+           FILE **dest)
 {
   FILE *f;
   if (!pathname || !mode)
     {
       warnln ("invalud filename");
-      return NULL;
+      return 1;
     }
   if ((f = fopen (pathname, mode)) == NULL)
     {
       warnln ("could not open file -- (%s:%s)", mode, pathname);
-      return NULL;
+      return 1;
     }
-  return f;
+
+  if (*dest)
+    fclose (*dest);
+  *dest = f;
+  return 0;
 }
 
 /**
@@ -231,23 +236,17 @@ parse_args (int argc, char **argv)
           break;
 
         case '0':
-          if ((in_stream = safe_open (optarg, "r")))
-            fclose (in_stream);
-          else
+          if (safe_open (optarg, "r", &in_stream))
             return 1;
           break;
 
         case '1':
-          if ((out_stream = safe_open (optarg, "w")))
-            fclose (out_stream);
-          else
+          if (safe_open (optarg, "w", &out_stream))
             return 1;
           break;
 
         case 'a':
-          if ((out_stream = safe_open (optarg, "a")))
-            fclose (out_stream);
-          else
+          if (safe_open (optarg, "a", &out_stream))
             return 1;
           break;
 
