@@ -269,6 +269,17 @@ DADEFF void * __da_dup (void **);
     }} while (0)
 
 /**
+ *  append an array to array macro
+ *  @arr: dynamic array
+ *  @src_arr: input array (to be appended to @arr)
+ *  @len: length of @src_arr
+ */
+#define da_appd_arr(arr, src_arr, len) do {         \
+    for (size_t __idx = 0; __idx < len; __idx++) {  \
+      da_appd (arr, src_arr[__idx]);                \
+    }} while (0)
+
+/**
  *  drop array
  *  only sets size of @arr to zero
  */
