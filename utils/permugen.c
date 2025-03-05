@@ -391,7 +391,7 @@ OPTIONS:\n\
       -e                      enable backslash interpretation (default)\n\
       -r, --regular           regular mode\n\
       -o, --output            output file\n\
-  -a,-oA, --append            append to file\n\
+      -a, --oA --append       append to file\n\
       -p, --delimiter         permutations component separator\n\
           --prefix            output prefix\n\
           --suffix            output suffix\n\
