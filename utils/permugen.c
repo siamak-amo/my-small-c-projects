@@ -74,6 +74,11 @@
          {dev,prod}x{2,3}x{2,3}
        $ permugen -r "{dev,prod}"  "[2-3]" "\2"
 
+       - To read from stdin:
+       $ permugen -r -- "{dev,prod}" "-"
+         or equivalently, avoid using end-of-options:
+       $ permugen -r "{dev,prod}" " -"
+
      * Custom prefix and suffix:
        - The first component has `xxx` as suffix and
          the second component has `yyy` as prefix
