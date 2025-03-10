@@ -190,13 +190,15 @@ safe_fclose (FILE *f)
     }
 }
 
-__Parent__ void
+void
 __attribute__((constructor)) init()
+  __Parent__
 {
 }
 
-__Parent__ void
+void
 __attribute__((destructor)) cleanup()
+  __Parent__
 {
   safe_fclose (stdout);
   safe_fclose (stderr);
@@ -209,9 +211,11 @@ __attribute__((destructor)) cleanup()
  *  process to consider the stdout always a tty
  *  This makes them to look normal and have color
  */
-__Parent__ __Child__ int
+int
 isatty (int fd)
   __Overwrite__
+  __Parent__
+  __Child__
 {
   struct stat buf;
 
@@ -224,8 +228,9 @@ isatty (int fd)
 }
 #endif /* _DO_NOT_TRICK_ISATTY */
 
-__Child__ int
+int
 alter_main (int argc, char **argv, char **envp)
+  __Child__
 {
   UNUSED (argc);
   UNUSED (argv);
@@ -315,8 +320,10 @@ excludestr (const char *restrict haystack,
   return 0;
 }
 
-__Parent__ __Child__ int
+int
 main_hook (int argc, char **argv, char **envp)
+  __Parent__
+  __Child__
 {
   pid_t pid;
   int pipefd[2];
@@ -441,7 +448,7 @@ __Overwrite__
  *  Wrapper for __libc_start_main() that replaces the real main
  *  function with our hooked version.
  */
-__Parent__ __Child__ int
+int
 __libc_start_main (
     pre_main_t main, // the real main function
     int argc, char **argv,
@@ -450,6 +457,8 @@ __libc_start_main (
     void (* rtld_fini)(void),
     void *stack_end)
   __Overwrite__
+  __Parent__
+  __Child__
 {
   /* Save the real main function address */
   original_main = main;
