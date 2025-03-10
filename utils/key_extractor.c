@@ -26,7 +26,6 @@
 #define PROGRAM_NAME "key_extractor"
 
 #define CLI_IMPLEMENTATION
-#define CLI_NO_GETOPT /* we handle options ourselves */
 #include "clistd.h"
 
 #define isbdigit(x) ((x)=='0' || (x)=='1')

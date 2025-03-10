@@ -22,7 +22,6 @@
 #include <string.h>
 
 #define CLI_IMPLEMENTATION
-#define CLI_NO_GETOPT /* we handle options ourselves */
 #include "clistd.h"
 
 /* max buffer length */

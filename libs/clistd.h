@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef CLI_NO_GETOPT
+#ifdef CLI_DEFAULT_GETOPT
 # include <getopt.h>
 #endif
 
@@ -40,7 +40,7 @@ set_program_name (const char *argv0);
 #define HELP_OPTION_DESCRIPTION    "-h, --help        prints usage\n"
 #define VERSION_OPTION_DESCRIPTION "-v, --version     prints version\n"
 
-#ifndef CLI_NO_GETOPT
+#ifdef CLI_DEFAULT_GETOPT
 static struct option const long_options[] =
 {
   {"help",      no_argument, NULL, 'h'},
@@ -57,7 +57,7 @@ parse_std_options_only (int argc, char **argv,
                         const char *command_name, const char *version,
                         usage_fun usage);
 
-#endif /* CLI_NO_GETOPT */
+#endif /* CLI_DEFAULT_GETOPT */
 
 /**
  *  From: 'gnulib/lib/version-etc.c':version_etc_arn
@@ -100,7 +100,7 @@ version_etc (FILE *stream, const char *command_name, const char *version)
 }
 
 
-#ifndef CLI_NO_GETOPT
+#ifdef CLI_DEFAULT_GETOPT
 /**
  *  From: 'gnulib/lib/long-options.c':parse_gnu_standard_options_only
  *  Pasres help and version options and 
@@ -137,7 +137,7 @@ parse_std_options_only (int argc, char **argv,
   /* Restore previous value.  */
   opterr = saved_opterr;
 }
-#endif /* CLI_NO_GETOPT */
+#endif /* CLI_DEFAULT_GETOPT */
 
 
 #endif /* CLI_IMPLEMENTATION */

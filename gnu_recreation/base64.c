@@ -23,7 +23,6 @@
 
 #define Version "1"
 #define CLI_IMPLEMENTATION
-#define CLI_NO_GETOPT /* we handle options ourselves */
 #include "clistd.h"
 
 enum Mode

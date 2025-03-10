@@ -18,6 +18,7 @@
 
 #define Version "2"
 #define CLI_IMPLEMENTATION
+#define CLI_DEFAULT_GETOPT
 #include "clistd.h"
 
 void
