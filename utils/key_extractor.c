@@ -57,6 +57,8 @@ static struct option const long_options[] =
   {"set-delim", required_argument, NULL, 'D'},
   /* output format */
   {"format",    required_argument, NULL, 'o'},
+  /* extra supports */
+  {"js",        no_argument,       NULL, '2'},
   /* do not delete me */
   {NULL,        0,                 NULL,  0 },
 };
@@ -73,6 +75,7 @@ enum LANG
     STR1 = 0,
     STR2,
     STR3,
+    JS_REG, /* e.g. `const re = /.../;` */
   };
 
 /**
@@ -84,7 +87,12 @@ enum LANG
   [STR2]          = {"'", "'"},
   [STR3]          = {"`", "`"},
 };
-
+static struct Milexer_exp_ Expressions_JS[] = {
+  [STR1]          = {"\"", "\""},
+  [STR2]          = {"'", "'"},
+  [STR3]          = {"`", "`"},
+  [JS_REG]        = {"/", "/"},
+};
 /**
  *  This includes nearly all non-alphanumeric
  *  ASCII characters
@@ -126,6 +134,7 @@ enum ke_flag_t
     /* User configurations */
     C_EXT_DELIMS    = FLG (16),
     C_OVERW_DELIMS  = FLG (17),
+    C_JAVASCRIPT    = FLG (18),
     C_PROVIDED      = FLG (31), // bound
   };
 
@@ -133,9 +142,7 @@ enum ke_flag_t
 int kflags = 0;
 int parse_flg = 0;
 
-static Milexer ML = {
-  .expression   = GEN_MKCFG (Expressions),
-};
+static Milexer ML = {0};
 
 FILE *in_stream = NULL;
 FILE *out_stream = NULL;
@@ -245,6 +252,10 @@ parse_args (int argc, char **argv)
             return 1;
           break;
 
+        case '2':
+          kflags |= C_JAVASCRIPT;
+          break;
+
         case 'a':
           if (safe_open (optarg, "a", &out_stream))
             return 1;
@@ -336,6 +347,12 @@ token_out (const Milexer_Token *tk)
       /* string */
       if (HAS_FLG (kflags, O_ALLOW_STR))
         {
+          /* Handle javascript regex */
+          if (tk->id == JS_REG &&
+              ! HAS_FLG (kflags, O_ALLOW_KEY))
+            {
+              return 0;
+            }
           Outstr (tk->cstr);
           return 1;
         }
@@ -384,6 +401,12 @@ cleanup (int, void *)
 int
 kinit (void)
 {
+  /* Initialize ML expressions */
+  if (HAS_FLG (kflags, C_JAVASCRIPT))
+    ML.expression = MKEXP (Expressions_JS);
+  else
+    ML.expression = MKEXP (Expressions);
+
   /* Default output configuration */
   if (! HAS_FLG (kflags, O_PROVIDED))
     {
