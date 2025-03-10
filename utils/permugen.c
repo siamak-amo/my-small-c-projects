@@ -391,11 +391,6 @@ safe_fclose (FILE *_Nullable f)
     }
 }
 
-/**
- *  safe file open (fopen)
- *  only if it could open @pathname changes @dest[0]
- *  @mode is the same as fopen mode
- */
 FILE *
 safe_fopen (const char *restrict pathname,
             const char *restrict mode)
@@ -411,6 +406,67 @@ safe_fopen (const char *restrict pathname,
       warnln ("could not open file %s:%s", mode, pathname);
     }
   return tmp;
+}
+
+/**
+ *  Frees all allocated memory and closes all open files
+ *  This function should be called by `on_exit`
+ *  The pointer `__opt` *MUST* be accessible
+ *  outside of the main function's scope
+ */
+void
+cleanup (int, void *__opt)
+{
+  struct Opt *opt = (struct Opt *)__opt;
+  if (!opt)
+    return;
+
+  /* flush the output stream */
+#ifdef _USE_BIO
+  bio_flush (opt->bio);
+#endif
+
+  safe_fclose (opt->outf);
+  /** Do *NOT* use stdio after this line! **/
+
+#ifndef _CLEANUP_NO_FREE
+
+  /* Free output stream buffers */
+#ifdef _USE_BIO
+  safe_free (opt->bio->buffer);
+  safe_free (opt->bio);
+#else
+  safe_free (opt->streamout_buff);
+#endif /* _USE_BIO */
+
+  /**
+   * `global_seed` is not a dynamic array.
+   *  It should have been allocated using malloc
+   */
+  free_seed (opt->global_seeds);
+  safe_free (opt->global_seeds);
+
+  /**
+   *  `reg_seeds` is a dynamic array (using dyna.h)
+   *  Each element of this array must is a seed pointer,
+   *  allocated via `mk_seed` and must be freed using `free_seed`
+   */
+  if (opt->reg_seeds)
+    {
+      for (ssize_t i=0; i < da_sizeof (opt->reg_seeds); ++i)
+        {
+          free_seed (opt->reg_seeds[i]);
+          safe_free (opt->reg_seeds[i]);
+        }
+      da_free (opt->reg_seeds);
+    }
+
+  /**
+   *  Two tokens have been allocated for regex parsing
+   */
+  TOKEN_FREE (&opt->parser.general_tk);
+  TOKEN_FREE (&opt->parser.special_tk);
+#endif /* _CLEANUP_NO_FREE */
 }
 
 void
@@ -1102,65 +1158,6 @@ mk_seed (int c_len, int w_len)
   s->cseed = malloc (c_len);
   s->wseed = da_newn (char *, w_len);
   return s;
-}
-
-/**
- *  Frees all allocated memory and closes all open files
- *  This function should be called by `on_exit`
- *  The pointer `__opt` *MUST* be accessible
- *  outside of the main function's scope
- */
-void
-cleanup (int, void *__opt)
-{
-  struct Opt *opt = (struct Opt *)__opt;
-
-  /* flush the output stream */
-#ifdef _USE_BIO
-  bio_flush (opt->bio);
-#endif
-
-  safe_fclose (opt->outf);
-  /** Do *NOT* use stdio after this line! **/
-
-#ifndef _CLEANUP_NO_FREE
-
-  /* Free output stream buffers */
-#ifdef _USE_BIO
-  safe_free (opt->bio->buffer);
-  safe_free (opt->bio);
-#else
-  safe_free (opt->streamout_buff);
-#endif /* _USE_BIO */
-
-  /**
-   * `global_seed` is not a dynamic array.
-   *  It should have been allocated using malloc
-   */
-  free_seed (opt->global_seeds);
-  safe_free (opt->global_seeds);
-
-  /**
-   *  `reg_seeds` is a dynamic array (using dyna.h)
-   *  Each element of this array must is a seed pointer,
-   *  allocated via `mk_seed` and must be freed using `free_seed`
-   */
-  if (opt->reg_seeds)
-    {
-      for (ssize_t i=0; i < da_sizeof (opt->reg_seeds); ++i)
-        {
-          free_seed (opt->reg_seeds[i]);
-          safe_free (opt->reg_seeds[i]);
-        }
-      da_free (opt->reg_seeds);
-    }
-
-  /**
-   *  Two tokens have been allocated for regex parsing
-   */
-  TOKEN_FREE (&opt->parser.general_tk);
-  TOKEN_FREE (&opt->parser.special_tk);
-#endif /* _CLEANUP_NO_FREE */
 }
 
 int
