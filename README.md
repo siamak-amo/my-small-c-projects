@@ -59,10 +59,15 @@ generates word lists for fuzzing based on some given seeds
 
 ### key_extractor.c
 Text Tokenizer  
-helps to extract words (tokens) from the given input (based on mini-lexer.c)
+It helps to extract keywords (tokens) from input text (based on mini-lexer.c)
 
-could be used together with the permugen program to
-generate customized word lists
+It can be used together with permugen to generate customized word lists
+
+
+### moreless.c
+Automatically runs less command  
+`moreless` is a pre-loading wrapper program (like proxychains),
+It displays the stdout of all programs within a `less` process.
 
 
 ### xor_encrypt.c
