@@ -175,16 +175,6 @@
 #define __STR(var) #var
 #define STR(var) __STR (var)
 
-#ifdef _CLEANUP_NO_FREE
-# define safe_free(ptr)
-#else
-# define safe_free(ptr) do {                    \
-    if (ptr) {                                  \
-      free (ptr);                               \
-      ptr = NULL;                               \
-    }} while (0)
-#endif /* _CLEANUP_NO_FREE */
-
 #ifdef _DEBUG /* debug macro */
 #undef dprintf
 #define dprintf(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
@@ -376,6 +366,52 @@ void parse_seed_regex (struct Opt *, struct Seed *s,
 
 /* ASCII-printable, Non-white-space */
 #define IS_ASCII_PR(c) (c >= 0x20 && c <= 0x7E)
+
+#ifndef _Nullable
+# define _Nullable
+#endif
+
+#ifdef _CLEANUP_NO_FREE
+# define safe_free(ptr)
+#else
+# define safe_free(ptr) do {                    \
+    if (ptr) {                                  \
+      free (ptr);                               \
+      ptr = NULL;                               \
+    }} while (0)
+#endif /* _CLEANUP_NO_FREE */
+
+static inline void
+safe_fclose (FILE *_Nullable f)
+{
+  if (f)
+    {
+      fflush (f);
+      fclose (f);
+    }
+}
+
+/**
+ *  safe file open (fopen)
+ *  only if it could open @pathname changes @dest[0]
+ *  @mode is the same as fopen mode
+ */
+FILE *
+safe_fopen (const char *restrict pathname,
+            const char *restrict mode)
+{
+  FILE *tmp;
+  if (!pathname || !mode)
+    {
+      warnln ("invalud filename");
+      return NULL;
+    }
+  if ((tmp = fopen (pathname, mode)) == NULL)
+    {
+      warnln ("could not open file %s:%s", mode, pathname);
+    }
+  return tmp;
+}
 
 void
 usage (int ecode)
@@ -793,27 +829,6 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
     safe_free (line);
 }
 
-/**
- *  safe file open (fopen)
- *  only if it could open @pathname changes @dest[0]
- *  @mode is the same as fopen mode
- */
-FILE *
-safe_fopen (const char *restrict pathname, const char *restrict mode)
-{
-  FILE *tmp;
-  if (!pathname || !mode)
-    {
-      warnln ("invalud filename");
-      return NULL;
-    }
-  if ((tmp = fopen (pathname, mode)) == NULL)
-    {
-      warnln ("could not open file %s:%s", mode, pathname);
-    }
-  return tmp;
-}
-
 /* CLI options, getopt */
 const struct option lopts[] = {
   /* seeds */
@@ -931,7 +946,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
             wseed_file_uniappd (opt, opt->global_seeds, wseed_f);
 
             if (wseed_f != stdin)
-              fclose (wseed_f);
+              safe_fclose (wseed_f);
           }
           break;
 
@@ -1105,8 +1120,7 @@ cleanup (int, void *__opt)
   bio_flush (opt->bio);
 #endif
 
-  fflush (opt->outf);
-  fclose (opt->outf);
+  safe_fclose (opt->outf);
   /** Do *NOT* use stdio after this line! **/
 
 #ifndef _CLEANUP_NO_FREE
@@ -1553,7 +1567,7 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
             {
               wseed_file_uniappd (opt, dst_seed, f);
               if (f != stdin)
-                fclose (f);
+                safe_fclose (f);
             }
         }
       break;
