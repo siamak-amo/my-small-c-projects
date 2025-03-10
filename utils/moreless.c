@@ -427,7 +427,7 @@ main_hook (int argc, char **argv, char **envp)
       return alter_main (argc, argv, envp);
     }
 }
-__Overwrite__
+
 /**
  **  Libc-dependent function overwrite
  **
