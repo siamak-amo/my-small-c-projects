@@ -289,7 +289,7 @@ parse_args (int argc, char **argv)
                 }
             }
           while ((p = strchr (p, ':')) && *(++p));
-          return 0;
+          break;
 
         default:
           break;
