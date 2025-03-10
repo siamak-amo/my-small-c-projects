@@ -470,6 +470,20 @@ typedef struct Milexer_t
 #define GEN_LENOF(arr) (sizeof (arr) / sizeof ((arr)[0]))
 #define GEN_MKCFG(exp_ptr) {.exp = exp_ptr, .len = GEN_LENOF (exp_ptr)}
 
+#define MKCFG_A_(s) (Milexer_AEXP) GEN_MKCFG (s)
+#define MKCFG_B_(s) (Milexer_BEXP) GEN_MKCFG (s)
+
+/**
+ *  To simply initialize Milexer internals, outside
+ *  of the body of the struct, for example:
+ *    ML.expression = MKEXP (Expressions);
+ *    ML.punctuation = MKPUNC (Punctuations);
+ */
+#define MKEXP(exp) MKCFG_A_ (exp)
+#define MKPUNC(pun) MKCFG_B_ (pun)
+#define MKKEYWORD(keyw) MKCFG_B_ (key)
+#define MKCOMMENT_SL(c) MKCFG_B_ (c)
+#define MKCOMMENT_ML(c) MKCFG_A_ (c)
 
 /**
  **  Function definitions
