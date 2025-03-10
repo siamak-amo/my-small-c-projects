@@ -15,8 +15,6 @@ extern char **environ;
 #define PROGRAM_NAME "proxyof"
 
 #define CLI_IMPLEMENTATION
-/* we don't have any cli option */
-#define CLI_NO_GETOPT
 #include "clistd.h"
 
 enum proxy_type
