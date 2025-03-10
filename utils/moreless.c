@@ -101,6 +101,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <assert.h>
 
 #include <dlfcn.h>
 #include <fcntl.h>
@@ -192,7 +193,6 @@ safe_fclose (FILE *f)
 
 void
 __attribute__((constructor)) init()
-  __Parent__
 {
 }
 
@@ -200,6 +200,7 @@ void
 __attribute__((destructor)) cleanup()
   __Parent__
 {
+  assert (mode != P_CHILD && "broken logic!");
   safe_fclose (stdout);
   safe_fclose (stderr);
   wait (NULL);
@@ -236,6 +237,8 @@ int
 alter_main (int, char **, char **)
   __Child__
 {
+  assert (mode == P_CHILD && "broken logic!");
+
   /* A simple echo for debugging purposes */
 #ifdef _DEBUG
   int c;
