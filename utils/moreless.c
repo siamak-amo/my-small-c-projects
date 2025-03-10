@@ -228,14 +228,15 @@ isatty (int fd)
 }
 #endif /* _DO_NOT_TRICK_ISATTY */
 
+/**
+ *  This function executes the less process,
+ *  and only gets called by the P_CHILD process
+ */
 int
-alter_main (int argc, char **argv, char **envp)
+alter_main (int, char **, char **)
   __Child__
 {
-  UNUSED (argc);
-  UNUSED (argv);
-  UNUSED (envp);
-
+  /* A simple echo for debugging purposes */
 #ifdef _DEBUG
   int c;
   puts ("===============");
@@ -424,7 +425,7 @@ main_hook (int argc, char **argv, char **envp)
       fprintf (stderr, "moreless[%s] less %s\n", mode_cstr[mode], *argv);
 #endif
       /* The less command lives here */
-      return alter_main (argc, argv, envp);
+      return alter_main (0, NULL, NULL);
     }
 }
 
