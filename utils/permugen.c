@@ -17,7 +17,8 @@
 /** file: permugen.c
     created on: 4 Sep 2024
 
-    Permugen, permutation generator utility
+    Permugen
+    Permutation generator utility
     Generates customizable permutations from specified seeds
 
     Usage:
@@ -25,7 +26,7 @@
        $ permugen -h
 
     Normal mode:  permugen [OPTIONS] -s [SEED_CONFIG]
-    Cartesian product of the input with a certain depth
+      Cartesian product of the input with a certain depth
       {INPUT_SEED}x{INPUT_SEED}x...  (depth times)
 
      * Alphanumeric characters:
@@ -58,7 +59,7 @@
 
 
     Regular Mode:  permugen [OPTIONS] -r [SEED_CONFIG]...
-    To manually specify components of the permutations
+      To manually specify components of the permutations
       {INPUT_SEED_1}x{INPUT_SEED_2}x...x{INPUT_SEED_N}
 
      * Basic Examples:
