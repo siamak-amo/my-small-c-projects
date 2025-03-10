@@ -82,7 +82,7 @@ enum LANG
  *  Any string types enclosed
  *  within these delimiters will be ignored
  */
- static struct Milexer_exp_ Expressions[] = {
+static struct Milexer_exp_ Expressions[] = {
   [STR1]          = {"\"", "\""},
   [STR2]          = {"'", "'"},
   [STR3]          = {"`", "`"},
@@ -475,7 +475,7 @@ main (int argc, char **argv)
   Extra_Delims = da_new (const char *);
 
   if ((ret = parse_args (argc, argv)))
-    return (ret > 0) ? ret : 0;
+    return (ret) ? ret : EXIT_SUCCESS;
 
   if ((ret = kinit ()))
     return ret;
