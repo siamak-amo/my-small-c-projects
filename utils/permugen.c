@@ -291,14 +291,20 @@ struct permugex
   Milexer_Token general_tk, special_tk;   /* result tokens */
 };
 
+enum mode
+  {
+    NORMAL_MODE = 0,
+    REGULAR_MODE,
+  };
+
 /* Permugen's main configuration */
 struct Opt
 {
   /* General configuration */
+  int mode;
   int escape_disabled; /* to disable backslash interpretation */
   int from_depth; /* min depth */
   int to_depth;   /* max depth */
-  int regular_mode; /* is in regular mode */
 
   /* Seed Configuration (Normal mode) */
   struct Seed *global_seeds;
@@ -848,11 +854,11 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
     }
   if (f == stdin && isatty (fileno (f)))
     {
-      if (opt->regular_mode)
+      if (opt->mode == REGULAR_MODE)
         {
           fprintf (stderr,
                    "Reading words for the seed #%d until EOF:\n",
-                   opt->regular_mode);
+                   opt->reg_seeds_len + 1);
         }
       else
         fprintf (stderr, "Reading words until EOF:\n");
@@ -935,7 +941,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
   NOT_IN_REG_MODE (option, break)
 
 #define NOT_IN_REG_MODE(option, action)                             \
-  if (opt->regular_mode) {                                          \
+  if (opt->mode == REGULAR_MODE) {                                  \
     warnln ("wrong regular mode option (%s) was ignored", option);  \
     action;                                                         \
   }
@@ -1037,7 +1043,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
           {
             int end_of_options = 0;
             using_default_seed = 0;
-            opt->regular_mode = 1;
+            opt->mode = REGULAR_MODE;
             if (opt->reg_seeds)
               break;
             opt->reg_seeds = mk_seed_arr (1);
@@ -1088,13 +1094,12 @@ init_opt (int argc, char **argv, struct Opt *opt)
   if (opt->outf == NULL)
     opt->outf = stdout;
 
-  if (opt->regular_mode)
+  switch (opt->mode)
     {
-      /* regular mode */
-    }
-  else
-    {
-      /* normal mode */
+    case REGULAR_MODE:
+      break;
+
+    case NORMAL_MODE:
       if (opt->global_seeds->cseed_len == 0 && using_default_seed)
         {
           /* initializing with the default seed [a-z0-9] */
@@ -1120,7 +1125,9 @@ init_opt (int argc, char **argv, struct Opt *opt)
           /* invalid min and max depths */
           opt->to_depth = opt->from_depth;
         }
+      break;
     }
+
   /* Interpret backslash characters */
   if (!opt->escape_disabled)
     {
@@ -1190,8 +1197,7 @@ main (int argc, char **argv)
     if (init_opt (argc, argv, &opt))
       return EXIT_FAILURE;
 
-    /* Generate permutations */
-    if (opt.regular_mode)
+    if (opt.mode == REGULAR_MODE)
       {
         if (0 == opt.reg_seeds_len)
           {
@@ -1201,7 +1207,6 @@ main (int argc, char **argv)
       }
     else
       {
-        /* Normal mode */
         if (opt.global_seeds->cseed_len == 0 &&
             da_sizeof (opt.global_seeds->wseed) == 0)
           {
@@ -1225,7 +1230,7 @@ main (int argc, char **argv)
   dprintf ("* buffer length of buffered_io: %d bytes\n", _BMAX);
 # endif /* _USE_BIO */
 
-  if (opt.regular_mode)
+  if (opt.mode == REGULAR_MODE)
     {
       size_t len = da_sizeof (opt.reg_seeds);
       dprintf ("* regular mode\n");
@@ -1262,7 +1267,7 @@ main (int argc, char **argv)
 
 
   /* Generating permutations */
-  if (opt.regular_mode)
+  if (opt.mode == REGULAR_MODE)
     {
       regular_perm (&opt);
     }
@@ -1498,7 +1503,7 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
          *  previously provided seed
          */
         input++;
-        if (opt->regular_mode && IS_NUMBER (*input))
+        if (opt->mode == REGULAR_MODE && IS_NUMBER (*input))
           {
             int n = strtol (input, NULL, 10) - 1;
             /* Handle invalid indexes */
