@@ -298,13 +298,14 @@ struct Opt
   int escape_disabled; /* to disable backslash interpretation */
   int from_depth; /* min depth */
   int to_depth;   /* max depth */
+  int regular_mode; /* is in regular mode */
 
   /* Seed Configuration (Normal mode) */
   struct Seed *global_seeds;
 
   /* Seed Configuration (Regular mode) */
-  int _regular_mode; /* equal to `1 + len(reg_seeds)` */
   struct Seed **reg_seeds; /* dynamic array of Seed struct */
+  int reg_seeds_len;
 
   /* Output Configuration */
   FILE *outf; /* output file */
@@ -1066,7 +1067,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                       }
                     else
                       {
-                        opt->_regular_mode++;
+                        opt->reg_seeds_len++;
                         da_appd (opt->reg_seeds, tmp);
                       }
                   }
@@ -1085,7 +1086,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
   if (opt->outf == NULL)
     opt->outf = stdout;
 
-  if (opt->_regular_mode > 0)
+  if (opt->regular_mode)
     {
       /* regular mode */
     }
@@ -1188,10 +1189,9 @@ main (int argc, char **argv)
       return EXIT_FAILURE;
 
     /* Generate permutations */
-    if (opt._regular_mode > 0)
+    if (opt.regular_mode)
       {
-        /* Regular mode, _regular_mode = 1 + length of reg_seeds */
-        if (opt._regular_mode == 1)
+        if (0 == opt.reg_seeds_len)
           {
             warnln ("empty regular permutation");
             return EXIT_FAILURE;
@@ -1223,7 +1223,7 @@ main (int argc, char **argv)
   dprintf ("* buffer length of buffered_io: %d bytes\n", _BMAX);
 # endif /* _USE_BIO */
 
-  if (opt._regular_mode)
+  if (opt.regular_mode)
     {
       size_t len = da_sizeof (opt.reg_seeds);
       dprintf ("* regular mode\n");
@@ -1260,7 +1260,7 @@ main (int argc, char **argv)
 
 
   /* Generating permutations */
-  if (opt._regular_mode > 0)
+  if (opt.regular_mode)
     {
       regular_perm (&opt);
     }
@@ -1496,10 +1496,9 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
          *  previously provided seed
          */
         input++;
-        if (opt->_regular_mode && IS_NUMBER (*input))
+        if (opt->regular_mode && IS_NUMBER (*input))
           {
             int n = strtol (input, NULL, 10) - 1;
-            if (n >= 0 && n < opt->_regular_mode - 1)
               {
                 /* valid index */
                 struct Seed *_src = opt->reg_seeds[n];
