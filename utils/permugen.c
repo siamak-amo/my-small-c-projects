@@ -570,18 +570,18 @@ ARGUMENTS:\n\
  *  Fputs:  writes @str without its terminating null byte
  *  Puts:   writes @str like @Fputs and a trailing newline
  *  Putc:   writes a character @c (as unsigned char)
- *  Newln:  writes a newline
+ *  Putln:  writes a newline
  */
 #ifndef _USE_BIO
 #  define Fputs(str, opt) fputs (str, opt->outf)
 #  define Putc(c, opt) putc (c, opt->outf)
 #  define Puts(str, opt) fprintf (opt->outf, "%s\n", str)
-#  define Newln(opt) Putc ('\n', opt);
+#  define Putln(opt) Putc ('\n', opt);
 #else
 #  define Fputs(str, opt) bio_fputs (opt->bio, str)
 #  define Putc(c, opt) bio_putc (opt->bio, c)
 #  define Puts(str, opt) bio_puts (opt->bio, str)
-#  define Newln(opt) Putc ('\n', opt);
+#  define Putln(opt) Putc ('\n', opt);
 #endif /* _USE_BIO */
 
 /**
@@ -627,7 +627,7 @@ perm (const int depth, const struct Opt *opt)
   if (opt->suffix)
     Puts (opt->suffix, opt);
   else
-    Newln (opt);
+    Putln (opt);
 
 
   int pos;
@@ -718,7 +718,7 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
   if (opt->suffix)
     Puts (opt->suffix, opt);
   else
-    Newln (opt);
+    Putln (opt);
 
   int pos;
   for (pos = depth-1;
