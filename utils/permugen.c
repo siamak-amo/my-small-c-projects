@@ -324,39 +324,6 @@ struct Opt
   struct permugex parser;
 };
 
-/**
- *  Appends characters from @src to @s->cseed, until \0
- *  or !IS_ASCII_PR, returns the number of bytes written
- *  @s->cseed will have unique chars after this call, if it did before
- *  Pass `len = -1` to stop only at the null byte
- *
- *  Returns the index of the last non-zero byte in @src
- */
-int cseed_uniappd (struct Seed *s, const char *src, int len);
-/**
- *  Appends a copy of @str_word (using strdup malloc)
- *  to @s->wseed after unescaping it (if not disabled)
- *  @s->wseed will have unique words after this call, if it did before
- *
- *  Returns -1 on error, 1 on match found, 0 on a successful appending
- */
-int wseed_uniappd (const struct Opt *, struct Seed *s,
-                   const char *str_word);
-/**
- *  Using wseed_uniappd function, appends words from @f
- *  to the seed @s, line by line, and ignores commented lines by `#`
- */
-void
-wseed_file_uniappd (const struct Opt *, struct Seed *s, FILE *f);
-/**
- *  Parses the @input regex and stores the result in @s
- *  @input: "(prefix) [Cseed] {Wseed} /path/to/file (suffix)"
- *  If `prefix` and `suffix` are not NULL, they are allocated using
- *  `strdup`, and `wseed` is appended using `wseed_uniappd` function
- */
-void parse_seed_regex (struct Opt *, struct Seed *s,
-                       const char *input);
-
 /* Internal Macros */
 #define Strcmp(s1, s2)                          \
   ((s1) != NULL && (s2) != NULL &&              \
@@ -469,6 +436,41 @@ cleanup (int, void *__opt)
   TOKEN_FREE (&opt->parser.special_tk);
 #endif /* _CLEANUP_NO_FREE */
 }
+
+/**
+ *  Appends characters from @src to @s->cseed, until \0
+ *  or !IS_ASCII_PR, returns the number of bytes written
+ *  @s->cseed will have unique chars after this call, if it did before
+ *  Pass `len = -1` to stop only at the null byte
+ *
+ *  Returns the index of the last non-zero byte in @src
+ */
+int cseed_uniappd (struct Seed *s, const char *src, int len);
+
+/**
+ *  Appends a copy of @str_word (using strdup malloc)
+ *  to @s->wseed after unescaping it (if not disabled)
+ *  @s->wseed will have unique words after this call, if it did before
+ *
+ *  Returns -1 on error, 1 on match found, 0 on a successful appending
+ */
+int wseed_uniappd (const struct Opt *, struct Seed *s,
+                   const char *str_word);
+/**
+ *  Using wseed_uniappd function, appends words from @f
+ *  to the seed @s, line by line, and ignores commented lines by `#`
+ */
+void
+wseed_file_uniappd (const struct Opt *, struct Seed *s, FILE *f);
+
+/**
+ *  Parses the @input regex and stores the result in @s
+ *  @input: "(prefix) [Cseed] {Wseed} /path/to/file (suffix)"
+ *  If `prefix` and `suffix` are not NULL, they are allocated using
+ *  `strdup`, and `wseed` is appended using `wseed_uniappd` function
+ */
+void parse_seed_regex (struct Opt *, struct Seed *s,
+                       const char *input);
 
 void
 usage (int ecode)
@@ -846,11 +848,11 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
     }
   if (f == stdin && isatty (fileno (f)))
     {
-      if (opt->_regular_mode)
+      if (opt->regular_mode)
         {
           fprintf (stderr,
                    "Reading words for the seed #%d until EOF:\n",
-                   opt->_regular_mode);
+                   opt->regular_mode);
         }
       else
         fprintf (stderr, "Reading words until EOF:\n");
@@ -933,7 +935,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
   NOT_IN_REG_MODE (option, break)
 
 #define NOT_IN_REG_MODE(option, action)                             \
-  if (opt->_regular_mode) {                                         \
+  if (opt->regular_mode) {                                          \
     warnln ("wrong regular mode option (%s) was ignored", option);  \
     action;                                                         \
   }
@@ -1035,7 +1037,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
           {
             int end_of_options = 0;
             using_default_seed = 0;
-            opt->_regular_mode = 1;
+            opt->regular_mode = 1;
             if (opt->reg_seeds)
               break;
             opt->reg_seeds = mk_seed_arr (1);
@@ -1499,27 +1501,32 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
         if (opt->regular_mode && IS_NUMBER (*input))
           {
             int n = strtol (input, NULL, 10) - 1;
+            /* Handle invalid indexes */
+            if (n == opt->reg_seeds_len)
               {
-                /* valid index */
-                struct Seed *_src = opt->reg_seeds[n];
-                /* append csseds */
-                cseed_uniappd (dst_seed,
-                               _src->cseed, _src->cseed_len);
-                /* append wseeds */
-                for (ssize_t i=0; i < da_sizeof(_src->wseed); ++i)
-                  {
-                    wseed_uniappd (opt, dst_seed, _src->wseed[i]);
-                  }
+                warnln ("circular append was ignored");
+                break;
               }
-            else
+            else if (n >= opt->reg_seeds_len)
               {
-                /* Invalid index */
-                if (n == opt->_regular_mode - 1)
-                  warnln ("circular append was ignored");
-                else if (n >= opt->_regular_mode)
-                  warnln ("seed index %d is out of bound", n+1);
-                else if (n < 0)
-                  warnln ("invalid seed index");
+                warnln ("seed index %d is out of bound", n+1);
+                break;
+              }
+            else if (n < 0)
+              {
+                warnln ("invalid seed index");
+                break;
+              }
+            else /* valid index */
+              {
+                struct Seed *src = opt->reg_seeds[n];
+                /* append csseds */
+                cseed_uniappd (dst_seed, src->cseed, src->cseed_len);
+                /* append wseeds */
+                for (ssize_t i=0; i < da_sizeof (src->wseed); ++i)
+                  {
+                    wseed_uniappd (opt, dst_seed, src->wseed[i]);
+                  }
               }
             break;
           }
