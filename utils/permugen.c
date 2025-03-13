@@ -1254,10 +1254,13 @@ main (int argc, char **argv)
     {
       dprintf ("* normal mode\n");
       dprintf ("    ");
-      printd_arr (opt.global_seeds->cseed, "`%c`", opt.global_seeds->cseed_len);
+      printd_arr (opt.global_seeds->cseed, "`%c`",
+                  opt.global_seeds->cseed_len);
       dprintf ("    ");
-      printd_arr (opt.global_seeds->wseed, "`%s`", (int) da_sizeof (opt.global_seeds->wseed));
-      dprintf ("* depth: from %d to %d\n", opt.from_depth, opt.to_depth);
+      printd_arr (opt.global_seeds->wseed, "`%s`",
+                  (int) da_sizeof (opt.global_seeds->wseed));
+      dprintf ("* depth: from %d to %d\n",
+               opt.from_depth, opt.to_depth);
     }
   if (opt.escape_disabled)
     dprintf ("- backslash interpretation is disabled\n");
@@ -1308,7 +1311,7 @@ pparse_cseed_regex (struct Opt *, struct Seed *dst_seed);
  *  This function uses special_tk and special_src for parsing
  */
 static inline void
-pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
+pparse_keys_regex (struct Opt *, struct Seed *dst_seed,
                    const char *input);
 /**
  *  Provides prefix and suffix of @dst_seed using strdup,
@@ -1317,8 +1320,8 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
  *  the second call sets @dst_seed->suff (suffix)
  */
 static inline void
-pparse_format_regex (struct Opt *, struct Seed *dst_seed,
-                     char *input);
+pparse_format_regex (struct Opt *,
+                     struct Seed *dst_seed, char *input);
 
 /**
  *  Path resolver
@@ -1470,8 +1473,8 @@ pparse_wseed_regex (struct Opt *opt, struct Seed *dst_seed)
 }
 
 static inline void
-pparse_format_regex (struct Opt *opt, struct Seed *dst_seed,
-                     char *input)
+pparse_format_regex (struct Opt *opt,
+                     struct Seed *dst_seed, char *input)
 {
   if (!input)
     return;
@@ -1634,8 +1637,8 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
         case TK_EXPRESSION:
           char *__cstr = tmp->cstr;
           SET_ML_SLICE (&opt->parser.special_src,
-                        __cstr,
-                        strlen (__cstr));
+                        __cstr, strlen (__cstr));
+
           switch (tmp->id)
             {
             case EXP_SBRACKET:
