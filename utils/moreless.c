@@ -79,6 +79,10 @@
    Known issues:
    - It does not work with the bash builtin functions (like: echo, pwd)
 
+   - Programs can no longer read interactively from stdin; keyboard input
+     is redirected to 'less' (is this fixable?)
+     A simple workaround is to use echo
+
    - Each iteration of for/while loops in Bash runs a separate instance
      of the less program.
 

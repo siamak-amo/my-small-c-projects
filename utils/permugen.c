@@ -1178,7 +1178,7 @@ main (int argc, char **argv)
   on_exit (cleanup, &opt);
 
   {
-    /* initializing the parser */
+    /* Initializing parsers */
     opt.parser = (struct permugex) {
       .ml    = &ML,
       .ml_in = &ML_IN,
@@ -1297,6 +1297,7 @@ main (int argc, char **argv)
  */
 static inline void
 pparse_wseed_regex (struct Opt *, struct Seed *dst_seed);
+
 /**
  *  Character Seed regex parser
  *  inside: `[...]`
@@ -1305,6 +1306,7 @@ pparse_wseed_regex (struct Opt *, struct Seed *dst_seed);
  */
 static inline void
 pparse_cseed_regex (struct Opt *, struct Seed *dst_seed);
+
 /**
  *  Detects file paths, previous seed indexes (\N)
  *  and other shortcuts like \d, \u, and \U
