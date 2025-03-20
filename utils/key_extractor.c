@@ -74,7 +74,10 @@ enum LANG
     STR1 = 0,
     STR2,
     STR3,
-    JS_REG, /* e.g. `const re = /.../;` */
+
+    JS_STR1 = 0,
+    JS_STR2,
+    JS_STR3,
   };
 
 /**
@@ -87,10 +90,9 @@ static struct Milexer_exp_ Expressions[] = {
   [STR3]          = {"`", "`"},
 };
 static struct Milexer_exp_ Expressions_JS[] = {
-  [STR1]          = {"\"", "\""},
-  [STR2]          = {"'", "'"},
-  [STR3]          = {"`", "`"},
-  [JS_REG]        = {"/", "/"},
+  [JS_STR1]       = {"\"", "\""},
+  [JS_STR2]       = {"'", "'"},
+  [JS_STR3]       = {"/", "/"},
 };
 /**
  *  This includes nearly all non-alphanumeric
@@ -347,7 +349,7 @@ token_out (const Milexer_Token *tk)
       if (HAS_FLG (kflags, O_ALLOW_STR))
         {
           /* Handle javascript regex */
-          if (tk->id == JS_REG &&
+          if (tk->id == JS_STR3 &&
               ! HAS_FLG (kflags, O_ALLOW_KEY))
             {
               return 0;
