@@ -422,12 +422,12 @@ cleanup (int, void *__opt)
 
   /**
    *  `reg_seeds` is a dynamic array (using dyna.h)
-   *  Each element of this array must is a seed pointer,
+   *  Each element of this array, is a seed pointer,
    *  allocated via `mk_seed` and must be freed using `free_seed`
    */
   if (opt->reg_seeds)
     {
-      for (ssize_t i = da_sizeof (opt->reg_seeds) - 1; i>=0; --i)
+      da_foreach (opt->reg_seeds, i)
         {
           free_seed (opt->reg_seeds[i]);
           safe_free (opt->reg_seeds[i]);
@@ -1152,8 +1152,10 @@ free_seed (struct Seed *s)
   safe_free (s->cseed);
   if (s->wseed)
     {
-      for (ssize_t i = da_sizeof (s->wseed) - 1; i >= 0 ; --i)
-        safe_free (s->wseed[i]);
+      da_foreach (s->wseed, i)
+        {
+          safe_free (s->wseed[i]);
+        }
       da_free (s->wseed);
     }
 }
@@ -1533,7 +1535,7 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
                 /* append csseds */
                 cseed_uniappd (dst_seed, src->cseed, src->cseed_len);
                 /* append wseeds */
-                for (ssize_t i = da_sizeof (src->wseed) - 1; i>=0; --i)
+                da_foreach (src->wseed, i)
                   {
                     wseed_uniappd (opt, dst_seed, src->wseed[i]);
                   }
