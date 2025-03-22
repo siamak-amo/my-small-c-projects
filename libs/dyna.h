@@ -118,7 +118,7 @@
         my_function (void **array, T data)
         {
           // append data to array
-          // this might update @arr in scope 1
+          // this may update @arr in scope 1
           da_funappd (array, data);
         }
       ```
@@ -145,14 +145,17 @@
 # define da_sidx intptr_t
 #endif
 
-/* users don't need to work with this struct */
+/**
+ *  Internal struct
+ *  Users do not need to interact with it directly
+ */
 typedef struct
 {
   da_idx cap; /* capacity of array */
   da_idx size; /* length of array */
   da_idx cell_bytes; /* size of each cell */
 
-  /* actual bytes of array */
+  /* Actual bytes of array */
   char arr[];
 } dyna_t;
 
@@ -166,20 +169,20 @@ typedef struct
 # define da_dprintf(format, ...)
 #endif /* _DA_DEBUG */
 
-/* initial capacity */
+/* Initial capacity */
 #ifndef DA_INICAP
 # define DA_INICAP 2
 #endif
 
-/* arrays growth factor and method */
+/* Growth factor */
 #ifndef DA_GFACT
 # define DA_GFACT 2
 #endif
 #ifndef DA_DO_GROW
 /**
- *  by default, it doubles the capacity
- *  you might want to increase the capacity
- *  like: `cap += DA_GFACT`
+ *  By default, it doubles the capacity;
+ *  you may want to increase the capacity
+ *  linearly like: `cap += DA_GFACT`
  */
 # define DA_DO_GROW(cap) ((cap) *= DA_GFACT)
 // #define DA_DO_GROW(cap) ((cap) += DA_GFACT)
@@ -216,10 +219,12 @@ DADEFF void * __da_funappd (void **, da_sidx);
 DADEFF void * __da_dup (void **);
 
 #define DA_NNULL(arr) (NULL != arr)
+
 /**
- *  External macros
- *  to be used by users
- */
+ **  External macros
+ **  to be used by users
+ **/
+
 // to free dynamic array @arr
 #define da_free(arr) do {                          \
     if (DA_NNULL (arr)) {                          \
@@ -238,8 +243,9 @@ DADEFF void * __da_dup (void **);
 #define da_leftof(arr) \
   (DA_NNULL (arr) ? (da_sidx)da_capof (arr) - (da_sidx)da_sizeof (arr) : 0)
 
-/** da_new, da_newn
- *  only create `da` dynamic arrays with these macros
+/**
+ *  Create a new dynamic array
+ *  Only create dyna arrays with these macros
  *  @T: type of array, for example (char) or (char *)
  *  @return: pointer to @T array which you can read
  *    from it as a normal `T array[n]`
@@ -252,6 +258,7 @@ DADEFF void * __da_dup (void **);
     })
 
 /**
+ *  Duplicate a dynamic array
  *  returns a pointer to a new dynamic array
  *  which is a duplicate of @arr
  *  this also must be freed via `da_free`
@@ -289,19 +296,20 @@ DADEFF void * __da_dup (void **);
     }} while (0)
 
 /**
- *  append an array to array macro
- *  @arr: dynamic array
- *  @src_arr: input array (to be appended to @arr)
+ *  Appends a C array to a dynamic array
+ *
+ *  @dst_arr: destination dynamic array
+ *  @src_arr: source array (normal C array)
  *  @len: length of @src_arr
+ *    It will not be evaluated at each iteration
  */
-#define da_appd_arr(arr, src_arr, len) do {         \
-    for (size_t __idx = 0; __idx < len; __idx++) {  \
-      da_appd (arr, src_arr[__idx]);                \
+#define da_appd_arr(dst_arr, src_arr, len) do {     \
+    for (da_idx __idx = 0, __max_idx = len;         \
+         __idx < __max_idx; __idx++) {              \
+      da_appd (dst_arr, src_arr[__idx]);            \
     }} while (0)
 
 /**
- *  drop array
- *  only sets size of @arr to zero
  *  Appenda one dynamic array to another
  *
  *  @dst_arr: destination  -  @src_arr: source
@@ -312,6 +320,10 @@ DADEFF void * __da_dup (void **);
       da_appd (dst_arr, src_arr[__idx]);            \
   } while (0)
 
+/**
+ *  Drops contents of a dynamic array
+ *  It only sets the size of @arr to zero,
+ *  but will not free it's memory
  */
 #define da_drop(arr) do {                           \
     if (DA_NNULL (arr)) {                           \
@@ -320,12 +332,11 @@ DADEFF void * __da_dup (void **);
     }} while (0)
 
 /**
- *  in order to append @val to @arr from
- *  a different scope (like another function),
- *  as the primary pointer to @arr, sometimes needs
- *  to be updated, you can use this macro
- *  @arr must be (void **) pointing to the address
- *  of the primary array
+ *  Appends @val to @arr from a different scope
+ *  such as another function
+ *
+ *  @arr: pointer to the reference of the
+ *        dynamic array (void **)
  */
 #define da_funappd(arr, val) do {                       \
     typeof (val) *__arr__;                              \
