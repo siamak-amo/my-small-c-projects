@@ -93,18 +93,19 @@
       `DA_GFACT`:   growth factor (see the source code)
   
     WARNING:
-      If an instance of this dynamic array, is being stored
-      outside of scope of a function (F), you *MUST NOT* use
+      If an instance of this dynamic array, is stored outside
+      the scope of a function (e.g F), you *MUST NOT* use
       `da_appd` inside F, because if an overflow occurs,
       `da_appd` will need to reallocate it's entire memory
-      and so the original pointer might get freed and
-      potentially causes use after free or SEGFAULT
-  
-      A solution would be to store the reference inside
-      some struct and pass the reference of it the function F
+      which frees the original pointer and potentially leads
+      to undefined behavior (SEGFAULT or use-after-free)
+
+      A simple solution is to store the array reference inside
+      a struct and pass a pointer of it to the function F,
       so `da_appd` will update the reference properly
-  
-      Another solution would be to use `da_funappd` macro:
+
+      Another solution is to use `da_funappd` macro,
+      and F needs to accept pointer to dynamic array:
       ```c
         // scope 1
         {
