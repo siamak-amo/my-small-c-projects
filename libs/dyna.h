@@ -59,7 +59,7 @@
         }
   
       // Print & Free
-      for (int i=0; i<7; ++i)
+      da_foreach (arr, i)
         printf ("struct arr[%i] - index: %d\n", i, arr[i].index);
       da_free (arr);
   
@@ -75,7 +75,7 @@
         }
   
       // Print & Free
-      for (int i=0; i<7; ++i)
+      da_foreach (ptr_arr, i)
         {
           printf ("ptr_arr[%i] - index: %d\n", i, ptr_arr[i]->index);
           free (ptr_arr[i]);
@@ -258,7 +258,26 @@ DADEFF void * __da_dup (void **);
 #define da_dup(arr) (DA_NNULL (arr) ? __da_dup ((void **)&arr) : NULL)
 
 /**
- *  append to array macro
+ *  For loop macro
+ *  usage:
+ *    `da_for (arr, index, 0, index++) { arr[index]; }`
+ */
+#define da_for(__DA__, __IDX_NAME__, __IDX_START__, __IDX_NEXT__)   \
+  for (da_idx __IDX_NAME__ = __IDX_START__,                         \
+         __max_idx__ = da_sizeof (__DA__);                          \
+       __IDX_NAME__ < __max_idx__;                                  \
+       __IDX_NEXT__)
+
+/**
+ *  For each macro
+ *  To iterate over all elements of a dynamic array
+ *  It translates to a simple `for` statement
+ */
+#define da_foreach(__DA__, __IDX_NAME__) \
+  da_for (__DA__, __IDX_NAME__, 0, ++(__IDX_NAME__))
+
+/**
+ *  Append to array macro
  *  @arr: the pointer that da_new has provided
  *  @val: value of type T, type of the array
  */
