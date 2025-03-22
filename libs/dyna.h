@@ -2,7 +2,7 @@
     created on: 8 Oct 2024
   
     Dynamic Arrya implementation
-    based on `templates/slice.c` within this repository
+    Based on `templates/slice.c` within this repository
   
     Usage:
     ```c
@@ -209,8 +209,8 @@ typedef struct
     })
 
 /**
- *  users normally don't use these functions
- *  and instead, use provided macros for
+ *  Users normally don't use these functions
+ *  and instead, they use provided macros for
  *  generic type purposes and safety
  */
 DADEFF dyna_t * __mk_da (da_sidx, da_sidx);
@@ -220,12 +220,14 @@ DADEFF void * __da_dup (void **);
 
 #define DA_NNULL(arr) (NULL != arr)
 
+
 /**
  **  External macros
- **  to be used by users
+ **  To be used by the users of dyna.h
+ **  All in O(1) (amortized)
  **/
 
-// to free dynamic array @arr
+// To free dynamic array @arr
 #define da_free(arr) do {                          \
     if (DA_NNULL (arr)) {                          \
       dyna_t *__da__ = __DA_CONTAINEROF (arr);     \
@@ -233,13 +235,13 @@ DADEFF void * __da_dup (void **);
       dyna_free (__da__);                          \
     }} while (0)
 
-// to get length and capacity of @arr
-#define da_sizeof(arr)                                  \
+// To get length and capacity of @arr
+#define da_sizeof(arr) \
   (DA_NNULL (arr) ? __DA_CONTAINEROF (arr)->size : 0)
 #define da_capof(arr) \
   (DA_NNULL (arr) ? __DA_CONTAINEROF (arr)->cap : 0)
 
-// gives how many cells left until the next reallocation (at overflow)
+// Gives how many cells left until the next reallocation (at overflow)
 #define da_leftof(arr) \
   (DA_NNULL (arr) ? (da_sidx)da_capof (arr) - (da_sidx)da_sizeof (arr) : 0)
 
