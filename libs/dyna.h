@@ -301,6 +301,16 @@ DADEFF void * __da_dup (void **);
 /**
  *  drop array
  *  only sets size of @arr to zero
+ *  Appenda one dynamic array to another
+ *
+ *  @dst_arr: destination  -  @src_arr: source
+ *  It is safe to append an array to itself
+ */
+#define da_appd_da(dst_arr, src_arr) do {           \
+    da_foreach (src_arr, __idx)                     \
+      da_appd (dst_arr, src_arr[__idx]);            \
+  } while (0)
+
  */
 #define da_drop(arr) do {                           \
     if (DA_NNULL (arr)) {                           \
