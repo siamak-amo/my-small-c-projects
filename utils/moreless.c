@@ -21,7 +21,7 @@
    A simple tool to view standard output through the less program
 
    ** This only works with the GNU C Library (glibc)
-      For other libc implementations, you need to overwrite
+      For other libc implementations, you need to override
       the equivalent `__libc_start_main` function **
 
    Usage:
@@ -35,7 +35,7 @@
 
        To append to the default excludes:
        $ export MORELESS_EXCLUDE=":ls:mpv"
-       To overwrite the default excludes:
+       To override the default excludes:
        $ export MORELESS_EXCLUDE="less:tmux:mpv"
 
        See the default excludes in `DEFAULT_EXCLUDES`.
@@ -73,7 +73,7 @@
        define -D_DEBUG
      To disable buffering in pipes:
        define -D IMMID_PIPE
-     To disable overwriting isatty function
+     To disable overriding of the isatty function
        define -D_DO_NOT_TRICK_ISATTY
 
    Known issues:
@@ -152,7 +152,7 @@ static const char *shells = _SHELLS;
 /* Annotations */
 #define __Parent__ /* used by the parent process */
 #define __Child__ /* used by the child process */
-#define __Overwrite__ /* when we overwrite a libc function */
+#define __Override__ /* when we override a libc function */
 
 enum parent_t
   {
@@ -217,13 +217,13 @@ __attribute__((destructor)) cleanup()
 
 #ifndef _DO_NOT_TRICK_ISATTY
 /**
- *  We overwrite the isatty function to trick the parent
+ *  We override the isatty function to trick the parent
  *  process to consider the stdout always a tty
  *  This makes them to look normal and have color
  */
 int
 isatty (int fd)
-  __Overwrite__
+  __Override__
   __Parent__
   __Child__
 {
@@ -355,7 +355,7 @@ main_hook (int argc, char **argv, char **envp)
    *  Exclude commands that need tty and
    *  included in MORELESS_EXCLUDE environment variable
    *  If MORELESS_EXCLUDE starts with `:`, then this
-   *  must overwrite default_excludes
+   *  must override default_excludes
    */
   const char *excludes = getenv ("MORELESS_EXCLUDE");
 
@@ -441,9 +441,9 @@ main_hook (int argc, char **argv, char **envp)
 }
 
 /**
- **  Libc-dependent function overwrite
+ **  Libc-dependent function override
  **
- **  This section should overwrite the function
+ **  This section should override the function
  **  that calls the real main function.
  **
  **  It should initialize the global variable `original_main`
@@ -468,7 +468,7 @@ __libc_start_main (
     void (* fini)(void),
     void (* rtld_fini)(void),
     void *stack_end)
-  __Overwrite__
+  __Override__
   __Parent__
   __Child__
 {
