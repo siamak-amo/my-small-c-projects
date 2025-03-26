@@ -32,13 +32,13 @@
        Then run your commands.
 
      To exclude command(s) from moreless:
-       See the default excludes in `DEFAULT_EXCLUDES`.
 
        To append to the default excludes:
        $ export MORELESS_EXCLUDE=":ls:mpv"
        To overwrite the default excludes:
        $ export MORELESS_EXCLUDE="less:tmux:mpv"
 
+       See the default excludes in `DEFAULT_EXCLUDES`.
        Alternatively, set the environment variable `NO_LESS`
        to disable moreless.
 
@@ -104,7 +104,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
 #include <assert.h>
 
 #include <dlfcn.h>
@@ -112,6 +111,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+
+#if defined (__GLIBC__)
+/* to use strchrnul function */
+# define _GNU_SOURCE
+#endif
+#include <string.h>
 
 #ifndef LESS
 #  define LESS "less"
@@ -285,16 +290,14 @@ alter_main (int, char **, char **)
   return -1; /* unreachable */
 }
 
+#ifndef _GNU_SOURCE
 /**
- *  The strchrnull function was available only via _GNU_SOURCE,
- *  so we have implemented our version.
- *
- *  The `strchrnull` function is like `strchr` except  that
+ *  The `strchrnul` function is like `strchr` except  that
  *  if @c is not found in @s, then it returns a pointer to
  *  the null byte at the end of @s, rather than NULL.
  */
 static inline const char *
-strchrnull (const char *s, int c)
+strchrnul (const char *s, int c)
 {
   for (int chr = *s; chr != 0; chr = *(++s))
     {
@@ -303,6 +306,7 @@ strchrnull (const char *s, int c)
     }
   return s; /* s[0] must be equal to 0 */
 }
+#endif /* _GNU_SOURCE */
 
 /**
  *  Checks if the specified string @needle is found
@@ -317,7 +321,7 @@ excludestr (const char *restrict haystack,
        haystack != NULL && *p != 0;
        haystack += n+1)
     {
-      p = strchrnull (haystack, ':');
+      p = strchrnul (haystack, ':');
       n = p - haystack;
       if (n > 0 &&
           0 == strncmp (needle, haystack, n))
