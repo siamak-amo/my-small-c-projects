@@ -64,7 +64,7 @@
 
      * Basic Examples:
        - Cartesian product of {0,1,2}x{AA,BB}
-       $ permugen -r "[0-2]" "{AA,BB}"
+       $ permugen -r "[0-2]"  "{AA,BB}"
 
        - {dev,prod}x{admin,<wordlist.txt>}
        $ permugen -r "{dev,prod}"  "{admin} /path/to/wordlist.txt"
@@ -73,19 +73,19 @@
          {dev,prod}x{www,dev,prod}
        $ permugen -p. -r "{dev,prod}"  "{www} \1"
          {dev,prod}x{2,3}x{2,3}
-       $ permugen -r "{dev,prod}"  "[2-3]" "\2"
+       $ permugen -r "{dev,prod}"  "[2-3]"  "\2"
 
        - To read from stdin:
-       $ permugen -r -- "{dev,prod}" "-"
+       $ permugen -r -- "{dev,prod}"  "-"
          or equivalently, avoid using end-of-options:
-       $ permugen -r "{dev,prod}" " -"
+       $ permugen -r "{dev,prod}"  " -"
 
      * Custom prefix and suffix:
        - The first component has `xxx` as suffix and
          the second component has `yyy` as prefix
-       $ permugen -r "() {One} (xxx)"  "(yyy)  {Two}  ()"
+       $ permugen -r "() {One} (xxx)"  "(yyy) {Two} ()"
        - The first component uses {} and the second one uses ()
-       $ permugen -r "({) {One} (})"  "(\()  {Two}  (\))"
+       $ permugen -r "({) {One} (})"  "(\() {Two} (\))"
 
 
    Compilation:
