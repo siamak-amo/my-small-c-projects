@@ -77,10 +77,10 @@
        define -D_DO_NOT_TRICK_ISATTY
 
    Known issues:
-   - It does not work with the bash builtin functions (like: echo, pwd)
+   - It does not work with the bash builtin functions (e.g., echo, pwd)
 
-   - Programs can no longer read interactively from stdin; keyboard input
-     is redirected to 'less' (is this fixable?)
+   - Programs can no longer read interactively from stdin
+     This happens because less calls freopen on /dev/tty (is this fixable?)
      A simple workaround is to use echo
 
    - Each iteration of for/while loops in Bash runs a separate instance
@@ -92,11 +92,12 @@
      Another solution is to redirect the output to an another program:
      $ ... | while read ln; do ls --color "$ln"; done | less
 
-   - Redirecting 2>&1 does not work (I don't know how to detect this redirection)
+   - Redirecting 2>&1 does not work (how to detect this redirection?)
 
-   - Some programs may look different (e.g. without color).
-     Although we have overridden the isatty function, some programs have their own
-     isatty implementation, which our override will not affect (like: grep).
+   - Some programs may look different (e.g., without color).
+     Although we have overridden the isatty function, some programs
+     may have their own `isatty` implementation,
+     which our override will not affect (e.g., grep).
 
    - The ps command exits with an exit code of 1 (EXIT_FAILURE).
      (likely because of it's unwanted child)
@@ -259,6 +260,7 @@ alter_main (int, char **, char **)
       putc ((c > 0) ? c : '?', stdout);
     }
   puts ("======EOF======\n");
+
   return 0;
 #else /* _DEBUG */
 
@@ -287,9 +289,8 @@ alter_main (int, char **, char **)
       return -ret;
     }
 
-#endif /* _DEBUG */
-
   return -1; /* unreachable */
+#endif /* _DEBUG */
 }
 
 #ifndef _GNU_SOURCE
