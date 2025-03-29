@@ -209,9 +209,11 @@ void
 __attribute__((destructor)) cleanup()
   __Parent__
 {
-  assert (mode != P_CHILD && "broken logic!");
   safe_fclose (stdout);
   safe_fclose (stderr);
+#ifndef _DEBUG
+  assert (mode != P_CHILD && "broken logic!");
+#endif
   wait (NULL);
 }
 
