@@ -601,6 +601,9 @@ perm (const int depth, const struct Opt *opt)
   int i = 0;
   if (opt->prefix)
     Fputs (opt->prefix, opt);
+  if (opt->global_seeds->pref)
+      Fputs (opt->global_seeds->pref, opt);
+
  Print_Loop: /* O(depth) */
   {
     int idx = idxs[i];
@@ -623,7 +626,10 @@ perm (const int depth, const struct Opt *opt)
         Fputs (opt->separator, opt);
       goto Print_Loop;
     }
-  /* End of Printing the current permutation */
+
+  /* End of printing of the current permutation */
+  if (opt->global_seeds->suff)
+      Fputs (opt->global_seeds->suff, opt);
   if (opt->suffix)
     Puts (opt->suffix, opt);
   else
