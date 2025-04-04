@@ -937,13 +937,12 @@ const struct option lopts[] = {
 int
 init_opt (int argc, char **argv, struct Opt *opt)
 {
-#define CASE_NOT_IN_REG_MODE(option) \
-  NOT_IN_REG_MODE (option, break)
-
-#define NOT_IN_REG_MODE(option, action)                             \
-  if (opt->mode == REGULAR_MODE) {                                  \
-    warnln ("wrong regular mode option (%s) was ignored", option);  \
-    action;                                                         \
+  /* Usage: case X:  NOT_IN_REGULAR_MODE("X") {...} */
+#define NOT_IN_REGULAR_MODE()                                           \
+  if (opt->mode == REGULAR_MODE) {                                      \
+    warnln ("wrong regular mode option (%s) was ignored",               \
+            (optarg) ? argv[optind - 2] : argv[optind - 1]);            \
+    break;                                                              \
   }
 
   /* we use 0,1,2,... as `helper` options and only to use getopt */
@@ -1000,8 +999,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
 
         case 'S': /* wseed file / stdin */
+          NOT_IN_REGULAR_MODE ()
           {
-            CASE_NOT_IN_REG_MODE(argv[optind-2]);
             FILE *wseed_f = stdin;
             /* using optarg value as filepath otherwise stdin */
             if (!Strcmp (optarg, "-"))
@@ -1025,8 +1024,8 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
 
         case '0': /* raw seed */
+          NOT_IN_REGULAR_MODE ()
           {
-            CASE_NOT_IN_REG_MODE(argv[optind-2]);
             using_default_seed = 0;
             if (!opt->escape_disabled)
               unescape (optarg);
@@ -1035,7 +1034,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
 
         case '5': /* raw word seed */
-          CASE_NOT_IN_REG_MODE(argv[optind-2]);
+          NOT_IN_REGULAR_MODE ();
           wseed_uniappd (opt, opt->global_seeds, optarg);
           break;
 
