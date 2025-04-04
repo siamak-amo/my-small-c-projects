@@ -852,16 +852,21 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
           return;
         }
     }
+
   if (f == stdin && isatty (fileno (f)))
     {
-      if (opt->mode == REGULAR_MODE)
+      switch (opt->mode)
         {
+        case REGULAR_MODE:
           fprintf (stderr,
                    "Reading words for the seed #%d until EOF:\n",
                    opt->reg_seeds_len + 1);
+          break;
+
+        case NORMAL_MODE:
+          fprintf (stderr, "Reading words until EOF:\n");
+          break;
         }
-      else
-        fprintf (stderr, "Reading words until EOF:\n");
     }
 
   char *line = malloc (WSEED_MAXLEN + 1);
@@ -1209,22 +1214,24 @@ main (int argc, char **argv)
     if (init_opt (argc, argv, &opt))
       return EXIT_FAILURE;
 
-    if (opt.mode == REGULAR_MODE)
+    switch (opt.mode)
       {
+      case REGULAR_MODE:
         if (0 == opt.reg_seeds_len)
           {
             warnln ("empty regular permutation");
             return EXIT_FAILURE;
           }
-      }
-    else
-      {
-        if (opt.global_seeds->cseed_len == 0 &&
-            da_sizeof (opt.global_seeds->wseed) == 0)
+        break;
+
+      case NORMAL_MODE:
+        if (0 == opt.global_seeds->cseed_len &&
+            0 == da_sizeof (opt.global_seeds->wseed))
           {
             warnln ("empty permutation");
             return EXIT_FAILURE;
           }
+        break;
       }
   }
 
@@ -1242,37 +1249,43 @@ main (int argc, char **argv)
   dprintf ("* buffer length of buffered_io: %d bytes\n", _BMAX);
 # endif /* _USE_BIO */
 
-  if (opt.mode == REGULAR_MODE)
+  switch (opt.mode)
     {
-      size_t len = da_sizeof (opt.reg_seeds);
-      dprintf ("* regular mode\n");
-      dprintf ("* %s[.%lu] = {\n", STR (opt.reg_seeds), (size_t)len);
-      for (size_t i=0; i < len; ++i)
-        {
-          struct Seed *s = opt.reg_seeds[i];
-          dprintf ("    %s[%lu] = {\n      ", STR (opt.reg_seeds), i);
-          printd_arr (s->cseed, "`%c`", s->cseed_len);
-          dprintf ("      ");
-          printd_arr (s->wseed, "`%s`", (int)da_sizeof (s->wseed));
-          if (s->pref)
-            dprintf ("      prefix = \"%s\"\n", s->pref);
-          if (s->suff)
-            dprintf ("      suffix = \"%s\"\n", s->suff);
-          dprintf ("    }\n");
-        }
-      dprintf ("  }\n");
-    }
-  else
-    {
-      dprintf ("* normal mode\n");
-      dprintf ("    ");
-      printd_arr (opt.global_seeds->cseed, "`%c`",
-                  opt.global_seeds->cseed_len);
-      dprintf ("    ");
-      printd_arr (opt.global_seeds->wseed, "`%s`",
-                  (int) da_sizeof (opt.global_seeds->wseed));
-      dprintf ("* depth: from %d to %d\n",
-               opt.from_depth, opt.to_depth);
+    case REGULAR_MODE:
+      {
+        size_t len = da_sizeof (opt.reg_seeds);
+        dprintf ("* regular mode\n");
+        dprintf ("* %s[.%lu] = {\n", STR (opt.reg_seeds), (size_t)len);
+        for (size_t i=0; i < len; ++i)
+          {
+            struct Seed *s = opt.reg_seeds[i];
+            dprintf ("    %s[%lu] = {\n      ", STR (opt.reg_seeds), i);
+            printd_arr (s->cseed, "`%c`", s->cseed_len);
+            dprintf ("      ");
+            printd_arr (s->wseed, "`%s`", (int)da_sizeof (s->wseed));
+            if (s->pref)
+              dprintf ("      prefix = \"%s\"\n", s->pref);
+            if (s->suff)
+              dprintf ("      suffix = \"%s\"\n", s->suff);
+            dprintf ("    }\n");
+          }
+        dprintf ("  }\n");
+      }
+      break;
+
+    case NORMAL_MODE:
+      {
+        dprintf ("* normal mode\n");
+        dprintf ("    ");
+        printd_arr (opt.global_seeds->cseed, "`%c`",
+                    opt.global_seeds->cseed_len);
+        dprintf ("    ");
+        printd_arr (opt.global_seeds->wseed, "`%s`",
+                    (int) da_sizeof (opt.global_seeds->wseed));
+        dprintf ("* depth: from %d to %d\n",
+                 opt.from_depth, opt.to_depth);
+      }
+      break;
     }
   if (opt.escape_disabled)
     dprintf ("- backslash interpretation is disabled\n");
@@ -1282,18 +1295,20 @@ main (int argc, char **argv)
 
 
   /* Generating permutations */
-  if (opt.mode == REGULAR_MODE)
+  switch (opt.mode)
     {
+    case REGULAR_MODE:
       regular_perm (&opt);
-    }
-  else
-    {
+      break;
+
+    case NORMAL_MODE:
       int rw_err = 0;
       for (int d = opt.from_depth; d <= opt.to_depth; ++d)
         {
           if (0 != (rw_err = perm (d, &opt)))
             break;
         }
+      break;
     }
 
   return 0;
