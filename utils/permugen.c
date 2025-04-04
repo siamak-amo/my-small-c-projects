@@ -960,6 +960,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
       switch (flag)
         {
+          /* Global options  */
         case 'h':
           usage (EXIT_SUCCESS);
           return 1;
@@ -975,13 +976,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
         case 'a': /* append */
           opt->outf = safe_fopen (optarg, "a");
           break;
-        case 'd': /* depth */
-          opt->from_depth = atoi (optarg);
-          break;
-        case 'D': /* depth range */
-          opt->from_depth = 1;
-          opt->to_depth = atoi (optarg);
-          break;
         case 'p': /* delimiter */
           opt->separator = optarg;
           break;
@@ -991,10 +985,25 @@ init_opt (int argc, char **argv, struct Opt *opt)
         case '4': /* suffix */
           opt->suffix = optarg;
           break;
-        case '1': /* depth from */
+
+          /* Only in normal mode */
+        case 'd': /* depth */
+          NOT_IN_REGULAR_MODE();
           opt->from_depth = atoi (optarg);
           break;
-        case '2': /* depth to */
+        case 'D': /* depth range */
+          NOT_IN_REGULAR_MODE ()
+            {
+              opt->from_depth = 1;
+              opt->to_depth = atoi (optarg);
+            }
+          break;
+        case '1': /* min depth */
+          NOT_IN_REGULAR_MODE();
+          opt->from_depth = atoi (optarg);
+          break;
+        case '2': /* max depth */
+          NOT_IN_REGULAR_MODE();
           opt->to_depth = atoi (optarg);
           break;
 
@@ -1015,10 +1024,10 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
 
         case 's': /* seed configuration */
+          NOT_IN_REGULAR_MODE ()
           {
-            CASE_NOT_IN_REG_MODE(argv[optind-2]);
             using_default_seed = 0;
-            /* this option disables the default seed config */
+            /* This option disables the default seed config */
             parse_seed_regex (opt, opt->global_seeds, optarg);
           }
           break;
@@ -1038,7 +1047,9 @@ init_opt (int argc, char **argv, struct Opt *opt)
           wseed_uniappd (opt, opt->global_seeds, optarg);
           break;
 
-        case 'r': /* regular mode */
+          /* Regular mode enable */
+        case 'r':
+          NOT_IN_REGULAR_MODE ();
           {
             int end_of_options = 0;
             using_default_seed = 0;
@@ -1058,7 +1069,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
                       }
                     else
                       {
-                        /* end of `-r` arguments */
+                        /* End of `-r` arguments */
                         break;
                       }
                   }
