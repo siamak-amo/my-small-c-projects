@@ -114,10 +114,6 @@
 #define PROGRAM_NAME "permugen"
 #define Version "2.12"
 
-#undef _Nullable
-#define _Nullable
-#define _nothing (void)(NULL)
-
 #define CLI_IMPLEMENTATION
 #include "clistd.h"
 
@@ -179,6 +175,10 @@
 #undef STR
 #define __STR(var) #var
 #define STR(var) __STR (var)
+
+#undef _Nullable
+#define _Nullable
+#define _nothing (void)(NULL)
 
 #ifdef _DEBUG /* debug macro */
 #  define dprintf(format, ...) \
