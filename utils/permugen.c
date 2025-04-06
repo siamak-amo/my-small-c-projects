@@ -345,6 +345,15 @@ struct Opt
 #ifndef _Nullable
 # define _Nullable
 #endif
+/**
+ *  Retrieves the last option from argv (e.g., '--xxx',
+ *  '-x', or '-x<VALUE>') that was provided before optind
+ *  This is useful for printing the exact option, when
+ *  only the optarg (the value of that option) is available
+ */
+#define LASTOPT(argv)                                       \
+  (((char *) NULL != optarg && '-' != *argv[optind - 1]) ?  \
+   argv[optind - 2] : argv[optind - 1])
 
 #ifdef _CLEANUP_NO_FREE
 # define safe_free(ptr)
@@ -968,7 +977,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
 #define NOT_IN_REGULAR_MODE()                                           \
   if (opt->mode == REGULAR_MODE) {                                      \
     warnln ("wrong regular mode option (%s) was ignored",               \
-            (optarg) ? argv[optind - 2] : argv[optind - 1]);            \
+            LASTOPT (argv));                                            \
     break;                                                              \
   }
 
