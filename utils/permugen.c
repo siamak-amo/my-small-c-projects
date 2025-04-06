@@ -112,7 +112,7 @@
 #include <errno.h>
 
 #define PROGRAM_NAME "permugen"
-#define Version "2.10"
+#define Version "2.12"
 
 #define CLI_IMPLEMENTATION
 #include "clistd.h"
