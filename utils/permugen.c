@@ -1341,20 +1341,17 @@ main (int argc, char **argv)
 
 
   /* Generating permutations */
-  switch (opt.mode)
+  if (!opt.seps)
     {
-    case REGULAR_MODE:
-      regular_perm (&opt);
-      break;
-
-    case NORMAL_MODE:
-      int rw_err = 0;
-      for (int d = opt.from_depth; d <= opt.to_depth; ++d)
+      /* No separator */
+      gen (&opt, NULL);
+    }
+  else
+    {
+      da_foreach (opt.seps, i)
         {
-          if (0 != (rw_err = perm (d, &opt)))
-            break;
+          gen (&opt, opt.seps[i]);
         }
-      break;
     }
 
   return 0;
