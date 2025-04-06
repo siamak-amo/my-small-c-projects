@@ -184,10 +184,10 @@
  *  Helper macro to print arrays with seperator & end suffix
  *  @T: printf format for @arr members, @len: length of @arr
  */
-#  define printd_arr__H(arr, T, len, sep, end)  \
-  for (int __idx = 0; __idx < len; __idx++) {   \
-    dprintf (T"%s", arr[__idx],                 \
-             (__idx < len-1) ? sep : end);      \
+#  define printd_arr__H(arr, T, len, sep, end)      \
+  for (ssize_t __idx = 0; __idx < len; __idx++) {   \
+    dprintf (T"%s", arr[__idx],                     \
+             (__idx < len-1) ? sep : end);          \
   }
 
 /**
@@ -197,7 +197,7 @@
  */
 #  define printd_arr(arr, T, len) do {          \
   if (len > 0 && arr) {                         \
-    dprintf (#arr"[.%d] = {", len);             \
+    dprintf (#arr"[.%zu] = {", (size_t)(len));  \
     printd_arr__H (arr, T, len, ", ", "}\n");   \
   } else {                                      \
     dprintf (#arr" is empty\n");                \
@@ -1327,7 +1327,7 @@ main (int argc, char **argv)
                     opt.global_seeds->cseed_len);
         dprintf ("    ");
         printd_arr (opt.global_seeds->wseed, "`%s`",
-                    (int) da_sizeof (opt.global_seeds->wseed));
+                    da_sizeof (opt.global_seeds->wseed));
         dprintf ("* depth: from %d to %d\n",
                  opt.from_depth, opt.to_depth);
       }
@@ -1335,8 +1335,11 @@ main (int argc, char **argv)
     }
   if (opt.escape_disabled)
     dprintf ("- backslash interpretation is disabled\n");
-  if (opt.separator)
-    dprintf ("* delimiter: `%s`\n", opt.separator);
+  if (opt.seps)
+    {
+      dprintf ("* delimiters: ");
+      printd_arr (opt.seps, "`%s`", da_sizeof (opt.seps));
+    }
   dprintf ("* permutations:\n");
 
 
