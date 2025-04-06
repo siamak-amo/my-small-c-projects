@@ -23,7 +23,7 @@
 
     Usage:
        For more details, use the `-h` option:
-       $ permugen -h
+       $ permugen --help
 
     Normal mode:  permugen [OPTIONS] -s [SEED_CONFIG]
       Cartesian product of the input with a certain depth
@@ -511,6 +511,8 @@ OPTIONS:\n\
       -p, --delimiter         permutations component separator\n\
           --prefix            output prefix\n\
           --suffix            output suffix\n\
+      -h, --help              print help and exit\n\
+      -v, --version           print version and exit\n\
 \n\
   Only in normal mode:\n\
       -d, --depth             specify depth\n\
@@ -952,6 +954,9 @@ const struct option lopts[] = {
   {"suffix",           required_argument, NULL, '4'},
   /* regular mode */
   {"regular",          no_argument,       NULL, 'r'},
+  /* CLI */
+  {"version",          no_argument,       NULL, 'v'},
+  {"help",             no_argument,       NULL, 'h'},
   /* end of options */
   {NULL,               0,                 NULL,  0 },
 };
@@ -968,7 +973,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
   }
 
   /* we use 0,1,2,... as `helper` options and only to use getopt */
-  const char *lopt_cstr = "s:S:o:a:p:d:D:0:1:2:3:4:5:hrEe";
+  const char *lopt_cstr = "s:S:o:a:p:d:D:0:1:2:3:4:5:vhrEe";
 
   int idx = 0, using_default_seed = 1;
   while (1)
@@ -982,10 +987,14 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
       switch (flag)
         {
-          /* Global options  */
         case 'h':
           usage (EXIT_SUCCESS);
           return 1;
+        case 'v':
+          fprintf (stderr, "%s: v%s\n", program_name, Version);
+          return 1;
+
+          /* Common options  */
         case 'E':
           opt->escape_disabled = 1;
           break;
