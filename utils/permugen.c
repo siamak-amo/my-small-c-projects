@@ -436,6 +436,15 @@ cleanup (int, void *__opt)
       da_free (opt->reg_seeds);
     }
 
+  if (opt->seps)
+    {
+      /**
+       *  Elements of opt->seps come from getopt (optarg)
+       *  which should NOT be freed by us
+       */
+      da_free (opt->seps);
+    }
+
   /**
    *  Two tokens have been allocated for regex parsing
    */
@@ -591,7 +600,7 @@ ARGUMENTS:\n\
  *  depth=min_depth to depth=max_depth
  */
 int
-perm (const int depth, const struct Opt *opt)
+perm (const int depth, const struct Opt *opt, const char *sep)
 {
   int _max_depth = opt->global_seeds->cseed_len - 1 +
     (int) da_sizeof (opt->global_seeds->wseed);
@@ -623,8 +632,8 @@ perm (const int depth, const struct Opt *opt)
   }
   if (i < depth)
     {
-      if (opt->separator)
-        Fputs (opt->separator, opt);
+      if (sep)
+        Fputs (sep, opt);
       goto Print_Loop;
     }
 
@@ -669,7 +678,8 @@ perm (const int depth, const struct Opt *opt)
  *  It should be called by the `regular_perm` function
  */
 int
-__regular_perm (struct Opt *opt, int *depths, int depth)
+__regular_perm (struct Opt *opt, int *depths,
+                int depth, const char *sep)
 {
   int ret;
   /* permutation indexes */
@@ -710,14 +720,14 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
     Fputs (current_seed->suff, opt);
   if (i < depth)
     {
-      if (opt->separator)
+      if (sep)
         {
           /**
            *  Print the separator only when the current seed
            *  has no suffix (suffix must overwrite the separator)
            */
           if (!current_seed->suff || *current_seed->suff == '\0')
-            Fputs (opt->separator, opt);
+            Fputs (sep, opt);
         }
       goto Print_Loop;
     }
@@ -764,7 +774,7 @@ __regular_perm (struct Opt *opt, int *depths, int depth)
 }
 
 int
-regular_perm (struct Opt *opt)
+regular_perm (struct Opt *opt, const char *sep)
 {
   int ret = 0;
   struct Seed *s = NULL;
@@ -780,7 +790,7 @@ regular_perm (struct Opt *opt)
         goto _return; /* unreachable */
     }
 
-  ret = __regular_perm (opt, depths, seeds_count);
+  ret = __regular_perm (opt, depths, seeds_count, sep);
  _return:
   safe_free (depths);
   return ret;
@@ -1201,6 +1211,26 @@ mk_seed (int c_len, int w_len)
   s->cseed = malloc (c_len);
   s->wseed = da_newn (char *, w_len);
   return s;
+}
+
+static inline void
+gen (struct Opt *opt, const char *sep)
+{
+  switch (opt->mode)
+    {
+    case REGULAR_MODE:
+      regular_perm (opt, sep);
+      break;
+
+    case NORMAL_MODE:
+      for (int rw_error = 0,
+           dep = opt->from_depth; dep <= opt->to_depth; ++dep)
+        {
+          if ((rw_error = perm (dep, opt, sep)))
+            break;
+        }
+      break;
+    }
 }
 
 int
