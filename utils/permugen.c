@@ -53,6 +53,7 @@
        - Permutation components separator (-p, --delim)
        $ permugen -p ", "                          # comma separated
        $ permugen -p "\t"                          # tab separated
+       $ permugen -p ", "  -p "\t"                 # to get both of them
 
        - Global suffix and prefix
        $ permugen --pref "www." --suff ".com"
@@ -317,7 +318,7 @@ struct Opt
   FILE *outf; /* output file */
   char *prefix;
   char *suffix;
-  char *separator; /* between components of permutations */
+  char **seps; /* component separator(s) (dynamic array) */
 
   /* Output stream buffer */
 #ifdef _USE_BIO
@@ -987,14 +988,20 @@ init_opt (int argc, char **argv, struct Opt *opt)
         case 'a': /* append */
           opt->outf = safe_fopen (optarg, "a");
           break;
-        case 'p': /* delimiter */
-          opt->separator = optarg;
-          break;
         case '3': /* prefix */
           opt->prefix = optarg;
           break;
         case '4': /* suffix */
           opt->suffix = optarg;
+          break;
+
+        case 'p': /* separator */
+          if (!opt->seps)
+            {
+              /* NULL means: no separator */
+              opt->seps = da_new (char *);
+            }
+          da_appd (opt->seps, optarg);
           break;
 
           /* Only in normal mode */
@@ -1156,8 +1163,11 @@ init_opt (int argc, char **argv, struct Opt *opt)
         unescape (opt->prefix);
       if (opt->suffix != NULL)
         unescape (opt->suffix);
-      if (opt->separator != NULL)
-        unescape (opt->separator);
+      if (opt->seps)
+        {
+          da_foreach (opt->seps, i)
+            unescape (opt->seps[i]);
+        }
     }
 
   return 0;
