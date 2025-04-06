@@ -114,6 +114,10 @@
 #define PROGRAM_NAME "permugen"
 #define Version "2.12"
 
+#undef _Nullable
+#define _Nullable
+#define _nothing (void)(NULL)
+
 #define CLI_IMPLEMENTATION
 #include "clistd.h"
 
@@ -176,13 +180,9 @@
 #define __STR(var) #var
 #define STR(var) __STR (var)
 
-#ifndef _Nullable
-# define _Nullable
-#endif
-
 #ifdef _DEBUG /* debug macro */
-#undef dprintf
-#define dprintf(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
+#  define dprintf(format, ...) \
+  fprintf (stderr, format, ##__VA_ARGS__)
 
 /**
  *  Helper macro to print arrays with seperator & end suffix
@@ -208,9 +208,8 @@
   }} while (0)
 
 #else /* _DEBUG */
-#  undef dprintf
-#  define dprintf(format, ...) (void)(format)
-#  define printd_arr(arr, T, len) (void)(arr)
+#  define dprintf(...) _nothing
+#  define printd_arr(...) _nothing
 #endif /* _DEBUG */
 
 struct char_seed
@@ -357,7 +356,7 @@ struct Opt
    argv[optind - 2] : argv[optind - 1])
 
 #ifdef _CLEANUP_NO_FREE
-# define safe_free(ptr)
+# define safe_free(...) _nothing
 #else
 # define safe_free(ptr) do {                    \
     if (ptr) {                                  \
