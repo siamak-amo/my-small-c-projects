@@ -176,6 +176,10 @@
 #define __STR(var) #var
 #define STR(var) __STR (var)
 
+#ifndef _Nullable
+# define _Nullable
+#endif
+
 #ifdef _DEBUG /* debug macro */
 #undef dprintf
 #define dprintf(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
@@ -342,9 +346,6 @@ struct Opt
 /* ASCII-printable, Non-white-space */
 #define IS_ASCII_PR(c) (c >= 0x20 && c <= 0x7E)
 
-#ifndef _Nullable
-# define _Nullable
-#endif
 /**
  *  Retrieves the last option from argv (e.g., '--xxx',
  *  '-x', or '-x<VALUE>') that was provided before optind
@@ -973,6 +974,10 @@ const struct option lopts[] = {
 int
 init_opt (int argc, char **argv, struct Opt *opt)
 {
+  /* we use 0,1,2,... as `helper` options and only to use getopt */
+  const char *lopt_cstr = "s:S:o:a:p:d:D:0:1:2:3:4:5:vhrEe";
+  int idx = 0, using_default_seed = 1;
+
   /* Usage: case X:  NOT_IN_REGULAR_MODE("X") {...} */
 #define NOT_IN_REGULAR_MODE()                                           \
   if (opt->mode == REGULAR_MODE) {                                      \
@@ -981,10 +986,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
     break;                                                              \
   }
 
-  /* we use 0,1,2,... as `helper` options and only to use getopt */
-  const char *lopt_cstr = "s:S:o:a:p:d:D:0:1:2:3:4:5:vhrEe";
-
-  int idx = 0, using_default_seed = 1;
   while (1)
     {
       int flag = getopt_long (argc, argv, lopt_cstr, lopts, &idx);
