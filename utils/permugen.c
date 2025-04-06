@@ -173,8 +173,8 @@
 #include "mini-lexer.c"
 
 #undef STR
-#define __STR(var) #var
-#define STR(var) __STR (var)
+#define CSTR(var) #var
+#define STR(var) CSTR (var)
 
 #undef _Nullable
 #define _Nullable
@@ -199,13 +199,13 @@
  *  Ex: to print `int arr[7]`:  `printd_arr (arr, "%d", 7);`
  *  Output format: 'arr[.7] = {0,1, ..., 6}'
  */
-#  define printd_arr(arr, T, len) do {          \
-  if (len > 0 && arr) {                         \
-    dprintf (#arr"[.%zu] = {", (size_t)(len));  \
-    printd_arr__H (arr, T, len, ", ", "}\n");   \
-  } else {                                      \
-    dprintf (#arr" is empty\n");                \
-  }} while (0)
+#  define printd_arr(arr, T, len) do {                  \
+    if (len > 0 && arr) {                               \
+      dprintf (CSTR (arr) "[.%d] = {", (int)(len));     \
+      printd_arr__H (arr, T, len, ", ", "}\n");         \
+    } else {                                            \
+      dprintf (CSTR (arr) " is empty\n");               \
+    }} while (0)
 
 #else /* _DEBUG */
 #  define dprintf(...) _nothing
@@ -1319,11 +1319,11 @@ main (int argc, char **argv)
       {
         size_t len = da_sizeof (opt.reg_seeds);
         dprintf ("* regular mode\n");
-        dprintf ("* %s[.%lu] = {\n", STR (opt.reg_seeds), (size_t)len);
+        dprintf ("* %s[.%lu] = {\n", CSTR (opt.reg_seeds), (size_t)len);
         for (size_t i=0; i < len; ++i)
           {
             struct Seed *s = opt.reg_seeds[i];
-            dprintf ("    %s[%lu] = {\n      ", STR (opt.reg_seeds), i);
+            dprintf ("    [%lu] = {\n      ", i);
             printd_arr (s->cseed, "`%c`", s->cseed_len);
             dprintf ("      ");
             printd_arr (s->wseed, "`%s`", (int)da_sizeof (s->wseed));
@@ -1331,7 +1331,7 @@ main (int argc, char **argv)
               dprintf ("      prefix = \"%s\"\n", s->pref);
             if (s->suff)
               dprintf ("      suffix = \"%s\"\n", s->suff);
-            dprintf ("    }\n");
+            dprintf ("    }%s", (i+1 < len) ? ",\n" : "\n");
           }
         dprintf ("  }\n");
       }
