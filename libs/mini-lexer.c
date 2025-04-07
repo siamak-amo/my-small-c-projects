@@ -485,6 +485,8 @@ typedef struct Milexer_t
 #define MKCOMMENT_SL(c) MKCFG_B_ (c)
 #define MKCOMMENT_ML(c) MKCFG_A_ (c)
 
+#define ML_UNSET(field) (field = (typeof (field)) {0})
+
 /**
  **  Function definitions
  **  you shoud only call these functions
