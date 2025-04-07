@@ -255,7 +255,7 @@ enum LANG
   {
     /* General parser */
     PUNC_COMMA = 0,
-    PUNC_DASH,
+    PUNC_DASH  = 0,
 
     /* Special parser */
     EXP_PAREN = 0,     /* (xxx) */
@@ -263,9 +263,12 @@ enum LANG
     EXP_SBRACKET,      /* [xxx] */
   };
 
-static const char *Puncs[] =
+static const char *W_Puncs[] =
   {
     [PUNC_COMMA]         = ",",
+  };
+static const char *C_Puncs[] =
+  {
     [PUNC_DASH]          = "-",
   };
 
@@ -276,25 +279,20 @@ static struct Milexer_exp_ Expressions[] =
     [EXP_SBRACKET]       = {"[", "]"},
   };
 
-static const Milexer ML =
+static Milexer ML =
   {
     .expression = GEN_MKCFG (Expressions),
   };
 
-static const Milexer ML_IN =
-  {
-    .puncs = GEN_MKCFG (Puncs),
-  };
-
 /**
- *  Permugen Regex Parser (arguments of '-r' and '-s')
- *  general_{src,tk}: for parsing arguments themselves
- *  special_{src,tk}: when contents need parsing (like '{A,B}')
+ *  Permugen Regex Parser
+ *  general_{src,tk}: for parsing option value of -r and -s
+ *  special_{src,tk}: when general_tk needs parsing
+ *                    (e.g., '{AA,BB}' or '[a-b]')
  */
 struct permugex
 {
-  /* ml parses general_xxx and ml_in parses special_xxx */
-  const Milexer *ml, *ml_in;
+  Milexer *ml;
   Milexer_Slice general_src, special_src; /* input sources */
   Milexer_Token general_tk, special_tk;   /* result tokens */
 };
@@ -1266,9 +1264,8 @@ main (int argc, char **argv)
   {
     /* Initializing parsers */
     opt.parser = (struct permugex) {
-      .ml    = &ML,
-      .ml_in = &ML_IN,
-
+      .ml            = &ML,
+      /* parser inputs */
       .general_src   = {.lazy = 0},
       .special_src   = {.lazy = 0},
 
@@ -1477,7 +1474,7 @@ pparse_cseed_regex (struct Opt *opt, struct Seed *dst_seed)
   for (int _ret = 0; !NEXT_SHOULD_END (_ret); )
     {
       /* parsing with IGSPACE to allow space character */
-      _ret = ml_next (opt->parser.ml_in,
+      _ret = ml_next (opt->parser.ml,
                       &opt->parser.special_src,
                       tmp,
                       PFLAG_IGSPACE);
@@ -1548,9 +1545,10 @@ static inline void
 pparse_wseed_regex (struct Opt *opt, struct Seed *dst_seed)
 {
   Milexer_Token *tmp = &opt->parser.special_tk;
+
   for (int _ret = 0; !NEXT_SHOULD_END (_ret); )
     {
-      _ret = ml_next (opt->parser.ml_in,
+      _ret = ml_next (opt->parser.ml,
                       &opt->parser.special_src,
                       tmp,
                       PFLAG_DEFAULT);
@@ -1691,6 +1689,7 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
                   const char *input)
 {
   char *extended_token = NULL;
+  Milexer *ml = opt->parser.ml;
   Milexer_Token *tmp = &opt->parser.general_tk;
   /* Mini-lexer internal initialization */
   SET_ML_SLICE (&opt->parser.general_src,
@@ -1699,7 +1698,7 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
   int ret = 0;
   while (!NEXT_SHOULD_END (ret))
     {
-      ret = ml_next (opt->parser.ml,
+      ret = ml_next (ml,
                      &opt->parser.general_src,
                      tmp,
                      PFLAG_INEXP);
@@ -1740,13 +1739,21 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
           switch (tmp->id)
             {
             case EXP_SBRACKET:
-              /* Parsing contents of `[xxx]` as cssed */
-              pparse_cseed_regex (opt, dst_seed);
+              /* Parsing contents of `[-xA-Zy-]` as cssed */
+              ml->puncs = MKPUNC (C_Puncs);
+              {
+                pparse_cseed_regex (opt, dst_seed);
+              }
+              ML_UNSET (ml->puncs);
               break;
 
             case EXP_CBRACE:
-              /* Parsing contents of `{xxx}` as wseed */
-              pparse_wseed_regex (opt, dst_seed);
+              /* Parsing contents of `{xxx,yyy}` as wseed */
+              ml->puncs = MKPUNC (W_Puncs);
+              {
+                pparse_wseed_regex (opt, dst_seed);
+              }
+              ML_UNSET (ml->puncs);
               break;
 
             case EXP_PAREN:
