@@ -263,24 +263,28 @@ enum LANG
     EXP_SBRACKET,      /* [xxx] */
   };
 
-static const char *Puncs[] = {
-  [PUNC_COMMA]         = ",",
-  [PUNC_DASH]          = "-",
-};
+static const char *Puncs[] =
+  {
+    [PUNC_COMMA]         = ",",
+    [PUNC_DASH]          = "-",
+  };
 
-static struct Milexer_exp_ Expressions[] = {
-  [EXP_PAREN]          = {"(", ")"},
-  [EXP_CBRACE]         = {"{", "}"},
-  [EXP_SBRACKET]       = {"[", "]"},
-};
+static struct Milexer_exp_ Expressions[] =
+  {
+    [EXP_PAREN]          = {"(", ")"},
+    [EXP_CBRACE]         = {"{", "}"},
+    [EXP_SBRACKET]       = {"[", "]"},
+  };
 
-static const Milexer ML = {
-  .expression = GEN_MKCFG (Expressions),
-};
+static const Milexer ML =
+  {
+    .expression = GEN_MKCFG (Expressions),
+  };
 
-static const Milexer ML_IN = {
-  .puncs = GEN_MKCFG (Puncs),
-};
+static const Milexer ML_IN =
+  {
+    .puncs = GEN_MKCFG (Puncs),
+  };
 
 /**
  *  Permugen Regex Parser (arguments of '-r' and '-s')
@@ -623,7 +627,7 @@ perm (const int depth, const struct Opt *opt, const char *sep)
   if (opt->prefix)
     Fputs (opt->prefix, opt);
   if (opt->global_seeds->pref)
-      Fputs (opt->global_seeds->pref, opt);
+    Fputs (opt->global_seeds->pref, opt);
 
  Print_Loop: /* O(depth) */
   {
@@ -650,7 +654,7 @@ perm (const int depth, const struct Opt *opt, const char *sep)
 
   /* End of printing of the current permutation */
   if (opt->global_seeds->suff)
-      Fputs (opt->global_seeds->suff, opt);
+    Fputs (opt->global_seeds->suff, opt);
   if (opt->suffix)
     Puts (opt->suffix, opt);
   else
@@ -924,51 +928,52 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
             }
         }
     }
-    safe_free (line);
+  safe_free (line);
 }
 
 /* CLI options, getopt */
-const struct option lopts[] = {
-  /* seeds */
-  {"seed",             required_argument, NULL, 's'},
-  {"raw-seed",         required_argument, NULL, '0'},
-  {"raw-wseed",        required_argument, NULL, '5'},
-  {"seed-path",        required_argument, NULL, 'S'},
-  {"wseed-path",       required_argument, NULL, 'S'},
-  /* output file */
-  {"output",           required_argument, NULL, 'o'},
-  {"append",           required_argument, NULL, 'a'},
-  {"oA",               required_argument, NULL, 'a'},
-  {"help",             no_argument,       NULL, 'h'},
-  /* delimiter */
-  {"delim",            required_argument, NULL, 'p'},
-  {"delimiter",        required_argument, NULL, 'p'},
-  /* depth */
-  {"depth",            required_argument, NULL, 'd'},
-  {"depth-range",      required_argument, NULL, 'D'},
-  {"range-depth",      required_argument, NULL, 'D'},
-  {"range",            required_argument, NULL, 'D'},
-  {"df",               required_argument, NULL, '1'},
-  {"depth-from",       required_argument, NULL, '1'},
-  {"from-depth",       required_argument, NULL, '1'},
-  {"min-depth",        required_argument, NULL, '1'},
-  {"dt",               required_argument, NULL, '2'},
-  {"depth-to",         required_argument, NULL, '2'},
-  {"to-depth",         required_argument, NULL, '2'},
-  {"max-depth",        required_argument, NULL, '2'},
-  /* format */
-  {"pref",             required_argument, NULL, '3'},
-  {"prefix",           required_argument, NULL, '3'},
-  {"suff",             required_argument, NULL, '4'},
-  {"suffix",           required_argument, NULL, '4'},
-  /* regular mode */
-  {"regular",          no_argument,       NULL, 'r'},
-  /* CLI */
-  {"version",          no_argument,       NULL, 'v'},
-  {"help",             no_argument,       NULL, 'h'},
-  /* end of options */
-  {NULL,               0,                 NULL,  0 },
-};
+const struct option lopts[] =
+  {
+    /* seeds */
+    {"seed",             required_argument, NULL, 's'},
+    {"raw-seed",         required_argument, NULL, '0'},
+    {"raw-wseed",        required_argument, NULL, '5'},
+    {"seed-path",        required_argument, NULL, 'S'},
+    {"wseed-path",       required_argument, NULL, 'S'},
+    /* output file */
+    {"output",           required_argument, NULL, 'o'},
+    {"append",           required_argument, NULL, 'a'},
+    {"oA",               required_argument, NULL, 'a'},
+    {"help",             no_argument,       NULL, 'h'},
+    /* delimiter */
+    {"delim",            required_argument, NULL, 'p'},
+    {"delimiter",        required_argument, NULL, 'p'},
+    /* depth */
+    {"depth",            required_argument, NULL, 'd'},
+    {"depth-range",      required_argument, NULL, 'D'},
+    {"range-depth",      required_argument, NULL, 'D'},
+    {"range",            required_argument, NULL, 'D'},
+    {"df",               required_argument, NULL, '1'},
+    {"depth-from",       required_argument, NULL, '1'},
+    {"from-depth",       required_argument, NULL, '1'},
+    {"min-depth",        required_argument, NULL, '1'},
+    {"dt",               required_argument, NULL, '2'},
+    {"depth-to",         required_argument, NULL, '2'},
+    {"to-depth",         required_argument, NULL, '2'},
+    {"max-depth",        required_argument, NULL, '2'},
+    /* format */
+    {"pref",             required_argument, NULL, '3'},
+    {"prefix",           required_argument, NULL, '3'},
+    {"suff",             required_argument, NULL, '4'},
+    {"suffix",           required_argument, NULL, '4'},
+    /* regular mode */
+    {"regular",          no_argument,       NULL, 'r'},
+    /* CLI */
+    {"version",          no_argument,       NULL, 'v'},
+    {"help",             no_argument,       NULL, 'h'},
+    /* end of options */
+    {NULL,               0,                 NULL,  0 },
+  };
 
 int
 init_opt (int argc, char **argv, struct Opt *opt)
