@@ -613,7 +613,7 @@ ARGUMENTS:\n\
  *  depth=min_depth to depth=max_depth
  */
 int
-perm (const int depth, const struct Opt *opt, const char *sep)
+__perm (const struct Opt *opt, const char *sep, const int depth)
 {
   int _max_depth = opt->global_seeds->cseed_len - 1 +
     (int) da_sizeof (opt->global_seeds->wseed);
@@ -684,6 +684,33 @@ perm (const int depth, const struct Opt *opt, const char *sep)
 
   idxs[pos]++;
   goto Perm_Loop;
+}
+
+int
+perm (const struct Opt *opt)
+{
+  if (opt->seps)
+    {
+      da_foreach (opt->seps, i)
+        {
+          for (int dep = opt->from_depth, ret = 0;
+               dep <= opt->to_depth; ++dep)
+            {
+              if (0 != (ret = __perm (opt, opt->seps[i], dep)))
+                return ret;
+            }
+        }
+    }
+  else
+    {
+      for (int dep = opt->from_depth, ret = 0;
+           dep <= opt->to_depth; ++dep)
+        {
+          if (0 != (ret = __perm (opt, NULL, dep)))
+            return ret;
+        }
+    }
+  return 0;
 }
 
 /**
@@ -786,24 +813,43 @@ __regular_perm (struct Opt *opt, int *depths,
   return ret;
 }
 
-int
-regular_perm (struct Opt *opt, const char *sep)
+static int
+regular_perm (struct Opt *opt)
 {
   int ret = 0;
   struct Seed *s = NULL;
 
   /* count of seed configurations */
   int seeds_count = (int) da_sizeof (opt->reg_seeds);
+
   /* len(cseed)+len(wseed) of each configuration */
-  int *depths = malloc (seeds_count * sizeof (int));
+  int depths_len_byte = seeds_count * sizeof (int);
+  int *depths = malloc (depths_len_byte);
 
   for (int i=0; i < seeds_count && (s = opt->reg_seeds[i]); ++i)
     {
-      if ((depths[i] = (s->cseed_len) + da_sizeof (s->wseed) - 1) < 0)
+      if ((depths[i] = s->cseed_len + da_sizeof (s->wseed) - 1) < 0)
         goto _return; /* unreachable */
     }
 
-  ret = __regular_perm (opt, depths, seeds_count, sep);
+  if (opt->seps)
+    {
+      int *depths_cpy = malloc (depths_len_byte);
+      da_foreach (opt->seps, i)
+        {
+          memcpy (depths_cpy, depths, depths_len_byte);
+          ret = __regular_perm (opt, depths_cpy, seeds_count,
+                                opt->seps[i]);
+          if (0 != ret)
+            break;
+        }
+      safe_free (depths_cpy);
+    }
+  else
+    {
+      ret = __regular_perm (opt, depths, seeds_count, NULL);
+    }
+
  _return:
   safe_free (depths);
   return ret;
@@ -1234,26 +1280,6 @@ mk_seed (int c_len, int w_len)
   return s;
 }
 
-static inline void
-gen (struct Opt *opt, const char *sep)
-{
-  switch (opt->mode)
-    {
-    case REGULAR_MODE:
-      regular_perm (opt, sep);
-      break;
-
-    case NORMAL_MODE:
-      for (int rw_error = 0,
-           dep = opt->from_depth; dep <= opt->to_depth; ++dep)
-        {
-          if ((rw_error = perm (dep, opt, sep)))
-            break;
-        }
-      break;
-    }
-}
-
 int
 main (int argc, char **argv)
 {
@@ -1364,17 +1390,15 @@ main (int argc, char **argv)
 
 
   /* Generating permutations */
-  if (!opt.seps)
+  switch (opt.mode)
     {
-      /* No separator */
-      gen (&opt, NULL);
-    }
-  else
-    {
-      da_foreach (opt.seps, i)
-        {
-          gen (&opt, opt.seps[i]);
-        }
+    case REGULAR_MODE:
+      regular_perm (&opt);
+      break;
+
+    case NORMAL_MODE:
+      perm (&opt);
+      break;
     }
 
   return 0;
