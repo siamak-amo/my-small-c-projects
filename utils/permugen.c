@@ -1262,13 +1262,13 @@ main (int argc, char **argv)
   on_exit (cleanup, &opt);
 
   {
-    /* Initializing parsers */
+    /* Initializing the parser */
     opt.parser = (struct permugex) {
       .ml            = &ML,
       /* parser inputs */
       .general_src   = {.lazy = 0},
       .special_src   = {.lazy = 0},
-
+      /* parser token output */
       .general_tk    = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN),
       .special_tk    = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN),
     };
@@ -1691,9 +1691,11 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
   char *extended_token = NULL;
   Milexer *ml = opt->parser.ml;
   Milexer_Token *tmp = &opt->parser.general_tk;
+
   /* Mini-lexer internal initialization */
   SET_ML_SLICE (&opt->parser.general_src,
-                input, strlen (input));
+                input,
+                strlen (input));
 
   int ret = 0;
   while (!NEXT_SHOULD_END (ret))
@@ -1734,7 +1736,8 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
         case TK_EXPRESSION:
           char *__cstr = tmp->cstr;
           SET_ML_SLICE (&opt->parser.special_src,
-                        __cstr, strlen (__cstr));
+                        __cstr,
+                        strlen (__cstr));
 
           switch (tmp->id)
             {
