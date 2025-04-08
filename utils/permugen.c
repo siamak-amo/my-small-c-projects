@@ -360,7 +360,7 @@ struct Opt
  *  only the optarg (the value of that option) is available
  */
 #define LASTOPT(argv)                                       \
-  (((char *) NULL != optarg && '-' != *argv[optind - 1]) ?  \
+  ((NULL != optarg && '-' != *argv[optind - 1]) ?           \
    argv[optind - 2] : argv[optind - 1])
 
 #ifdef _CLEANUP_NO_FREE
