@@ -35,10 +35,10 @@
        $ permugen -s "\d \u"                       # 0-9 and A-Z
        $ permugen -s "\d \u \l"                    # 0-9 and A-Z and a-z
 
-     * The set {A,B,C , a,...,f}:
-       $ permugen -d2 -s "[ABC] [a-f]"             # depth 2
-       $ permugen -D4 -s "[ABCa-f]"                # depth range 1,...,4
-       $ permugen --min-depth 3 --max-depth 5      # depth range 3,...,5
+     * The set {XY, a,...,f}:
+       $ permugen -s "[XY] [a-f]" -d2             # depth=2 (strict)
+       $ permugen -s "[XYa-f]" -D4                # depth range [1 to 4]
+       $ permugen -s "[XYa-f]" -d 3-5             # depth range [3 to 5]
 
      * To include words:
        $ permugen -s "{foo,bar}"
@@ -541,10 +541,8 @@ OPTIONS:\n\
                               strict: '-d N' where N is a number\n\
                               range: '-d N-M' for range [N to M]\n\
       -D, --depth-range       depth range [1 to N]\n\
-     -df, --depth-from        minimum depth\n\
-          --min-depth\n\
-     -dt, --depth-to          maximum depth\n\
-          --max-depth\n\
+          --min-depth         minimum depth\n\
+          --max-depth         maximum depth\n\
 \n\
   Only in normal mode:\n\
       -S, --seed-path         word seed path\n\
@@ -1038,11 +1036,9 @@ const struct option lopts[] =
     {"depth-range",      required_argument, NULL, 'D'},
     {"range-depth",      required_argument, NULL, 'D'},
     {"range",            required_argument, NULL, 'D'},
-    {"df",               required_argument, NULL, '1'},
     {"depth-from",       required_argument, NULL, '1'},
     {"from-depth",       required_argument, NULL, '1'},
     {"min-depth",        required_argument, NULL, '1'},
-    {"dt",               required_argument, NULL, '2'},
     {"depth-to",         required_argument, NULL, '2'},
     {"to-depth",         required_argument, NULL, '2'},
     {"max-depth",        required_argument, NULL, '2'},
