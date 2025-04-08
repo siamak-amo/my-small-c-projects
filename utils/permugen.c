@@ -309,8 +309,11 @@ struct Opt
   /* General configuration */
   int mode;
   int escape_disabled; /* to disable backslash interpretation */
-  int from_depth; /* min depth */
-  int to_depth;   /* max depth */
+
+  struct
+  {
+    int min, max;
+  } depth;
 
   /* Seed Configuration (Normal mode) */
   struct Seed *global_seeds;
@@ -696,8 +699,8 @@ perm (const struct Opt *opt)
     {
       da_foreach (opt->seps, i)
         {
-          for (int dep = opt->from_depth, ret = 0;
-               dep <= opt->to_depth; ++dep)
+          for (int dep = opt->depth.min, ret = 0;
+               dep <= opt->depth.max; ++dep)
             {
               if (0 != (ret = __perm (opt, opt->seps[i], dep)))
                 return ret;
@@ -706,8 +709,8 @@ perm (const struct Opt *opt)
     }
   else
     {
-      for (int dep = opt->from_depth, ret = 0;
-           dep <= opt->to_depth; ++dep)
+      for (int dep = opt->depth.min, ret = 0;
+           dep <= opt->depth.max; ++dep)
         {
           if (0 != (ret = __perm (opt, NULL, dep)))
             return ret;
@@ -828,8 +831,8 @@ regular_perm_H (struct Opt *opt,
                 const char *sep)
 {
   int ret = 0;
-  int start = opt->from_depth;
-  int end = opt->to_depth;
+  int start = opt->depth.min;
+  int end = opt->depth.max;
 
   for (int window = start; window <= end; ++window)
     {
@@ -1111,17 +1114,17 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
 
         case 'd': /* depth */
-          opt->from_depth = atoi (optarg);
+          opt->depth.min = atoi (optarg);
           break;
         case 'D': /* depth range */
-          opt->from_depth = 1;
-          opt->to_depth = atoi (optarg);
+          opt->depth.min = 1;
+          opt->depth.max = atoi (optarg);
           break;
         case '1': /* min depth */
-          opt->from_depth = atoi (optarg);
+          opt->depth.min = atoi (optarg);
           break;
         case '2': /* max depth */
-          opt->to_depth = atoi (optarg);
+          opt->depth.max = atoi (optarg);
           break;
 
           /* Only in normal mode */
@@ -1227,19 +1230,19 @@ init_opt (int argc, char **argv, struct Opt *opt)
     case REGULAR_MODE:
       int max_depth = da_sizeof (opt->reg_seeds);
 
-      if (opt->from_depth == 0 && opt->to_depth == 0)
+      if (opt->depth.min == 0 && opt->depth.max == 0)
         {
           /* Uninitialized */
-          opt->from_depth = max_depth;
-          opt->to_depth = max_depth;
+          opt->depth.min = max_depth;
+          opt->depth.max = max_depth;
           break;
         }
 
       /* Fix invalid ranges */
-      opt->from_depth = MAX (opt->from_depth, 1);
-      opt->from_depth = MIN (opt->from_depth, max_depth);
-      opt->to_depth = MAX (opt->to_depth, opt->from_depth);
-      opt->to_depth = MIN (opt->to_depth, max_depth);
+      opt->depth.min = MAX (opt->depth.min, 1);
+      opt->depth.min = MIN (opt->depth.min, max_depth);
+      opt->depth.max = MAX (opt->depth.max, opt->depth.min);
+      opt->depth.max = MIN (opt->depth.max, max_depth);
       break;
 
     case NORMAL_MODE:
@@ -1252,21 +1255,21 @@ init_opt (int argc, char **argv, struct Opt *opt)
                          charseed_09.c, charseed_09.len);
         }
 
-      if (opt->from_depth <= 0 && opt->to_depth <= 0)
+      if (opt->depth.min <= 0 && opt->depth.max <= 0)
         {
           /* Using the default values when not specified */
-          opt->from_depth = DEF_DEPTH;
-          opt->to_depth = DEF_DEPTH;
+          opt->depth.min = DEF_DEPTH;
+          opt->depth.max = DEF_DEPTH;
         }
-      else if (opt->to_depth <= 0)
+      else if (opt->depth.max <= 0)
         {
-          /* Only from_depth is specified OR `-D` is being used */
-          opt->to_depth = opt->from_depth;
+          /* Only depth.min is specified OR `-D` is being used */
+          opt->depth.max = opt->depth.min;
         }
-      if (opt->from_depth > opt->to_depth)
+      if (opt->depth.min > opt->depth.max)
         {
           /* Invalid min and max depths */
-          opt->to_depth = opt->from_depth;
+          opt->depth.max = opt->depth.min;
         }
       break;
     }
@@ -1413,7 +1416,7 @@ main (int argc, char **argv)
         printd_arr (opt.global_seeds->wseed, "`%s`",
                     da_sizeof (opt.global_seeds->wseed));
         dprintf ("* depth: from %d to %d\n",
-                 opt.from_depth, opt.to_depth);
+                 opt.depth.min, opt.depth.max);
       }
       break;
     }
