@@ -731,7 +731,7 @@ perm (const struct Opt *opt)
  */
 int
 __regular_perm (struct Opt *opt,
-                const int *depths, int *idxs,
+                const int *lens, int *idxs,
                 int depth, int offset,
                 const char *sep)
 {
@@ -740,7 +740,7 @@ __regular_perm (struct Opt *opt,
   memset (idxs, 0, depth * sizeof (int));
 
   /* Offset of @depths also must apply to seeds */
-  depths += offset;
+  lens += offset;
   struct Seed **s = opt->reg_seeds + offset;
 
   /**
@@ -795,7 +795,7 @@ __regular_perm (struct Opt *opt,
 
   int pos;
   for (pos = depth-1;
-       pos >= 0 && idxs[pos] == depths[pos];
+       pos >= 0 && idxs[pos] == lens[pos];
        --pos)
     {
       idxs[pos] = 0;
@@ -832,17 +832,17 @@ static int
 regular_perm (struct Opt *opt)
 {
   int ret = 0;
-  int depths_len = (int) da_sizeof (opt->reg_seeds);
-  int depths_len_bytes = depths_len * sizeof (int);
-  int *idxs = malloc (depths_len_bytes),
-    *depths = malloc (depths_len_bytes);
+  int seeds_len = (int) da_sizeof (opt->reg_seeds);
+  int idxs_len_bytes = seeds_len * sizeof (int);
+  int *idxs = malloc (idxs_len_bytes);
+  int *lens = malloc (idxs_len_bytes);
 
-  /* Initialize depths by length of each seed array */
+  /* Initialize @lens by length of each seed array */
   struct Seed *s = NULL;
-  for (int i=0; i < depths_len &&
+  for (int i=0; i < seeds_len &&
          NULL != (s = opt->reg_seeds[i]); ++i)
     {
-      if ((depths[i] = s->cseed_len + da_sizeof (s->wseed) - 1) < 0)
+      if ((lens[i] = s->cseed_len + da_sizeof (s->wseed) - 1) < 0)
         goto _return; /* unreachable */
     }
 
@@ -855,15 +855,13 @@ regular_perm (struct Opt *opt)
     {
       if (0 == window)
         continue;
-      for (int offset = 0; offset + window <= depths_len; ++offset)
+      for (int offset = 0; offset + window <= seeds_len; ++offset)
         {
           for (ssize_t i=0; i < seps_len; ++i)
             {
               ret = __regular_perm (opt,
-                                    depths,
-                                    idxs,
-                                    window,
-                                    offset,
+                                    lens, idxs,
+                                    window, offset,
                                     opt->seps[i]);
               if (0 != ret)
                 break;
@@ -873,7 +871,7 @@ regular_perm (struct Opt *opt)
 
  _return:
   safe_free (idxs);
-  safe_free (depths);
+  safe_free (lens);
   return ret;
 }
 
