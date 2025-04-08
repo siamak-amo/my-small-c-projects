@@ -864,7 +864,7 @@ regular_perm (struct Opt *opt)
 
   if (opt->seps)
     {
-      int *depths_cpy = malloc (depths_len_byte);
+      /* Have separator(s) */
       da_foreach (opt->seps, i)
         {
           const char *sep = opt->seps[i];
@@ -1124,6 +1124,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
           opt->to_depth = atoi (optarg);
           break;
 
+          /* Only in normal mode */
         case 'S': /* wseed file / stdin */
           NOT_IN_REGULAR_MODE ()
           {
@@ -1253,18 +1254,18 @@ init_opt (int argc, char **argv, struct Opt *opt)
 
       if (opt->from_depth <= 0 && opt->to_depth <= 0)
         {
-          /* using the default values when not specified */
+          /* Using the default values when not specified */
           opt->from_depth = DEF_DEPTH;
           opt->to_depth = DEF_DEPTH;
         }
       else if (opt->to_depth <= 0)
         {
-          /* only from_depth is specified OR `-D` is being used */
+          /* Only from_depth is specified OR `-D` is being used */
           opt->to_depth = opt->from_depth;
         }
       if (opt->from_depth > opt->to_depth)
         {
-          /* invalid min and max depths */
+          /* Invalid min and max depths */
           opt->to_depth = opt->from_depth;
         }
       break;
