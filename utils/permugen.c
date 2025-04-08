@@ -1224,6 +1224,21 @@ init_opt (int argc, char **argv, struct Opt *opt)
   switch (opt->mode)
     {
     case REGULAR_MODE:
+      int max_depth = da_sizeof (opt->reg_seeds);
+
+      if (opt->from_depth == 0 && opt->to_depth == 0)
+        {
+          /* Uninitialized */
+          opt->from_depth = max_depth;
+          opt->to_depth = max_depth;
+          break;
+        }
+
+      /* Fix invalid ranges */
+      opt->from_depth = MAX (opt->from_depth, 1);
+      opt->from_depth = MIN (opt->from_depth, max_depth);
+      opt->to_depth = MAX (opt->to_depth, opt->from_depth);
+      opt->to_depth = MIN (opt->to_depth, max_depth);
       break;
 
     case NORMAL_MODE:
