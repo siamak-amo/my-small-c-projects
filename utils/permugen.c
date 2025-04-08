@@ -353,6 +353,12 @@ struct Opt
   ((s1) != NULL && (s2) != NULL &&              \
    strcmp ((s1), (s2)) == 0)
 
+/* NULL safe unescape */
+#define UNESCAPE(cstr) do {                     \
+    if (NULL != cstr)                           \
+      unescape (cstr);                          \
+  } while (0)
+
 #undef IS_NUMBER
 #define IS_NUMBER(c) (c >= '0' && c <= '9')
 
@@ -910,7 +916,7 @@ wseed_uniappd (const struct Opt *opt,
 
   char *word = strdup (str_word);
   if (!opt->escape_disabled)
-    unescape (word);
+    UNESCAPE (word);
 
   size_t len = da_sizeof (s->wseed);
   if (len >= WSEED_MAXCNT)
@@ -930,7 +936,7 @@ wseed_uniappd (const struct Opt *opt,
 void
 wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
 {
-  if (!f || ferror (f) || feof (f))
+  if (!f || feof (f))
     {
       if (f == stdin)
         {
@@ -1152,7 +1158,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
           {
             using_default_seed = 0;
             if (!opt->escape_disabled)
-              unescape (optarg);
+              UNESCAPE (optarg);
             cseed_uniappd (opt->global_seeds, optarg, strlen (optarg));
           }
           break;
@@ -1271,14 +1277,11 @@ init_opt (int argc, char **argv, struct Opt *opt)
   /* Interpret backslash characters */
   if (!opt->escape_disabled)
     {
-      if (opt->prefix != NULL)
-        unescape (opt->prefix);
-      if (opt->suffix != NULL)
-        unescape (opt->suffix);
-      if (opt->seps)
+      UNESCAPE (opt->prefix);
+      UNESCAPE (opt->suffix);
+      da_foreach (opt->seps, i)
         {
-          da_foreach (opt->seps, i)
-            unescape (opt->seps[i]);
+          UNESCAPE (opt->seps[i]);
         }
     }
 
@@ -1512,7 +1515,7 @@ path_resolution (const char *path_cstr)
     }
 
   /* Interpret `\<space>` */
-  unescape (tmp);
+  UNESCAPE (tmp);
 
   if (realpath (tmp, PATH))
     {
@@ -1544,7 +1547,7 @@ pparse_cseed_regex (struct Opt *opt, struct Seed *dst_seed)
         break;
 
       if (!opt->escape_disabled)
-        unescape (tmp->cstr);
+        UNESCAPE (tmp->cstr);
       if (tmp->type == TK_PUNCS && tmp->id == PUNC_DASH)
         {
           dash++;
@@ -1562,7 +1565,7 @@ pparse_cseed_regex (struct Opt *opt, struct Seed *dst_seed)
               if (*p)
                 {
                   if (!opt->escape_disabled)
-                    unescape (p);
+                    UNESCAPE (p);
                   int len = cseed_uniappd (dst_seed, p, -1);
                   lastc = p[len];
                 }
@@ -1637,7 +1640,7 @@ pparse_format_regex (struct Opt *opt,
   if (!input)
     return;
   if (!opt->escape_disabled)
-    unescape (input);
+    UNESCAPE (input);
 
   if (dst_seed->pref == NULL)
     dst_seed->pref = strdup (input);
