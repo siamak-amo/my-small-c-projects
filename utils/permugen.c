@@ -337,6 +337,9 @@ struct Opt
 };
 
 /* Internal Macros */
+#define MIN(x, y) ((x < y) ? x : y)
+#define MAX(x, y) ((x < y) ? y : x)
+
 #define Strcmp(s1, s2)                          \
   ((s1) != NULL && (s2) != NULL &&              \
    strcmp ((s1), (s2)) == 0)
@@ -715,18 +718,24 @@ perm (const struct Opt *opt)
 
 /**
  *  The main logic of regular mode
- *  It should be called by the `regular_perm` function
+ *  It should be called by the `regular_perm_H` function
+ *
+ *  @depths array must have offset @offset
+ *  @offset + @depth *MUST* be equal to the total length of @depths
  */
 int
-__regular_perm (struct Opt *opt, int *depths,
-                int depth, const char *sep)
+__regular_perm (struct Opt *opt,
+                int offset, const int *depths, int depth,
+                const char *sep)
 {
   int ret;
   /* permutation indexes */
   int *idxs = malloc (depth * sizeof (int));
   memset (idxs, 0, depth * sizeof (int));
 
-  struct Seed **s = opt->reg_seeds;
+  /* Offset of @depths also must apply to seeds */
+  struct Seed **s = opt->reg_seeds + offset;
+
   /**
    *  O(S_1 * ... * S_n)
    *  where: n=depth and S_i = depths[i]
@@ -813,20 +822,41 @@ __regular_perm (struct Opt *opt, int *depths,
   return ret;
 }
 
+static inline int
+regular_perm_H (struct Opt *opt,
+                const int *depths, int depth,
+                const char *sep)
+{
+  int ret = 0;
+  int start = opt->from_depth;
+  int end = opt->to_depth;
+
+  for (int window = start; window <= end; ++window)
+    {
+      if (0 == window)
+        continue;
+      for (int offset = 0; offset + window <= depth; ++offset)
+        {
+          ret = __regular_perm (opt,
+                                offset, depths + offset, window,
+                                sep);
+          if (0 != ret)
+            break;
+        }
+    }
+  return ret;
+}
+
 static int
 regular_perm (struct Opt *opt)
 {
   int ret = 0;
+  int depths_len = (int) da_sizeof (opt->reg_seeds);
+  int *depths = malloc (depths_len * sizeof (int));
+
   struct Seed *s = NULL;
-
-  /* count of seed configurations */
-  int seeds_count = (int) da_sizeof (opt->reg_seeds);
-
-  /* len(cseed)+len(wseed) of each configuration */
-  int depths_len_byte = seeds_count * sizeof (int);
-  int *depths = malloc (depths_len_byte);
-
-  for (int i=0; i < seeds_count && (s = opt->reg_seeds[i]); ++i)
+  for (int i=0; i < depths_len &&
+         NULL != (s = opt->reg_seeds[i]); ++i)
     {
       if ((depths[i] = s->cseed_len + da_sizeof (s->wseed) - 1) < 0)
         goto _return; /* unreachable */
@@ -837,17 +867,16 @@ regular_perm (struct Opt *opt)
       int *depths_cpy = malloc (depths_len_byte);
       da_foreach (opt->seps, i)
         {
-          memcpy (depths_cpy, depths, depths_len_byte);
-          ret = __regular_perm (opt, depths_cpy, seeds_count,
-                                opt->seps[i]);
+          const char *sep = opt->seps[i];
+          ret = regular_perm_H (opt, depths, depths_len, sep);
           if (0 != ret)
             break;
         }
-      safe_free (depths_cpy);
     }
   else
     {
-      ret = __regular_perm (opt, depths, seeds_count, NULL);
+      /* No separator provided */
+      ret = regular_perm_H (opt, depths, depths_len, NULL);
     }
 
  _return:
@@ -1081,24 +1110,17 @@ init_opt (int argc, char **argv, struct Opt *opt)
           da_appd (opt->seps, optarg);
           break;
 
-          /* Only in normal mode */
         case 'd': /* depth */
-          NOT_IN_REGULAR_MODE();
           opt->from_depth = atoi (optarg);
           break;
         case 'D': /* depth range */
-          NOT_IN_REGULAR_MODE ()
-            {
-              opt->from_depth = 1;
-              opt->to_depth = atoi (optarg);
-            }
+          opt->from_depth = 1;
+          opt->to_depth = atoi (optarg);
           break;
         case '1': /* min depth */
-          NOT_IN_REGULAR_MODE();
           opt->from_depth = atoi (optarg);
           break;
         case '2': /* max depth */
-          NOT_IN_REGULAR_MODE();
           opt->to_depth = atoi (optarg);
           break;
 
