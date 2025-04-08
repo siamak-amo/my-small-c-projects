@@ -731,15 +731,16 @@ perm (const struct Opt *opt)
  */
 int
 __regular_perm (struct Opt *opt,
-                int offset, const int *depths, int depth,
+                const int *depths, int *idxs,
+                int depth, int offset,
                 const char *sep)
 {
   int ret;
   /* permutation indexes */
-  int *idxs = malloc (depth * sizeof (int));
   memset (idxs, 0, depth * sizeof (int));
 
   /* Offset of @depths also must apply to seeds */
+  depths += offset;
   struct Seed **s = opt->reg_seeds + offset;
 
   /**
@@ -824,37 +825,6 @@ __regular_perm (struct Opt *opt,
   goto Reg_Perm_Loop;
 
  Reg_Return:
-  safe_free (idxs);
-  return ret;
-}
-
-static inline int
-regular_perm_H (struct Opt *opt,
-                const int *depths, int depth)
-{
-  int ret = 0;
-  int start = opt->depth.min;
-  int end = opt->depth.max;
-  ssize_t seps_len = da_sizeof (opt->seps);
-
-  for (int window = start; window <= end; ++window)
-    {
-      if (0 == window)
-        continue;
-      for (int offset = 0; offset + window <= depth; ++offset)
-        {
-          for (ssize_t i=0; i < seps_len; ++i)
-            {
-              ret = __regular_perm (opt,
-                                    offset,
-                                    depths + offset,
-                                    window,
-                                    opt->seps[i]);
-              if (0 != ret)
-                break;
-            }
-        }
-    }
   return ret;
 }
 
@@ -863,8 +833,11 @@ regular_perm (struct Opt *opt)
 {
   int ret = 0;
   int depths_len = (int) da_sizeof (opt->reg_seeds);
-  int *depths = malloc (depths_len * sizeof (int));
+  int depths_len_bytes = depths_len * sizeof (int);
+  int *idxs = malloc (depths_len_bytes),
+    *depths = malloc (depths_len_bytes);
 
+  /* Initialize depths by length of each seed array */
   struct Seed *s = NULL;
   for (int i=0; i < depths_len &&
          NULL != (s = opt->reg_seeds[i]); ++i)
@@ -873,8 +846,33 @@ regular_perm (struct Opt *opt)
         goto _return; /* unreachable */
     }
 
-  ret = regular_perm_H (opt, depths, depths_len);
+  /* Handle the output depth */
+  int start = opt->depth.min;
+  int end = opt->depth.max;
+  ssize_t seps_len = da_sizeof (opt->seps);
+
+  for (int window = start; window <= end; ++window)
+    {
+      if (0 == window)
+        continue;
+      for (int offset = 0; offset + window <= depths_len; ++offset)
+        {
+          for (ssize_t i=0; i < seps_len; ++i)
+            {
+              ret = __regular_perm (opt,
+                                    depths,
+                                    idxs,
+                                    window,
+                                    offset,
+                                    opt->seps[i]);
+              if (0 != ret)
+                break;
+            }
+        }
+    }
+
  _return:
+  safe_free (idxs);
   safe_free (depths);
   return ret;
 }
