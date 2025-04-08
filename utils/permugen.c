@@ -76,6 +76,12 @@
          {dev,prod}x{2,3}x{2,3}
        $ permugen -r "{dev,prod}"  "[2-3]"  "\2"
 
+     * Depth in regular mode:
+         It simply means: count of components in the output
+       - To get '<S_i><S_j><S_k>' where i,j,k in [1 to N]:
+       $ permugen -r [S_1]... [S_N] -d3
+       - To also get '<S_i>' and '<S_i><S_j>': use `-D3`
+
        - To read from stdin:
        $ permugen -r -- "{dev,prod}"  "-"
          or equivalently, avoid using end-of-options:
@@ -529,15 +535,16 @@ OPTIONS:\n\
           --prefix            output prefix\n\
           --suffix            output suffix\n\
       -h, --help              print help and exit\n\
-      -v, --version           print version and exit\n\
+      -v, --version           print version and exit\n\n\
+  Depth settings:\n\
+      -d, --depth             specify depth (strict)\n\
+      -D, --depth-range       depth range [1 to N]\n\
+     -df, --depth-from        minimum depth\n\
+          --min-depth\n\
+     -dt, --depth-to          maximum depth\n\
+          --max-depth\n\
 \n\
   Only in normal mode:\n\
-      -d, --depth             specify depth\n\
-      -D, --depth-range       depth range\n\
-     -df, --depth-from        specify min depth\n\
-          --min-depth\n\
-     -dt, --depth-to          specify max depth\n\
-          --max-depth\n\
       -S, --seed-path         word seed path\n\
                               pass - to read from stdin\n\
       -s, --seed              to configure global seeds (see ARGUMENTS)\n\
