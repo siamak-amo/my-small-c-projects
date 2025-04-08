@@ -537,7 +537,9 @@ OPTIONS:\n\
       -h, --help              print help and exit\n\
       -v, --version           print version and exit\n\n\
   Depth settings:\n\
-      -d, --depth             specify depth (strict)\n\
+      -d, --depth             specify depth\n\
+                              strict: '-d N' where N is a number\n\
+                              range: '-d N-M' for range [N to M]\n\
       -D, --depth-range       depth range [1 to N]\n\
      -df, --depth-from        minimum depth\n\
           --min-depth\n\
@@ -1120,9 +1122,21 @@ init_opt (int argc, char **argv, struct Opt *opt)
           da_appd (opt->seps, optarg);
           break;
 
-        case 'd': /* depth */
-          opt->depth.min = atoi (optarg);
-          break;
+        case 'd': /* depth, format: '-d N' or '-d N,M' */
+          {
+            char *p = strchr (optarg, '-');
+            if (!p)
+              {
+                opt->depth.min = atoi (optarg);
+              }
+            else
+              {
+                *p = '\0';
+                opt->depth.min = atoi (optarg);
+                opt->depth.max = atoi (p+1);
+              }
+            break;
+          }
         case 'D': /* depth range */
           opt->depth.min = 1;
           opt->depth.max = atoi (optarg);
