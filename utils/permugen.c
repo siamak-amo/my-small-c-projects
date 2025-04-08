@@ -702,24 +702,14 @@ __perm (const struct Opt *opt, const char *sep, const int depth)
 int
 perm (const struct Opt *opt)
 {
-  if (opt->seps)
+  ssize_t seps_len = da_sizeof (opt->seps);
+
+  for (int dep = opt->depth.min, ret = 0;
+       dep <= opt->depth.max; ++dep)
     {
-      da_foreach (opt->seps, i)
+      for (ssize_t i=0; i < seps_len; ++i)
         {
-          for (int dep = opt->depth.min, ret = 0;
-               dep <= opt->depth.max; ++dep)
-            {
-              if (0 != (ret = __perm (opt, opt->seps[i], dep)))
-                return ret;
-            }
-        }
-    }
-  else
-    {
-      for (int dep = opt->depth.min, ret = 0;
-           dep <= opt->depth.max; ++dep)
-        {
-          if (0 != (ret = __perm (opt, NULL, dep)))
+          if (0 != (ret = __perm (opt, opt->seps[i], dep)))
             return ret;
         }
     }
@@ -834,12 +824,12 @@ __regular_perm (struct Opt *opt,
 
 static inline int
 regular_perm_H (struct Opt *opt,
-                const int *depths, int depth,
-                const char *sep)
+                const int *depths, int depth)
 {
   int ret = 0;
   int start = opt->depth.min;
   int end = opt->depth.max;
+  ssize_t seps_len = da_sizeof (opt->seps);
 
   for (int window = start; window <= end; ++window)
     {
@@ -847,11 +837,16 @@ regular_perm_H (struct Opt *opt,
         continue;
       for (int offset = 0; offset + window <= depth; ++offset)
         {
-          ret = __regular_perm (opt,
-                                offset, depths + offset, window,
-                                sep);
-          if (0 != ret)
-            break;
+          for (ssize_t i=0; i < seps_len; ++i)
+            {
+              ret = __regular_perm (opt,
+                                    offset,
+                                    depths + offset,
+                                    window,
+                                    opt->seps[i]);
+              if (0 != ret)
+                break;
+            }
         }
     }
   return ret;
@@ -872,23 +867,7 @@ regular_perm (struct Opt *opt)
         goto _return; /* unreachable */
     }
 
-  if (opt->seps)
-    {
-      /* Have separator(s) */
-      da_foreach (opt->seps, i)
-        {
-          const char *sep = opt->seps[i];
-          ret = regular_perm_H (opt, depths, depths_len, sep);
-          if (0 != ret)
-            break;
-        }
-    }
-  else
-    {
-      /* No separator provided */
-      ret = regular_perm_H (opt, depths, depths_len, NULL);
-    }
-
+  ret = regular_perm_H (opt, depths, depths_len);
  _return:
   safe_free (depths);
   return ret;
@@ -1110,12 +1089,10 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
 
         case 'p': /* separator */
-          if (!opt->seps)
-            {
-              /* NULL means: no separator */
-              opt->seps = da_new (char *);
-            }
-          da_appd (opt->seps, optarg);
+          if (NULL == opt->seps[0])
+            opt->seps[0] = optarg;
+          else
+            da_appd (opt->seps, optarg);
           break;
 
         case 'd': /* depth, format: '-d N' or '-d N,M' */
@@ -1361,6 +1338,9 @@ main (int argc, char **argv)
   {
     /* Initializing options */
     opt.global_seeds = mk_seed (CSEED_MAXLEN, 1);
+    opt.seps = da_newn (char *, 1);
+    da_appd (opt.seps, NULL);
+
     if (init_opt (argc, argv, &opt))
       return EXIT_FAILURE;
 
