@@ -724,28 +724,31 @@ perm (const struct Opt *opt)
 
 /**
  *  The main logic of regular mode
- *  It should be called by the `regular_perm_H` function
+ *  It should be called by the `regular_perm` function
  *
- *  @depths array must have offset @offset
- *  @offset + @depth *MUST* be equal to the total length of @depths
+ *  @lens and @idxs both have size @size
+ *  @idxs: temporary array for internal use of this function
+ *  @lens: total length of each **s = opt->reg_seeds:
+ *         lens[i] = len(s[i]->cssed) + len(s[i]->wseed)
  */
 int
 __regular_perm (struct Opt *opt,
                 const int *lens, int *idxs,
-                int depth, int offset,
+                int size, int offset,
                 const char *sep)
 {
   int ret;
   /* permutation indexes */
-  memset (idxs, 0, depth * sizeof (int));
+  memset (idxs, 0, size * sizeof (int));
 
   /* Offset of @depths also must apply to seeds */
   lens += offset;
   struct Seed **s = opt->reg_seeds + offset;
 
   /**
-   *  O(S_1 * ... * S_n)
-   *  where: n=depth and S_i = depths[i]
+   *  O(S_m * ... * S_n)
+   *  where: S_i = @lens[i], for i in [m to n], and
+   *         m = @offset  and  n = @size + @offset
    */
  Reg_Perm_Loop:
   int i = 0;
@@ -761,12 +764,12 @@ __regular_perm (struct Opt *opt,
       Fputs (current_seed->pref, opt);
     if (idx < current_seed->cseed_len)
       {
-        /* range of character seeds */
+        /* Range of character seeds */
         Putc (current_seed->cseed[idx], opt);
       }
     else
       {
-        /* range of word seeds */
+        /* Range of word seeds */
         idx -= current_seed->cseed_len;
         Fputs (current_seed->wseed[idx], opt);
       }
@@ -774,7 +777,7 @@ __regular_perm (struct Opt *opt,
   }
   if (current_seed->suff)
     Fputs (current_seed->suff, opt);
-  if (i < depth)
+  if (i < size)
     {
       if (sep)
         {
@@ -794,7 +797,7 @@ __regular_perm (struct Opt *opt,
     Putln (opt);
 
   int pos;
-  for (pos = depth-1;
+  for (pos = size - 1;
        pos >= 0 && idxs[pos] == lens[pos];
        --pos)
     {
@@ -834,16 +837,18 @@ regular_perm (struct Opt *opt)
   int ret = 0;
   int seeds_len = (int) da_sizeof (opt->reg_seeds);
   int idxs_len_bytes = seeds_len * sizeof (int);
-  int *idxs = malloc (idxs_len_bytes);
-  int *lens = malloc (idxs_len_bytes);
+  int *tmp = malloc (idxs_len_bytes),
+    *lengths = malloc (idxs_len_bytes);
 
-  /* Initialize @lens by length of each seed array */
+  /* Initialize @lengths by length of each seed array */
   struct Seed *s = NULL;
   for (int i=0; i < seeds_len &&
          NULL != (s = opt->reg_seeds[i]); ++i)
     {
-      if ((lens[i] = s->cseed_len + da_sizeof (s->wseed) - 1) < 0)
-        goto _return; /* unreachable */
+      int total = s->cseed_len + da_sizeof (s->wseed) - 1;
+      if (total < 0)
+        goto _return; /* Unreachable */
+      lengths[i] = total;
     }
 
   /* Handle the output depth */
@@ -860,7 +865,7 @@ regular_perm (struct Opt *opt)
           for (ssize_t i=0; i < seps_len; ++i)
             {
               ret = __regular_perm (opt,
-                                    lens, idxs,
+                                    lengths, tmp,
                                     window, offset,
                                     opt->seps[i]);
               if (0 != ret)
@@ -870,8 +875,8 @@ regular_perm (struct Opt *opt)
     }
 
  _return:
-  safe_free (idxs);
-  safe_free (lens);
+  safe_free (tmp);
+  safe_free (lengths);
   return ret;
 }
 
