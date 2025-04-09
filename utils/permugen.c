@@ -65,34 +65,34 @@
 
      * Basic Examples:
        - Cartesian product of {0,1,2}x{AA,BB}
-       $ permugen -r "[0-2]"  "{AA,BB}"
+       $ permugen -r  "[0-2]"  "{AA,BB}"
 
        - {dev,prod}x{admin,<wordlist.txt>}
-       $ permugen -r "{dev,prod}"  "{admin} /path/to/wordlist.txt"
+       $ permugen -r  "{dev,prod}"  "{admin} /path/to/wordlist.txt"
 
        - To reuse previously provided seeds (\N starting from 1)
          {dev,prod}x{www,dev,prod}
-       $ permugen -p. -r "{dev,prod}"  "{www} \1"
+       $ permugen -p. -r  "{dev,prod}"  "{www} \1"
          {dev,prod}x{2,3}x{2,3}
-       $ permugen -r "{dev,prod}"  "[2-3]"  "\2"
+       $ permugen -r  "{dev,prod}"  "[2-3]"  "\2"
 
-     * Depth in regular mode:
-         It simply means: count of components in the output
+     * Depth in regular mode (count of output components)
        - To get '<S_i><S_j><S_k>' where i,j,k in [1 to N]:
        $ permugen -r [S_1]... [S_N] -d3
-       - To also get '<S_i>' and '<S_i><S_j>': use `-D3`
+       - To also get '<S_i><S_j>':
+       $ permugen -r [S_1]... [S_N] -d2-3
 
        - To read from stdin:
        $ permugen -r -- "{dev,prod}"  "-"
          or equivalently, avoid using end-of-options:
-       $ permugen -r "{dev,prod}"  " -"
+       $ permugen -r  "{dev,prod}"  " -"
 
      * Custom prefix and suffix:
        - The first component has `xxx` as suffix and
          the second component has `yyy` as prefix
-       $ permugen -r "() {One} (xxx)"  "(yyy) {Two} ()"
+       $ permugen -r  "() {One} (xxx)"  "(yyy) {Two} ()"
        - The first component uses {} and the second one uses ()
-       $ permugen -r "({) {One} (})"  "(\() {Two} (\))"
+       $ permugen -r  "({) {One} (})"  "(\() {Two} (\))"
 
 
    Compilation:
