@@ -315,6 +315,7 @@ struct Opt
   /* General configuration */
   int mode;
   int escape_disabled; /* to disable backslash interpretation */
+  int using_default_seed;
 
   struct
   {
@@ -1042,12 +1043,12 @@ const struct option lopts[] =
     {NULL,               0,                 NULL,  0 },
   };
 
-int
-init_opt (int argc, char **argv, struct Opt *opt)
+static int
+opt_getopt (int argc, char **argv, struct Opt *opt)
 {
   /* we use 0,1,2,... as `helper` options and only to use getopt */
   const char *lopt_cstr = "s:S:o:a:p:d:D:0:1:2:3:4:5:vhrEe";
-  int idx = 0, using_default_seed = 1;
+  int idx = 0;
 
   /* Usage: case X:  NOT_IN_REGULAR_MODE("X") {...} */
 #define NOT_IN_REGULAR_MODE()                                           \
@@ -1148,7 +1149,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
         case 's': /* seed configuration */
           NOT_IN_REGULAR_MODE ()
           {
-            using_default_seed = 0;
+            opt->using_default_seed = 0;
             /* This option disables the default seed config */
             parse_seed_regex (opt, opt->global_seeds, optarg);
           }
@@ -1157,7 +1158,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
         case '0': /* raw seed */
           NOT_IN_REGULAR_MODE ()
           {
-            using_default_seed = 0;
+            opt->using_default_seed = 0;
             if (!opt->escape_disabled)
               UNESCAPE (optarg);
             cseed_uniappd (opt->global_seeds, optarg, strlen (optarg));
@@ -1174,7 +1175,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
           NOT_IN_REGULAR_MODE ();
           {
             int end_of_options = 0;
-            using_default_seed = 0;
+            opt->using_default_seed = 0;
             opt->mode = REGULAR_MODE;
             if (opt->reg_seeds)
               break;
@@ -1219,9 +1220,14 @@ init_opt (int argc, char **argv, struct Opt *opt)
           break;
         }
     }
+  return 0;
+}
 
+static void
+opt_init (struct Opt *opt)
+{
   /**
-   *  Initializing the default values
+   *  Initializing the default values if not set
    */
   if (opt->outf == NULL)
     opt->outf = stdout;
@@ -1247,7 +1253,7 @@ init_opt (int argc, char **argv, struct Opt *opt)
       break;
 
     case NORMAL_MODE:
-      if (opt->global_seeds->cseed_len == 0 && using_default_seed)
+      if (opt->global_seeds->cseed_len == 0 && opt->using_default_seed)
         {
           /* initializing with the default seed [a-z0-9] */
           cseed_uniappd (opt->global_seeds,
@@ -1285,8 +1291,6 @@ init_opt (int argc, char **argv, struct Opt *opt)
           UNESCAPE (opt->seps[i]);
         }
     }
-
-  return 0;
 }
 
 static inline void
@@ -1319,12 +1323,18 @@ mk_seed (int c_len, int w_len)
   return s;
 }
 
-int
-main (int argc, char **argv)
+static struct Opt *
+mk_opt ()
 {
   static struct Opt opt = {0};
-  set_program_name (*argv);
-  on_exit (cleanup, &opt);
+  {
+    /* Dynamic arrays */
+    opt.global_seeds = mk_seed (CSEED_MAXLEN, 1);
+    opt.using_default_seed = 1;
+
+    opt.seps = da_newn (char *, 1);
+    da_appd (opt.seps, NULL);
+  }
 
   {
     /* Initializing the parser */
@@ -1339,60 +1349,68 @@ main (int argc, char **argv)
     };
   }
 
-  {
-    /* Initializing options */
-    opt.global_seeds = mk_seed (CSEED_MAXLEN, 1);
-    opt.seps = da_newn (char *, 1);
-    da_appd (opt.seps, NULL);
+  return &opt;
+}
 
-    if (init_opt (argc, argv, &opt))
-      return EXIT_FAILURE;
+int
+main (int argc, char **argv)
+{
+  struct Opt *opt;
+  set_program_name (*argv);
 
-    switch (opt.mode)
-      {
-      case REGULAR_MODE:
-        if (0 == opt.reg_seeds_len)
-          {
-            warnln ("empty regular permutation");
-            return EXIT_FAILURE;
-          }
-        break;
+  opt = mk_opt ();
+  on_exit (cleanup, opt);
 
-      case NORMAL_MODE:
-        if (0 == opt.global_seeds->cseed_len &&
-            0 == da_sizeof (opt.global_seeds->wseed))
-          {
-            warnln ("empty permutation");
-            return EXIT_FAILURE;
-          }
-        break;
-      }
-  }
+  /* Read options */
+  if (opt_getopt (argc, argv, opt))
+    return EXIT_FAILURE;
+  /* Set defaults and finalize opt */
+  opt_init (opt);
+
+  switch (opt->mode)
+    {
+    case REGULAR_MODE:
+      if (0 == opt->reg_seeds_len)
+        {
+          warnln ("empty regular permutation");
+          return EXIT_FAILURE;
+        }
+      break;
+
+    case NORMAL_MODE:
+      if (0 == opt->global_seeds->cseed_len &&
+          0 == da_sizeof (opt->global_seeds->wseed))
+        {
+          warnln ("empty permutation");
+          return EXIT_FAILURE;
+        }
+      break;
+    }
 
   /* Initializing the output stream buffer */
 #ifndef _USE_BIO
-  opt.streamout_buff = malloc (_BMAX);
-  if (!!setvbuf (opt.outf, opt.streamout_buff, _IOFBF, _BMAX))
+  opt->streamout_buff = malloc (_BMAX);
+  if (!!setvbuf (opt->outf, opt->streamout_buff, _IOFBF, _BMAX))
     {
       warnln ("failed to set buffer for stdout");
       exit (EXIT_FAILURE);
     }
 #else
-  opt.bio = malloc (sizeof (BIO_t));
-  *opt.bio = bio_new (_BMAX, malloc (_BMAX), fileno (opt.outf));
+  opt->bio = malloc (sizeof (BIO_t));
+  *opt->bio = bio_new (_BMAX, malloc (_BMAX), fileno (opt->outf));
   dprintf ("* buffer length of buffered_io: %d bytes\n", _BMAX);
 # endif /* _USE_BIO */
 
-  switch (opt.mode)
+  switch (opt->mode)
     {
     case REGULAR_MODE:
       {
-        size_t len = da_sizeof (opt.reg_seeds);
+        size_t len = da_sizeof (opt->reg_seeds);
         dprintf ("* regular mode\n");
-        dprintf ("* %s[.%lu] = {\n", CSTR (opt.reg_seeds), (size_t)len);
+        dprintf ("* %s[.%lu] = {\n", CSTR (opt->reg_seeds), (size_t)len);
         for (size_t i=0; i < len; ++i)
           {
-            struct Seed *s = opt.reg_seeds[i];
+            struct Seed *s = opt->reg_seeds[i];
             dprintf ("    [%lu] = {\n      ", i);
             printd_arr (s->cseed, "`%c`", s->cseed_len);
             dprintf ("      ");
@@ -1411,35 +1429,38 @@ main (int argc, char **argv)
       {
         dprintf ("* normal mode\n");
         dprintf ("    ");
-        printd_arr (opt.global_seeds->cseed, "`%c`",
-                    opt.global_seeds->cseed_len);
+        printd_arr (opt->global_seeds->cseed, "`%c`",
+                    opt->global_seeds->cseed_len);
         dprintf ("    ");
-        printd_arr (opt.global_seeds->wseed, "`%s`",
-                    da_sizeof (opt.global_seeds->wseed));
-        dprintf ("* depth: from %d to %d\n",
-                 opt.depth.min, opt.depth.max);
+        printd_arr (opt->global_seeds->wseed, "`%s`",
+                    da_sizeof (opt->global_seeds->wseed));
+        if (opt->depth.min != opt->depth.max)
+          dprintf ("* depth range: [%d to %d]\n",
+                   opt->depth.min, opt->depth.max);
+        else
+          dprintf ("* depth: %d\n", opt->depth.min);
       }
       break;
     }
-  if (opt.escape_disabled)
+  if (opt->escape_disabled)
     dprintf ("- backslash interpretation is disabled\n");
-  if (opt.seps)
+  if (opt->seps)
     {
       dprintf ("* delimiters: ");
-      printd_arr (opt.seps, "`%s`", da_sizeof (opt.seps));
+      printd_arr (opt->seps, "`%s`", da_sizeof (opt->seps));
     }
   dprintf ("* permutations:\n");
 
 
   /* Generating permutations */
-  switch (opt.mode)
+  switch (opt->mode)
     {
     case REGULAR_MODE:
-      regular_perm (&opt);
+      regular_perm (opt);
       break;
 
     case NORMAL_MODE:
-      perm (&opt);
+      perm (opt);
       break;
     }
 
