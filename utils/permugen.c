@@ -125,11 +125,6 @@
 /* Default permutaiton depth (normal mode) */
 #define DEF_DEPTH 3
 
-/* Maximum length of character seeds */
-#ifndef CSEED_MAXLEN
-# define CSEED_MAXLEN 256
-#endif
-
 /* Maximum length of a word seed */
 #ifndef WSEED_MAXLEN
 # define WSEED_MAXLEN 511 // 1 byte for null-byte
@@ -361,10 +356,15 @@ struct Opt
 #undef IS_NUMBER
 #define IS_NUMBER(c) (c >= '0' && c <= '9')
 
-/* ASCII-printable, Non-white-space */
-#define MIN_ASCII 0
-#define MAX_ASCII 0x7E
-#define IS_ASCII_PR(c) (c >= 0x20 && c <= MAX_ASCII)
+/**
+ *  ASCII-printable character range
+ *  Character seeds *MUST* be within this range
+ */
+#define MIN_ASCII_PR 0x20
+#define MAX_ASCII_PR 0x7E
+#define IS_ASCII_PR(c) (c >= MIN_ASCII_PR && c <= MAX_ASCII_PR)
+/* Maximum length of character seeds */
+#define CSEED_MAXLEN (MAX_ASCII_PR - MIN_ASCII_PR + 1)
 
 /**
  *  Retrieves the last option from argv (e.g., '--xxx',
@@ -373,7 +373,7 @@ struct Opt
  *  only the optarg (the value of that option) is available
  */
 #define LASTOPT(argv)                                       \
-  ((NULL != optarg && '-' != *argv[optind - 1]) ?           \
+  ((NULL != optarg && '-' != argv[optind - 1][0]) ?         \
    argv[optind - 2] : argv[optind - 1])
 
 #ifdef _CLEANUP_NO_FREE
