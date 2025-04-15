@@ -21,9 +21,9 @@
     Permutation generator utility
     Generates customizable permutations from specified seeds
 
-    Usage:
-       For more details, use the `-h` option:
-       $ permugen --help
+    Usage
+      For more details, use the `-h` option:
+      $ permugen --help
 
     Normal mode:  permugen [OPTIONS] -s [SEED_CONFIG]
       Cartesian product of the input with a certain depth
@@ -100,14 +100,13 @@
         -o permugen permugen.c
 
    Options:
+    - To skip freeing allocated memory before quitting
+       define `_CLEANUP_NO_FREE`
     - To enable printing of debug information
        define `_DEBUG`
     - To use buffered IO library (deprecated)
        define `_USE_BIO`
-    - To change the default buffered IO buffer capacity
        define `_BMAX="(1024 * 1)"` (=1024 bytes)
-    - To skip freeing allocated memory before quitting
-       define `_CLEANUP_NO_FREE`
  **/
 #include <stdio.h>
 #include <stdlib.h>
@@ -184,7 +183,7 @@
 
 #undef _Nullable
 #define _Nullable
-#define _nothing (void)(NULL)
+#define _nothing ((void) NULL)
 
 #ifdef _DEBUG /* debug macro */
 #  define dprintf(format, ...) \
