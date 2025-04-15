@@ -226,6 +226,9 @@ const struct char_seed charseed_az = {"abcdefghijklmnopqrstuvwxyz", 26};
 const struct char_seed charseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 const struct char_seed charseed_09 = {"0123456789", 10};
 
+/* To check @c belongs to the closed interval [a,b] */
+#define IN_RANGE(c, a,b) ((c) >= (a) && (c) <= (b))
+
 /**
  *  Seeds Container 
  *  To get the length of `wseed`, use `da_sizeof`.
@@ -260,7 +263,6 @@ enum LANG
   {
     /* General parser */
     PUNC_COMMA = 0,
-    PUNC_DASH  = 0,
 
     /* Special parser */
     EXP_PAREN = 0,     /* (xxx) */
@@ -268,13 +270,9 @@ enum LANG
     EXP_SBRACKET,      /* [xxx] */
   };
 
-static const char *W_Puncs[] =
+static const char *Puncs[] =
   {
     [PUNC_COMMA]         = ",",
-  };
-static const char *C_Puncs[] =
-  {
-    [PUNC_DASH]          = "-",
   };
 
 static struct Milexer_exp_ Expressions[] =
@@ -287,6 +285,7 @@ static struct Milexer_exp_ Expressions[] =
 static Milexer ML =
   {
     .expression = GEN_MKCFG (Expressions),
+    .puncs      = GEN_MKCFG (Puncs),
   };
 
 /**
@@ -363,7 +362,9 @@ struct Opt
 #define IS_NUMBER(c) (c >= '0' && c <= '9')
 
 /* ASCII-printable, Non-white-space */
-#define IS_ASCII_PR(c) (c >= 0x20 && c <= 0x7E)
+#define MIN_ASCII 0
+#define MAX_ASCII 0x7E
+#define IS_ASCII_PR(c) (c >= 0x20 && c <= MAX_ASCII)
 
 /**
  *  Retrieves the last option from argv (e.g., '--xxx',
@@ -1481,7 +1482,6 @@ pparse_wseed_regex (struct Opt *, struct Seed *dst_seed);
  *  Character Seed regex parser
  *  inside: `[...]`
  *  It backslash interprets the result if not disabled
- *  This function uses special_tk and special_src for parsing
  */
 static inline void
 pparse_cseed_regex (struct Opt *, struct Seed *dst_seed);
@@ -1554,77 +1554,50 @@ path_resolution (const char *path_cstr)
 static inline void
 pparse_cseed_regex (struct Opt *opt, struct Seed *dst_seed)
 {
-  int lastc = 0, dash = 0;
-  Milexer_Token *tmp = &opt->parser.special_tk;
+  char lastc = 0, *tok = opt->parser.general_tk.cstr;
+  if (!opt->escape_disabled)
+    UNESCAPE (tok);
 
-  for (int _ret = 0; !NEXT_SHOULD_END (_ret); )
+  for (char *p = tok; '\0' != *p; ++p)
     {
-      /* parsing with IGSPACE to allow space character */
-      _ret = ml_next (opt->parser.ml,
-                      &opt->parser.special_src,
-                      tmp,
-                      PFLAG_IGSPACE);
-      if (NEXT_SHOULD_LOAD (_ret))
-        break;
+      if ('-' != *p || 0 == lastc)
+        {
+          lastc = *p;
+          cseed_uniappd (dst_seed, p, 1);
+          continue;
+        }
+      if ('\0' == *(p++)) /* skipping `-` */
+        {
+          cseed_uniappd (dst_seed, "-", 1);
+          break;
+        }
 
-      if (!opt->escape_disabled)
-        UNESCAPE (tmp->cstr);
-      if (tmp->type == TK_PUNCS && tmp->id == PUNC_DASH)
+      int range_len = *p - lastc + 1;
+      const char *range = NULL; /* NULL means custom range */
+#define MK_RANGE(charseed) do {                             \
+        if (! IN_RANGE (*p, (charseed).c[0],                \
+                       (charseed).c[(charseed).len - 1]))   \
+          range_len = 1;                                    \
+        range = charseed.c + (lastc - charseed.c[0]);       \
+      } while (0)
+
+      if (IN_RANGE (lastc, 'a', 'z'))
+        MK_RANGE (charseed_az);
+      else if (IN_RANGE (lastc, 'A', 'Z'))
+        MK_RANGE (charseed_AZ);
+      else if (IN_RANGE (lastc, '0', '9'))
+        MK_RANGE (charseed_09);
+
+      if (range)
+        cseed_uniappd (dst_seed, range, range_len);
+      else
         {
-          dash++;
+          for (int i=0; i < range_len; ++i, ++lastc)
+            cseed_uniappd (dst_seed, &lastc, 1);
         }
-      else if (tmp->type == TK_KEYWORD)
-        {
-          char *p = tmp->cstr;
-          if (dash == 0)
-            {
-              /**
-               *  Case: a simple section with no dash involved
-               *  This appends characters of @p to dst_seed->cseed
-               */
-            simple_section:
-              if (*p)
-                {
-                  if (!opt->escape_disabled)
-                    UNESCAPE (p);
-                  int len = cseed_uniappd (dst_seed, p, -1);
-                  lastc = p[len];
-                }
-            }
-          else /* dash >= 1 */
-            {
-              if (*tmp->cstr && lastc)
-                {
-                  /**
-                   *  Case: range of characters
-                   *  from @lastc, to @tmp->cstr[0]
-                   */
-                  if (lastc < *tmp->cstr)
-                    {
-                      /* valid range, append the range */
-                      p = tmp->cstr + 1;
-                      for (char c = lastc; c <= *tmp->cstr; ++c)
-                        cseed_uniappd (dst_seed, &c, 1);
-                    }
-                  else /* invalid range, treat as a simple section */
-                    p = tmp->cstr;
-                  dash--;
-                  lastc = 0;
-                  /* the rest of tmp->cstr is a simple section */
-                  goto simple_section;
-                }
-              else
-                {
-                  /* Extra dash and then, a simple section */
-                  p = tmp->cstr;
-                  goto simple_section;
-                }
-            }
-        }
+      lastc = 0;
     }
-  /* Extra dash means the dash character itself */
-  if (dash > 0)
-    cseed_uniappd (dst_seed, "-", 1);
+#undef MK_RANGE
 }
 
 static inline void
@@ -1829,20 +1802,12 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
             {
             case EXP_SBRACKET:
               /* Parsing contents of `[-xA-Zy-]` as cssed */
-              ml->puncs = MKPUNC (C_Puncs);
-              {
-                pparse_cseed_regex (opt, dst_seed);
-              }
-              ML_UNSET (ml->puncs);
+              pparse_cseed_regex (opt, dst_seed);
               break;
 
             case EXP_CBRACE:
               /* Parsing contents of `{xxx,yyy}` as wseed */
-              ml->puncs = MKPUNC (W_Puncs);
-              {
-                pparse_wseed_regex (opt, dst_seed);
-              }
-              ML_UNSET (ml->puncs);
+              pparse_wseed_regex (opt, dst_seed);
               break;
 
             case EXP_PAREN:
