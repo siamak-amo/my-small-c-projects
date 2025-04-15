@@ -1444,7 +1444,7 @@ main (int argc, char **argv)
     }
   if (opt->escape_disabled)
     dprintf ("- backslash interpretation is disabled\n");
-  if (opt->seps)
+  if (opt->seps[0])
     {
       dprintf ("* delimiters: ");
       printd_arr (opt->seps, "`%s`", da_sizeof (opt->seps));
