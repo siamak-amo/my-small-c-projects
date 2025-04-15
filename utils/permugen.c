@@ -107,6 +107,9 @@
     - To use buffered IO library (deprecated)
        define `_USE_BIO`
        define `_BMAX="(1024 * 1)"` (=1024 bytes)
+    - Use fscanf to read from streams
+      If enabled, files will split by space characters
+       define ONLY_FSCANF_STREAMS
  **/
 #include <stdio.h>
 #include <stdlib.h>
@@ -974,29 +977,20 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
   char *line = malloc (WSEED_MAXLEN + 1);
   while (1)
     {
+#ifndef ONLY_FSCANF_STREAMS
+      if (! fgets (line, WSEED_MAXLEN, f))
+        break;
+      line[strcspn (line, "\n")] = '\0';
+#else /* Treat space as delimiter */
       if (fscanf (f, "%" STR (WSEED_MAXLEN) "s",  line) < 0)
         break;
-
-      size_t len;
-      /* ignore empty and commented lines */
-      if ((len = strlen (line)) > 0 && line[0] != '#')
-        {
-          /* remove non-printable characters */
-          size_t idx = 0;
-          for (; idx < len; ++idx)
-            {
-              if (line[idx] > 0 && line[idx] < 0x20)
-                {
-                  line[idx] = '\0';
-                  break;
-                }
-            }
-          if (idx)
-            {
-              if (wseed_uniappd (opt, s, line) < 0)
-                break;
-            }
-        }
+#endif
+      /* Ignore empty and comment lines */
+      if (MIN_ASCII_PR > line[0] || '#' == line[0])
+        break;
+      /* This should break when wseed max count is reached */
+      if (wseed_uniappd (opt, s, line) < 0)
+        break;
     }
   safe_free (line);
 }
