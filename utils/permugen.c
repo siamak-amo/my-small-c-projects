@@ -154,7 +154,7 @@
  **                     setup which uses _IOFBF for the output stream)
  **   - unescape.h:     Handles backslash interpretation
  **   - dyna.h:         Dynamic array implementation
- **   - mini-lexer.c:   Lexer (used for regex parsing)
+ **   - mini-lexer.h:   Lexer (used for regex parsing)
  **/
 #ifdef _USE_BIO
 #  define BIO_IMPLEMENTATION
@@ -173,7 +173,7 @@
  */
 #define TOKEN_MAX_BUF_LEN (WSEED_MAXLEN + 1)
 #define ML_IMPLEMENTATION
-#include "mini-lexer.c"
+#include "mini-lexer.h"
 
 #undef STR
 #define CSTR(var) #var

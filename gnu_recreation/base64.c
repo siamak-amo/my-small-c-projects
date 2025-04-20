@@ -17,9 +17,9 @@
 #include <string.h>
 #include <errno.h>
 
-// libs/libbase64.c
+// libs/libbase64.h
 #define B64_IMPLEMENTATION
-#include "libbase64.c"
+#include "libbase64.h"
 
 #define Version "1"
 #define CLI_IMPLEMENTATION

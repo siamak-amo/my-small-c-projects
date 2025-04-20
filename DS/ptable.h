@@ -14,7 +14,7 @@
   along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-/** file: ptable.c
+/** file: ptable.h
     created on: 16 Jul 2024
   
     Pointer Table, unordered pointer array
@@ -36,14 +36,14 @@
   
     Compilation:
       to compile the CLI program:
-      cc -ggdb -Wall -Wextra -Werror ptable.c \
+      cc -x c -ggdb -Wall -Wextra -Werror ptable.h \
          $(pkg-config --cflags readline)
          -D PTABLE_IMPLEMENTATION \
          -D PTABLE_CLI -D PTABLE_TEST \
          -o test.out $(pkg-config --libs readline)
   
       to compile the test program:
-      cc -ggdb -Wall -Wextra -Werror ptable.c \
+      cc -x c -ggdb -Wall -Wextra -Werror ptable.h \
          -D PTABLE_IMPLEMENTATION \
          -D PTABLE_TEST \
          -o test.out
@@ -54,7 +54,7 @@
       #include <stdlib.h>
   
       #define PTABLE_IMPLEMENTATION
-      #include "ptable.c"
+      #include "ptable.h"
   
       int
       main (void)

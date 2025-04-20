@@ -8,7 +8,7 @@
     Usage:
     ```c
       #define B64_IMPLEMENTATION
-      #include "libbase64.c"
+      #include "libbase64.h"
   
       int
       main (void)
@@ -35,10 +35,10 @@
       `EOBUFFER_B64` and `INVALID_B64`: to check errors
   
     Compilation (self test program):
-      cc -ggdb -Wall -Wextra -Werror \
+      cc -x c -ggdb -Wall -Wextra -Werror \
          -D B64_IMPLEMENTATION \
          -D B64_TEST \
-         -o test.out libbase64.c
+         -o test.out libbase64.h
  **/
 #ifndef B64__H__
 #define B64__H__

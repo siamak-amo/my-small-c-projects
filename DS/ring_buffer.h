@@ -1,4 +1,4 @@
-/** file: ring_buffer.c
+/** file: ring_buffer.h
     created on: 4 Jul 2024
   
     Ring Buffer Implementation
@@ -17,16 +17,16 @@
   
     Compilation:
       to compile the test program:
-        cc -ggdb -Wall -Wextra -Werror \
+        cc -x c -ggdb -Wall -Wextra -Werror \
           -D RB_IMPLEMENTATION \
           -D RB_TEST \
-          -o test.out ring_buffer.c
+          -o test.out ring_buffer.h
   
       to compile the example program:
-        cc -ggdb -Wall -Wextra -Werror \
+        cc -x c -ggdb -Wall -Wextra -Werror \
           -D RB_IMPLEMENTATION \
           -D RB_EXAMPLE \
-          -o ring.out ring_buffer.c \
+          -o ring.out ring_buffer.h \
           $(pkg-config --libs readline)
   
  **/

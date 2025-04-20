@@ -14,7 +14,7 @@
   along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-/** file: leven.c
+/** file: leven.h
     created on: 3 Mar 2024
   
     Levenshtein Distance Algorithm Implementation
@@ -27,9 +27,9 @@
     so provide the smaller string first or use LEVEN_SMALLERx macros
   
     compile the test program:
-      cc -ggdb -Wall -Wextra -Werror \
+      cc -x c -ggdb -Wall -Wextra -Werror \
          -D LEVEN_IMPLEMENTATION \
-         -D LEVEN_TEST -o test leven.c
+         -D LEVEN_TEST -o test leven.h
   
     to include in c files:
       `

@@ -14,7 +14,7 @@
   along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-/** file: mini-lexer.c
+/** file: mini-lexer.h
     created on: 16 Dec 2024
   
     Mini-Lexer
@@ -33,7 +33,7 @@
     Usage Example:
     ```{c}
       #define ML_IMPLEMENTATION
-      #include "mini-lexer.c"
+      #include "mini-lexer.h"
   
       //-- Defining the language -------//
       enum LANG
@@ -167,9 +167,9 @@
   
     Compilation:
      The test program:
-       cc -O0 -ggdb -Wall -Wextra -Werror \
+       cc -x c -O0 -ggdb -Wall -Wextra -Werror \
           -D ML_IMPLEMENTATION -D ML_TEST_1 \
-          mini-lexer.c -o test.out
+          mini-lexer.h -o test.out
      The example program:
        pass `-D ML_EXAMPLE_1` instead of `ML_TEST_1`
   
@@ -182,6 +182,7 @@
 #include <string.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #ifdef _ML_DEBUG
 #  include <stdio.h>

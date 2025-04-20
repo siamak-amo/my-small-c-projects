@@ -49,7 +49,7 @@
  *          to enable printing some debug information
  *       `-D CODEM_FUZZY_SEARCH_CITYNAME`:
  *          to enable fuzzy search, you need to provide
- *          the `leven.c` file (available in the same repository)
+ *          the `leven.h` file (available in the same repository)
  *
  *     to include in c files:
  *       ```c
@@ -85,7 +85,7 @@
 
 #ifdef CODEM_FUZZY_SEARCH_CITYNAME
 #  define LEVEN_IMPLEMENTATION /* fuzzy search feature */
-#  include "leven.c" /* provide leven.c */
+#  include "leven.h" /* provide leven.h */
 #endif
 
 typedef size_t(*RandFunction)(void);

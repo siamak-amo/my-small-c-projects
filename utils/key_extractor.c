@@ -67,7 +67,7 @@ static struct option const long_options[] =
 
 #define TOKEN_MAX_BUF_LEN (512) // 0.5Kb
 #define ML_IMPLEMENTATION
-#include "mini-lexer.c"
+#include "mini-lexer.h"
 
 enum LANG
   {

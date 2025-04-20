@@ -1,4 +1,4 @@
-/** file: tape_mem.c
+/** file: tape_mem.h
     created on: 24 Jun 2024
   
     Tape like memory allocator
@@ -12,17 +12,17 @@
   
     Compilation:
       to compile the test program:
-        cc -ggdb -Wall -Wextra -Werror \
+        cc -x c -ggdb -Wall -Wextra -Werror \
            -D TAPE_MEM_IMPLEMENTATION  \
            -D TAPE_MEM_TEST \
-           -o test.out tape_mem.c
+           -o test.out tape_mem.h
   
       to include in other files:
       ```c
       #include <stlib.h>
   
       #define TAPE_MEM_IMPLEMENTATION
-      #include "tape_mem.c"
+      #include "tape_mem.h"
   
       int
       main (void)

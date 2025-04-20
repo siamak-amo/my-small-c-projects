@@ -1,4 +1,4 @@
-/**  file: linked_list.c
+/**  file: linked_list.h
      created on: 17 Oct 2023
   
      implements linked list (in Linux naming format)
@@ -9,8 +9,10 @@
   
      compilation:
        to compile executable test program:
-          cc -Wall -Wextra -o test -D LINK_TEST
-                   -D LINK_IMPLEMENTATION linked_list.c
+          cc -x c -ggdb -Wall -Wextra \
+            -D LINK_IMPLEMENTATION \
+            -D LINK_TEST \
+            -o test.out linked_list.h
   
        define LINK_ONLY_MACRO and remove LINK_IMPLEMENTATION
        to use only macro's instead of function calls.
@@ -18,7 +20,7 @@
        to include in other c files:
        `
           #define LINK_IMPLEMENTATION
-          #include "linked_list.c"
+          #include "linked_list.h"
        `
        remove LINK_IMPLEMENTATION macro to get only headers.
        using implementation macro in some files and

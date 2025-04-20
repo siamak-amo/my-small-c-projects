@@ -1,10 +1,13 @@
-/** file: dynamic_array.c
+/** file: dynamic_array.h
     created on: 20 Jan 2024
   
-    implements dynamic array in C
+    Implements dynamic array in C
   
-    compilation:
-      cc -Wall dynamic_array.c -D DA_IMPLEMENTATION
+    Compilation:
+      cc -x c -Wall \
+        -D DA_IMPLEMENTATION \
+        -D DA_TEST_PROG \
+        -o test.out dynamic_array.h
   
     define -D DA_TEST_PROG  ->  to compile the test program
            -D EXAMPLE_PROG  ->  to compile the example program
@@ -12,7 +15,7 @@
     to include in other c files:
     `
        #define DA_IMPLEMENTATION
-       #include "dynamic_array.c"
+       #include "dynamic_array.h"
     `
  */
 #ifndef DYNAMIC_ARRAY__H__

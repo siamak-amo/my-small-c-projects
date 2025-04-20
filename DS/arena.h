@@ -14,22 +14,23 @@
   along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-/** file: arena.c
+/** file: arena.h
     created on: 22 Jun 2024
   
     Arena, Region based memory allocator
   
     Compilation:
       to compile the test program:
-        cc -ggdb -Wall -Wextra -Werror \
+        cc -x c -ggdb -Wall -Wextra -Werror \
            -D_ARENA_DEBUG \
-           -D ARENA_IMPLEMENTATION
-           -o test.out arena.c
+           -D ARENA_TEST \
+           -D ARENA_IMPLEMENTATION \
+           -o test.out arena.h
   
       to include in other files:
       ```c
       #define ARENA_IMPLEMENTATION
-      #include "arena.c"
+      #include "arena.h"
   
       int
       main (...)

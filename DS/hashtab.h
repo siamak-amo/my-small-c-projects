@@ -14,7 +14,7 @@
   along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-/** file: hashtab.c
+/** file: hashtab.h
     created on: 25 Jun 2024
   
     A Simple Hash Table Implementation
@@ -26,20 +26,20 @@
   
     Compilation:
       to compile the test program:
-      cc -ggdb -Wall -Wextra -Werror \
+      cc -x c -ggdb -Wall -Wextra -Werror \
          -D HASHTAB_IMPLEMENTATION \
-         -D HASHTAB_TEST hashtab.c -o test.out
+         -D HASHTAB_TEST hashtab.h -o test.out
   
       to compile the example program:
-      cc -ggdb -Wall -Wextra -Werror \
+      cc -x c -ggdb -Wall -Wextra -Werror \
          -D HASHTAB_IMPLEMENTATION \
-         -D HASHTAB_EXAMPLE hashtab.c -o test.out -lreadline
+         -D HASHTAB_EXAMPLE hashtab.h -o test.out -lreadline
   
       to include in c files:
       (see the example program for more advanced usage)
       ```c
       #define HASHTAB_IMPLEMENTATION
-      #include "hashtab.c"
+      #include "hashtab.h"
   
       int
       main (void)

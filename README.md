@@ -18,13 +18,13 @@ some templates to help write C programs
 
 ### DS
 Data structure and Memory management
-1. `arena.c`  Arena implementation
-2. `dynamic_array.c`  Dynamic Array
+1. `arena.h`  Arena implementation
+2. `dynamic_array.h`  Dynamic Array
 3. `hashtab.c`  Hash Table
-4. `linked_list.c`  Linked Lists
-5. `ptable.c`  Pointer Table with arbitrary remove element
-6. `ring_buffer.c`  Ring Buffer
-7. `tape_mem.c`  Tape like memory allocator
+4. `linked_list.h`  Linked Lists
+5. `ptable.h`  Pointer Table with arbitrary remove element
+6. `ring_buffer.h`  Ring Buffer
+7. `tape_mem.h`  Tape like memory allocator
 
 
 ## Libs
@@ -32,11 +32,11 @@ Data structure and Memory management
 Generic dynamic array implementation
 
 
-### leven.c
+### leven.h
 Levenshtein Distance  
 
 
-### mini-lexer.c
+### mini-lexer.h
 A minimal, chunk based, language independent lexer.
 
 
@@ -59,7 +59,7 @@ generates word lists for fuzzing based on some given seeds
 
 ### key_extractor.c
 Text Tokenizer  
-It helps to extract keywords (tokens) from input text (based on mini-lexer.c)
+It helps to extract keywords (tokens) from input text (based on mini-lexer.h)
 
 It can be used together with permugen to generate customized word lists
 
