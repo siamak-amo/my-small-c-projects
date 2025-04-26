@@ -9,4 +9,5 @@ build
 **/*.out
 **/*.so
 **/*.a
+**/*.o
 **/TAGS
