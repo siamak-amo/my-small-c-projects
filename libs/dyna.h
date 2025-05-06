@@ -231,11 +231,11 @@ DADEFF void * __da_dup (void **);
  **/
 
 // To free dynamic array @arr
-#define da_free(arr) do {                          \
-    if (DA_NNULL (arr)) {                          \
-      dyna_t *__da__ = __DA_CONTAINEROF (arr);     \
-      da_dprintf ("destroying %p\n", __da__);      \
-      dyna_free (__da__);                          \
+#define da_free(arr) do {                           \
+    if (DA_NNULL (arr)) {                           \
+      dyna_t *__da__ = __DA_CONTAINEROF (arr);      \
+      da_dprintf ("Destroying dyna @%p\n", __da__); \
+      dyna_free (__da__);                           \
     }} while (0)
 
 // To get length and capacity of @arr
@@ -363,18 +363,18 @@ DADEFF void * __da_dup (void **);
  *  such as another function
  *
  *  @arr: pointer to the reference of the
- *        dynamic array (void **)
+ *        dynamic array (void *)
  */
-#define da_aappd(arr, val) do {                   \
+#define da_aappd(arr, val) do {                     \
     if (NULL == *(void **)(arr))                    \
-      *(void **)(arr) = da_new (typeof (*(arr)));   \
-    _da_aappd (arr, val);                         \
+      *(void **)(arr) = da_new (typeof (val) *);    \
+    _da_aappd (arr, val);                           \
   } while (0)
 
-#define _da_aappd(arr, val) do {                                  \
-    typeof (val) *__arr__;                                          \
-    if ((__arr__ = __da_aappd ((void **)(arr), sizeof (val))))    \
-      *__arr__ = (val);                                             \
+#define _da_aappd(arr, val) do {                                \
+    typeof (val) *__arr__;                                      \
+    if ((__arr__ = __da_aappd ((void **)(arr), sizeof (val))))  \
+      *__arr__ = (val);                                         \
   } while (0)
 
 
@@ -391,13 +391,14 @@ __mk_da(da_sidx cell_size, da_sidx n)
   da->size = 0;
   da->cell_bytes = cell_size;
 
-  da_dprintf ("Allocated  cell_size: %luB, capacity: %lu, "
-              "size: %luB (%luB metadata + %luB array)\n",
+  da_dprintf ("Allocated dyna, cell_size: %luB, capacity: %lu, "
+              "size: %luB (%luB metadata + %luB array)  @%p\n",
               (size_t) cell_size,
               (size_t) da->cap,
               (size_t) ptrlen,
               (size_t) sizeof (dyna_t),
-              (size_t) (cell_size * n));
+              (size_t) (cell_size * n),
+              da);
   return da;
 }
 
