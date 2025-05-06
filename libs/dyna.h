@@ -80,6 +80,10 @@
       char **cstr2 = NULL;
       da_appd_da (cstr2, cstr);
 
+      // Using advanced many append
+      int i = da_many_appd (cstr2, 3);
+      memcpy (cstr2 + i, source, sizeof source);
+
       return 0;
     }
     ```
@@ -328,6 +332,22 @@ DADEFF void * __da_dup (void **);
   } while (0)
 
 /**
+ *  Advanced many append
+ *  (NOT safe to call from different scope)
+ *
+ *  This allocates enough space in @arr, and
+ *  returns the appropriate index which can be used
+ *  to copy the data to the array
+ *
+ *  @n: to allocate n entries in @arr
+ */
+#define da_many_appd(arr, n) ({ da_sidx __i = 0;    \
+      if (NULL == arr)                              \
+        arr = da_newn (typeof (*(arr)), n);         \
+      __i = __da_many_appd ((void **)&(arr), n);    \
+      __i; })
+
+/**
  *  Drops contents of a dynamic array
  *  It only sets the size of @arr to zero,
  *  but will not free it's memory
@@ -379,6 +399,40 @@ __mk_da(da_sidx cell_size, da_sidx n)
               (size_t) sizeof (dyna_t),
               (size_t) (cell_size * n));
   return da;
+}
+
+DADEFF da_sidx
+__da_many_appd (void **arr, int n)
+{
+  dyna_t *da;
+  size_t old_size, new_size;
+
+  if (!(da = __DA_CONTAINEROF (*arr)))
+    return -1;
+
+  old_size = da->size;
+  da->size += n;
+  if (da->size > da->cap)
+    {
+      da_dprintf ("not enough %p, size=%lu, needed=%lu cell_size:%luB\n",
+                  da,
+                  (size_t) da->size,
+                  (size_t) da->size + (size_t) n,
+                  (size_t) da->cell_bytes);
+      {
+        da->cap = da->size;
+        new_size = sizeof (dyna_t) + da->cap * da->cell_bytes;
+        da = dyna_realloc (da, new_size);
+        if (!da)
+          return -1;
+        *arr = da->arr;
+      }
+      da_dprintf ("realloc @%p, new size: %luB\n",
+                  da,
+                  (size_t) new_size);
+    }
+
+  return old_size++;
 }
 
 DADEFF da_sidx
