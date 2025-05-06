@@ -215,7 +215,7 @@ typedef struct
  */
 DADEFF dyna_t * __mk_da (da_sidx, da_sidx);
 DADEFF da_sidx __da_appd (void **);
-DADEFF void * __da_funappd (void **, da_sidx);
+DADEFF void * __da_aappd (void **, da_sidx);
 DADEFF void * __da_dup (void **);
 
 #define DA_NNULL(arr) (NULL != arr)
@@ -291,10 +291,16 @@ DADEFF void * __da_dup (void **);
  *  @arr: the pointer that da_new has provided
  *  @val: value of type T, type of the array
  */
-#define da_appd(arr, val) do {                              \
+#define da_appd(arr, val) do {                          \
+    if (NULL == arr) arr = da_new (typeof (*(arr)));    \
+    _da_appd (arr, val);                                \
+  } while (0)
+
+/* _da_appd is not NULL safe */
+#define _da_appd(arr, val) do {                             \
     da_sidx __da_idx__;                                     \
-    if ((__da_idx__ = __da_appd ((void **)&arr)) != -1) {   \
-      arr[__da_idx__] = val;                                \
+    if ((__da_idx__ = __da_appd ((void **)&(arr))) != -1) { \
+      arr[__da_idx__] = (val);                              \
     }} while (0)
 
 /**
@@ -340,10 +346,16 @@ DADEFF void * __da_dup (void **);
  *  @arr: pointer to the reference of the
  *        dynamic array (void **)
  */
-#define da_funappd(arr, val) do {                       \
-    typeof (val) *__arr__;                              \
-    if ((__arr__ = __da_funappd (arr, sizeof (val))))   \
-      *__arr__ = val;                                   \
+#define da_aappd(arr, val) do {                   \
+    if (NULL == *(void **)(arr))                    \
+      *(void **)(arr) = da_new (typeof (*(arr)));   \
+    _da_aappd (arr, val);                         \
+  } while (0)
+
+#define _da_aappd(arr, val) do {                                  \
+    typeof (val) *__arr__;                                          \
+    if ((__arr__ = __da_aappd ((void **)(arr), sizeof (val))))    \
+      *__arr__ = (val);                                             \
   } while (0)
 
 
@@ -402,7 +414,7 @@ __da_appd (void **arr)
 }
 
 DADEFF void *
-__da_funappd (void **arr, da_sidx cell_bytes)
+__da_aappd (void **arr, da_sidx cell_bytes)
 {
   da_sidx idx2append;
   if ((idx2append = __da_appd (arr)) == -1)
