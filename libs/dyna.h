@@ -23,6 +23,8 @@
     main (void)
     {
       // Character Array, with initial capacity 10
+      // Using da_new or da_newn is not mandatory
+      // and can be replaced with NULL initializing
       char *carr = da_newn (char, 10);
   
       for (char c ='a'; c <= 'z'; ++c)
@@ -34,18 +36,13 @@
   
   
       // C string array
-      char **cstr = da_new (char *);
+      char **cstr = NULL;
   
       da_appd (cstr, "string0");
       da_appd (cstr, "string1");
       da_appd (cstr, "string2");
-  
-      // Print & Free
-      for (size_t i=0; i < da_sizeof (cstr); ++i)
-        printf ("str%lu: {%s}\n", i, cstr[i]);
-      da_free (cstr);
-  
-  
+
+
       // Generic struct array
       struct data {
         int index;
@@ -62,8 +59,8 @@
       da_foreach (arr, i)
         printf ("struct arr[%i] - index: %d\n", i, arr[i].index);
       da_free (arr);
-  
-  
+
+
       // Pointer Array
       struct data **ptr_arr = da_new (struct data *);
       // Allocate data and append
@@ -74,14 +71,15 @@
           da_appd (ptr_arr, tmp);
         }
   
-      // Print & Free
-      da_foreach (ptr_arr, i)
-        {
-          printf ("ptr_arr[%i] - index: %d\n", i, ptr_arr[i]->index);
-          free (ptr_arr[i]);
-        }
-      da_free (ptr_arr);
-  
+
+      // Using many append
+      const char *source[] = {"a", "b", "c"};
+      da_appd_arr (cstr, source, 3);
+
+      // Append a dynamic array
+      char **cstr2 = NULL;
+      da_appd_da (cstr2, cstr);
+
       return 0;
     }
     ```
@@ -104,22 +102,23 @@
       a struct and pass a pointer of it to the function F,
       so `da_appd` will update the reference properly
 
-      Another solution is to use `da_funappd` macro,
+      Another solution is to use `da_aappd` macro,
       and F needs to accept pointer to dynamic array:
       ```c
         // scope 1
         {
           T val = {0};
           T *arr = da_new (T);
-          my_function ((void **) &arr, val);
+          my_function (&arr, val);
         }
   
         void
-        my_function (void **array, T data)
+        my_function (void *array, T data)
         {
-          // append data to array
-          // this may update @arr in scope 1
-          da_funappd (array, data);
+          // Append data to array
+          // Do NOT pass use like C strings for data
+          // only use pointers with known type like `char *`
+          da_aappd (array, data);
         }
       ```
  **/
