@@ -125,6 +125,10 @@
           da_aappd (array, data);
         }
       ```
+
+    Test program compilation:
+      cc -x c -ggdb -Wall -Wextra -Werror \
+        -D DYNA_IMPLEMENTATION -D DYNA_TEST -D_DA_DEBUG dyna.h
  **/
 #ifndef DYNAMIC_ARRAY__H__
 #define DYNAMIC_ARRAY__H__
@@ -483,4 +487,57 @@ __da_dup (void **arr)
 }
 
 #endif /* DYNA_IMPLEMENTATION */
+
+#ifdef DYNA_TEST
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct
+{
+  char **inputs;
+} Opt;
+
+
+void
+get_user_input (Opt *opt)
+{
+  char *p = NULL;
+  size_t len;
+  puts ("- Reading until EOF");
+  while (1)
+    {
+      printf (">>> ");
+      ssize_t n = getline (&p, &len, stdin);
+      if (n < 0 || !p)
+        break;
+      if (n > 1)
+        {
+          p[n-1] = '\0';
+          da_appd (opt->inputs, strdup (p));
+        }
+    }
+  puts ("EOF.");
+  puts ("------------------------------");
+}
+
+int
+main (void)
+{
+  /* As inputs is NULL, we don't need da_new */
+  Opt opt = {0};
+
+  get_user_input (&opt);
+
+  da_foreach (opt.inputs, idx)
+    {
+      printf ("input[%lu] -> `%s`\n", idx, opt.inputs[idx]);
+      free (opt.inputs[idx]);
+    }
+
+  puts ("------------------------------");
+  da_free (opt.inputs);
+  return 0;
+}
+#endif /* DYNA_TEST */
+
 #endif /* DYNAMIC_ARRAY__H__ */
