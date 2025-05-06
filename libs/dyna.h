@@ -166,7 +166,7 @@ typedef struct
 # include <stdio.h>
 # define da_fprintd(format, ...) fprintf (stderr, format, ##__VA_ARGS__)
 # define da_dprintf(format, ...) \
-  da_fprintd ("[dyna %s:%d] "format, __func__, __LINE__, ##__VA_ARGS__)
+  da_fprintd ("%s:%d: " format, __FILE__, __LINE__, ##__VA_ARGS__)
 #else
 # define da_fprintd(format, ...)
 # define da_dprintf(format, ...)
@@ -391,10 +391,10 @@ __mk_da(da_sidx cell_size, da_sidx n)
   da->size = 0;
   da->cell_bytes = cell_size;
 
-  da_dprintf ("allocated @%p, cell_size: %luB, "
+  da_dprintf ("Allocated  cell_size: %luB, capacity: %lu, "
               "size: %luB (%luB metadata + %luB array)\n",
-              da,
               (size_t) cell_size,
+              (size_t) da->cap,
               (size_t) ptrlen,
               (size_t) sizeof (dyna_t),
               (size_t) (cell_size * n));
@@ -414,11 +414,9 @@ __da_many_appd (void **arr, int n)
   da->size += n;
   if (da->size > da->cap)
     {
-      da_dprintf ("not enough %p, size=%lu, needed=%lu cell_size:%luB\n",
-                  da,
+      da_dprintf ("Not enough space, size: %lu, needed: %lu\n",
                   (size_t) da->size,
-                  (size_t) da->size + (size_t) n,
-                  (size_t) da->cell_bytes);
+                  (size_t) da->size + (size_t) n);
       {
         da->cap = da->size;
         new_size = sizeof (dyna_t) + da->cap * da->cell_bytes;
@@ -427,9 +425,8 @@ __da_many_appd (void **arr, int n)
           return -1;
         *arr = da->arr;
       }
-      da_dprintf ("realloc @%p, new size: %luB\n",
-                  da,
-                  (size_t) new_size);
+      da_dprintf ("Reallocated, new size: %lu\n",
+                  (size_t) da->size);
     }
 
   return old_size++;
@@ -446,8 +443,7 @@ __da_appd (void **arr)
 
   if (da->size >= da->cap)
     {
-      da_dprintf ("overflow %p, size=cap:%lu, cell_size:%luB\n",
-                  da,
+      da_dprintf ("Overflow, size=cap: %lu, cell_size: %luB\n",
                   (size_t) da->cap,
                   (size_t) da->cell_bytes);
       {
@@ -458,9 +454,8 @@ __da_appd (void **arr)
           return -1;
         *arr = da->arr;
       }
-      da_dprintf ("realloc @%p, new size: %luB\n",
-                  da,
-                  (size_t) new_size);
+      da_dprintf ("Reallocated, new size: %lu\n",
+                  (size_t) da->size);
     }
 
   return da->size++;
