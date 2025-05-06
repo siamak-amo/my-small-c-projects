@@ -430,8 +430,8 @@ __da_many_appd (void **arr, int n)
           return -1;
         *arr = da->arr;
       }
-      da_dprintf ("Reallocated, new size: %lu\n",
-                  (size_t) da->size);
+      da_dprintf ("Reallocated, new capacity: %lu\n",
+                  (size_t) da->cap);
     }
 
   return old_size++;
@@ -459,8 +459,8 @@ __da_appd (void **arr)
           return -1;
         *arr = da->arr;
       }
-      da_dprintf ("Reallocated, new size: %lu\n",
-                  (size_t) da->size);
+      da_dprintf ("Reallocated, new capacity: %lu\n",
+                  (size_t) da->cap);
     }
 
   return da->size++;
