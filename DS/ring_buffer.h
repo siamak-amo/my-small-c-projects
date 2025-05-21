@@ -27,7 +27,7 @@
           -D RB_IMPLEMENTATION \
           -D RB_EXAMPLE \
           -o ring.out ring_buffer.h \
-          $(pkg-config --libs readline)
+          $(pkg-config --libs --cflags readline)
   
  **/
 #ifndef RIBG_BUFFER__H__

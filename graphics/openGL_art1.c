@@ -16,10 +16,9 @@
         <right>     resume
   
     Compilation:
-      cc -ggdb -O3 -Wall -Wextra -Werror openGL_art1.c \
-        $(pkg-config --cflags glut opengl) \
-        $(pkg-config --libs glut opengl) -lm \
-        -o glArt1.out
+      cc -ggdb -O3 -Wall -Wextra -Werror \
+        openGL_art1.c -o glArt1.out \
+        $(pkg-config --libs --cflags glut opengl) -lm
  **/
 #include <GL/gl.h>
 #include <GL/glut.h>

@@ -26,10 +26,10 @@
       ./glart2.out [N] [D factor]
   
     Compilation:
-      cc -ggdb -O3 -Wall -Wextra -Werror openGL_art2.c \
-        $(pkg-config --cflags glut opengl) \
-        $(pkg-config --libs glut opengl) -lm \
-        -o glart2.out
+      cc -ggdb -O3 -Wall -Wextra -Werror \
+        openGL_art2.c -o glart2.out \
+        $(pkg-config --libs --cflags glut opengl) -lm
+
     Options:
       define `-D TRI_FAC=0.2` to make lines (triangles) thicker
       default is 0.15
