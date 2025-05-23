@@ -202,7 +202,7 @@ typedef struct
 
 
 Fword *
-fworddup (const Fword *src)
+fw_dup (const Fword *src)
 {
   Fword *tmp = malloc (sizeof (Fword));
   memcpy (tmp, src, sizeof (Fword));
@@ -568,7 +568,7 @@ register_wordlist (char *pathname)
     {
       /* File is already open */
       fw_init (&fw, opt.wlists[wl_idx]->str);
-      WL_APPD (pathname, fworddup (&fw));
+      WL_APPD (pathname, fw_dup (&fw));
     }
   else
     /* New wordlist file, needs fopen and mmap */
@@ -578,7 +578,7 @@ register_wordlist (char *pathname)
         return -fd;
       if (0 == wlmap (fd, &fw))
         {
-          WL_APPD (pathname, fworddup (&fw));
+          WL_APPD (pathname, fw_dup (&fw));
         }
       else
         {
@@ -789,7 +789,7 @@ main (void)
    }
 
   /**
-   *  The main loop
+   *  Main Loop
    */ 
   CURLMsg *msg;
   RequestContext *ctx;
