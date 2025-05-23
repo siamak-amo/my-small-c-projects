@@ -467,15 +467,27 @@ __next_fuzz_singular (RequestContext *ctx)
 void
 __next_fuzz_pitchfork (RequestContext *ctx)
 {
-  bool is_done = true;
-  da_idx count = da_sizeof (opt.wlists);
+  Fword *fw;
+  size_t N = da_sizeof (opt.wlists);
+  fprintd ("pitchfork:  ");
 
-  da_idx i;
-  printd ("pitchfork:  ");
-  for (i = 0; i < count; ++i)
+  for (size_t i = 0; i < N; ++i)
     {
-      Fword *fw = opt.wlists[i];
-      char *p = fw_next (fw);
+      fw = opt.wlists[i];
+      snprintf (tmp, TMP_CAP, "%.*s", (int)fw->len, fw_get (fw));
+      Strrealloc (ctx->FUZZ[i], tmp);
+      fprintd ("[%d]->`%s`\t", fw->idx, tmp);
+    }
+  fprintd ("\n");
+
+  for (size_t i = 0; i < N; ++i)
+    {
+      fw = opt.wlists[i];
+      fw_next (fw);
+    }
+  if (fw_bof (opt.fuzz_ctx.longest))
+    opt.should_end = 1;
+}
 
       snprintf (tmp, TMP_CAP, "%.*s", (int)fw->len, p);
       Strrealloc (ctx->FUZZ[i], tmp);
@@ -483,11 +495,12 @@ __next_fuzz_pitchfork (RequestContext *ctx)
     }
   fprintd ("\n");
 
-  /* End of FUZZ row */
-  ctx->FUZZ[i] = NULL;
+  size_t i = 0;
+  for (; i < N; )
+    {
+      fw = opt.wlists[i];
+      fw_next (fw);
 
-  if (is_done)
-    opt.should_end = 1;
 }
 
 void
