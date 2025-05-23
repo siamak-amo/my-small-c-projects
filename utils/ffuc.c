@@ -261,6 +261,7 @@ struct Opt
   /* Internals */
   Fword **wlists; /* Dynamic array */
   char **wlist_fpaths; /* Dynamic array */
+
   int mode;
   bool should_end;
   CURLM *multi_handle;
@@ -269,7 +270,13 @@ struct Opt
   size_t concurrent; /* Max number of concurrent requests */
   size_t waiting_reqs;
 
+  /* Next FUZZ loader and it's possible state */
   void (*load_next_fuzz) (RequestContext *ctx);
+  union
+    {
+      Fword *longest;
+      void *__dummy;
+    } fuzz_ctx;
 };
 
 struct Opt opt = {0};
@@ -489,7 +496,17 @@ __next_fuzz_pitchfork (RequestContext *ctx)
     opt.should_end = 1;
 }
 
-      snprintf (tmp, TMP_CAP, "%.*s", (int)fw->len, p);
+void
+__next_fuzz_clusterbomb (RequestContext *ctx)
+{
+  Fword *fw;
+  fprintd ("clusterbomb:  ");
+  size_t N = da_sizeof (opt.wlists);
+
+  for (size_t i=0; i<N; ++i)
+    {
+      fw = opt.wlists[i];
+      snprintf (tmp, TMP_CAP, "%.*s", (int)fw->len, fw_get (fw));
       Strrealloc (ctx->FUZZ[i], tmp);
       fprintd ("[%d]->`%s`\t", fw->idx, tmp);
     }
@@ -501,6 +518,14 @@ __next_fuzz_pitchfork (RequestContext *ctx)
       fw = opt.wlists[i];
       fw_next (fw);
 
+      if (fw_bof (fw))
+        i++;
+      else
+        break;
+    }
+
+  if (i == N)
+    opt.should_end = true;
 }
 
 void
@@ -638,7 +663,11 @@ init_opt ()
     case MODE_PITCHFORK:
       if (opt.fuzz_count != n)
         warnln ("expected %ld word-list(s), provided %ld", opt.fuzz_count, n);
+      /* Find the longest wordlist, needed by pitchfork */
+      for (size_t i=0; i<n; ++i)
         {
+          if (opt.wlists[i]->total_count > opt.fuzz_ctx.longest->total_count)
+            opt.fuzz_ctx.longest = opt.wlists[i];
         }
       opt.load_next_fuzz = __next_fuzz_pitchfork;
       break;
@@ -650,7 +679,9 @@ init_opt ()
       break;
 
     case MODE_CLUSTERBOMB:
-      assert (0 && "Not Implemented.");
+      if (opt.fuzz_count != n)
+        warnln ("expected %ld word-list(s), provided %ld", opt.fuzz_count, n);
+      opt.load_next_fuzz = __next_fuzz_clusterbomb;
       break;
     } 
 
