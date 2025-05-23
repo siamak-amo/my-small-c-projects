@@ -163,7 +163,6 @@ typedef struct
    *
    *  Each fw_next call, increments @idx by 1,
    *  after @total_count resets to 0
-   *  @idx=UINT_MAX indicates fw_next is not called yet
    */
   uint idx, total_count;
 
@@ -215,8 +214,8 @@ void
 fw_init (Fword *fw, char *cstr)
 {
   fw->str = cstr;
-  fw->__offset = 0, fw->len = 0, fw->total_count = 0;
-  fw->idx = UINT_MAX; /* fw_next starts form 0 */
+  fw->__offset = 0, fw->total_count = 0;
+  fw->len = (uint) (strchr (cstr, '\n') - cstr);
 
   /* calculating count of words withing the wordlist */
   for (char *p = cstr;; fw->total_count++, p++)
@@ -235,12 +234,12 @@ fw_next (Fword *fw)
     p++;
 
   char *next = strchr (p, '\n');
-  if (!next)
+  if (NULL == next || '\0' == next[1])
     {
       p = fw->str;
       next = strchr (p, '\n');
-      fw->__offset = next - p;
-      fw->len = fw->__offset;
+      fw->len = next - p;
+      fw->__offset = 0;
       fw->idx = 0;
       return fw->str;
     }
@@ -450,12 +449,11 @@ void
 __next_fuzz_singular (RequestContext *ctx)
 {
   Fword *fw = opt.wlists[0];
-  char *p = fw_next (fw);
-  snprintf (tmp, TMP_CAP, "%.*s", (int)fw->len, p);
+  snprintf (tmp, TMP_CAP, "%.*s", (int)fw->len, fw_get (fw));
   Strrealloc (ctx->FUZZ[0], tmp);
 
-  da_idx i=1, count = da_sizeof (opt.wlists);
-  for (; i < count; ++i)
+  da_idx i=1, N = da_sizeof (opt.wlists);
+  for (; i < N; ++i)
     ctx->FUZZ[i] = ctx->FUZZ[0];
   ctx->FUZZ[i] = NULL;
 
@@ -463,6 +461,7 @@ __next_fuzz_singular (RequestContext *ctx)
     opt.should_end = true;
 
   fprintd ("singular:  [0-%ld]->`%s`\n", N, tmp);
+  fw_next (fw);
 }
 
 void
