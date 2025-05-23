@@ -47,7 +47,6 @@
 #define CLI_IMPLEMENTATION
 #include "clistd.h"
 
-#define REQ_CAP 5
 #define SLIST_APPEND(list, val) \
   list = curl_slist_append (list, val)
 
@@ -264,13 +263,14 @@ struct Opt
   int mode;
   int fuzz_count;
   int should_end;
+  int concurrent; /* Max number of concurrent requests */
   int waiting_reqs;
   CURLM *multi_handle;
   void (*load_next_fuzz) (RequestContext *ctx);
 };
 
 struct Opt opt = {0};
-static RequestContext ctxs[REQ_CAP];
+static RequestContext *ctxs;
 
 void
 print_stats (RequestContext *c)
@@ -315,7 +315,7 @@ write_fun (void *ptr, size_t size, size_t nmemb, void *optr)
 RequestContext *
 lookup_handle (CURL *handle)
 {
-  for (int i = 0; i < REQ_CAP; ++i)
+  for (int i = 0; i < opt.concurrent; ++i)
     if (ctxs[i].easy_handle == handle)
       return ctxs + i;
   return NULL;
@@ -324,7 +324,7 @@ lookup_handle (CURL *handle)
 RequestContext *
 lookup_free_handle ()
 {
-  for (int i = 0; i < REQ_CAP; ++i)
+  for (int i = 0; i < opt.concurrent; ++i)
     if (ctxs[i].flag == CTX_FREE)
       return ctxs + i;
   return NULL;
@@ -729,7 +729,7 @@ cleanup (int c, void *p)
   UNUSED (c);
   UNUSED (p);
   /* Libcurl cleanup */
-  for (int i = 0; i < REQ_CAP; i++)
+  for (int i = 0; i < opt.concurrent; i++)
     {
       RequestContext *ctx = ctxs + i;
       curl_multi_remove_handle (opt.multi_handle, ctx->easy_handle);
@@ -768,6 +768,9 @@ main (void)
     opt.mode = MODE_PITCHFORK;
     if ((ret = init_opt ()))
       return ret;
+
+    opt.concurrent = 5;
+    ctxs = calloc (opt.concurrent, sizeof (RequestContext));
   }
   
   /* Initialize libcurl & context of requests */
@@ -775,7 +778,7 @@ main (void)
     curl_global_init(CURL_GLOBAL_DEFAULT);
     opt.multi_handle = curl_multi_init();
 
-    for (int i = 0; i < REQ_CAP; i++)
+    for (int i = 0; i < opt.concurrent; i++)
       {
         ctxs[i].easy_handle = curl_easy_init();
 
@@ -793,7 +796,7 @@ main (void)
   int numfds, res, still_running;
   do {
     /* Find a free context (If there is any) and register it */
-    while (!opt.should_end && opt.waiting_reqs < REQ_CAP)
+    while (opt.waiting_reqs < opt.concurrent)
       {
         if ((ctx = lookup_free_handle ()))
           {
