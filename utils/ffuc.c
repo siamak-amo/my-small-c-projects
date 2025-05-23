@@ -210,17 +210,46 @@ fw_dup (const Fword *src)
   return tmp;
 }
 
+/**
+ *  Strline - StrlineNull functions
+ *
+ *  These functions return a pointer to the first character
+ *  of @cstr in the range [0x00, 0x1F], and NULL on '\0'.
+ *  StrlineNull returns pointer these characters rather than NULL.
+ */
+static inline char *
+Strline (const char *cstr)
+{
+  for (;; ++cstr)
+    {
+      if ('\0' == *cstr)
+        return NULL;
+      if (cstr > 0 && *cstr < 0x20)
+        return (char *) cstr;
+    }
+}
+
+static inline char *
+StrlineNull (const char *cstr)
+{
+  for (;; ++cstr)
+    {
+      if (cstr >= 0 && *cstr < 0x20)
+        return (char *) cstr;
+    }
+}
+
 void
 fw_init (Fword *fw, char *cstr)
 {
   fw->str = cstr;
   fw->__offset = 0, fw->total_count = 0;
-  fw->len = (uint) (strchr (cstr, '\n') - cstr);
+  fw->len = (uint) (StrlineNull (cstr) - cstr);
 
   /* calculating count of words withing the wordlist */
   for (char *p = cstr;; fw->total_count++, p++)
     {
-      p = strchr (p, '\n');
+      p = Strline (p);
       if (!p)
         break;
     }
@@ -233,11 +262,11 @@ fw_next (Fword *fw)
   if ('\n' == *p)
     p++;
 
-  char *next = strchr (p, '\n');
+  char *next = Strline (p);
   if (NULL == next || '\0' == next[1])
     {
       p = fw->str;
-      next = strchr (p, '\n');
+      next = Strline (p);
       fw->len = next - p;
       fw->__offset = 0;
       fw->idx = 0;
