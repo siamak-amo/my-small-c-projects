@@ -689,10 +689,10 @@ init_opt ()
 }
 
 int
-set_template (int op, char *s)
+set_template (struct FuzzTemplate *t, int op, void *param)
 {
   int n;
-  struct fuzz_template_t *t = &opt.fuzz_template;
+  char *s = (char *) param;
   switch (op)
     {
     case URL_TEMPLATE:
@@ -796,15 +796,16 @@ main (void)
     opt.mode = MODE_CLUSTERBOMB;
 
     // URL
-    set_template (URL_TEMPLATE, "http://127.0.0.1:4444/1_FUZZ.txt");
+    set_template (&opt.fuzz_template, URL_TEMPLATE,
+                  "http://127.0.0.1:4444/1_FUZZ.txt");
     // Body
-    set_template (BODY_TEMPLATE, "yourmom=FUZZ");
-    set_template (BODY_TEMPLATE, "&test=FUZZ.FUZZ");
-    set_template (BODY_TEMPLATE, "test=123");
+    set_template (&opt.fuzz_template, BODY_TEMPLATE, "yourmom=FUZZ");
+    set_template (&opt.fuzz_template, BODY_TEMPLATE, "&test=FUZZ.FUZZ");
+    set_template (&opt.fuzz_template, BODY_TEMPLATE, "test=123");
     // Headers
-    set_template (HEADER_TEMPLATE, "H1_test: FUZZ");
-    set_template (HEADER_TEMPLATE, "Hr: FUZZ");
-    set_template (HEADER_TEMPLATE, "Hs: FUZZ");
+    set_template (&opt.fuzz_template, HEADER_TEMPLATE, "H1_test: FUZZ");
+    set_template (&opt.fuzz_template, HEADER_TEMPLATE, "Hr: FUZZ");
+    set_template (&opt.fuzz_template, HEADER_TEMPLATE, "Hs: FUZZ");
 
     ret = init_opt ();
     if (ret)
