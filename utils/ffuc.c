@@ -138,7 +138,7 @@ typedef struct
 
 } RequestContext;
 
-struct fuzz_template_t
+struct FuzzTemplate
 {
   char *URL;
   char *post_body;
@@ -172,7 +172,9 @@ typedef struct
 } Fword;
 
 #define fw_get(fw) ((fw)->str + (fw)->__offset)
-#define fw_eow(fw) ((fw)->idx + 1 == (fw)->total_count)
+
+#define fw_eof(fw) ((fw)->idx + 1 == (fw)->total_count)
+#define fw_bof(fw) ((fw)->idx == 0)
 
 /**
  *  As the real bottleneck is the network,
@@ -254,18 +256,20 @@ struct Opt
 {
   /* User options */
   int fuzz_flag;
-  struct fuzz_template_t fuzz_template;
+  struct FuzzTemplate fuzz_template;
   
 
   /* Internals */
   Fword **wlists; /* Dynamic array */
   char **wlist_fpaths; /* Dynamic array */
   int mode;
-  int fuzz_count;
-  int should_end;
-  int concurrent; /* Max number of concurrent requests */
-  int waiting_reqs;
+  bool should_end;
   CURLM *multi_handle;
+  
+  size_t fuzz_count;
+  size_t concurrent; /* Max number of concurrent requests */
+  size_t waiting_reqs;
+
   void (*load_next_fuzz) (RequestContext *ctx);
 };
 
@@ -315,7 +319,7 @@ write_fun (void *ptr, size_t size, size_t nmemb, void *optr)
 RequestContext *
 lookup_handle (CURL *handle)
 {
-  for (int i = 0; i < opt.concurrent; ++i)
+  for (size_t i = 0; i < opt.concurrent; ++i)
     if (ctxs[i].easy_handle == handle)
       return ctxs + i;
   return NULL;
@@ -324,7 +328,7 @@ lookup_handle (CURL *handle)
 RequestContext *
 lookup_free_handle ()
 {
-  for (int i = 0; i < opt.concurrent; ++i)
+  for (size_t i = 0; i < opt.concurrent; ++i)
     if (ctxs[i].flag == CTX_FREE)
       return ctxs + i;
   return NULL;
@@ -372,7 +376,7 @@ fuzz_snprintf (char *restrict dst, size_t dst_cap,
 static inline void
 __register_contex (RequestContext *dst)
 {
-  struct fuzz_template_t template = opt.fuzz_template;
+  struct FuzzTemplate template = opt.fuzz_template;
 
   char **FUZZ = dst->FUZZ;
   /**
@@ -455,10 +459,10 @@ __next_fuzz_singular (RequestContext *ctx)
     ctx->FUZZ[i] = ctx->FUZZ[0];
   ctx->FUZZ[i] = NULL;
 
-  if (fw_eow (fw))
+  if (fw_eof (fw))
     opt.should_end = true;
 
-  printd ("singular:  %s\n", tmp);
+  fprintd ("singular:  [0-%ld]->`%s`\n", N, tmp);
 }
 
 void
@@ -476,7 +480,6 @@ __next_fuzz_pitchfork (RequestContext *ctx)
 
       snprintf (tmp, TMP_CAP, "%.*s", (int)fw->len, p);
       Strrealloc (ctx->FUZZ[i], tmp);
-      is_done &= fw_eow (fw);
       fprintd ("[%d]->`%s`\t", fw->idx, tmp);
     }
   fprintd ("\n");
@@ -595,6 +598,7 @@ init_opt ()
 {
   opt.wlists = da_new (Fword *);
   opt.wlist_fpaths = da_new (char *);
+  ctxs = calloc (opt.concurrent, sizeof (RequestContext));
 
   char *fps[] = {
       "/tmp/example2.txt",
@@ -603,43 +607,33 @@ init_opt ()
     //   "/tmp/example2.txt",
       "/tmp/example2.txt",
   };
-   for (ssize_t i=0; i < (ssize_t)lenof (fps)
-           && i<(ssize_t)opt.fuzz_count; ++i)
-      {
-        register_wordlist (fps[i]);
-      }
+  for (size_t i=0; i < lenof (fps)
+         && i < opt.fuzz_count; ++i)
+    {
+      register_wordlist (fps[i]);
+    }
 
-   size_t n;
+   size_t n =  da_sizeof (opt.wlists);
+   if (n == 0)
+     {
+       opt.should_end = 1;
+       warnln ("cannot continue with no word-list");
+       return 1;
+     }
+
    switch (opt.mode)
     {
     case MODE_PITCHFORK:
-      n = da_sizeof (opt.wlists);
-      if (n == 0)
+      if (opt.fuzz_count != n)
+        warnln ("expected %ld word-list(s), provided %ld", opt.fuzz_count, n);
         {
-          opt.should_end = 1;
-          warnln ("cannot continue with no word-list");
-          return 1;
-        }
-      if ((size_t) opt.fuzz_count != n)
-        {
-          warnln ("expected %d word-list(s), provided %ld",
-                  opt.fuzz_count, n);
         }
       opt.load_next_fuzz = __next_fuzz_pitchfork;
       break;
 
     case MODE_SINGULAR:
-      n = da_sizeof (opt.wlists);
-      if (n == 0)
-        {
-          opt.should_end = 1;
-          warnln ("cannot continue with no word-list");
-          return 1;
-        }
       if (1 != n)
-        {
-          warnln ("expected 1 word-list, provided %ld", n);
-        }
+        warnln ("expected 1 word-list, provided %ld", n);
       opt.load_next_fuzz = __next_fuzz_singular;
       break;
 
@@ -729,7 +723,7 @@ cleanup (int c, void *p)
   UNUSED (c);
   UNUSED (p);
   /* Libcurl cleanup */
-  for (int i = 0; i < opt.concurrent; i++)
+  for (size_t i = 0; i < opt.concurrent; i++)
     {
       RequestContext *ctx = ctxs + i;
       curl_multi_remove_handle (opt.multi_handle, ctx->easy_handle);
@@ -750,8 +744,13 @@ main (void)
 
   /* TODO: use optarg */
   {
+    opt.concurrent = 5;
     opt.waiting_reqs = 0;
     opt.fuzz_count = 0;
+
+    // opt.mode = MODE_SINGULAR;
+    // opt.mode = MODE_PITCHFORK;
+    opt.mode = MODE_CLUSTERBOMB;
 
     // URL
     set_template (URL_TEMPLATE, "http://127.0.0.1:4444/1_FUZZ.txt");
@@ -764,13 +763,9 @@ main (void)
     set_template (HEADER_TEMPLATE, "Hr: FUZZ");
     set_template (HEADER_TEMPLATE, "Hs: FUZZ");
 
-    // opt.mode = MODE_SINGULAR;
-    opt.mode = MODE_PITCHFORK;
-    if ((ret = init_opt ()))
+    ret = init_opt ();
+    if (ret)
       return ret;
-
-    opt.concurrent = 5;
-    ctxs = calloc (opt.concurrent, sizeof (RequestContext));
   }
   
   /* Initialize libcurl & context of requests */
@@ -778,7 +773,7 @@ main (void)
     curl_global_init(CURL_GLOBAL_DEFAULT);
     opt.multi_handle = curl_multi_init();
 
-    for (int i = 0; i < opt.concurrent; i++)
+    for (size_t i = 0; i < opt.concurrent; i++)
       {
         ctxs[i].easy_handle = curl_easy_init();
 
@@ -796,7 +791,7 @@ main (void)
   int numfds, res, still_running;
   do {
     /* Find a free context (If there is any) and register it */
-    while (opt.waiting_reqs < opt.concurrent)
+    while (!opt.should_end && opt.waiting_reqs < opt.concurrent)
       {
         if ((ctx = lookup_free_handle ()))
           {
