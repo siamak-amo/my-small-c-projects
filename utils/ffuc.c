@@ -145,7 +145,13 @@ struct FuzzTemplate
   struct curl_slist *headers;
 };
 
-/* Fuzz word */
+/**
+ *  Fuzz word
+ *
+ *  We don't load the entire word-list files
+ *  into the memory, instead mmap them and iterate
+ *  on them using fw_next and fw_get.
+ */
 typedef struct
 {
   /**
@@ -168,10 +174,24 @@ typedef struct
 
   /* Internal */
   uint __offset; /* Offset of the current word in @str */
+  size_t __str_bytes; /* length of @str in bytes */
 } Fword;
 
+/* Fword init, copy, free and duplicate */
+void fw_init (Fword *fw, char *cstr, size_t cstr_len);
+Fword *fw_dup (const Fword *src);
+#define fw_cpy(dst, src) memcpy (dst, src, sizeof (Fword))
+#define fw_free(fw) do {                            \
+    if (fw) munmap ((fw)->str, (fw)->__str_bytes);  \
+    safe_free (fw);                                 \
+  } while (0)
+
+/* Find the next word in the word-list */
+char *fw_next (Fword *fw);
+/* Fword get the current word of word-list */
 #define fw_get(fw) ((fw)->str + (fw)->__offset)
 
+/* Fword end of file & beginning of file */
 #define fw_eof(fw) ((fw)->idx + 1 == (fw)->total_count)
 #define fw_bof(fw) ((fw)->idx == 0)
 
@@ -224,7 +244,7 @@ Strline (const char *cstr)
     {
       if ('\0' == *cstr)
         return NULL;
-      if (cstr > 0 && *cstr < 0x20)
+      if (*cstr > 0 && *cstr < 0x20)
         return (char *) cstr;
     }
 }
@@ -234,19 +254,20 @@ StrlineNull (const char *cstr)
 {
   for (;; ++cstr)
     {
-      if (cstr >= 0 && *cstr < 0x20)
+      if (*cstr >= 0 && *cstr < 0x20)
         return (char *) cstr;
     }
 }
 
 void
-fw_init (Fword *fw, char *cstr)
+fw_init (Fword *fw, char *cstr, size_t cstr_len)
 {
   fw->str = cstr;
   fw->__offset = 0, fw->total_count = 0;
   fw->len = (uint) (StrlineNull (cstr) - cstr);
+  fw->__str_bytes = cstr_len;
 
-  /* calculating count of words withing the wordlist */
+  /* Calculating count of words within the wordlist */
   for (char *p = cstr;; fw->total_count++, p++)
     {
       p = Strline (p);
@@ -283,20 +304,19 @@ fw_next (Fword *fw)
 struct Opt
 {
   /* User options */
-  int fuzz_flag;
+  int mode;
+  size_t concurrent; /* Max number of concurrent requests */
   struct FuzzTemplate fuzz_template;
   
-
   /* Internals */
+  CURLM *multi_handle;
+
+  size_t fuzz_count;
   Fword **wlists; /* Dynamic array */
   char **wlist_fpaths; /* Dynamic array */
 
-  int mode;
+  int fuzz_flag;
   bool should_end;
-  CURLM *multi_handle;
-  
-  size_t fuzz_count;
-  size_t concurrent; /* Max number of concurrent requests */
   size_t waiting_reqs;
 
   /* Next FUZZ loader and it's possible state */
@@ -619,7 +639,7 @@ wlmap (int fd, Fword *dst)
     }
 
   /* Success */
-  fw_init (dst, mapped);
+  fw_init (dst, mapped, sb.st_size);
   return 0;
 }
 
@@ -636,7 +656,7 @@ register_wordlist (char *pathname)
   if (-1 != wl_idx)
     {
       /* File is already open */
-      fw_init (&fw, opt.wlists[wl_idx]->str);
+      fw_cpy (&fw, opt.wlists[wl_idx]);
       WL_APPD (pathname, fw_dup (&fw));
     }
   else
