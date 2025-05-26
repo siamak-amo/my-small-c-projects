@@ -19,6 +19,7 @@
 
     FFuc  -  ffuf program written in C
 
+    -- Not Completed --
 
     Compilation:
       cc -ggdb -O3 -Wall -Wextra -Werror \
@@ -122,16 +123,17 @@ typedef struct
   struct stat_t stat;
   
   /**
-   *  The number of elements within FUZZ, should be at least
-   *  the count of FUZZ keywords used in request template
-   *  *OR* set the latest element to NULL to indicate the end
+   *  All 'FUZZ' keywords within @opt.fuzz_template
+   *  (URL, POST body, HTTP headers respectively)
+   *  will be substituted with elements of this array.
+   *  It must contain @opt.fuzz_count elements.
    */
   char **FUZZ;
 
   struct request_t
   {
-    /* As libcurl automatically keeps a copy of
-     the URL, we don't need to keep track of it */
+    /* As libcurl keeps a copy of the URL,
+       we don't need to keep track of it */
     char *post_body;
     struct curl_slist *http_headers;
   } request;
@@ -155,11 +157,11 @@ struct FuzzTemplate
 typedef struct
 {
   /**
-   *  Use fw_get macro and @len together
-   *  to retrieve the current word
+   *  The fw_get macro can be used to get the current word
+   *  The result is *NOT* null-terminated ('\0')
+   *  @len is the result's length
    *
-   *  @str is a C string, but words are not,
-   *  they contain newline at their end.
+   *  FW_FORMAT and FW_ARG macros can be used for printf
    */
   char *str;
   uint len; /* Length of the current word */
@@ -176,6 +178,10 @@ typedef struct
   uint __offset; /* Offset of the current word in @str */
   size_t __str_bytes; /* length of @str in bytes */
 } Fword;
+
+/* Fword printf format and arguments */
+#define FW_FORMAT "%.*s"
+#define FW_ARG(fw) (int)((fw)->len), fw_get (fw)
 
 /* Fword init, copy, free and duplicate */
 void fw_init (Fword *fw, char *cstr, size_t cstr_len);
@@ -196,9 +202,42 @@ char *fw_next (Fword *fw);
 #define fw_bof(fw) ((fw)->idx == 0)
 
 /**
- *  As the real bottleneck is the network,
- *  any more efficient way to handle string memories,
- *  is not probably going to improve the performance.
+ *  Fword functions
+ */
+void fw_init (Fword *fw, char *cstr, size_t cstr_len);
+Fword *fw_dup (const Fword *src);
+char *fw_next (Fword *fw);
+
+/**
+ *  Strline - StrlineNull functions
+ *
+ *  These functions return a pointer to the first character
+ *  of @cstr in the range [0x00, 0x1F], and NULL on '\0'.
+ *
+ *  StrlineNull function is like Strline() except that,
+ *  at the null-byte(s) and characters in the above range,
+ *  it returns a pointer to them, rather than NULL.
+ */
+static inline char *Strline (const char *cstr);
+static inline char *StrlineNull (const char *cstr);
+
+/**
+ *  Libcurl handle lookup functions
+ *
+ * lookup_handle:
+ *   Finds @handle in @ctxs array, NULL is not found
+ * lookup_free_handle:
+ *   Finds the first free to use request context in @ctxs
+ */
+static inline RequestContext *
+lookup_handle (CURL *handle, RequestContext *ctxs, size_t len);
+static inline RequestContext *
+lookup_free_handle (RequestContext *ctxs, size_t len);
+
+/**
+ *  As the primary bottleneck is the network,
+ *  improving string memory handling is not
+ *  probably going to enhance performance
  */
 #define safe_free(ptr) if (ptr) free (ptr)
 #define Strlen(s) ((NULL != s) ? strlen (s) : 0)
@@ -221,16 +260,67 @@ char *fw_next (Fword *fw);
 # define printd(...) ((void) NULL)
 #endif /* _DEBUG */
 
+
 /**
- *  Strline - StrlineNull functions
- *
- *  These functions return a pointer to the first character
- *  of @cstr in the range [0x00, 0x1F], and NULL on '\0'.
- *
- *  StrlineNull function is like Strline() except that,
- *  at the null-byte(s) and characters in the above range,
- *  it returns a pointer to them, rather than NULL.
+ *  FFuc main configuration
  */
+struct Opt
+{
+  /* User options */
+  int mode;
+  size_t concurrent; /* Max number of concurrent requests */
+  struct FuzzTemplate fuzz_template;
+
+  /* Internals */
+  int fuzz_flag;
+  size_t waiting_reqs;
+  size_t fuzz_count; /* Total count of FUZZ keywords */
+  CURLM *multi_handle;
+
+  Fword **wlists; /* Dynamic array */
+  char **wlist_paths; /* Dynamic array, path of word-lists */
+  RequestContext *ctxs; /* Static array, Request contexts */
+
+  /* Next FUZZ loader and */
+  void (*load_next_fuzz) (RequestContext *ctx);
+  bool should_end; /* End of load_next_fuzz */
+  union fuzz_context_t
+    {
+      /**
+       *  Pitchfork needs to know which word-list
+       *  is the longest one.
+       */
+      Fword *longest;
+      void *__dummy; /* Unused */
+    } fuzz_ctx;
+};
+struct Opt opt = {0};
+
+/**
+ *  We only require request statistics, so we pass
+ *  this function as CURLOPT_WRITEFUNCTION to libcurl, Also
+ *  libcurl must set @optr to the corresponding (RequestContext *)
+ */
+size_t
+__cwrite (void *ptr, size_t size, size_t nmemb, void *optr)
+{
+  char *data = (char *) ptr;
+  int len =  (int)(size * nmemb);
+  RequestContext *ctx = (RequestContext *) optr;
+
+  ctx->stat.size_bytes += len; /* Update size */
+  for (int i=0; i < len; ++i)
+    {
+      /* Update word count and line count */
+      if (data[i] == ' ')
+        ctx->stat.wcount++;
+      else if (data[i] < ' ')
+        ctx->stat.lcount++;
+    }
+  return len; 
+}
+
+//-- Strline and StrlineNull functions --//
 static inline char *
 Strline (const char *cstr)
 {
@@ -252,9 +342,7 @@ StrlineNull (const char *cstr)
     }
 }
 
-/**
- *  Fword functions
- */
+//-- Fword functions --//
 void
 fw_init (Fword *fw, char *cstr, size_t cstr_len)
 {
@@ -306,100 +394,6 @@ fw_next (Fword *fw)
 }
 
 /**
- *  FFuc main configuration
- */
-struct Opt
-{
-  /* User options */
-  int mode;
-  size_t concurrent; /* Max number of concurrent requests */
-  struct FuzzTemplate fuzz_template;
-  
-  /* Internals */
-  int fuzz_flag;
-  size_t waiting_reqs;
-  size_t fuzz_count; /* Total count of FUZZ keywords */
-  CURLM *multi_handle;
-
-  Fword **wlists; /* Dynamic array */
-  char **wlist_paths; /* Dynamic array, path of word-lists */
-  RequestContext *ctxs; /* Static array, Request contexts */
-
-  /* Next FUZZ loader and */
-  void (*load_next_fuzz) (RequestContext *ctx);
-  bool should_end; /* End of load_next_fuzz */
-  union fuzz_context_t
-    {
-      /**
-       *  Pitchfork needs to know which word-list
-       *  is the longest one.
-       */
-      Fword *longest;
-      void *__dummy; /* Unused */
-    } fuzz_ctx;
-};
-struct Opt opt = {0};
-
-
-void
-print_stats (RequestContext *c)
-{
-  long http_code = 0;
-  double total_time;
-
-  curl_easy_getinfo (c->easy_handle, CURLINFO_HTTP_CODE, &http_code);
-  curl_easy_getinfo (c->easy_handle, CURLINFO_TOTAL_TIME, &total_time);
-  
-  fprintf (stderr,
-           "%s \t\t\t [Status: %-3ld,  "
-           "Size: %d,  " "Words: %d,  " "Lines: %d,  "
-           "Duration: %.0fms]\n",
-           c->FUZZ[0], /* TODO: what about the others FUZZs? */
-           http_code,
-           c->stat.size_bytes,
-           c->stat.wcount,
-           (c->stat.size_bytes > 0) ? c->stat.lcount + 1 : 0,
-           total_time * 1000
-           );
-}
-
-size_t
-write_fun (void *ptr, size_t size, size_t nmemb, void *optr)
-{
-  char *cptr = (char *) ptr;
-  int len =  (int)(size * nmemb);
-  RequestContext *ctx = (RequestContext *) optr;
-
-  ctx->stat.size_bytes += len;
-  for (int i=0; i < len; ++i)
-    {
-      if (cptr[i] == ' ')
-        ctx->stat.wcount++;
-      else if (cptr[i] < ' ')
-        ctx->stat.lcount++;
-    }
-  return len; 
-}
-
-RequestContext *
-lookup_handle (CURL *handle)
-{
-  for (size_t i = 0; i < opt.concurrent; ++i)
-    if (opt.ctxs[i].easy_handle == handle)
-      return opt.ctxs + i;
-  return NULL;
-}
-
-RequestContext *
-lookup_free_handle ()
-{
-  for (size_t i = 0; i < opt.concurrent; ++i)
-    if (opt.ctxs[i].flag == CTX_FREE)
-      return opt.ctxs + i;
-  return NULL;
-}
-
-/**
  *  FUZZ sprintf, substitutes the FUZZ keyword
  *  with the appropriate value from @FUZZ
  *  The tailing element of @FUZZ MUST be NULL
@@ -436,6 +430,137 @@ fuzz_snprintf (char *restrict dst, size_t dst_cap,
   else
     *dst = '\0';
   return fuzz_used;
+}
+
+//-- Load next FUZZ functions --//
+void
+__next_fuzz_singular (RequestContext *ctx)
+{
+  Fword *fw = opt.wlists[0];
+  snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
+  Strrealloc (ctx->FUZZ[0], tmp);
+
+  da_idx i=1, N = da_sizeof (opt.wlists);
+  for (; i < N; ++i)
+    ctx->FUZZ[i] = ctx->FUZZ[0];
+  ctx->FUZZ[i] = NULL;
+
+  if (fw_eof (fw))
+    opt.should_end = true;
+
+  fprintd ("singular:  [0-%ld]->`%s`\n", N, tmp);
+  fw_next (fw);
+}
+
+void
+__next_fuzz_pitchfork (RequestContext *ctx)
+{
+  Fword *fw;
+  size_t N = da_sizeof (opt.wlists);
+  fprintd ("pitchfork:  ");
+
+  for (size_t i = 0; i < N; ++i)
+    {
+      fw = opt.wlists[i];
+      snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
+      Strrealloc (ctx->FUZZ[i], tmp);
+      fprintd ("[%d]->`%s`\t", fw->idx, tmp);
+    }
+  fprintd ("\n");
+
+  for (size_t i = 0; i < N; ++i)
+    {
+      fw = opt.wlists[i];
+      fw_next (fw);
+    }
+  if (fw_bof (opt.fuzz_ctx.longest))
+    opt.should_end = 1;
+}
+
+void
+__next_fuzz_clusterbomb (RequestContext *ctx)
+{
+  Fword *fw;
+  fprintd ("clusterbomb:  ");
+  size_t N = da_sizeof (opt.wlists);
+
+  for (size_t i=0; i<N; ++i)
+    {
+      fw = opt.wlists[i];
+      snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
+      Strrealloc (ctx->FUZZ[i], tmp);
+      fprintd ("[%d]->`%s`\t", fw->idx, tmp);
+    }
+  fprintd ("\n");
+
+  size_t i = 0;
+  for (; i < N; )
+    {
+      fw = opt.wlists[i];
+      fw_next (fw);
+
+      if (fw_bof (fw))
+        i++;
+      else
+        break;
+    }
+
+  if (i == N)
+    opt.should_end = true;
+}
+
+//-- RequestContext functions --//
+static inline RequestContext *
+lookup_handle (CURL *handle,
+               RequestContext *ctxs, size_t len)
+{
+  for (size_t i=0; i < len; ++i)
+    {
+      if (ctxs[i].easy_handle == handle)
+        return &ctxs[i];
+    }
+  return NULL;
+}
+
+static inline RequestContext *
+lookup_free_handle (RequestContext *ctxs, size_t len)
+{
+  for (size_t i=0; i < len; ++i)
+    {
+      if (ctxs[i].flag == CTX_FREE)
+        return &ctxs[i];
+    }
+  return NULL;
+}
+
+void
+context_reset (RequestContext *ctx)
+{
+  ctx->flag = CTX_FREE;
+  curl_multi_remove_handle (opt.multi_handle, ctx->easy_handle);
+  memset (&ctx->stat, 0, sizeof (struct stat_t));
+}
+
+void
+print_stats (RequestContext *c)
+{
+  long http_code = 0;
+  double total_time;
+
+  curl_easy_getinfo (c->easy_handle, CURLINFO_HTTP_CODE, &http_code);
+  curl_easy_getinfo (c->easy_handle, CURLINFO_TOTAL_TIME, &total_time);
+  
+  fprintf (stderr,
+           "%s \t\t\t [Status: %-3ld,  "
+           "Size: %d,  " "Words: %d,  " "Lines: %d,  "
+           "Duration: %.0fms]\n",
+           c->FUZZ[0], /* TODO: what about the others FUZZs? */
+           http_code,
+           c->stat.size_bytes,
+           c->stat.wcount,
+           (c->stat.size_bytes > 0) ? c->stat.lcount + 1 : 0,
+           total_time * 1000
+           );
 }
 
 static inline void
@@ -512,82 +637,6 @@ __register_contex (RequestContext *dst)
 }
 
 void
-__next_fuzz_singular (RequestContext *ctx)
-{
-  Fword *fw = opt.wlists[0];
-  snprintf (tmp, TMP_CAP, "%.*s", (int)fw->len, fw_get (fw));
-  Strrealloc (ctx->FUZZ[0], tmp);
-
-  da_idx i=1, N = da_sizeof (opt.wlists);
-  for (; i < N; ++i)
-    ctx->FUZZ[i] = ctx->FUZZ[0];
-  ctx->FUZZ[i] = NULL;
-
-  if (fw_eof (fw))
-    opt.should_end = true;
-
-  fprintd ("singular:  [0-%ld]->`%s`\n", N, tmp);
-  fw_next (fw);
-}
-
-void
-__next_fuzz_pitchfork (RequestContext *ctx)
-{
-  Fword *fw;
-  size_t N = da_sizeof (opt.wlists);
-  fprintd ("pitchfork:  ");
-
-  for (size_t i = 0; i < N; ++i)
-    {
-      fw = opt.wlists[i];
-      snprintf (tmp, TMP_CAP, "%.*s", (int)fw->len, fw_get (fw));
-      Strrealloc (ctx->FUZZ[i], tmp);
-      fprintd ("[%d]->`%s`\t", fw->idx, tmp);
-    }
-  fprintd ("\n");
-
-  for (size_t i = 0; i < N; ++i)
-    {
-      fw = opt.wlists[i];
-      fw_next (fw);
-    }
-  if (fw_bof (opt.fuzz_ctx.longest))
-    opt.should_end = 1;
-}
-
-void
-__next_fuzz_clusterbomb (RequestContext *ctx)
-{
-  Fword *fw;
-  fprintd ("clusterbomb:  ");
-  size_t N = da_sizeof (opt.wlists);
-
-  for (size_t i=0; i<N; ++i)
-    {
-      fw = opt.wlists[i];
-      snprintf (tmp, TMP_CAP, "%.*s", (int)fw->len, fw_get (fw));
-      Strrealloc (ctx->FUZZ[i], tmp);
-      fprintd ("[%d]->`%s`\t", fw->idx, tmp);
-    }
-  fprintd ("\n");
-
-  size_t i = 0;
-  for (; i < N; )
-    {
-      fw = opt.wlists[i];
-      fw_next (fw);
-
-      if (fw_bof (fw))
-        i++;
-      else
-        break;
-    }
-
-  if (i == N)
-    opt.should_end = true;
-}
-
-void
 register_contex (RequestContext *ctx)
 {
   opt.load_next_fuzz (ctx);
@@ -595,20 +644,13 @@ register_contex (RequestContext *ctx)
   {
     FLG_SET (ctx->flag, CTX_INUSE);
     curl_easy_setopt (ctx->easy_handle, CURLOPT_WRITEDATA, ctx);
-    curl_easy_setopt (ctx->easy_handle, CURLOPT_WRITEFUNCTION, write_fun);
+    curl_easy_setopt (ctx->easy_handle, CURLOPT_WRITEFUNCTION, __cwrite);
   }
   __register_contex (ctx);
   curl_multi_add_handle (opt.multi_handle, ctx->easy_handle);
 }
 
-void
-context_reset (RequestContext *ctx)
-{
-  ctx->flag = CTX_FREE;
-  curl_multi_remove_handle (opt.multi_handle, ctx->easy_handle);
-  memset (&ctx->stat, 0, sizeof (struct stat_t));
-}
-
+//-- Utility functions --//
 int
 fuzz_count (const char *s)
 {
@@ -896,7 +938,7 @@ main (void)
     /* Find a free context (If there is any) and register it */
     while (!opt.should_end && opt.waiting_reqs < opt.concurrent)
       {
-        if ((ctx = lookup_free_handle ()))
+        if ((ctx = lookup_free_handle (opt.ctxs, opt.concurrent)))
           {
             opt.waiting_reqs++;
             register_contex (ctx);
@@ -909,7 +951,8 @@ main (void)
     while ((msg = curl_multi_info_read (opt.multi_handle, &res)))
       {
         CURL *completed_handle = msg->easy_handle;
-        RequestContext *ctx = lookup_handle (completed_handle);
+        RequestContext *ctx = lookup_handle (completed_handle,
+                                             opt.ctxs, opt.concurrent);
         assert (NULL != ctx && "Broken Logic!!\n"
                 "Completed easy_handle doesn't have request context.\n");
 
