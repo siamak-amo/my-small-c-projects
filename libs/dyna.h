@@ -17,7 +17,7 @@
 /** file: dyna.h
     created on: 8 Oct 2024
   
-    Dynamic Arrya implementation
+    Dynamic Array (generic) implementation
     Based on `templates/slice.c` within this repository
   
     Usage:
