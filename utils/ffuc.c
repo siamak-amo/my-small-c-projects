@@ -57,6 +57,7 @@
 static char tmp[TMP_CAP];
 
 #define UNUSED(x) (void)(x)
+#define NOP ((void) NULL)
 #define lenof(arr) (sizeof (arr) / sizeof (arr[0]))
 
 #define FLG_SET(dst, flg) (dst |= flg)
@@ -183,13 +184,15 @@ typedef struct
 #define FW_FORMAT "%.*s"
 #define FW_ARG(fw) (int)((fw)->len), fw_get (fw)
 
-/* Fword init, copy, free and duplicate */
+/* Fword init, copy, and duplicate */
 void fw_init (Fword *fw, char *cstr, size_t cstr_len);
+#define fw_cpy(dst, src) Memcpy (dst, src, sizeof (Fword))
 Fword *fw_dup (const Fword *src);
-#define fw_cpy(dst, src) memcpy (dst, src, sizeof (Fword))
-#define fw_free(fw) do {                            \
-    if (fw) munmap ((fw)->str, (fw)->__str_bytes);  \
-    safe_free (fw);                                 \
+
+/* Only needed if @fw is created via fw_dup */
+#define fw_free(fw) do {                                 \
+    if (fw) ffuc_munmap ((fw)->str, (fw)->__str_bytes);  \
+    safe_free (fw);                                      \
   } while (0)
 
 /* Find the next word in the word-list */
@@ -234,21 +237,35 @@ lookup_handle (CURL *handle, RequestContext *ctxs, size_t len);
 static inline RequestContext *
 lookup_free_handle (RequestContext *ctxs, size_t len);
 
+#undef ffuc_free
+#ifndef FFUC_NO_FREE
+# define ffuc_free(x) free (x)
+# define ffuc_munmap(ptr, len) munmap (ptr, len)
+#else
+# define ffuc_free NOP
+# define ffuc_munmap NOP
+#endif
+
 /**
  *  As the primary bottleneck is the network,
- *  improving string memory handling is not
- *  probably going to enhance performance
+ *  improving memory allocation is not probably
+ *  going to enhance performance.
  */
-#define safe_free(ptr) if (ptr) free (ptr)
-#define Strlen(s) ((NULL != s) ? strlen (s) : 0)
+#define safe_free(ptr) \
+  if (NULL != ptr) { ffuc_free (ptr); ptr = NULL; }
 
+/* To prevent memory leak, do NOT use ffuc_free here
+   Reason: Strrealloc used in reading from word-lists */
 #define Strrealloc(dst, src) do {               \
-    safe_free (dst);                            \
+    if (dst) free (dst);                        \
     dst = strdup (src);                         \
   } while (0)
 
 #define Realloc(ptr, len) \
-  if (ptr) ptr = realloc (ptr, len)
+  if (ptr) { ptr = realloc (ptr, len); }
+#define Strlen(s) ((NULL != s) ? strlen (s) : 0)
+#define Memcpy(dst, src, len) \
+  if (NULL != dst && len > 0) { memcpy (dst, src, len); }
 
 #ifdef _DEBUG
 # define fprintd(format, ...) \
@@ -256,8 +273,8 @@ lookup_free_handle (RequestContext *ctxs, size_t len);
 # define printd(format, ...) \
   fprintd ("%s:%d: " format, __FILE__, __LINE__, ##__VA_ARGS__);
 #else
-# define fprintd(...) ((void) NULL)
-# define printd(...) ((void) NULL)
+# define fprintd(...) NOP
+# define printd(...) NOP
 #endif /* _DEBUG */
 
 
