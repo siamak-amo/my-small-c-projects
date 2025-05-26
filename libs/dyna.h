@@ -144,7 +144,8 @@
 
     Test program compilation:
       cc -x c -ggdb -Wall -Wextra -Werror \
-        -D DYNA_IMPLEMENTATION -D DYNA_TEST -D_DA_DEBUG dyna.h
+        -D DYNA_IMPLEMENTATION -D DYNA_TEST -D_DA_DEBUG \
+        -o dyna.out dyna.h
  **/
 #ifndef DYNAMIC_ARRAY__H__
 #define DYNAMIC_ARRAY__H__
@@ -153,8 +154,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#ifndef DADEFF
-# define DADEFF static inline
+#ifndef DYNADEF
+# define DYNADEF static inline
 #endif
 
 /**
@@ -239,10 +240,10 @@ typedef struct
  *  and instead, they use provided macros for
  *  generic type purposes and safety
  */
-DADEFF dyna_t * __mk_da (da_sidx, da_sidx);
-DADEFF da_sidx __da_appd (void **);
-DADEFF void * __da_aappd (void **, da_sidx);
-DADEFF void * __da_dup (void **);
+DYNADEF dyna_t * __mk_da (da_sidx, da_sidx);
+DYNADEF da_sidx __da_appd (void **);
+DYNADEF void * __da_aappd (void **, da_sidx);
+DYNADEF void * __da_dup (void **);
 
 #define DA_NNULL(arr) (NULL != arr)
 
@@ -423,7 +424,7 @@ __mk_da(da_sidx cell_size, da_sidx n)
   return da;
 }
 
-DADEFF da_sidx
+DYNADEF da_sidx
 __da_many_appd (void **arr, int n)
 {
   dyna_t *da;
@@ -454,7 +455,7 @@ __da_many_appd (void **arr, int n)
   return old_size++;
 }
 
-DADEFF da_sidx
+DYNADEF da_sidx
 __da_appd (void **arr)
 {
   dyna_t *da;
@@ -483,7 +484,7 @@ __da_appd (void **arr)
   return da->size++;
 }
 
-DADEFF void *
+DYNADEF void *
 __da_aappd (void **arr, da_sidx cell_bytes)
 {
   da_sidx idx2append;
@@ -493,7 +494,7 @@ __da_aappd (void **arr, da_sidx cell_bytes)
   return *(char **)arr + cell_bytes * (idx2append);
 }
 
-DADEFF void *
+DYNADEF void *
 __da_dup (void **arr)
 {
   dyna_t *da = DA_CONTAINEROF (*arr);
