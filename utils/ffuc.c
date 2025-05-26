@@ -263,9 +263,10 @@ lookup_free_handle (RequestContext *ctxs, size_t len);
 
 #define Realloc(ptr, len) \
   if (ptr) { ptr = realloc (ptr, len); }
-#define Strlen(s) ((NULL != s) ? strlen (s) : 0)
+#define Strlen(s) \
+  ((NULL != s) ? strlen (s) : 0)
 #define Memcpy(dst, src, len) \
-  if (NULL != dst && len > 0) { memcpy (dst, src, len); }
+  if (NULL != dst) { memcpy (dst, src, len); }
 
 #ifdef _DEBUG
 # define fprintd(format, ...) \
@@ -670,10 +671,10 @@ register_contex (RequestContext *ctx)
 }
 
 //-- Utility functions --//
-int
+static inline size_t
 fuzz_count (const char *s)
 {
-  int n = 0;
+  size_t n = 0;
   if (!s)
     return 0;
   while ((s = strstr (s, "FUZZ")))
@@ -705,7 +706,7 @@ wlmap (int fd, Fword *dst)
                        fd, 0);
   if (mapped == MAP_FAILED)
     {
-      close(fd);
+      close (fd);
       return fd;
     }
 
