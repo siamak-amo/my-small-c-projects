@@ -65,17 +65,15 @@ static char tmp[TMP_CAP];
 
 enum ffuc_flag_t
   {
-    /* Context flag */
-    CTX_FREE          = 0,
-    CTX_INUSE         = 1,
-
     /**
-     *  Initialize requests template
+     *  Initialize request template
      *
-     *  URL_TEMPLATE: set the url only one time
-     *  BODY_TEMPLATE: append to the request body
-     *                 it adds `&` automatically
-     *  HEADER_TEMPLATE: append header
+     * URL_TEMPLATE:
+     *   Set the URL, only once should be used
+     * BODY_TEMPLATE:
+     *   Aappend to the request body; It adds `&` automatically
+     * HEADER_TEMPLATE:
+     *   Append Http header `Header: value`
      */
     URL_TEMPLATE      = 0,
     BODY_TEMPLATE     = 1,
@@ -84,28 +82,31 @@ enum ffuc_flag_t
     /**
      *  Fuzzing modes
      *
-     *  Singular: using only one wordlist for all FUZZ keywords
-     *
-     *  Pitchfork: each FUZZ, uses it's own word-list
-     *             word-lists are not necessarily the same size
-     *             O( Max(len(wlist 1), ..., len(wlist N)) )
-     *
-     *  Clusterbomb: All combinations of word-list(s)
-     *               O(len(wlist 1) x ... x len(wlist N))
+     * Singular:
+     *   Using only one wordlist for all FUZZ keywords
+     * Pitchfork:
+     *   Each FUZZ, uses it's own word-list
+     *   word-lists are not necessarily the same size
+     *     O( Max( len(wlist 1), ..., len(wlist N) ) )
+     * Clusterbomb:
+     *   All combinations of word-list(s)
+     *     O( len(wlist 1) x ... x len(wlist N) )
      */
     MODE_CLUSTERBOMB  = 0,
     MODE_PITCHFORK    = 1,
     MODE_SINGULAR     = 2,
 
     /**
-     *  Internal
-     *  Without these flags, the generated request
-     *  will use the raw templates without FUZZ
-     *  keyword substitution
+     *  Internal (used in opt.fuzz_flag)
+     *  Enable FUZZ keyword substitution flags
      */
     URL_HASFUZZ       = (1 << 1),
     BODY_HASFUZZ      = (1 << 2),
     HEADER_HASFUZZ    = (1 << 3),
+
+    /* Internal (used in RequestContext.flag) */
+    CTX_FREE          = 0,
+    CTX_INUSE         = 1,
   };
 
 struct stat_t
