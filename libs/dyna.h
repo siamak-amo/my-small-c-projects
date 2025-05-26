@@ -202,18 +202,21 @@ typedef struct
 # define dyna_free(p) free (p)
 #endif
 
-/* internal __OFFSETOF macro, to give offset of @member in struct @T */
-#define __OFFSETOF(T, member) ((size_t)((T *)(0))->member)
+/* The internal DA_OFFSETOF macro, gives offset of @member in dyna_t */
+#ifndef DYNA_NO_STDDEF
+# include <stddef.h>
+# define DA_OFFSETOF(member) offsetof (dyna_t, member)
+#else
+# define DA_OFFSETOF(member) ((size_t)((dyna_t *)(0))->member)
+#endif /* DYNA_NO_STDDEF */
 
-/** internal container_of macro
- *  users don't use this macro directly
- *  this macro, gives a pointer to the 'parent'
+/** The internal container_of macro
+ *  Users don't use this macro directly
+ *  This macro, gives a pointer to the 'parent'
  *  struct of @arr the array pointer
  */
-#define __DA_CONTAINEROF(arr_ptr) ({                      \
-      const char *__ptr__ = (const char *)(arr_ptr);      \
-      (dyna_t *)(__ptr__ - __OFFSETOF (dyna_t, arr));     \
-    })
+# define DA_CONTAINEROF(ptr) \
+  ((dyna_t *)((char *)(ptr) - DA_OFFSETOF (arr)))
 
 /**
  *  Users normally don't use these functions
@@ -237,16 +240,16 @@ DADEFF void * __da_dup (void **);
 // To free dynamic array @arr
 #define da_free(arr) do {                           \
     if (DA_NNULL (arr)) {                           \
-      dyna_t *__da__ = __DA_CONTAINEROF (arr);      \
+      dyna_t *__da__ = DA_CONTAINEROF (arr);        \
       da_dprintf ("Destroying dyna @%p\n", __da__); \
       dyna_free (__da__);                           \
     }} while (0)
 
 // To get length and capacity of @arr
 #define da_sizeof(arr) \
-  (DA_NNULL (arr) ? __DA_CONTAINEROF (arr)->size : 0)
+  (DA_NNULL (arr) ? DA_CONTAINEROF (arr)->size : 0)
 #define da_capof(arr) \
-  (DA_NNULL (arr) ? __DA_CONTAINEROF (arr)->cap : 0)
+  (DA_NNULL (arr) ? DA_CONTAINEROF (arr)->cap : 0)
 
 // Gives how many cells left until the next reallocation (at overflow)
 #define da_leftof(arr) \
@@ -261,10 +264,8 @@ DADEFF void * __da_dup (void **);
  *    only use `da_xxx` macros to append to it or free it
  */
 #define da_new(T) da_newn (T, DA_INICAP)
-#define da_newn(T, n) ({                          \
-      dyna_t *__da__ = __mk_da (sizeof (T), n);   \
-      (T *)(__da__->arr);                         \
-    })
+#define da_newn(T, n) \
+  ((T *)( ( (dyna_t *) __mk_da (sizeof (T), n) )->arr ))
 
 /**
  *  Duplicate a dynamic array
@@ -358,7 +359,7 @@ DADEFF void * __da_dup (void **);
  */
 #define da_drop(arr) do {                           \
     if (DA_NNULL (arr)) {                           \
-      dyna_t *__da__ = __DA_CONTAINEROF (arr);      \
+      dyna_t *__da__ = DA_CONTAINEROF (arr);        \
       __da__->size = 0;                             \
     }} while (0)
 
@@ -412,7 +413,7 @@ __da_many_appd (void **arr, int n)
   dyna_t *da;
   size_t old_size, new_size;
 
-  if (!(da = __DA_CONTAINEROF (*arr)))
+  if (!(da = DA_CONTAINEROF (*arr)))
     return -1;
 
   old_size = da->size;
@@ -443,7 +444,7 @@ __da_appd (void **arr)
   dyna_t *da;
   size_t new_size;
 
-  if (!(da = __DA_CONTAINEROF (*arr)))
+  if (!(da = DA_CONTAINEROF (*arr)))
     return -1;
 
   if (da->size >= da->cap)
@@ -479,7 +480,7 @@ __da_aappd (void **arr, da_sidx cell_bytes)
 DADEFF void *
 __da_dup (void **arr)
 {
-  dyna_t *da = __DA_CONTAINEROF (*arr);
+  dyna_t *da = DA_CONTAINEROF (*arr);
   size_t lenof_da = da->size * da->cell_bytes + sizeof (dyna_t);
   dyna_t *new_da = malloc (lenof_da);
   memcpy (new_da, da, lenof_da);
