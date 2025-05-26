@@ -140,12 +140,12 @@ typedef struct
 
 } RequestContext;
 
-struct FuzzTemplate
+typedef struct
 {
   char *URL;
   char *post_body;
   struct curl_slist *headers;
-};
+} FuzzTemplate;
 
 /**
  *  Fuzz word
@@ -269,7 +269,7 @@ struct Opt
   /* User options */
   int mode;
   size_t concurrent; /* Max number of concurrent requests */
-  struct FuzzTemplate fuzz_template;
+  FuzzTemplate fuzz_template;
 
   /* Internals */
   int fuzz_flag;
@@ -298,14 +298,14 @@ struct Opt opt = {0};
 
 /**
  *  We only require request statistics, so we pass
- *  this function as CURLOPT_WRITEFUNCTION to libcurl, Also
- *  libcurl must set @optr to the corresponding (RequestContext *)
+ *  this function as CURLOPT_WRITEFUNCTION to libcurl.
+ *  Libcurl sets @optr to the corresponding request context *
  */
 size_t
-__cwrite (void *ptr, size_t size, size_t nmemb, void *optr)
+curl_fwrite (void *ptr, size_t size, size_t nmemb, void *optr)
 {
   char *data = (char *) ptr;
-  int len =  (int)(size * nmemb);
+  int len = (int)(size * nmemb);
   RequestContext *ctx = (RequestContext *) optr;
 
   ctx->stat.size_bytes += len; /* Update size */
@@ -566,9 +566,9 @@ print_stats (RequestContext *c)
 static inline void
 __register_contex (RequestContext *dst)
 {
-  struct FuzzTemplate template = opt.fuzz_template;
-
   char **FUZZ = dst->FUZZ;
+  FuzzTemplate template = opt.fuzz_template;
+
   /**
    *  Generating URL
    *  based on opt.fuzz_template.URL
@@ -643,8 +643,10 @@ register_contex (RequestContext *ctx)
   curl_easy_reset (ctx->easy_handle);
   {
     FLG_SET (ctx->flag, CTX_INUSE);
-    curl_easy_setopt (ctx->easy_handle, CURLOPT_WRITEDATA, ctx);
-    curl_easy_setopt (ctx->easy_handle, CURLOPT_WRITEFUNCTION, __cwrite);
+    curl_easy_setopt (ctx->easy_handle, /* deliver ctx to curl_fwrite */
+                      CURLOPT_WRITEDATA, ctx);
+    curl_easy_setopt (ctx->easy_handle, /* custom fwrite function */
+                      CURLOPT_WRITEFUNCTION, curl_fwrite);
   }
   __register_contex (ctx);
   curl_multi_add_handle (opt.multi_handle, ctx->easy_handle);
@@ -790,7 +792,7 @@ init_opt ()
 }
 
 int
-set_template (struct FuzzTemplate *t, int op, void *param)
+set_template (FuzzTemplate *t, int op, void *param)
 {
   int n;
   char *s = (char *) param;
