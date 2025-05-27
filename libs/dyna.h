@@ -507,6 +507,10 @@ __da_dup (void **arr)
 #endif /* DYNA_IMPLEMENTATION */
 
 #ifdef DYNA_TEST
+
+#undef _DA_DEBUG
+#define _DA_DEBUG
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -548,7 +552,9 @@ main (void)
 
   da_foreach (opt.inputs, idx)
     {
-      printf ("input[%lu] -> `%s`\n", idx, opt.inputs[idx]);
+      printf ("@index[%lu] ->\t`%s`\n",
+              idx,
+              opt.inputs[idx]);
       free (opt.inputs[idx]);
     }
 
