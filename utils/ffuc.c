@@ -69,18 +69,19 @@ enum ffuc_flag_t
      *  Initialize request template
      *
      * URL_TEMPLATE:
-     *   Set the URL, only once should be used
+     *   Set the target URL (e.g. "http(s)://host:port")
      * BODY_TEMPLATE:
-     *   Aappend to the request body; It adds `&` automatically
+     *   Aappend to the request body; It handles `&` automatically
+     *   (e.g. "key1=val1&key2=val2" or "&key=val")
      * HEADER_TEMPLATE:
-     *   Append Http header `Header: value`
+     *   Append Http header (e.g. "Header: value")
      */
     URL_TEMPLATE      = 0,
     BODY_TEMPLATE     = 1,
     HEADER_TEMPLATE   = 2,
     
     /**
-     *  Fuzzing modes
+     *  Fuzz Modes (default is CLUSTERBOMB)
      *
      * Singular:
      *   Using only one wordlist for all FUZZ keywords
@@ -95,6 +96,7 @@ enum ffuc_flag_t
     MODE_CLUSTERBOMB  = 0,
     MODE_PITCHFORK    = 1,
     MODE_SINGULAR     = 2,
+    MODE_DEFAULT = MODE_CLUSTERBOMB,
 
     /**
      *  Internal (used in opt.fuzz_flag)
@@ -912,10 +914,7 @@ main (void)
     opt.concurrent = 5;
     opt.waiting_reqs = 0;
     opt.fuzz_count = 0;
-
-    // opt.mode = MODE_SINGULAR;
-    // opt.mode = MODE_PITCHFORK;
-    opt.mode = MODE_CLUSTERBOMB;
+    opt.mode = MODE_DEFAULT;
 
     // URL
     set_template (&opt.fuzz_template, URL_TEMPLATE,
