@@ -210,11 +210,13 @@ typedef struct
 void fw_init (Fword *fw, char *cstr, size_t cstr_len);
 #define fw_cpy(dst, src) Memcpy (dst, src, sizeof (Fword))
 Fword *fw_dup (const Fword *src);
+#define fw_unmap(fw) \
+  if ((fw) && (fw)->str) { ffuc_munmap ((fw)->str, (fw)->__str_bytes); }
 
-/* Only needed if @fw is created via fw_dup */
-#define fw_free(fw) do {                                 \
-    if (fw) ffuc_munmap ((fw)->str, (fw)->__str_bytes);  \
-    safe_free (fw);                                      \
+/* Fword free, Only needed if @fw is created via fw_dup */
+#define fw_free(fw) do {                        \
+    fw_unmap (fw);                              \
+    safe_free (fw);                             \
   } while (0)
 
 /* Find the next word in the word-list */
@@ -259,6 +261,17 @@ lookup_handle (CURL *handle, RequestContext *ctxs, size_t len);
 static inline RequestContext *
 lookup_free_handle (RequestContext *ctxs, size_t len);
 
+#ifndef ffuc_malloc
+#define ffuc_malloc(len) malloc (len)
+#endif
+#ifndef ffuc_calloc
+#define ffuc_calloc(count, len) calloc (count, len)
+#endif
+#ifndef ffuc_mmap
+#define ffuc_mmap(addr, len, prot, flg, fd, off) \
+  mmap (addr, len, prot, flg, fd, off)
+#endif
+
 #undef ffuc_free
 #ifndef FFUC_NO_FREE
 # define ffuc_free(x) free (x)
@@ -285,6 +298,8 @@ lookup_free_handle (RequestContext *ctxs, size_t len);
 
 #define Realloc(ptr, len) \
   if (ptr) { ptr = realloc (ptr, len); }
+#define Memzero(ptr, len) \
+  if (ptr) { memset (ptr, 0, len); }
 #define Strlen(s) \
   ((NULL != s) ? strlen (s) : 0)
 #define Memcpy(dst, src, len) \
@@ -403,7 +418,7 @@ fw_init (Fword *fw, char *cstr, size_t cstr_len)
 Fword *
 fw_dup (const Fword *src)
 {
-  Fword *tmp = malloc (sizeof (Fword));
+  Fword *tmp = ffuc_malloc (sizeof (Fword));
   memcpy (tmp, src, sizeof (Fword));
   return tmp;
 }
@@ -722,7 +737,7 @@ wlmap (int fd, Fword *dst)
   if (-1 == fstat (fd, &sb))
     return 1;
 
-  char *mapped = mmap (NULL,
+  char *mapped = ffuc_mmap (NULL,
                        sb.st_size,
                        PROT_READ, MAP_PRIVATE,
                        fd, 0);
