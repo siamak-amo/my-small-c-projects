@@ -61,11 +61,26 @@
 static char tmp[TMP_CAP];
 
 #define NOP ((void) NULL)
-#define lenof(arr) (sizeof (arr) / sizeof (arr[0]))
 #define UNUSED(x) (void)(x)
+#define MIN(a,b) ((a < b) ? (a) : (b))
 
 #define FLG_SET(dst, flg) (dst |= flg)
 #define FLG_UNSET(dst, flg) (dst &= ~(flg))
+
+const struct option lopts[] =
+  {
+    {"word",                required_argument, NULL, 'w'},
+    {"word-list",           required_argument, NULL, 'w'},
+
+    {"url",                 required_argument, NULL, 'u'},
+    {"header",              required_argument, NULL, 'H'},
+    {"data",                required_argument, NULL, 'd'},
+
+    {"help",                no_argument,       NULL, 'h'},
+    {"version",             no_argument,       NULL, 'v'},
+
+    {NULL,                  0,                 NULL,  0 },
+  };
 
 enum ffuc_flag_t
   {
@@ -761,21 +776,10 @@ register_wordlist (char *pathname)
 int
 init_opt ()
 {
-  opt.wlists = da_new (Fword *);
-  opt.wlist_paths = da_new (char *);
-  opt.ctxs = calloc (opt.concurrent, sizeof (RequestContext));
-
-  char *fps[] = {
-      "/tmp/example2.txt",
-      "/tmp/example1.txt",
-    //   "/tmp/example3.txt",
-    //   "/tmp/example2.txt",
-      "/tmp/example2.txt",
-  };
-  for (size_t i=0; i < lenof (fps)
-         && i < opt.fuzz_count; ++i)
+  if (NULL == opt.fuzz_template.URL)
     {
-      register_wordlist (fps[i]);
+      warnln ("no URL provided.");
+      return -1;
     }
 
    size_t n =  da_sizeof (opt.wlists);
@@ -912,51 +916,84 @@ help ()
 %s v%s - ffuf written in C\n\
 ", PROG_NAME, PROG_VERSION);
 }
+
+/**
+ * @return: positive -> should exit
+ *          negative -> error
+ *              zero -> success
+ */
 int
-main (void)
+parse_args (int argc, char **argv)
+{
+  const char *lopt_cstr = "u:H:d:w:vh";
+  while (1)
+    {
+      int idx = 0;
+      int flag = getopt_long (argc, argv, lopt_cstr, lopts, &idx);
+      if (flag == -1)
+        {
+          /* End of Options */
+          break;
+        }
+      switch (flag)
+        {
+        case 'h':
+          help ();
+          return 1;
+        case 'v':
+          fprintf (stdout, "%s - version: %s\n", PROG_NAME, PROG_VERSION);
+          return 1;
+
+        case 'w':
+          register_wordlist (optarg);
+          break;
+
+        case 'u':
+          set_template (&opt.fuzz_template, URL_TEMPLATE, optarg);
+          break;
+        case 'H':
+          set_template (&opt.fuzz_template, HEADER_TEMPLATE, optarg);
+          break;
+        case 'd':
+          set_template (&opt.fuzz_template, BODY_TEMPLATE, optarg);
+          break;
+
+        default:
+          break;
+        }
+    }
+  return 0;
+}
+
+static inline void
+pre_init_opts ()
+{
+  /* Set default values */
+  opt.concurrent = 5;
+  opt.mode = MODE_DEFAULT;
+  /* Initialize opt */
+  opt.wlists = da_new (Fword *);
+  opt.wlist_paths = da_new (char *);
+
+  /* Initialize libcurl & context of requests */
+  curl_global_init (CURL_GLOBAL_DEFAULT);
+  opt.multi_handle = curl_multi_init ();
+}
+
+int
+main (int argc, char **argv)
 {
   int ret;
   set_program_name (PROG_NAME);
   on_exit (cleanup, NULL);
 
-  /* TODO: use optarg */
-  {
-    opt.concurrent = 5;
-    opt.waiting_reqs = 0;
-    opt.fuzz_count = 0;
-    opt.mode = MODE_DEFAULT;
+  pre_init_opts ();
 
-    // URL
-    set_template (&opt.fuzz_template, URL_TEMPLATE,
-                  "http://127.0.0.1:4444/1_FUZZ.txt");
-    // Body
-    set_template (&opt.fuzz_template, BODY_TEMPLATE, "yourmom=FUZZ");
-    set_template (&opt.fuzz_template, BODY_TEMPLATE, "&test=FUZZ.FUZZ");
-    set_template (&opt.fuzz_template, BODY_TEMPLATE, "test=123");
-    // Headers
-    set_template (&opt.fuzz_template, HEADER_TEMPLATE, "H1_test: FUZZ");
-    set_template (&opt.fuzz_template, HEADER_TEMPLATE, "Hr: FUZZ");
-    set_template (&opt.fuzz_template, HEADER_TEMPLATE, "Hs: FUZZ");
+  if (0 != (ret = parse_args (argc, argv)))
+    return (ret < 0) ? EXIT_FAILURE : EXIT_SUCCESS;
 
-    ret = init_opt ();
-    if (ret)
-      return ret;
-  }
-  
-  /* Initialize libcurl & context of requests */
-  {
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    opt.multi_handle = curl_multi_init();
-
-    for (size_t i = 0; i < opt.concurrent; i++)
-      {
-        opt.ctxs[i].easy_handle = curl_easy_init();
-
-        int cap_bytes = (opt.fuzz_count + 1) * sizeof (char *);
-        opt.ctxs[i].FUZZ = malloc (cap_bytes);
-        memset (opt.ctxs[i].FUZZ, 0, cap_bytes);
-      }
-   }
+  if (0 != (ret = init_opt ()))
+    return EXIT_FAILURE;
 
   /**
    *  Main Loop
