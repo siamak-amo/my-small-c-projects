@@ -697,6 +697,7 @@ __register_contex (RequestContext *dst)
 void
 register_contex (RequestContext *ctx)
 {
+  CURL *curl = ctx->easy_handle;
   opt.load_next_fuzz (ctx);
   curl_easy_reset (ctx->easy_handle);
   {
@@ -705,6 +706,9 @@ register_contex (RequestContext *ctx)
                       CURLOPT_WRITEDATA, ctx);
     curl_easy_setopt (ctx->easy_handle, /* custom fwrite function */
                       CURLOPT_WRITEFUNCTION, curl_fwrite);
+    /* Ignore certification check */
+    curl_easy_setopt (curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt (curl, CURLOPT_SSL_VERIFYHOST, 0L);
   }
   __register_contex (ctx);
   curl_multi_add_handle (opt.multi_handle, ctx->easy_handle);
