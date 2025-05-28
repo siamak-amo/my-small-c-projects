@@ -60,6 +60,10 @@
 #endif
 static char tmp[TMP_CAP];
 
+#ifndef DEFAULT_REQ_COUNT
+# define DEFAULT_REQ_COUNT 10
+#endif
+
 #define NOP ((void) NULL)
 #define UNUSED(x) (void)(x)
 #define MIN(a,b) ((a < b) ? (a) : (b))
@@ -1001,12 +1005,11 @@ static inline void
 pre_init_opts ()
 {
   /* Set default values */
-  opt.concurrent = 5;
   opt.mode = MODE_DEFAULT;
+  opt.concurrent = DEFAULT_REQ_COUNT;
   /* Initialize opt */
   opt.wlists = da_new (Fword *);
   opt.wlist_paths = da_new (char *);
-
   /* Initialize libcurl & context of requests */
   curl_global_init (CURL_GLOBAL_DEFAULT);
   opt.multi_handle = curl_multi_init ();
