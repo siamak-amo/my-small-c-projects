@@ -790,12 +790,26 @@ init_opt ()
        return 1;
      }
 
+   /* Initialize requests context */
+  opt.ctxs = ffuc_calloc (opt.concurrent, sizeof (RequestContext));
+   for (size_t i = 0; i < opt.concurrent; i++)
+     {
+       opt.ctxs[i].easy_handle = curl_easy_init();
+       int cap_bytes = (opt.fuzz_count + 1) * sizeof (char *);
+       opt.ctxs[i].FUZZ = ffuc_malloc (cap_bytes);
+       Memzero (opt.ctxs[i].FUZZ, cap_bytes);
+     }
+
    switch (opt.mode)
     {
     case MODE_PITCHFORK:
       if (opt.fuzz_count != n)
-        warnln ("expected %ld word-list(s), provided %ld", opt.fuzz_count, n);
+        {
+          warnln ("expected %ld word-list(s), provided %ld", opt.fuzz_count, n);
+          opt.fuzz_count = MIN (opt.fuzz_count, n);
+        }
       /* Find the longest wordlist, needed by pitchfork */
+      opt.fuzz_ctx.longest = opt.wlists[0];
       for (size_t i=0; i<n; ++i)
         {
           if (opt.wlists[i]->total_count > opt.fuzz_ctx.longest->total_count)
@@ -812,7 +826,10 @@ init_opt ()
 
     case MODE_CLUSTERBOMB:
       if (opt.fuzz_count != n)
-        warnln ("expected %ld word-list(s), provided %ld", opt.fuzz_count, n);
+        {
+          warnln ("expected %ld word-list(s), provided %ld", opt.fuzz_count, n);
+          opt.fuzz_count = MIN (opt.fuzz_count, n);
+        }
       opt.load_next_fuzz = __next_fuzz_clusterbomb;
       break;
     } 
