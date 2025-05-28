@@ -206,7 +206,7 @@ typedef struct
 #define FW_FORMAT "%.*s"
 #define FW_ARG(fw) (int)((fw)->len), fw_get (fw)
 
-/* Fword init, copy, and duplicate */
+/* Fword init, copy, duplicate and unmap */
 void fw_init (Fword *fw, char *cstr, size_t cstr_len);
 #define fw_cpy(dst, src) Memcpy (dst, src, sizeof (Fword))
 Fword *fw_dup (const Fword *src);
@@ -281,16 +281,16 @@ lookup_free_handle (RequestContext *ctxs, size_t len);
 # define ffuc_munmap NOP
 #endif
 
+#define safe_free(ptr) \
+  if (NULL != ptr) { ffuc_free (ptr); ptr = NULL; }
+
 /**
  *  As the primary bottleneck is the network,
  *  improving memory allocation is not probably
  *  going to enhance performance.
+ *  To prevent memory leak, do NOT use ffuc_free & safe_free here
+ *  because, Strrealloc is used in reading from word-lists.
  */
-#define safe_free(ptr) \
-  if (NULL != ptr) { ffuc_free (ptr); ptr = NULL; }
-
-/* To prevent memory leak, do NOT use ffuc_free here
-   Reason: Strrealloc used in reading from word-lists */
 #define Strrealloc(dst, src) do {               \
     if (dst) free (dst);                        \
     dst = strdup (src);                         \
