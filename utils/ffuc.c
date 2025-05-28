@@ -73,6 +73,7 @@ static char tmp[TMP_CAP];
 
 const struct option lopts[] =
   {
+    /* Word list file path */
     {"word",                required_argument, NULL, 'w'},
     {"word-list",           required_argument, NULL, 'w'},
 
@@ -81,13 +82,14 @@ const struct option lopts[] =
     {"thread",              required_argument, NULL, 't'},
     {"concurrent",          required_argument, NULL, 't'},
 
+    /* HTTP options */
     {"url",                 required_argument, NULL, 'u'},
     {"header",              required_argument, NULL, 'H'},
     {"data",                required_argument, NULL, 'd'},
 
+    /* Common options */
     {"help",                no_argument,       NULL, 'h'},
-    {"version",             no_argument,       NULL, 'v'},
-
+    {"verbose",             no_argument,       NULL, 'v'},
     {NULL,                  0,                 NULL,  0 },
   };
 
@@ -702,16 +704,15 @@ register_contex (RequestContext *ctx)
   curl_easy_reset (ctx->easy_handle);
   {
     FLG_SET (ctx->flag, CTX_INUSE);
-    curl_easy_setopt (ctx->easy_handle, /* deliver ctx to curl_fwrite */
-                      CURLOPT_WRITEDATA, ctx);
-    curl_easy_setopt (ctx->easy_handle, /* custom fwrite function */
-                      CURLOPT_WRITEFUNCTION, curl_fwrite);
     /* Ignore certification check */
     curl_easy_setopt (curl, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt (curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    /* Deliver @ctx to curl_fwrite (custom fwrite function) */
+    curl_easy_setopt (curl, CURLOPT_WRITEDATA, ctx);
+    curl_easy_setopt (curl, CURLOPT_WRITEFUNCTION, curl_fwrite);
   }
   __register_contex (ctx);
-  curl_multi_add_handle (opt.multi_handle, ctx->easy_handle);
+  curl_multi_add_handle (opt.multi_handle, curl);
 }
 
 //-- Utility functions --//
@@ -986,8 +987,8 @@ parse_args (int argc, char **argv)
           help ();
           return 1;
         case 'v':
-          fprintf (stdout, "%s - version: %s\n", PROG_NAME, PROG_VERSION);
-          return 1;
+          /* Verbose is not implemented */
+          return 0;
 
         case 'w':
           register_wordlist (optarg);
@@ -1034,12 +1035,13 @@ main (int argc, char **argv)
   set_program_name (PROG_NAME);
   on_exit (cleanup, NULL);
 
+  /* Parse cmdline arguments & Initialize opt */
   pre_init_opts ();
-
-  if (0 != (ret = parse_args (argc, argv)))
+  ret = parse_args (argc, argv);
+  if (0 != ret)
     return (ret < 0) ? EXIT_FAILURE : EXIT_SUCCESS;
-
-  if (0 != (ret = init_opt ()))
+  ret = init_opt ();
+  if (0 != ret)
     return EXIT_FAILURE;
 
   /**
