@@ -47,6 +47,10 @@
 
 #define CLI_IMPLEMENTATION
 #include "clistd.h"
+#include <getopt.h>
+
+#define PROG_NAME "FFuc"
+#define PROG_VERSION "1.0-dev"
 
 #define SLIST_APPEND(list, val) \
   list = curl_slist_append (list, val)
@@ -56,9 +60,9 @@
 #endif
 static char tmp[TMP_CAP];
 
-#define UNUSED(x) (void)(x)
 #define NOP ((void) NULL)
 #define lenof(arr) (sizeof (arr) / sizeof (arr[0]))
+#define UNUSED(x) (void)(x)
 
 #define FLG_SET(dst, flg) (dst |= flg)
 #define FLG_UNSET(dst, flg) (dst &= ~(flg))
@@ -887,8 +891,7 @@ set_template (FuzzTemplate *t, int op, void *param)
 void
 cleanup (int c, void *p)
 {
-  UNUSED (c);
-  UNUSED (p);
+  UNUSED (c), UNUSED (p);
   /* Libcurl cleanup */
   for (size_t i = 0; i < opt.concurrent; i++)
     {
@@ -902,11 +905,18 @@ cleanup (int c, void *p)
   curl_global_cleanup ();
 }
 
+void
+help ()
+{
+  fprintf (stdout, "\
+%s v%s - ffuf written in C\n\
+", PROG_NAME, PROG_VERSION);
+}
 int
 main (void)
 {
   int ret;
-  set_program_name ("FFuc");
+  set_program_name (PROG_NAME);
   on_exit (cleanup, NULL);
 
   /* TODO: use optarg */
