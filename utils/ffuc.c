@@ -931,6 +931,12 @@ cleanup (int c, void *p)
       safe_free (ctx->request.post_body);
       curl_slist_free_all (ctx->request.http_headers);
     }
+  safe_free (opt.ctxs);
+  da_free (opt.wlist_paths);
+  da_foreach (opt.wlists, i)
+    {
+      fw_free (opt.wlists[i]);
+    }
   curl_multi_cleanup (opt.multi_handle);
   curl_global_cleanup ();
 }
