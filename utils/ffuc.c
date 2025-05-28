@@ -76,6 +76,11 @@ const struct option lopts[] =
     {"word",                required_argument, NULL, 'w'},
     {"word-list",           required_argument, NULL, 'w'},
 
+    /* Although we don't use threads, for the sake of
+       compatibility with ffuf, we call it threads */
+    {"thread",              required_argument, NULL, 't'},
+    {"concurrent",          required_argument, NULL, 't'},
+
     {"url",                 required_argument, NULL, 'u'},
     {"header",              required_argument, NULL, 'H'},
     {"data",                required_argument, NULL, 'd'},
@@ -961,7 +966,7 @@ help ()
 int
 parse_args (int argc, char **argv)
 {
-  const char *lopt_cstr = "u:H:d:w:vh";
+  const char *lopt_cstr = "u:H:d:w:t:vh";
   while (1)
     {
       int idx = 0;
@@ -982,6 +987,9 @@ parse_args (int argc, char **argv)
 
         case 'w':
           register_wordlist (optarg);
+          break;
+        case 't':
+          opt.concurrent = atol (optarg);
           break;
 
         case 'u':
