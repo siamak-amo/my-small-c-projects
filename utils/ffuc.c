@@ -511,23 +511,19 @@ void
 __next_fuzz_pitchfork (RequestContext *ctx)
 {
   Fword *fw;
-  size_t N = da_sizeof (opt.wlists);
-  fprintd ("pitchfork:  ");
+  size_t N = opt.fuzz_count;
 
+  fprintd ("pitchfork:  ");
   for (size_t i = 0; i < N; ++i)
     {
       fw = opt.wlists[i];
       snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
       Strrealloc (ctx->FUZZ[i], tmp);
       fprintd ("[%d]->`%s`\t", fw->idx, tmp);
+      fw_next (fw);
     }
   fprintd ("\n");
 
-  for (size_t i = 0; i < N; ++i)
-    {
-      fw = opt.wlists[i];
-      fw_next (fw);
-    }
   if (fw_bof (opt.fuzz_ctx.longest))
     opt.should_end = 1;
 }
@@ -536,31 +532,29 @@ void
 __next_fuzz_clusterbomb (RequestContext *ctx)
 {
   Fword *fw;
-  fprintd ("clusterbomb:  ");
-  size_t N = da_sizeof (opt.wlists);
+  size_t N = opt.fuzz_count;
 
-  for (size_t i=0; i<N; ++i)
+  size_t next = 0;
+  bool go_next = true;
+  fprintd ("clusterbomb:  ");
+  for (size_t i=0; i < N; ++i)
     {
       fw = opt.wlists[i];
       snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
       Strrealloc (ctx->FUZZ[i], tmp);
       fprintd ("[%d]->`%s`\t", fw->idx, tmp);
+
+      if (go_next)
+        {
+          fw_next (fw);
+          next++;
+        }
+      if (! fw_bof (fw))
+        go_next = false;
     }
   fprintd ("\n");
 
-  size_t i = 0;
-  for (; i < N; )
-    {
-      fw = opt.wlists[i];
-      fw_next (fw);
-
-      if (fw_bof (fw))
-        i++;
-      else
-        break;
-    }
-
-  if (i == N)
+  if (next == N && fw_bof (fw))
     opt.should_end = true;
 }
 
