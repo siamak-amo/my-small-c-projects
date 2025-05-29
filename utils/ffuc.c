@@ -60,6 +60,7 @@
 #endif
 static char tmp[TMP_CAP];
 
+/* Maximum concurrent requests */
 #ifndef DEFAULT_REQ_COUNT
 # define DEFAULT_REQ_COUNT 10
 #endif
@@ -284,13 +285,13 @@ lookup_free_handle (RequestContext *ctxs, size_t len);
 #endif
 
 #undef ffuc_free
-#ifndef FFUC_NO_FREE
+#ifndef SKIP_FREE
 # define ffuc_free(x) free (x)
 # define ffuc_munmap(ptr, len) munmap (ptr, len)
 #else
 # define ffuc_free NOP
 # define ffuc_munmap NOP
-#endif
+#endif /* SKIP_FREE */
 
 #define safe_free(ptr) \
   if (NULL != ptr) { ffuc_free (ptr); ptr = NULL; }
@@ -461,10 +462,10 @@ fw_next (Fword *fw)
 
 /**
  *  FUZZ sprintf, substitutes the FUZZ keyword
- *  with the appropriate value from @FUZZ
+ *  with the appropriate value from @FUZZ array
  *  The tailing element of @FUZZ MUST be NULL
  *
- *  @return: number of consumed elements from @FUZZ
+ *  @return: Number of consumed elements from @FUZZ
  */
 int
 fuzz_snprintf (char *restrict dst, size_t dst_cap,
@@ -499,7 +500,7 @@ fuzz_snprintf (char *restrict dst, size_t dst_cap,
 }
 
 //-- Load next FUZZ functions --//
-void
+static void
 __next_fuzz_singular (RequestContext *ctx)
 {
   Fword *fw = opt.wlists[0];
@@ -518,7 +519,7 @@ __next_fuzz_singular (RequestContext *ctx)
   fw_next (fw);
 }
 
-void
+static void
 __next_fuzz_pitchfork (RequestContext *ctx)
 {
   Fword *fw;
@@ -539,7 +540,7 @@ __next_fuzz_pitchfork (RequestContext *ctx)
     opt.should_end = 1;
 }
 
-void
+static void
 __next_fuzz_clusterbomb (RequestContext *ctx)
 {
   Fword *fw;
@@ -570,7 +571,7 @@ __next_fuzz_clusterbomb (RequestContext *ctx)
 }
 
 //-- RequestContext functions --//
-static inline RequestContext *
+RequestContext *
 lookup_handle (CURL *handle,
                RequestContext *ctxs, size_t len)
 {
@@ -582,7 +583,7 @@ lookup_handle (CURL *handle,
   return NULL;
 }
 
-static inline RequestContext *
+RequestContext *
 lookup_free_handle (RequestContext *ctxs, size_t len)
 {
   for (size_t i=0; i < len; ++i)
@@ -598,7 +599,7 @@ context_reset (RequestContext *ctx)
 {
   ctx->flag = CTX_FREE;
   curl_multi_remove_handle (opt.multi_handle, ctx->easy_handle);
-  memset (&ctx->stat, 0, sizeof (struct stat_t));
+  memset (&ctx->stat, 0, sizeof (struct req_stat_t));
 }
 
 void
@@ -716,7 +717,7 @@ register_contex (RequestContext *ctx)
 }
 
 //-- Utility functions --//
-static inline size_t
+size_t
 fuzz_count (const char *s)
 {
   size_t n = 0;
@@ -776,8 +777,7 @@ register_wordlist (char *pathname)
       fw_cpy (&fw, opt.wlists[wl_idx]);
       WL_APPD (pathname, fw_dup (&fw));
     }
-  else
-    /* New wordlist file, needs fopen and mmap */
+  else /* New wordlist file, needs fopen and mmap */
     {
       int fd = open (pathname, O_RDONLY);
       if (fd < 0)
@@ -796,12 +796,12 @@ register_wordlist (char *pathname)
 #undef WL_APPD
 }
 
-int
+static inline int
 init_opt ()
 {
   if (NULL == opt.fuzz_template.URL)
     {
-      warnln ("no URL provided.");
+      warnln ("no URL provided (use -u <URL>).");
       return -1;
     }
 
@@ -936,6 +936,7 @@ void
 cleanup (int c, void *p)
 {
   UNUSED (c), UNUSED (p);
+#ifndef SKIP_FREE
   /* Libcurl cleanup */
   for (size_t i = 0; i < opt.concurrent; i++)
     {
@@ -953,6 +954,7 @@ cleanup (int c, void *p)
     }
   curl_multi_cleanup (opt.multi_handle);
   curl_global_cleanup ();
+#endif /* SKIP_FREE */
 }
 
 void
@@ -1014,7 +1016,7 @@ parse_args (int argc, char **argv)
   return 0;
 }
 
-static inline void
+void
 pre_init_opts ()
 {
   /* Set default values */
@@ -1043,10 +1045,11 @@ main (int argc, char **argv)
   ret = init_opt ();
   if (0 != ret)
     return EXIT_FAILURE;
+  init_progress (&opt.progress);
 
   /**
    *  Main Loop
-   */ 
+   */
   CURLMsg *msg;
   RequestContext *ctx;
   int numfds, res, still_running;
