@@ -1171,6 +1171,7 @@ main (int argc, char **argv)
   }
   while (still_running > 0 || !opt.should_end);
 
-  warnln ("fuzz completed, error count: %d.", opt.progress.err_count);
+  if (opt.progress.err_count)
+    warnln ("HTTP error count: %d.", opt.progress.err_count);
   return 0;
 }
