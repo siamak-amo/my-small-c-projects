@@ -898,9 +898,9 @@ init_opt ()
           if (opt.wlists[i]->total_count > opt.fuzz_ctx.longest->total_count)
             {
               opt.fuzz_ctx.longest = opt.wlists[i];
-              opt.progress.req_total = opt.wlists[i]->total_count;
             }
         }
+      opt.progress.req_total = opt.fuzz_ctx.longest->total_count;
       opt.load_next_fuzz = __next_fuzz_pitchfork;
       break;
 
