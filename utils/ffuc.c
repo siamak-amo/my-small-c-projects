@@ -65,6 +65,11 @@ static char tmp[TMP_CAP];
 # define DEFAULT_REQ_COUNT 10
 #endif
 
+/* Default delta time, for measuring speed */
+#ifndef DEFAULT_DELTA_T
+# define DEFAULT_DELTA_T 1
+#endif
+
 #define NOP ((void) NULL)
 #define UNUSED(x) (void)(x)
 #define MIN(a,b) ((a < b) ? (a) : (b))
@@ -142,11 +147,23 @@ enum ffuc_flag_t
     CTX_INUSE         = 1,
   };
 
-struct stat_t
+struct req_stat_t
 {
-  unsigned int wcount; /* Count of words */
-  unsigned int lcount; /* Count of lines */
-  unsigned int size_bytes;
+  uint wcount; /* Count of words */
+  uint lcount; /* Count of lines */
+  uint size_bytes;
+};
+
+typedef struct progress_t
+{
+  uint req_total;
+  uint req_count; /* Count of sent requests */
+  uint err_count; /* Count of libcurl errors */
+
+  uint req_count_dt; /* Requests in delta time */
+  time_t dt, t0;
+} Progress;
+{
 };
 
 typedef struct
@@ -155,7 +172,7 @@ typedef struct
   CURL *easy_handle;
 
   /* Statistics of the request */
-  struct stat_t stat;
+  struct req_stat_t stat;
   
   /**
    *  All 'FUZZ' keywords within @opt.fuzz_template
@@ -273,6 +290,18 @@ lookup_handle (CURL *handle, RequestContext *ctxs, size_t len);
 static inline RequestContext *
 lookup_free_handle (RequestContext *ctxs, size_t len);
 
+/**
+ *  Progress functions
+ *
+ * init_progress:
+ *   Initializes the progress struct, sets the current time t0
+ * tick_progress:
+ *   Proceeds the timer and reset the progress if needed,
+ *   It MUST be called and the end of the main loop.
+ */
+void init_progress (Progress *prog);
+static inline void tick_progress (Progress *prog);
+
 #ifndef ffuc_malloc
 #define ffuc_malloc(len) malloc (len)
 #endif
@@ -347,6 +376,8 @@ struct Opt
   Fword **wlists; /* Dynamic array */
   char **wlist_paths; /* Dynamic array, path of word-lists */
   RequestContext *ctxs; /* Static array, Request contexts */
+
+  struct progress_t progress;
 
   /* Next FUZZ loader and */
   void (*load_next_fuzz) (RequestContext *ctx);
@@ -607,20 +638,27 @@ print_stats (RequestContext *c)
 {
   long http_code = 0;
   double total_time;
+  uint percentage = 0;
+  struct progress_t *prog = &opt.progress;
 
   curl_easy_getinfo (c->easy_handle, CURLINFO_HTTP_CODE, &http_code);
   curl_easy_getinfo (c->easy_handle, CURLINFO_TOTAL_TIME, &total_time);
-  
+
+  if (0 != prog->req_total)
+    percentage = (prog->req_count * 100) / prog->req_total;
+
   fprintf (stderr,
            "%s \t\t\t [Status: %-3ld,  "
            "Size: %d,  " "Words: %d,  " "Lines: %d,  "
-           "Duration: %.0fms]\n",
+           "Duration: %.0fms] (%d%% - %dreq/s)\n",
            c->FUZZ[0], /* TODO: what about the others FUZZs? */
            http_code,
            c->stat.size_bytes,
            c->stat.wcount,
            (c->stat.size_bytes > 0) ? c->stat.lcount + 1 : 0,
-           total_time * 1000
+           total_time * 1000,
+           percentage,
+           prog->req_count_dt / (uint)prog->dt
            );
 }
 
@@ -714,6 +752,27 @@ register_contex (RequestContext *ctx)
   }
   __register_contex (ctx);
   curl_multi_add_handle (opt.multi_handle, curl);
+}
+
+//-- Progress statistics functions --//
+void
+init_progress (Progress *prog)
+{
+  time (&prog->t0); // initialize t0
+  prog->dt = DEFAULT_DELTA_T;
+  prog->req_count = 0;
+  prog->req_count_dt = 0;
+}
+
+static inline void
+tick_progress (Progress *prog)
+{
+  time_t t = time (NULL);
+  if (t - prog->t0 >= prog->dt)
+    {
+      prog->req_count_dt = 0;
+      prog->t0 = t;
+    }
 }
 
 //-- Utility functions --//
@@ -836,7 +895,10 @@ init_opt ()
       for (size_t i=0; i<n; ++i)
         {
           if (opt.wlists[i]->total_count > opt.fuzz_ctx.longest->total_count)
-            opt.fuzz_ctx.longest = opt.wlists[i];
+            {
+              opt.fuzz_ctx.longest = opt.wlists[i];
+              opt.progress.req_total = opt.wlists[i]->total_count;
+            }
         }
       opt.load_next_fuzz = __next_fuzz_pitchfork;
       break;
@@ -844,15 +906,19 @@ init_opt ()
     case MODE_SINGULAR:
       if (1 != n)
         warnln ("expected 1 word-list, provided %ld", n);
+      opt.progress.req_total = opt.wlists[0]->total_count;
       opt.load_next_fuzz = __next_fuzz_singular;
       break;
 
     case MODE_CLUSTERBOMB:
+      opt.progress.req_total = 1;
       if (opt.fuzz_count != n)
         {
           warnln ("expected %ld word-list(s), provided %ld", opt.fuzz_count, n);
           opt.fuzz_count = MIN (opt.fuzz_count, n);
         }
+      for (size_t i=0; i<n; ++i)
+        opt.progress.req_total *= opt.wlists[i]->total_count;
       opt.load_next_fuzz = __next_fuzz_clusterbomb;
       break;
     } 
@@ -1077,15 +1143,22 @@ main (int argc, char **argv)
 
         if (msg->msg == CURLMSG_DONE)
           {
+            opt.progress.req_count++;
+            opt.progress.req_count_dt++;
             if (msg->data.result == CURLE_OK)
               print_stats (ctx);
+            else
+              opt.progress.err_count++;
             /* Release the completed context */
             context_reset (ctx);
             opt.waiting_reqs--;
           }
       }
+
+    tick_progress (&opt.progress);
   }
   while (still_running > 0 || !opt.should_end);
 
+  warnln ("fuzz completed, error count: %d.", opt.progress.err_count);
   return 0;
 }
