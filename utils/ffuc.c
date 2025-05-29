@@ -444,8 +444,11 @@ StrlineNull (const char *cstr)
 void
 fw_init (Fword *fw, char *cstr, size_t cstr_len)
 {
+  fw->idx=0;
+  fw->__offset = 0;
+  fw->total_count = 0;
+
   fw->str = cstr;
-  fw->__offset = 0, fw->total_count = 0;
   fw->len = (uint) (StrlineNull (cstr) - cstr);
   fw->__str_bytes = cstr_len;
 
@@ -462,19 +465,16 @@ Fword *
 fw_dup (const Fword *src)
 {
   Fword *tmp = ffuc_malloc (sizeof (Fword));
-  memcpy (tmp, src, sizeof (Fword));
+  fw_cpy (tmp, src);
   return tmp;
 }
 
 char *
 fw_next (Fword *fw)
 {
-  char *p = fw_get (fw);
-  if ('\n' == *p)
-    p++;
-
+  char *p = fw_get (fw) + fw->len + 1;
   char *next = Strline (p);
-  if (NULL == next || '\0' == next[1])
+  if (NULL == next || '\0' == *next)
     {
       p = fw->str;
       next = Strline (p);
@@ -483,7 +483,7 @@ fw_next (Fword *fw)
       fw->idx = 0;
       return fw->str;
     }
-  fw->__offset += (next - p) + 1;
+  fw->__offset = p - fw->str;
   fw->len = next - p;
   fw->idx++;
   if (fw->idx == fw->total_count)
