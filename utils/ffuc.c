@@ -87,6 +87,7 @@ const struct option lopts[] =
        compatibility with ffuf, we call it threads */
     {"thread",              required_argument, NULL, 't'},
     {"concurrent",          required_argument, NULL, 't'},
+    {"mode",                required_argument, NULL, 'm'},
 
     /* HTTP options */
     {"url",                 required_argument, NULL, 'u'},
@@ -1039,7 +1040,7 @@ help ()
 int
 parse_args (int argc, char **argv)
 {
-  const char *lopt_cstr = "u:H:d:w:t:vh";
+  const char *lopt_cstr = "m:u:H:d:w:t:vh";
   while (1)
     {
       int idx = 0;
@@ -1073,6 +1074,17 @@ parse_args (int argc, char **argv)
           break;
         case 'd':
           set_template (&opt.fuzz_template, BODY_TEMPLATE, optarg);
+          break;
+
+        case 'm':
+          if (0 == strcmp ("pickfork", optarg))
+            opt.mode = MODE_PITCHFORK;
+          else if (0 == strcmp ("singular", optarg))
+            opt.mode = MODE_SINGULAR;
+          else if (0 == strcmp ("clusterbomb", optarg))
+            opt.mode = MODE_CLUSTERBOMB;
+          else
+            warnln ("invalid mode `%s` was ignored", optarg);
           break;
 
         default:
