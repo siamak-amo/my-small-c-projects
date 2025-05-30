@@ -90,18 +90,13 @@ static char tmp[TMP_CAP];
 #define FLG_SET(dst, flg) (dst |= flg)
 #define FLG_UNSET(dst, flg) (dst &= ~(flg))
 
+const char *lopt_cstr = "m:T:u:H:d:w:t:vh";
 const struct option lopts[] =
   {
-    /* Word list file path */
-    {"word",                required_argument, NULL, 'w'},
-    {"word-list",           required_argument, NULL, 'w'},
-
-    /* Although we don't use threads, for the sake of
-       compatibility with ffuf, we call it threads */
+    /* We call it `thread` (-t) for compatibility with ffuf,
+       even though we don't use threads */
     {"thread",              required_argument, NULL, 't'},
     {"concurrent",          required_argument, NULL, 't'},
-    {"mode",                required_argument, NULL, 'm'},
-    {"timeout",             required_argument, NULL, 'T'},
 
     /* HTTP options */
     {"url",                 required_argument, NULL, 'u'},
@@ -109,8 +104,13 @@ const struct option lopts[] =
     {"data",                required_argument, NULL, 'd'},
 
     /* Common options */
+    {"word",                required_argument, NULL, 'w'},
+    {"word-list",           required_argument, NULL, 'w'},
+    {"mode",                required_argument, NULL, 'm'},
+    {"timeout",             required_argument, NULL, 'T'},
     {"help",                no_argument,       NULL, 'h'},
     {"verbose",             no_argument,       NULL, 'v'},
+    /* End of options */
     {NULL,                  0,                 NULL,  0 },
   };
 
@@ -180,6 +180,9 @@ typedef struct progress_t
   uint req_count_dt; /* Requests in delta time */
   time_t dt, t0;
 } Progress;
+/* Calculate the current request rate (req/second) uint_t */
+#define REQ_RATE(prog) ((prog)->req_count_dt / (uint)(prog)->dt)
+
 {
 };
 
@@ -1092,7 +1095,6 @@ help ()
 int
 parse_args (int argc, char **argv)
 {
-  const char *lopt_cstr = "m:T:u:H:d:w:t:vh";
   while (1)
     {
       int idx = 0;
