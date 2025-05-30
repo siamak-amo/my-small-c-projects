@@ -1207,15 +1207,15 @@ main (int argc, char **argv)
   int numfds, res, still_running;
   do {
     /* Find a free context (If there is any) and register it */
-    if (opt.max_rate > REQ_RATE (&opt.progress))
+    while (!opt.should_end && opt.waiting_reqs < opt.concurrent)
       {
-        while (!opt.should_end && opt.waiting_reqs < opt.concurrent)
+        /* TODO: Is this improvable? */
+        if (opt.max_rate <= REQ_RATE (&opt.progress))
+          break;
+        if ((ctx = lookup_free_handle (opt.ctxs, opt.concurrent)))
           {
-            if ((ctx = lookup_free_handle (opt.ctxs, opt.concurrent)))
-              {
-                opt.waiting_reqs++;
-                register_contex (ctx);
-              }
+            opt.waiting_reqs++;
+            register_contex (ctx);
           }
       }
 
