@@ -153,6 +153,9 @@ struct req_stat_t
   uint wcount; /* Count of words */
   uint lcount; /* Count of lines */
   uint size_bytes;
+
+  int code; /* HTTP response code */
+  int duration; /* Total time to response */
 };
 
 typedef struct progress_t
@@ -634,33 +637,43 @@ context_reset (RequestContext *ctx)
   memset (&ctx->stat, 0, sizeof (struct req_stat_t));
 }
 
-void
-print_stats (RequestContext *c)
+static inline void
+print_stats_context (RequestContext *ctx)
 {
-  long http_code = 0;
-  double total_time;
   uint percentage = 0;
   struct progress_t *prog = &opt.progress;
-
-  curl_easy_getinfo (c->easy_handle, CURLINFO_HTTP_CODE, &http_code);
-  curl_easy_getinfo (c->easy_handle, CURLINFO_TOTAL_TIME, &total_time);
-
   if (0 != prog->req_total)
     percentage = (prog->req_count * 100) / prog->req_total;
-
   fprintf (stderr,
-           "%s \t\t\t [Status: %-3ld,  "
+           "%s \t\t\t [Status: %-3d,  "
            "Size: %d,  " "Words: %d,  " "Lines: %d,  "
-           "Duration: %.0fms] (%d%% - %dreq/s)\n",
-           c->FUZZ[0], /* TODO: what about the others FUZZs? */
-           http_code,
-           c->stat.size_bytes,
-           c->stat.wcount,
-           (c->stat.size_bytes > 0) ? c->stat.lcount + 1 : 0,
-           total_time * 1000,
+           "Duration: %dms] (%d%% - %dreq/s)\n",
+           ctx->FUZZ[0], /* TODO: what about the others FUZZs? */
+           ctx->stat.code,
+           ctx->stat.size_bytes,
+           ctx->stat.wcount,
+           ctx->stat.lcount + 1,
+           ctx->stat.duration,
            percentage,
            prog->req_count_dt / (uint)prog->dt
            );
+}
+
+static void
+handle_response_context (RequestContext *ctx)
+{
+  long res_code = 0;
+  double duration;
+
+  curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &res_code);
+  curl_easy_getinfo (ctx->easy_handle, CURLINFO_TOTAL_TIME, &duration);
+
+  ctx->stat.code = (int) res_code;
+  ctx->stat.duration = (int) (duration * 1000.f);
+  if (ctx->stat.size_bytes)
+    ctx->stat.lcount++; /* Line count starts from 1 */
+
+  print_stats_context (ctx);
 }
 
 static inline void
@@ -1158,7 +1171,7 @@ main (int argc, char **argv)
             opt.progress.req_count++;
             opt.progress.req_count_dt++;
             if (msg->data.result == CURLE_OK)
-              print_stats (ctx);
+              handle_response_context (ctx);
             else
               opt.progress.err_count++;
             /* Release the completed context */
