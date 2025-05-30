@@ -1095,7 +1095,7 @@ parse_args (int argc, char **argv)
 }
 
 void
-pre_init_opts ()
+pre_init_opt ()
 {
   /* Set default values */
   opt.mode = MODE_DEFAULT;
@@ -1116,7 +1116,7 @@ main (int argc, char **argv)
   on_exit (cleanup, NULL);
 
   /* Parse cmdline arguments & Initialize opt */
-  pre_init_opts ();
+  pre_init_opt ();
   ret = parse_args (argc, argv);
   if (0 != ret)
     return (ret < 0) ? EXIT_FAILURE : EXIT_SUCCESS;
