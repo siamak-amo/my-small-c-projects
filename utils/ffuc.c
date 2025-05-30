@@ -95,7 +95,7 @@ static char tmp[TMP_CAP];
 #define FLG_SET(dst, flg) (dst |= flg)
 #define FLG_UNSET(dst, flg) (dst &= ~(flg))
 
-const char *lopt_cstr = "m:T:u:H:d:w:t:vh";
+const char *lopt_cstr = "m:w:" "T:R:t:" "u:H:d:" "vh";
 const struct option lopts[] =
   {
     /* We call it `thread` (-t) for compatibility with ffuf,
@@ -112,6 +112,8 @@ const struct option lopts[] =
     {"word",                required_argument, NULL, 'w'},
     {"word-list",           required_argument, NULL, 'w'},
     {"mode",                required_argument, NULL, 'm'},
+    {"rate",                required_argument, NULL, 'R'},
+    {"max_rate",            required_argument, NULL, 'R'},
     {"timeout",             required_argument, NULL, 'T'},
     {"help",                no_argument,       NULL, 'h'},
     {"verbose",             no_argument,       NULL, 'v'},
@@ -1126,9 +1128,14 @@ parse_args (int argc, char **argv)
           opt.concurrent = atol (optarg);
           break;
         case 'T':
-          opt.ttl = atoi (optarg);
-          if (opt.ttl <= 0)
-            warnln ("invalid TTL was ignored.");
+          if ((opt.ttl = atoi (optarg)) <= 0)
+            {
+              opt.ttl = DEFAULT_TTL_MS;
+              warnln ("invalid TTL was ignored.");
+            }
+          break;
+        case 'R':
+          opt.max_rate = atoi (optarg);
           break;
 
         case 'u':
