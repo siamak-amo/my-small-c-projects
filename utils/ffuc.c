@@ -164,6 +164,20 @@ enum ffuc_flag_t
     BODY_HASFUZZ      = (1 << 2),
     HEADER_HASFUZZ    = (1 << 3),
 
+    /**
+     *  Output filter & match
+     */
+    FILTER_CODE       = 1,
+    FILTER_WCOUNT     = 2,
+    FILTER_LCOUNT     = 3,
+    FILTER_SIZE       = 4,
+    FILTER_TIME       = 5,
+    MATCH_CODE        = 127,
+    MATCH_WCOUNT      = 126,
+    MATCH_LCOUNT      = 125,
+    MATCH_SIZE        = 124,
+    MATCH_TIME        = 123,
+
     /* Internal (used in RequestContext.flag) */
     CTX_FREE          = 0,
     CTX_INUSE         = 1,
@@ -191,8 +205,17 @@ typedef struct progress_t
 /* Calculate the current request rate (req/second) uint_t */
 #define REQ_RATE(prog) (int)((prog)->req_count_dt / DELTA_T)
 
+struct res_filter_t
 {
+  char type; /* FILTER_XXX  or  MATCH_XXX */
+  struct
+  {
+    int start, end;
+  } range;
 };
+
+/* The default filter to match success status codes */
+const struct res_filter_t default_filter = {MATCH_CODE, {200, 399}};
 
 typedef struct
 {
@@ -409,6 +432,7 @@ struct Opt
   RequestContext *ctxs; /* Static array, Request contexts */
 
   struct progress_t progress;
+  struct res_filter_t *filters; /* Dynamic array */
 
   /* Next FUZZ loader and */
   void (*load_next_fuzz) (RequestContext *ctx);
@@ -705,23 +729,72 @@ print_stats_context (RequestContext *ctx, int err)
            );
 }
 
+#define RANGE(x, rng) ((rng).start <= (int)(x) && (int)(x) <= (rng).end)
+static inline bool
+filter_pass (struct req_stat_t *stat, struct res_filter_t *filters)
+{
+#define Exclude(cond) if (cond) return false;
+  da_foreach (filters, i)
+    {
+      struct res_filter_t *filter = filters + i;
+      switch (filter->type)
+        {
+        case FILTER_CODE:
+          Exclude (RANGE (stat->code, filter->range))
+          break;
+        case FILTER_WCOUNT:
+          Exclude (RANGE (stat->wcount, filter->range))
+          break;
+        case FILTER_LCOUNT:
+          Exclude (RANGE (stat->lcount, filter->range))
+          break;
+        case FILTER_SIZE:
+          Exclude (RANGE (stat->size_bytes, filter->range))
+          break;
+        case FILTER_TIME:
+          Exclude (RANGE (stat->duration, filter->range))
+          break;
+
+        case MATCH_CODE:
+          Exclude (! RANGE (stat->code, filter->range))
+          break;
+        case MATCH_WCOUNT:
+          Exclude (! RANGE (stat->wcount, filter->range))
+          break;
+        case MATCH_LCOUNT:
+          Exclude (! RANGE (stat->lcount, filter->range))
+          break;
+        case MATCH_SIZE:
+          Exclude (! RANGE (stat->size_bytes, filter->range))
+          break;
+        case MATCH_TIME:
+          Exclude (! RANGE (stat->duration, filter->range))
+          break;
+        }
+    }
+  return true;
+#undef Exclude
+}
+
 static void
 handle_response_context (RequestContext *ctx, int err)
 {
   long res_code = 0;
   double duration;
+  struct req_stat_t *stat = &ctx->stat;
 
   if (err == CURLE_OK)
     {
       curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &res_code);
-      ctx->stat.code = (int) res_code;
-      if (ctx->stat.size_bytes)
-        ctx->stat.lcount++; /* Line count starts from 1 */
+      stat->code = (int) res_code;
+      if (stat->size_bytes)
+        stat->lcount++; /* Line count starts from 1 */
     }
   curl_easy_getinfo (ctx->easy_handle, CURLINFO_TOTAL_TIME, &duration);
-  ctx->stat.duration = (int) (duration * 1000.f);
+  stat->duration = (int) (duration * 1000.f);
 
-  print_stats_context (ctx, err);
+  if (filter_pass (stat, opt.filters))
+    print_stats_context (ctx, err);
 }
 
 static inline void
@@ -946,6 +1019,11 @@ init_opt ()
        Memzero (opt.ctxs[i].FUZZ, cap_bytes);
      }
 
+   if (NULL == opt.filters)
+     {
+       da_appd (opt.filters, default_filter);
+     }
+
    switch (opt.mode)
     {
     case MODE_PITCHFORK:
@@ -1078,6 +1156,7 @@ cleanup (int c, void *p)
     }
   safe_free (opt.ctxs);
   da_free (opt.wlist_paths);
+  da_free (opt.filters);
   da_foreach (opt.wlists, i)
     {
       fw_free (opt.wlists[i]);
