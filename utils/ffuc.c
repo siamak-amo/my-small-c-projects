@@ -72,15 +72,15 @@ static char tmp[TMP_CAP];
 
 /* Default connection/read timeuot */
 #ifndef CONN_TTL_MS
-# define CONN_TTL_MS 10000 // 10s
+# define CONN_TTL_MS 10000
 #endif
 #ifndef DEFAULT_TTL_MS
 # define DEFAULT_TTL_MS 10000
 #endif
 
 /* Poll timeout */
-#ifndef POLL_TTL
-# define POLL_TTL 1000
+#ifndef POLL_TTL_MS
+# define POLL_TTL_MS 1000
 #endif
 
 #define NOP ((void) NULL)
@@ -176,7 +176,6 @@ typedef struct progress_t
 {
   uint req_total;
   uint req_count; /* Count of sent requests */
-  uint err_count; /* Count of libcurl errors */
 
   uint req_count_dt; /* Requests in delta time */
   time_t dt, t0;
@@ -383,6 +382,7 @@ struct Opt
   /* User options */
   int mode;
   int ttl; /* Timeout in milliseconds */
+  int verbose;
   size_t concurrent; /* Max number of concurrent requests */
   FuzzTemplate fuzz_template;
 
@@ -653,42 +653,63 @@ context_reset (RequestContext *ctx)
 }
 
 static inline void
-print_stats_context (RequestContext *ctx)
+__print_stats_fuzz (RequestContext *ctx)
+{
+  /* TODO: when FUZZ has more then one element */
+  fprintf (stderr, "%s \t\t\t ", ctx->FUZZ[0]);
+}
+
+static inline void
+print_stats_context (RequestContext *ctx, int err)
 {
   uint percentage = 0;
   struct progress_t *prog = &opt.progress;
+
+  if (err)
+    {
+      if (opt.verbose)
+        {
+          __print_stats_fuzz (ctx);
+          fprintf (stderr, "[Status: (error) %s, Duration: %dms]\n",
+                   curl_easy_strerror (err),
+                   ctx->stat.duration);
+        }
+      return;
+    }
+
   if (0 != prog->req_total)
     percentage = (prog->req_count * 100) / prog->req_total;
-  fprintf (stderr,
-           "%s \t\t\t [Status: %-3d,  "
-           "Size: %d,  " "Words: %d,  " "Lines: %d,  "
-           "Duration: %dms] (%d%% - %dreq/s)\n",
-           ctx->FUZZ[0], /* TODO: what about the others FUZZs? */
+  __print_stats_fuzz (ctx);
+  fprintf (stderr, "\
+[Status: %-3d,  Size: %d,  Words: %d,  Lines: %d,  Duration: %dms]"
+           " (%d%% - %dreq/s)\n",
            ctx->stat.code,
            ctx->stat.size_bytes,
            ctx->stat.wcount,
-           ctx->stat.lcount + 1,
+           ctx->stat.lcount,
            ctx->stat.duration,
            percentage,
-           prog->req_count_dt / (uint)prog->dt
+           REQ_RATE (prog)
            );
 }
 
 static void
-handle_response_context (RequestContext *ctx)
+handle_response_context (RequestContext *ctx, int err)
 {
   long res_code = 0;
   double duration;
 
-  curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &res_code);
+  if (err == CURLE_OK)
+    {
+      curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &res_code);
+      ctx->stat.code = (int) res_code;
+      if (ctx->stat.size_bytes)
+        ctx->stat.lcount++; /* Line count starts from 1 */
+    }
   curl_easy_getinfo (ctx->easy_handle, CURLINFO_TOTAL_TIME, &duration);
-
-  ctx->stat.code = (int) res_code;
   ctx->stat.duration = (int) (duration * 1000.f);
-  if (ctx->stat.size_bytes)
-    ctx->stat.lcount++; /* Line count starts from 1 */
 
-  print_stats_context (ctx);
+  print_stats_context (ctx, err);
 }
 
 static inline void
@@ -1087,7 +1108,7 @@ parse_args (int argc, char **argv)
           help ();
           return 1;
         case 'v':
-          /* Verbose is not implemented */
+          opt.verbose = true;
           return 0;
 
         case 'w':
@@ -1180,7 +1201,7 @@ main (int argc, char **argv)
       }
 
     curl_multi_perform (opt.multi_handle, &still_running);
-    curl_multi_wait (opt.multi_handle, NULL, 0, POLL_TTL, &numfds);
+    curl_multi_wait (opt.multi_handle, NULL, 0, POLL_TTL_MS, &numfds);
 
     while ((msg = curl_multi_info_read (opt.multi_handle, &res)))
       {
@@ -1194,10 +1215,7 @@ main (int argc, char **argv)
           {
             opt.progress.req_count++;
             opt.progress.req_count_dt++;
-            if (msg->data.result == CURLE_OK)
-              handle_response_context (ctx);
-            else
-              opt.progress.err_count++;
+            handle_response_context (ctx, msg->data.result);
             /* Release the completed context */
             context_reset (ctx);
             opt.waiting_reqs--;
@@ -1208,7 +1226,5 @@ main (int argc, char **argv)
   }
   while (still_running > 0 || !opt.should_end);
 
-  if (opt.progress.err_count)
-    warnln ("HTTP error count: %d.", opt.progress.err_count);
   return 0;
 }
