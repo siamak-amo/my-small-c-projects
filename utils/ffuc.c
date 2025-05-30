@@ -65,9 +65,14 @@ static char tmp[TMP_CAP];
 # define DEFAULT_REQ_COUNT 10
 #endif
 
+/* Maximum request rate (req/sec) */
+#ifndef MAX_REQ_RATE
+# define MAX_REQ_RATE -1 // no limit
+#endif
+
 /* Default delta time, for measuring speed */
-#ifndef DEFAULT_DELTA_T
-# define DEFAULT_DELTA_T 1
+#ifndef DELTA_T
+# define DELTA_T 1
 #endif
 
 /* Default connection/read timeuot */
@@ -178,10 +183,11 @@ typedef struct progress_t
   uint req_count; /* Count of sent requests */
 
   uint req_count_dt; /* Requests in delta time */
-  time_t dt, t0;
+  time_t t0;
 } Progress;
+
 /* Calculate the current request rate (req/second) uint_t */
-#define REQ_RATE(prog) ((prog)->req_count_dt / (uint)(prog)->dt)
+#define REQ_RATE(prog) (int)((prog)->req_count_dt / DELTA_T)
 
 {
 };
@@ -386,6 +392,7 @@ struct Opt
   int mode;
   int ttl; /* Timeout in milliseconds */
   int verbose;
+  int max_rate; /* Max request rate (req/sec) */
   size_t concurrent; /* Max number of concurrent requests */
   FuzzTemplate fuzz_template;
 
@@ -815,7 +822,6 @@ void
 init_progress (Progress *prog)
 {
   time (&prog->t0); // initialize t0
-  prog->dt = DEFAULT_DELTA_T;
   prog->req_count = 0;
   prog->req_count_dt = 0;
 }
@@ -824,7 +830,7 @@ static inline void
 tick_progress (Progress *prog)
 {
   time_t t = time (NULL);
-  if (t - prog->t0 >= prog->dt)
+  if (t - prog->t0 >= DELTA_T)
     {
       prog->req_count_dt = 0;
       prog->t0 = t;
@@ -1160,6 +1166,7 @@ pre_init_opt ()
   opt.ttl = DEFAULT_TTL_MS;
   opt.mode = MODE_DEFAULT;
   opt.concurrent = DEFAULT_REQ_COUNT;
+  opt.max_rate = MAX_REQ_RATE;
   /* Initialize opt */
   opt.wlists = da_new (Fword *);
   opt.wlist_paths = da_new (char *);
@@ -1193,12 +1200,15 @@ main (int argc, char **argv)
   int numfds, res, still_running;
   do {
     /* Find a free context (If there is any) and register it */
-    while (!opt.should_end && opt.waiting_reqs < opt.concurrent)
+    if (opt.max_rate > REQ_RATE (&opt.progress))
       {
-        if ((ctx = lookup_free_handle (opt.ctxs, opt.concurrent)))
+        while (!opt.should_end && opt.waiting_reqs < opt.concurrent)
           {
-            opt.waiting_reqs++;
-            register_contex (ctx);
+            if ((ctx = lookup_free_handle (opt.ctxs, opt.concurrent)))
+              {
+                opt.waiting_reqs++;
+                register_contex (ctx);
+              }
           }
       }
 
