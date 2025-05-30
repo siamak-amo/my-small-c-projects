@@ -70,6 +70,19 @@ static char tmp[TMP_CAP];
 # define DEFAULT_DELTA_T 1
 #endif
 
+/* Default connection/read timeuot */
+#ifndef CONN_TTL_MS
+# define CONN_TTL_MS 10000 // 10s
+#endif
+#ifndef DEFAULT_TTL_MS
+# define DEFAULT_TTL_MS 10000
+#endif
+
+/* Poll timeout */
+#ifndef POLL_TTL
+# define POLL_TTL 1000
+#endif
+
 #define NOP ((void) NULL)
 #define UNUSED(x) (void)(x)
 #define MIN(a,b) ((a < b) ? (a) : (b))
@@ -88,6 +101,7 @@ const struct option lopts[] =
     {"thread",              required_argument, NULL, 't'},
     {"concurrent",          required_argument, NULL, 't'},
     {"mode",                required_argument, NULL, 'm'},
+    {"timeout",             required_argument, NULL, 'T'},
 
     /* HTTP options */
     {"url",                 required_argument, NULL, 'u'},
@@ -368,6 +382,7 @@ struct Opt
 {
   /* User options */
   int mode;
+  int ttl; /* Timeout in milliseconds */
   size_t concurrent; /* Max number of concurrent requests */
   FuzzTemplate fuzz_template;
 
@@ -763,6 +778,9 @@ register_contex (RequestContext *ctx)
     /* Deliver @ctx to curl_fwrite (custom fwrite function) */
     curl_easy_setopt (curl, CURLOPT_WRITEDATA, ctx);
     curl_easy_setopt (curl, CURLOPT_WRITEFUNCTION, curl_fwrite);
+    /* Timeout */
+    curl_easy_setopt (curl, CURLOPT_TIMEOUT_MS, opt.ttl);
+    curl_easy_setopt (curl, CURLOPT_CONNECTTIMEOUT_MS, CONN_TTL_MS);
   }
   __register_contex (ctx);
   curl_multi_add_handle (opt.multi_handle, curl);
@@ -1053,7 +1071,7 @@ help ()
 int
 parse_args (int argc, char **argv)
 {
-  const char *lopt_cstr = "m:u:H:d:w:t:vh";
+  const char *lopt_cstr = "m:T:u:H:d:w:t:vh";
   while (1)
     {
       int idx = 0;
@@ -1077,6 +1095,11 @@ parse_args (int argc, char **argv)
           break;
         case 't':
           opt.concurrent = atol (optarg);
+          break;
+        case 'T':
+          opt.ttl = atoi (optarg);
+          if (opt.ttl <= 0)
+            warnln ("invalid TTL was ignored.");
           break;
 
         case 'u':
@@ -1111,6 +1134,7 @@ void
 pre_init_opt ()
 {
   /* Set default values */
+  opt.ttl = DEFAULT_TTL_MS;
   opt.mode = MODE_DEFAULT;
   opt.concurrent = DEFAULT_REQ_COUNT;
   /* Initialize opt */
@@ -1156,7 +1180,7 @@ main (int argc, char **argv)
       }
 
     curl_multi_perform (opt.multi_handle, &still_running);
-    curl_multi_wait (opt.multi_handle, NULL, 0, 1000, &numfds);
+    curl_multi_wait (opt.multi_handle, NULL, 0, POLL_TTL, &numfds);
 
     while ((msg = curl_multi_info_read (opt.multi_handle, &res)))
       {
