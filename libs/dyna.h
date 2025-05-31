@@ -98,7 +98,7 @@
       da_appd_da (cstr2, cstr);
 
       // Using advanced many append
-      int i = da_many_appd (cstr2, 3);
+      int i = da_allocate (cstr2, 3);
       memcpy (&cstr2[i], source, sizeof source);
 
       return 0;
@@ -245,6 +245,7 @@ DYNADEF dyna_t * __mk_da (da_sidx, da_sidx);
 DYNADEF da_sidx __da_appd (void **);
 DYNADEF void * __da_aappd (void **, da_sidx);
 DYNADEF void * __da_dup (void **);
+DYNADEF da_sidx __da_allocate (void **, int, int);
 
 #define DA_NNULL(arr) (NULL != arr)
 
@@ -364,11 +365,8 @@ DYNADEF void * __da_dup (void **);
  *
  *  @n: to allocate n entries in @arr
  */
-#define da_many_appd(arr, n) ({ da_sidx __i = 0;    \
-      if (NULL == arr)                              \
-        arr = da_newn (typeof (*(arr)), n);         \
-      __i = __da_many_appd ((void **)&(arr), n);    \
-      __i; })
+#define da_allocate(arr, n) \
+  __da_allocate ((void **)&arr, n, sizeof (*(arr)))
 
 /**
  *  Drops contents of a dynamic array
@@ -426,12 +424,17 @@ __mk_da(da_sidx cell_size, da_sidx n)
 }
 
 DYNADEF da_sidx
-__da_many_appd (void **arr, int n)
+__da_allocate (void **arr, int n, int cell_bytes)
 {
   dyna_t *da;
   size_t old_size, new_size;
 
-  if (!(da = DA_CONTAINEROF (*arr)))
+  if (! *arr)
+    {
+      da = __mk_da (cell_bytes, n);
+      *arr = da->arr;
+    }
+  else if (!(da = DA_CONTAINEROF (*arr)))
     return -1;
 
   old_size = da->size;
