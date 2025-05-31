@@ -19,7 +19,8 @@
   
     Dynamic Array (generic) implementation
     Based on `templates/slice.c` within this repository
-  
+    * Macros in this library may evaluate parameters multiple times *
+
     Usage:
     ```c
     #include <stdio.h>
@@ -98,7 +99,7 @@
 
       // Using advanced many append
       int i = da_many_appd (cstr2, 3);
-      memcpy (cstr2 + i, source, sizeof source);
+      memcpy (&cstr2[i], source, sizeof source);
 
       return 0;
     }
