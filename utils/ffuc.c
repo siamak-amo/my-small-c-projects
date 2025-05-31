@@ -691,16 +691,25 @@ context_reset (RequestContext *ctx)
 static inline void
 __print_stats_fuzz (RequestContext *ctx)
 {
-  /* TODO: when FUZZ has more then one element */
-  fprintf (stderr, "%s \t\t\t ", ctx->FUZZ[0]);
+#define FUZZ_FORMAT "`%s`"
+  if (opt.fuzz_count == 1)
+    {
+      fprintf (stderr, "%s \t\t\t ", ctx->FUZZ[0]);
+    }
+  else
+    {
+      size_t i;
+      fprintf (stderr, "\n* FUZZ = [");
+      for (i=0; i < opt.fuzz_count - 1; ++i)
+        fprintf (stderr, FUZZ_FORMAT ", ", ctx->FUZZ[i]);
+      fprintf (stderr, FUZZ_FORMAT "]:\n  ", ctx->FUZZ[i]);
+    }
+#undef FUZZ_FORMAT
 }
 
 static inline void
 print_stats_context (RequestContext *ctx, int err)
 {
-  uint percentage = 0;
-  struct progress_t *prog = &opt.progress;
-
   if (err)
     {
       if (opt.verbose)
@@ -713,19 +722,14 @@ print_stats_context (RequestContext *ctx, int err)
       return;
     }
 
-  if (0 != prog->req_total)
-    percentage = (prog->req_count * 100) / prog->req_total;
   __print_stats_fuzz (ctx);
   fprintf (stderr, "\
-[Status: %-3d,  Size: %d,  Words: %d,  Lines: %d,  Duration: %dms]"
-           " (%d%% - %dreq/s)\n",
+[Status: %-3d,  Size: %d,  Words: %d,  Lines: %d,  Duration: %dms]\n",
            ctx->stat.code,
            ctx->stat.size_bytes,
            ctx->stat.wcount,
            ctx->stat.lcount,
-           ctx->stat.duration,
-           percentage,
-           REQ_RATE (prog)
+           ctx->stat.duration
            );
 }
 
