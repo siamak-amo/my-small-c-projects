@@ -773,47 +773,37 @@ static inline bool
 filter_pass (struct req_stat_t *stat, struct res_filter_t *filters)
 {
 #define RANGE(x, rng) ((rng).start <= (int)(x) && (int)(x) <= (rng).end)
-#define Exclude(cond) if (cond) return false;
+#define EXCLUDE(cond) if (cond) return false; break;
   da_foreach (filters, i)
     {
       struct res_filter_t *filter = filters + i;
       switch (filter->type)
         {
         case FILTER_CODE:
-          Exclude (RANGE (stat->code, filter->range))
-          break;
+          EXCLUDE (RANGE (stat->code, filter->range));
         case FILTER_WCOUNT:
-          Exclude (RANGE (stat->wcount, filter->range))
-          break;
+          EXCLUDE (RANGE (stat->wcount, filter->range));
         case FILTER_LCOUNT:
-          Exclude (RANGE (stat->lcount, filter->range))
-          break;
+          EXCLUDE (RANGE (stat->lcount, filter->range));
         case FILTER_SIZE:
-          Exclude (RANGE (stat->size_bytes, filter->range))
-          break;
+          EXCLUDE (RANGE (stat->size_bytes, filter->range));
         case FILTER_TIME:
-          Exclude (RANGE (stat->duration, filter->range))
-          break;
+          EXCLUDE (RANGE (stat->duration, filter->range));
 
         case MATCH_CODE:
-          Exclude (! RANGE (stat->code, filter->range))
-          break;
+          EXCLUDE (! RANGE (stat->code, filter->range));
         case MATCH_WCOUNT:
-          Exclude (! RANGE (stat->wcount, filter->range))
-          break;
+          EXCLUDE (! RANGE (stat->wcount, filter->range));
         case MATCH_LCOUNT:
-          Exclude (! RANGE (stat->lcount, filter->range))
-          break;
+          EXCLUDE (! RANGE (stat->lcount, filter->range));
         case MATCH_SIZE:
-          Exclude (! RANGE (stat->size_bytes, filter->range))
-          break;
+          EXCLUDE (! RANGE (stat->size_bytes, filter->range));
         case MATCH_TIME:
-          Exclude (! RANGE (stat->duration, filter->range))
-          break;
+          EXCLUDE (! RANGE (stat->duration, filter->range));
         }
     }
   return true;
-#undef Exclude
+#undef EXCLUDE
 #undef RANGE
 }
 
