@@ -108,6 +108,33 @@ const struct option lopts[] =
     {"header",              required_argument, NULL, 'H'},
     {"data",                required_argument, NULL, 'd'},
 
+    /* Filter options */
+    {"fc",                  required_argument, NULL, '0'},
+    {"fcode",               required_argument, NULL, '0'},
+    {"filter-code",         required_argument, NULL, '0'},
+    {"fs",                  required_argument, NULL, '1'},
+    {"fsize",               required_argument, NULL, '1'},
+    {"filter-size",         required_argument, NULL, '1'},
+    {"fw",                  required_argument, NULL, '2'},
+    {"fword",               required_argument, NULL, '2'},
+    {"filter-word",         required_argument, NULL, '2'},
+    {"fl",                  required_argument, NULL, '3'},
+    {"fline",               required_argument, NULL, '3'},
+    {"filter-line",         required_argument, NULL, '3'},
+    /* Match options */
+    {"mc",                  required_argument, NULL, '9'},
+    {"mcode",               required_argument, NULL, '9'},
+    {"match-code",          required_argument, NULL, '9'},
+    {"ms",                  required_argument, NULL, '8'},
+    {"msize",               required_argument, NULL, '8'},
+    {"match-size",          required_argument, NULL, '8'},
+    {"mw",                  required_argument, NULL, '7'},
+    {"mword",               required_argument, NULL, '7'},
+    {"match-word",          required_argument, NULL, '7'},
+    {"ml",                  required_argument, NULL, '6'},
+    {"mline",               required_argument, NULL, '6'},
+    {"match-line",          required_argument, NULL, '6'},
+
     /* Common options */
     {"word",                required_argument, NULL, 'w'},
     {"word-list",           required_argument, NULL, 'w'},
@@ -997,6 +1024,23 @@ register_wordlist (char *pathname)
 #undef WL_APPD
 }
 
+static inline void
+opt_append_filter (int type, const char *range)
+{
+  struct res_filter_t fl;
+  const char *p = range;
+
+  fl.type = type;
+  fl.range.start = atoi (p);
+  p = strchr (p, '-');
+  if (p)
+    fl.range.end = atoi (p + 1);
+  else
+    fl.range.end = fl.range.start;
+
+  da_appd (opt.filters, fl);
+}
+
 static inline int
 init_opt ()
 {
@@ -1246,6 +1290,25 @@ parse_args (int argc, char **argv)
           else
             warnln ("invalid mode `%s` was ignored", optarg);
           break;
+
+#define AddFilter(type) opt_append_filter (type, optarg); break;
+        case '0':
+          AddFilter (FILTER_CODE);
+        case '1':
+          AddFilter (FILTER_SIZE);
+        case '2':
+          AddFilter (FILTER_WCOUNT);
+        case '3':
+          AddFilter (FILTER_LCOUNT);
+        case '9':
+          AddFilter (MATCH_CODE);
+        case '8':
+          AddFilter (MATCH_SIZE);
+        case '7':
+          AddFilter (MATCH_WCOUNT);
+        case '6':
+          AddFilter (MATCH_LCOUNT);
+#undef AddFilter
 
         default:
           break;
