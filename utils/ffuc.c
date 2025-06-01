@@ -444,6 +444,7 @@ struct Opt
   int verbose;
   int max_rate; /* Max request rate (req/sec) */
   FuzzTemplate fuzz_template;
+  FILE *streamout;
   struct res_filter_t *filters; /* Dynamic array */
 
   /* Internals */
@@ -722,15 +723,15 @@ __print_stats_fuzz (RequestContext *ctx)
 #define FUZZ_FORMAT "`%s`"
   if (opt.fuzz_count == 1)
     {
-      fprintf (stderr, "%s \t\t\t ", ctx->FUZZ[0]);
+      fprintf (opt.streamout, "%s \t\t\t ", ctx->FUZZ[0]);
     }
   else
     {
       size_t i;
-      fprintf (stderr, "\n* FUZZ = [");
+      fprintf (opt.streamout, "\n* FUZZ = [");
       for (i=0; i < opt.fuzz_count - 1; ++i)
-        fprintf (stderr, FUZZ_FORMAT ", ", ctx->FUZZ[i]);
-      fprintf (stderr, FUZZ_FORMAT "]:\n  ", ctx->FUZZ[i]);
+        fprintf (opt.streamout, FUZZ_FORMAT ", ", ctx->FUZZ[i]);
+      fprintf (opt.streamout, FUZZ_FORMAT "]:\n  ", ctx->FUZZ[i]);
     }
 #undef FUZZ_FORMAT
 }
@@ -743,7 +744,7 @@ print_stats_context (RequestContext *ctx, int err)
       if (opt.verbose)
         {
           __print_stats_fuzz (ctx);
-          fprintf (stderr, "[Status: (error) %s, Duration: %dms]\n",
+          fprintf (opt.streamout, "[Status: (error) %s, Duration: %dms]\n",
                    curl_easy_strerror (err),
                    ctx->stat.duration);
         }
@@ -751,7 +752,7 @@ print_stats_context (RequestContext *ctx, int err)
     }
 
   __print_stats_fuzz (ctx);
-  fprintf (stderr, "\
+  fprintf (opt.streamout, "\
 [Status: %-3d,  Size: %d,  Words: %d,  Lines: %d,  Duration: %dms]\n",
            ctx->stat.code,
            ctx->stat.size_bytes,
@@ -1329,6 +1330,7 @@ pre_init_opt ()
   opt.mode = MODE_DEFAULT;
   opt.Rqueue.len = DEFAULT_REQ_COUNT;
   opt.max_rate = MAX_REQ_RATE;
+  opt.streamout = stdout;
   /* Initialize opt */
   opt.wlists = da_new (Fword *);
   opt.wlist_paths = da_new (char *);
