@@ -820,7 +820,10 @@ handle_response_context (RequestContext *ctx, int err)
       curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &res_code);
       stat->code = (int) res_code;
       if (stat->size_bytes)
-        stat->lcount++; /* Line count starts from 1 */
+        { /* Starting from 1 */
+          stat->lcount++;
+          stat->wcount++;
+        }
     }
   curl_easy_getinfo (ctx->easy_handle, CURLINFO_TOTAL_TIME, &duration);
   stat->duration = (int) (duration * 1000.f);
@@ -1281,11 +1284,12 @@ parse_args (int argc, char **argv)
           break;
 
         case 'm':
-          if (0 == strcmp ("pickfork", optarg))
+          /* Type the first letter OR complete name */
+               if ('p' == *optarg || 0 == strcmp ("pitchfork", optarg))
             opt.mode = MODE_PITCHFORK;
-          else if (0 == strcmp ("singular", optarg))
+          else if ('s' == *optarg || 0 == strcmp ("singular", optarg))
             opt.mode = MODE_SINGULAR;
-          else if (0 == strcmp ("clusterbomb", optarg))
+          else if ('c' == *optarg || 0 == strcmp ("clusterbomb", optarg))
             opt.mode = MODE_CLUSTERBOMB;
           else
             warnln ("invalid mode `%s` was ignored", optarg);
