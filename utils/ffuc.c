@@ -769,10 +769,10 @@ print_stats_context (RequestContext *ctx, int err)
            );
 }
 
-#define RANGE(x, rng) ((rng).start <= (int)(x) && (int)(x) <= (rng).end)
 static inline bool
 filter_pass (struct req_stat_t *stat, struct res_filter_t *filters)
 {
+#define RANGE(x, rng) ((rng).start <= (int)(x) && (int)(x) <= (rng).end)
 #define Exclude(cond) if (cond) return false;
   da_foreach (filters, i)
     {
@@ -814,6 +814,7 @@ filter_pass (struct req_stat_t *stat, struct res_filter_t *filters)
     }
   return true;
 #undef Exclude
+#undef RANGE
 }
 
 static void
