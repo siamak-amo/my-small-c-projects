@@ -95,6 +95,13 @@ static char tmp[TMP_CAP];
 #define FLG_SET(dst, flg) (dst |= flg)
 #define FLG_UNSET(dst, flg) (dst &= ~(flg))
 
+#define Fprintarr(stream, arr, len, element_format) do {    \
+    size_t __idx = 0;                                       \
+    for (; __idx < (len)-1; __idx++)                        \
+      fprintf (stream, element_format ", ", (arr)[__idx]);  \
+    fprintf (stream, element_format, (arr)[__idx]);         \
+  } while (0)
+
 const char *lopt_cstr = "m:w:" "T:R:t:" "u:H:d:" "vh";
 const struct option lopts[] =
   {
@@ -720,20 +727,16 @@ context_reset (RequestContext *ctx)
 static inline void
 __print_stats_fuzz (RequestContext *ctx)
 {
-#define FUZZ_FORMAT "`%s`"
   if (opt.fuzz_count == 1)
     {
       fprintf (opt.streamout, "%s \t\t\t ", ctx->FUZZ[0]);
     }
   else
     {
-      size_t i;
       fprintf (opt.streamout, "\n* FUZZ = [");
-      for (i=0; i < opt.fuzz_count - 1; ++i)
-        fprintf (opt.streamout, FUZZ_FORMAT ", ", ctx->FUZZ[i]);
-      fprintf (opt.streamout, FUZZ_FORMAT "]:\n  ", ctx->FUZZ[i]);
+      Fprintarr (opt.streamout, ctx->FUZZ, opt.fuzz_count, "'%s'");
+      fprintf (opt.streamout, "]:\n  ");
     }
-#undef FUZZ_FORMAT
 }
 
 static inline void
@@ -744,8 +747,12 @@ print_stats_context (RequestContext *ctx, int err)
       if (opt.verbose)
         {
           __print_stats_fuzz (ctx);
-          fprintf (opt.streamout, "[Status: (error) %s, Duration: %dms]\n",
+          fprintf (opt.streamout, "\
+[Error: %s, Size: %d, Words: %d, Lines: %d, Duration: %dms]\n",
                    curl_easy_strerror (err),
+                   ctx->stat.size_bytes,
+                   ctx->stat.wcount,
+                   ctx->stat.lcount,
                    ctx->stat.duration);
         }
       return;
