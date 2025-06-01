@@ -158,15 +158,13 @@ enum ffuc_flag_t
 
     /**
      *  Internal (used in opt.fuzz_flag)
-     *  Enable FUZZ keyword substitution flags
+     *  FUZZ keyword substitution enabled flags
      */
     URL_HASFUZZ       = (1 << 1),
     BODY_HASFUZZ      = (1 << 2),
     HEADER_HASFUZZ    = (1 << 3),
 
-    /**
-     *  Output filter & match
-     */
+    /* Output filter & match */
     FILTER_CODE       = 1,
     FILTER_WCOUNT     = 2,
     FILTER_LCOUNT     = 3,
@@ -418,21 +416,24 @@ struct Opt
   int ttl; /* Timeout in milliseconds */
   int verbose;
   int max_rate; /* Max request rate (req/sec) */
-  size_t concurrent; /* Max number of concurrent requests */
   FuzzTemplate fuzz_template;
+  struct res_filter_t *filters; /* Dynamic array */
 
   /* Internals */
   int fuzz_flag;
-  size_t waiting_reqs;
   size_t fuzz_count; /* Total count of FUZZ keywords */
   CURLM *multi_handle;
+  struct progress_t progress;
 
   Fword **wlists; /* Dynamic array */
   char **wlist_paths; /* Dynamic array, path of word-lists */
-  RequestContext *ctxs; /* Static array, Request contexts */
 
-  struct progress_t progress;
-  struct res_filter_t *filters; /* Dynamic array */
+  struct request_queue_t
+  {
+    RequestContext *ctxs; /* Static array */
+    size_t len; /* Length of @ctxs */
+    size_t waiting; /* number of used elements */
+  } Rqueue;
 
   /* Next FUZZ loader and */
   void (*load_next_fuzz) (RequestContext *ctx);
@@ -629,7 +630,7 @@ __next_fuzz_pitchfork (RequestContext *ctx)
 static void
 __next_fuzz_clusterbomb (RequestContext *ctx)
 {
-  Fword *fw;
+  Fword *fw = NULL;
   size_t N = opt.fuzz_count;
 
   size_t next = 0;
@@ -1014,13 +1015,13 @@ init_opt ()
      }
 
    /* Initialize requests context */
-  opt.ctxs = ffuc_calloc (opt.concurrent, sizeof (RequestContext));
-   for (size_t i = 0; i < opt.concurrent; i++)
+  opt.Rqueue.ctxs = ffuc_calloc (opt.Rqueue.len, sizeof (RequestContext));
+   for (size_t i = 0; i < opt.Rqueue.len; i++)
      {
-       opt.ctxs[i].easy_handle = curl_easy_init();
+       opt.Rqueue.ctxs[i].easy_handle = curl_easy_init();
        int cap_bytes = (opt.fuzz_count + 1) * sizeof (char *);
-       opt.ctxs[i].FUZZ = ffuc_malloc (cap_bytes);
-       Memzero (opt.ctxs[i].FUZZ, cap_bytes);
+       opt.Rqueue.ctxs[i].FUZZ = ffuc_malloc (cap_bytes);
+       Memzero (opt.Rqueue.ctxs[i].FUZZ, cap_bytes);
      }
 
    if (NULL == opt.filters)
@@ -1150,23 +1151,27 @@ cleanup (int c, void *p)
   UNUSED (c), UNUSED (p);
 #ifndef SKIP_FREE
   /* Libcurl cleanup */
-  for (size_t i = 0; i < opt.concurrent; i++)
+  if (NULL != opt.Rqueue.ctxs)
     {
-      RequestContext *ctx = &opt.ctxs[i];
-      curl_multi_remove_handle (opt.multi_handle, ctx->easy_handle);
-      curl_easy_cleanup (ctx->easy_handle);
-      safe_free (ctx->request.post_body);
-      curl_slist_free_all (ctx->request.http_headers);
+      for (size_t i = 0; i < opt.Rqueue.len; i++)
+        {
+          RequestContext *ctx = &opt.Rqueue.ctxs[i];
+          // curl_multi_remove_handle (opt.multi_handle, ctx->easy_handle);
+          curl_easy_cleanup (ctx->easy_handle);
+          safe_free (ctx->request.post_body);
+          curl_slist_free_all (ctx->request.http_headers);
+        }
     }
-  safe_free (opt.ctxs);
+  curl_multi_cleanup (opt.multi_handle);
+  curl_global_cleanup ();
+  /* Opt cleanup */
+  safe_free (opt.Rqueue.ctxs);
   da_free (opt.wlist_paths);
   da_free (opt.filters);
   da_foreach (opt.wlists, i)
     {
       fw_free (opt.wlists[i]);
     }
-  curl_multi_cleanup (opt.multi_handle);
-  curl_global_cleanup ();
 #endif /* SKIP_FREE */
 }
 
@@ -1208,7 +1213,7 @@ parse_args (int argc, char **argv)
           register_wordlist (optarg);
           break;
         case 't':
-          opt.concurrent = atol (optarg);
+          opt.Rqueue.len = atol (optarg);
           break;
         case 'T':
           if ((opt.ttl = atoi (optarg)) <= 0)
@@ -1255,7 +1260,7 @@ pre_init_opt ()
   /* Set default values */
   opt.ttl = DEFAULT_TTL_MS;
   opt.mode = MODE_DEFAULT;
-  opt.concurrent = DEFAULT_REQ_COUNT;
+  opt.Rqueue.len = DEFAULT_REQ_COUNT;
   opt.max_rate = MAX_REQ_RATE;
   /* Initialize opt */
   opt.wlists = da_new (Fword *);
@@ -1290,14 +1295,14 @@ main (int argc, char **argv)
   int numfds, res, still_running;
   do {
     /* Find a free context (If there is any) and register it */
-    while (!opt.should_end && opt.waiting_reqs < opt.concurrent)
+    while (!opt.should_end && opt.Rqueue.waiting < opt.Rqueue.len)
       {
         /* TODO: Is this improvable? */
         if (opt.max_rate <= REQ_RATE (&opt.progress))
           break;
-        if ((ctx = lookup_free_handle (opt.ctxs, opt.concurrent)))
+        if ((ctx = lookup_free_handle (opt.Rqueue.ctxs, opt.Rqueue.len)))
           {
-            opt.waiting_reqs++;
+            opt.Rqueue.waiting++;
             register_contex (ctx);
           }
       }
@@ -1309,7 +1314,7 @@ main (int argc, char **argv)
       {
         CURL *completed_handle = msg->easy_handle;
         RequestContext *ctx = lookup_handle (completed_handle,
-                                             opt.ctxs, opt.concurrent);
+                                             opt.Rqueue.ctxs, opt.Rqueue.len);
         assert (NULL != ctx && "Broken Logic!!\n"
                 "Completed easy_handle doesn't have request context.\n");
 
@@ -1320,7 +1325,7 @@ main (int argc, char **argv)
             handle_response_context (ctx, msg->data.result);
             /* Release the completed context */
             context_reset (ctx);
-            opt.waiting_reqs--;
+            opt.Rqueue.waiting--;
           }
       }
 
