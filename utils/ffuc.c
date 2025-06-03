@@ -51,7 +51,7 @@
 #include <getopt.h>
 
 #define PROG_NAME "FFuc"
-#define PROG_VERSION "1.0-dev"
+#define PROG_VERSION "1.1-dev"
 
 #define SLIST_APPEND(list, val) \
   list = curl_slist_append (list, val)
@@ -326,7 +326,9 @@ typedef struct
   size_t __str_bytes; /* length of @str in bytes */
 } Fword;
 
-const Fword dummy_fword = {.str="FUZZ\n", .len=4, .total_count=1, .__str_bytes=5};
+const Fword dummy_fword = {
+  .str="FUZZ\n", .len=4, .total_count=1, .__str_bytes=5
+};
 
 /* Fword printf format and arguments */
 #define FW_FORMAT "%.*s"
@@ -1060,11 +1062,10 @@ make_fw_from_path (char *path)
 
 /**
  *  Initializes wordlists (open and mmap)
- *  It works for modes clusterbomb and pitchfork,
- *  for singular mode, simply use REGISTER_WLIST maco
+ *  This function supports the clusterbomb and pitchfork modes
+ *  For singular mode, use the REGISTER_WLIST macro
  *
- *  TODO: can remapping the already mmaped files be
- *        detected and prevented?
+ *  TODO: Can we prevent remapping already mmaped files
  */
 static void
 init_wordlists ()
