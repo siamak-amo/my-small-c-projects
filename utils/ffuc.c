@@ -31,6 +31,7 @@
  **/
 #include <stdio.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <unistd.h>
 #include <string.h>
 #include <assert.h>
@@ -67,7 +68,7 @@ static char tmp[TMP_CAP];
 
 /* Maximum request rate (req/sec) */
 #ifndef MAX_REQ_RATE
-# define MAX_REQ_RATE -1 // no limit
+# define MAX_REQ_RATE 2048
 #endif
 
 /* Default delta time, for measuring speed */
@@ -96,7 +97,7 @@ static char tmp[TMP_CAP];
 #define FLG_UNSET(dst, flg) (dst &= ~(flg))
 
 #define Fprintarr(stream, arr, len, element_format) do {    \
-    size_t __idx = 0;                                       \
+    int __idx = 0;                                          \
     for (; __idx < (len)-1; __idx++)                        \
       fprintf (stream, element_format ", ", (arr)[__idx]);  \
     fprintf (stream, element_format, (arr)[__idx]);         \
@@ -215,6 +216,12 @@ enum ffuc_flag_t
     CTX_INUSE         = 1,
   };
 
+const char *template_name[] = {
+  [URL_TEMPLATE]    = "URL",
+  [BODY_TEMPLATE]   = "Body",
+  [HEADER_TEMPLATE] = "Header",
+};
+
 struct req_stat_t
 {
   uint wcount; /* Count of words */
@@ -261,7 +268,7 @@ typedef struct
    *  All 'FUZZ' keywords within @opt.fuzz_template
    *  (URL, POST body, HTTP headers respectively)
    *  will be substituted with elements of this array.
-   *  It must contain @opt.fuzz_count elements.
+   *  It must contain opt.total_fuzz_count elements.
    */
   char **FUZZ;
 
@@ -278,8 +285,13 @@ typedef struct
 typedef struct
 {
   char *URL;
-  char *post_body;
+  char **URL_wlists;
+
+  char *body;
+  char **body_wlists;
+
   struct curl_slist *headers;
+  char **header_wlists;
 } FuzzTemplate;
 
 /**
@@ -314,12 +326,25 @@ typedef struct
   size_t __str_bytes; /* length of @str in bytes */
 } Fword;
 
+const Fword dummy_fword = {.str="FUZZ\n", .len=4, .total_count=1, .__str_bytes=5};
+
 /* Fword printf format and arguments */
 #define FW_FORMAT "%.*s"
 #define FW_ARG(fw) (int)((fw)->len), fw_get (fw)
 
-/* Fword init, copy, duplicate and unmap */
+/* To initialize Fword from opened file @fd */
+int fw_map (Fword *dst, int fd);
+/* To initialize Fword manually */
 void fw_init (Fword *fw, char *cstr, size_t cstr_len);
+
+/**
+ *  Open file @path and create Fword of it,
+ *  returns dummy_fword on failure.
+ *  The result always must be freed via fw_free
+ */
+static inline Fword *make_fw_from_path (char *path);
+
+/* Fword copy, duplicate and unmap */
 #define fw_cpy(dst, src) Memcpy (dst, src, sizeof (Fword))
 Fword *fw_dup (const Fword *src);
 #define fw_unmap(fw) \
@@ -428,6 +453,8 @@ static inline void tick_progress (Progress *prog);
   ((NULL != s) ? strlen (s) : 0)
 #define Memcpy(dst, src, len) \
   if (NULL != dst) { memcpy (dst, src, len); }
+#define Strcmp(s1, s2) \
+  ((s1 == NULL || s2 == NULL) ? -1 : strcmp (s1, s2))
 
 #ifdef _DEBUG
 # define fprintd(format, ...) \
@@ -450,18 +477,17 @@ struct Opt
   int ttl; /* Timeout in milliseconds */
   int verbose;
   int max_rate; /* Max request rate (req/sec) */
-  FuzzTemplate fuzz_template;
   FILE *streamout;
+  FuzzTemplate fuzz_template;
   struct res_filter_t *filters; /* Dynamic array */
 
   /* Internals */
   int fuzz_flag;
-  size_t fuzz_count; /* Total count of FUZZ keywords */
   CURLM *multi_handle;
   struct progress_t progress;
 
-  Fword **wlists; /* Dynamic array */
-  char **wlist_paths; /* Dynamic array, path of word-lists */
+  Fword **words; /* Dynamic array */
+  int total_fuzz_count; /* ~ length of @words */
 
   struct request_queue_t
   {
@@ -484,6 +510,12 @@ struct Opt
     } fuzz_ctx;
 };
 struct Opt opt = {0};
+
+#define REGISTER_WLIST(path) do {               \
+    Fword *fw = make_fw_from_path (path);       \
+    da_appd (opt.words, fw);                    \
+  } while (0)
+
 
 /**
  *  We only require request statistics, so we pass
@@ -550,6 +582,28 @@ fw_init (Fword *fw, char *cstr, size_t cstr_len)
       if (!p)
         break;
     }
+}
+
+int
+fw_map (Fword *dst, int fd)
+{
+  struct stat sb;
+  if (-1 == fstat (fd, &sb))
+    return 1;
+
+  char *mapped = ffuc_mmap (NULL,
+                       sb.st_size,
+                       PROT_READ, MAP_PRIVATE,
+                       fd, 0);
+  if (mapped == MAP_FAILED)
+    {
+      close (fd);
+      return fd;
+    }
+
+  /* Success */
+  fw_init (dst, mapped, sb.st_size);
+  return 0;
 }
 
 Fword *
@@ -625,11 +679,11 @@ fuzz_snprintf (char *restrict dst, size_t dst_cap,
 static void
 __next_fuzz_singular (RequestContext *ctx)
 {
-  Fword *fw = opt.wlists[0];
+  Fword *fw = opt.words[0];
   snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
   Strrealloc (ctx->FUZZ[0], tmp);
 
-  da_idx i=1, N = da_sizeof (opt.wlists);
+  da_idx i=1, N = opt.total_fuzz_count;
   for (; i < N; ++i)
     ctx->FUZZ[i] = ctx->FUZZ[0];
   ctx->FUZZ[i] = NULL;
@@ -645,12 +699,12 @@ static void
 __next_fuzz_pitchfork (RequestContext *ctx)
 {
   Fword *fw;
-  size_t N = opt.fuzz_count;
+  size_t N = opt.total_fuzz_count;
 
   fprintd ("pitchfork:  ");
   for (size_t i = 0; i < N; ++i)
     {
-      fw = opt.wlists[i];
+      fw = opt.words[i];
       snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
       Strrealloc (ctx->FUZZ[i], tmp);
       fprintd ("[%d]->`%s`\t", fw->idx, tmp);
@@ -666,14 +720,14 @@ static void
 __next_fuzz_clusterbomb (RequestContext *ctx)
 {
   Fword *fw = NULL;
-  size_t N = opt.fuzz_count;
+  size_t N = opt.total_fuzz_count;
 
   size_t next = 0;
   bool go_next = true;
   fprintd ("clusterbomb:  ");
   for (size_t i=0; i < N; ++i)
     {
-      fw = opt.wlists[i];
+      fw = opt.words[i];
       snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
       Strrealloc (ctx->FUZZ[i], tmp);
       fprintd ("[%d]->`%s`\t", fw->idx, tmp);
@@ -727,14 +781,14 @@ context_reset (RequestContext *ctx)
 static inline void
 __print_stats_fuzz (RequestContext *ctx)
 {
-  if (opt.fuzz_count == 1)
+  if (opt.total_fuzz_count == 1)
     {
       fprintf (opt.streamout, "%s \t\t\t ", ctx->FUZZ[0]);
     }
   else
     {
       fprintf (opt.streamout, "\n* FUZZ = [");
-      Fprintarr (opt.streamout, ctx->FUZZ, opt.fuzz_count, "'%s'");
+      Fprintarr (opt.streamout, ctx->FUZZ, opt.total_fuzz_count, "'%s'");
       fprintf (opt.streamout, "]:\n  ");
     }
 }
@@ -858,11 +912,11 @@ __register_contex (RequestContext *dst)
    *  Generating POST body
    *  based on opt.fuzz_template.post_body
    */
-  if (template.post_body)
+  if (template.body)
     {
       if (opt.fuzz_flag & BODY_HASFUZZ)
         {
-          FUZZ += fuzz_snprintf (tmp, TMP_CAP, template.post_body, FUZZ);
+          FUZZ += fuzz_snprintf (tmp, TMP_CAP, template.body, FUZZ);
           Strrealloc (dst->request.post_body, tmp);
           curl_easy_setopt (dst->easy_handle, CURLOPT_POSTFIELDS,
                             dst->request.post_body);
@@ -870,7 +924,7 @@ __register_contex (RequestContext *dst)
       else
         {
           curl_easy_setopt (dst->easy_handle, CURLOPT_POSTFIELDS,
-                            template.post_body);
+                            template.body);
         }
     }
 
@@ -958,74 +1012,6 @@ fuzz_count (const char *s)
   return n;
 }
 
-int
-is_wlist_open (const char *filepath)
-{
-  da_foreach (opt.wlist_paths, i)
-    {
-      if (0 == strcmp (filepath, opt.wlist_paths[i]))
-        return i;
-    }
-  return -1;
-}
-
-int
-wlmap (int fd, Fword *dst)
-{
-  struct stat sb;
-  if (-1 == fstat (fd, &sb))
-    return 1;
-
-  char *mapped = ffuc_mmap (NULL,
-                       sb.st_size,
-                       PROT_READ, MAP_PRIVATE,
-                       fd, 0);
-  if (mapped == MAP_FAILED)
-    {
-      close (fd);
-      return fd;
-    }
-
-  /* Success */
-  fw_init (dst, mapped, sb.st_size);
-  return 0;
-}
-
-int
-register_wordlist (char *pathname)
-{
-#define WL_APPD(filepath, fword) do {           \
-      da_appd (opt.wlists, fword);              \
-      da_appd (opt.wlist_paths, filepath);      \
-    } while (0)
-
-  Fword fw = {0};
-  int wl_idx = is_wlist_open (pathname);
-  if (-1 != wl_idx)
-    {
-      /* File is already open */
-      fw_cpy (&fw, opt.wlists[wl_idx]);
-      WL_APPD (pathname, fw_dup (&fw));
-    }
-  else /* New wordlist file, needs fopen and mmap */
-    {
-      int fd = open (pathname, O_RDONLY);
-      if (fd < 0)
-        return -fd;
-      if (0 == wlmap (fd, &fw))
-        {
-          WL_APPD (pathname, fw_dup (&fw));
-        }
-      else
-        {
-          warnln ("failed to map file `%s`\n", pathname);
-          return 1;
-        }
-    }
-  return 0;
-#undef WL_APPD
-}
-
 static inline void
 opt_append_filter (int type, const char *range)
 {
@@ -1043,7 +1029,64 @@ opt_append_filter (int type, const char *range)
   da_appd (opt.filters, fl);
 }
 
-static inline int
+static inline Fword *
+make_fw_from_path (char *path)
+{
+  int fd;
+  Fword tmp = {0};
+  /* NULL path is expected, It means,
+     the user hasn't provided enough wordlists */
+  if (! path)
+    goto __return_dummy;
+  fd = open (path, O_RDONLY);
+  if (fd < 0)
+    {
+      warnln ("could not open file (%s) -- %s.", path, strerror (errno));
+      goto __return_dummy;
+    }
+
+  if (0 == fw_map (&tmp, fd))
+    return fw_dup (&tmp);
+  else
+    {
+      warnln ("could not mmap file (%s).", path);
+      close (fd);
+      goto __return_dummy;
+    }
+
+ __return_dummy:
+  return fw_dup (&dummy_fword);
+}
+
+/**
+ *  Initializes wordlists (open and mmap)
+ *  It works for modes clusterbomb and pitchfork,
+ *  for singular mode, simply use REGISTER_WLIST maco
+ *
+ *  TODO: can remapping the already mmaped files be
+ *        detected and prevented?
+ */
+static void
+init_wordlists ()
+{
+  char *path;
+#define DO(paths) if (paths) {                      \
+    da_foreach (paths, i) {                         \
+      path = paths[i];                              \
+      fprintd ("register wordlist: '%s' -> %s\n",   \
+               (path) ? path : "(DUMMY)", #paths);  \
+      REGISTER_WLIST (path);                        \
+    }}
+  {
+    FuzzTemplate *t = &opt.fuzz_template;
+    DO (t->URL_wlists);
+    DO (t->body_wlists);
+    DO (t->header_wlists);
+  }
+#undef DO
+}
+
+static int
 init_opt ()
 {
   if (NULL == opt.fuzz_template.URL)
@@ -1052,20 +1095,22 @@ init_opt ()
       return -1;
     }
 
-   size_t n =  da_sizeof (opt.wlists);
-   if (n == 0)
-     {
-       opt.should_end = 1;
-       warnln ("cannot continue with no word-list");
-       return 1;
-     }
+  init_wordlists ();
+  uint n = da_sizeof (opt.words);
+  if (n == 0)
+    {
+      opt.should_end = 1;
+      warnln ("cannot continue with no word-list");
+      return 1;
+    }
+  opt.total_fuzz_count = n;
 
    /* Initialize requests context */
   opt.Rqueue.ctxs = ffuc_calloc (opt.Rqueue.len, sizeof (RequestContext));
    for (size_t i = 0; i < opt.Rqueue.len; i++)
      {
        opt.Rqueue.ctxs[i].easy_handle = curl_easy_init();
-       int cap_bytes = (opt.fuzz_count + 1) * sizeof (char *);
+       int cap_bytes = (n + 1) * sizeof (char *);
        opt.Rqueue.ctxs[i].FUZZ = ffuc_malloc (cap_bytes);
        Memzero (opt.Rqueue.ctxs[i].FUZZ, cap_bytes);
      }
@@ -1078,18 +1123,13 @@ init_opt ()
    switch (opt.mode)
     {
     case MODE_PITCHFORK:
-      if (opt.fuzz_count != n)
-        {
-          warnln ("expected %ld word-list(s), provided %ld", opt.fuzz_count, n);
-          opt.fuzz_count = MIN (opt.fuzz_count, n);
-        }
       /* Find the longest wordlist, needed by pitchfork */
-      opt.fuzz_ctx.longest = opt.wlists[0];
-      for (size_t i=0; i<n; ++i)
+      opt.fuzz_ctx.longest = opt.words[0];
+      for (size_t i=0; i < n; ++i)
         {
-          if (opt.wlists[i]->total_count > opt.fuzz_ctx.longest->total_count)
+          if (opt.words[i]->total_count > opt.fuzz_ctx.longest->total_count)
             {
-              opt.fuzz_ctx.longest = opt.wlists[i];
+              opt.fuzz_ctx.longest = opt.words[i];
             }
         }
       opt.progress.req_total = opt.fuzz_ctx.longest->total_count;
@@ -1097,26 +1137,39 @@ init_opt ()
       break;
 
     case MODE_SINGULAR:
-      if (1 != n)
-        warnln ("expected 1 word-list, provided %ld", n);
-      opt.progress.req_total = opt.wlists[0]->total_count;
+      opt.progress.req_total = opt.words[0]->total_count;
       opt.load_next_fuzz = __next_fuzz_singular;
       break;
 
     case MODE_CLUSTERBOMB:
       opt.progress.req_total = 1;
-      if (opt.fuzz_count != n)
-        {
-          warnln ("expected %ld word-list(s), provided %ld", opt.fuzz_count, n);
-          opt.fuzz_count = MIN (opt.fuzz_count, n);
-        }
-      for (size_t i=0; i<n; ++i)
-        opt.progress.req_total *= opt.wlists[i]->total_count;
+      for (size_t i=0; i < n; ++i)
+        opt.progress.req_total *= opt.words[i]->total_count;
       opt.load_next_fuzz = __next_fuzz_clusterbomb;
       break;
     } 
 
   return 0;
+}
+
+static inline int
+set_template_wlist (FuzzTemplate *t, int op, void *param)
+{
+  char *path = (char *) param;
+  switch (op)
+    {
+    case URL_TEMPLATE:
+      da_appd (t->URL_wlists, path);
+      return 0;
+    case BODY_TEMPLATE:
+      da_appd (t->body_wlists, path);
+      return 0;
+    case HEADER_TEMPLATE:
+      da_appd (t->header_wlists, path);
+      return 0;
+    default:
+      return 1;
+    }
 }
 
 int
@@ -1128,66 +1181,52 @@ set_template (FuzzTemplate *t, int op, void *param)
     {
     case URL_TEMPLATE:
       {
-        if (t->URL)
-          {
-            /* Resetting the URL, Ignores the previous URL */
-            if ((n = fuzz_count (t->URL)))
-              {
-                FLG_UNSET (opt.fuzz_flag, URL_HASFUZZ);
-                opt.fuzz_count -= n;
-              }
-          }
         Strrealloc (t->URL, s);
-        if ((n = fuzz_count (t->URL)))
-          {
-            FLG_SET (opt.fuzz_flag, URL_HASFUZZ);
-            opt.fuzz_count += n;
-          }
+        n = fuzz_count (t->URL);
+        if (n)
+          FLG_SET (opt.fuzz_flag, URL_HASFUZZ);
       }
-      break;
+      return n;
 
     case HEADER_TEMPLATE:
       {
         SLIST_APPEND (t->headers, s);
-        if ((n = fuzz_count (s)))
-          {
-            FLG_SET (opt.fuzz_flag, HEADER_HASFUZZ);
-            opt.fuzz_count += n;
-          }
+        n = fuzz_count (s);
+        if (n)
+          FLG_SET (opt.fuzz_flag, HEADER_HASFUZZ);
       }
-      break;
+      return n;
 
     case BODY_TEMPLATE:
       {
-        if (NULL == t->post_body)
+        if (NULL == t->body)
           {
-            t->post_body = strdup (s);
+            t->body = strdup (s);
           }
         else
           {
-            size_t len = Strlen (t->post_body);
-            if ('&' != s[0] && '&' != t->post_body[len - 1])
+            size_t len = Strlen (t->body);
+            if ('&' != s[0] && '&' != t->body[len - 1])
               {
                 /* We need an extra `&` */
-                Realloc (t->post_body, len + Strlen (s) + 2);
-                char *p = t->post_body + len;
+                Realloc (t->body, len + Strlen (s) + 2);
+                char *p = t->body + len;
                 *p = '&';
                 strcpy (p + 1, s);
               }
             else
               {
-                Realloc (t->post_body, len + Strlen (s) + 1);
-                strcpy (t->post_body + len , s);
+                Realloc (t->body, len + Strlen (s) + 1);
+                strcpy (t->body + len , s);
               }
           }
-        if ((n = fuzz_count (s)))
-          {
-            FLG_SET (opt.fuzz_flag, BODY_HASFUZZ);
-            opt.fuzz_count += n;
-          }
+        n = fuzz_count (s);
+        if (n)
+          FLG_SET (opt.fuzz_flag, BODY_HASFUZZ);
       }
-      break;
+      return n;
     }
+
   return 0;
 }
 
@@ -1212,12 +1251,15 @@ cleanup (int c, void *p)
   curl_global_cleanup ();
   /* Opt cleanup */
   safe_free (opt.Rqueue.ctxs);
-  da_free (opt.wlist_paths);
   da_free (opt.filters);
-  da_foreach (opt.wlists, i)
+  da_foreach (opt.words, i)
     {
-      fw_free (opt.wlists[i]);
+      fw_free (opt.words[i]);
     }
+  /* Template cleanup */
+  da_free (opt.fuzz_template.URL_wlists);
+  da_free (opt.fuzz_template.body_wlists);
+  da_free (opt.fuzz_template.header_wlists);
 #endif /* SKIP_FREE */
 }
 
@@ -1237,6 +1279,20 @@ help ()
 int
 parse_args (int argc, char **argv)
 {
+  /* The last parsed fuzz template option */
+  int template = -1;
+  /* Count of FUZZ keywords in @template */
+  int local_fuzz_count = -1;
+
+#define ValidateWlists() do {                                       \
+    if (opt.mode != MODE_SINGULAR && local_fuzz_count > 0) {        \
+      warnln ("ignoring %d FUZZ keyword(s), "                       \
+              "in the previous HTTP option `%s`",                   \
+              local_fuzz_count, template_name[template]);           \
+      for (int i=0; i < local_fuzz_count; ++i)                      \
+        set_template_wlist (&opt.fuzz_template, template, NULL);    \
+    }} while (0)
+
   while (1)
     {
       int idx = 0;
@@ -1256,8 +1312,26 @@ parse_args (int argc, char **argv)
           return 0;
 
         case 'w':
-          register_wordlist (optarg);
+          if (opt.mode == MODE_SINGULAR)
+            {
+              if (da_sizeof (opt.words) <= 0)
+                REGISTER_WLIST (optarg);
+              else
+                warnln ("wordlist (%s) was ignored -- singular mode "
+                        "only accepts one wordlist", optarg);
+            }
+          else
+            {
+              if (local_fuzz_count <= 0)
+                warnln ("unexpected wordlist (%s) was ignored.", optarg);
+              else
+                {
+                  set_template_wlist (&opt.fuzz_template, template, optarg);
+                  local_fuzz_count--;
+                }
+            }
           break;
+
         case 't':
           opt.Rqueue.len = atol (optarg);
           break;
@@ -1273,18 +1347,31 @@ parse_args (int argc, char **argv)
           break;
 
         case 'u':
-          set_template (&opt.fuzz_template, URL_TEMPLATE, optarg);
+          ValidateWlists ();
+          if (NULL == opt.fuzz_template.URL)
+            {
+              template = URL_TEMPLATE;
+              local_fuzz_count = set_template (&opt.fuzz_template, template, optarg);
+            }
+          else
+            warnln ("unexpected URL option was ignored.");
           break;
+
         case 'H':
-          set_template (&opt.fuzz_template, HEADER_TEMPLATE, optarg);
+          ValidateWlists ();
+          template = HEADER_TEMPLATE;
+          local_fuzz_count = set_template (&opt.fuzz_template, template, optarg);
           break;
+
         case 'd':
-          set_template (&opt.fuzz_template, BODY_TEMPLATE, optarg);
+          ValidateWlists ();
+          template = BODY_TEMPLATE;
+          local_fuzz_count = set_template (&opt.fuzz_template, template, optarg);
           break;
 
         case 'm':
           /* Type the first letter OR complete name */
-               if ('p' == *optarg || 0 == strcmp ("pitchfork", optarg))
+          if ('p' == *optarg || 0 == strcmp ("pitchfork", optarg))
             opt.mode = MODE_PITCHFORK;
           else if ('s' == *optarg || 0 == strcmp ("singular", optarg))
             opt.mode = MODE_SINGULAR;
@@ -1317,7 +1404,9 @@ parse_args (int argc, char **argv)
           break;
         }
     }
+  ValidateWlists ();
   return 0;
+#undef ValidateWlists
 }
 
 void
@@ -1330,8 +1419,7 @@ pre_init_opt ()
   opt.max_rate = MAX_REQ_RATE;
   opt.streamout = stdout;
   /* Initialize opt */
-  opt.wlists = da_new (Fword *);
-  opt.wlist_paths = da_new (char *);
+  opt.words = da_new (Fword *);
   /* Initialize libcurl & context of requests */
   curl_global_init (CURL_GLOBAL_DEFAULT);
   opt.multi_handle = curl_multi_init ();
