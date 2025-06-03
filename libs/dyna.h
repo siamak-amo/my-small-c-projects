@@ -112,35 +112,40 @@
       `DA_GFACT`:   growth factor (see the source code)
   
     WARNING:
-      If an instance of this dynamic array, is stored outside
-      the scope of a function (e.g F), you *MUST NOT* use
-      `da_appd` inside F, because if an overflow occurs,
-      `da_appd` will need to reallocate it's entire memory
-      which frees the original pointer and potentially leads
-      to undefined behavior (SEGFAULT or use-after-free)
+     You should not attempt to append via `da_appd` macro
+     to pointers to a dynamic array, NOR use `da_appd`
+     from a different scope (e.g. another function);
+     as the reallocation of the primary array WILL fail.
 
-      A simple solution is to store the array reference inside
-      a struct and pass a pointer of it to the function F,
-      so `da_appd` will update the reference properly
-
-      Another solution is to use `da_aappd` macro,
-      and F needs to accept pointer to dynamic array:
+     Solutions:
+      * Using a wrapper struct
       ```c
-        // scope 1
-        {
-          T val = {0};
-          T *arr = da_new (T);
-          my_function (&arr, val);
-        }
-  
-        void
-        my_function (void *array, T data)
-        {
-          // Append data to array
-          // Do NOT pass use like C strings for data
-          // only use pointers with known type like `char *`
-          da_aappd (array, data);
-        }
+      struct my_data {
+        char **array;  // dynamic array
+      };
+
+      void my_function (struct my_data *d)
+      {
+        da_appd (d->array, value);
+      }
+      ```
+
+      * Using `da_aappd` macro:
+      ```c
+      char **array = NULL;  // The primary dynamic array
+
+      // For pointers
+      {
+        void *ptr = &array;  // pointer to a dynamic array
+        da_aappd (ptr, value);
+      }
+
+      // For functions
+      void my_function (void *ptr)
+      {
+        da_aappd (ptr, value);
+      }
+      // usage: my_function (&array);
       ```
 
     Test program compilation:
@@ -154,6 +159,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+
+#define DynaVersion "2.1"
 
 #ifndef DYNADEF
 # define DYNADEF static inline
