@@ -96,7 +96,7 @@ static char tmp[TMP_CAP];
 #define FLG_SET(dst, flg) (dst |= flg)
 #define FLG_UNSET(dst, flg) (dst &= ~(flg))
 
-#define Fprintarr(stream, arr, len, element_format) do {    \
+#define Fprintarr(stream, element_format, arr, len) do {    \
     int __idx = 0;                                          \
     for (; __idx < (len)-1; __idx++)                        \
       fprintf (stream, element_format ", ", (arr)[__idx]);  \
@@ -236,6 +236,7 @@ typedef struct progress_t
 {
   uint req_total;
   uint req_count; /* Count of sent requests */
+  uint err_count; /* Count of errors */
 
   uint req_count_dt; /* Requests in delta time */
   time_t t0;
@@ -790,22 +791,22 @@ __print_stats_fuzz (RequestContext *ctx)
   else
     {
       fprintf (opt.streamout, "\n* FUZZ = [");
-      Fprintarr (opt.streamout, ctx->FUZZ, opt.total_fuzz_count, "'%s'");
+      Fprintarr (opt.streamout, "'%s'", ctx->FUZZ, opt.total_fuzz_count);
       fprintf (opt.streamout, "]:\n  ");
     }
 }
 
 static inline void
-print_stats_context (RequestContext *ctx, int err)
+print_stats_context (RequestContext *ctx, CURLcode res_code)
 {
-  if (err)
+  if (CURLE_OK != res_code)
     {
       if (opt.verbose)
         {
           __print_stats_fuzz (ctx);
           fprintf (opt.streamout, "\
 [Error: %s, Size: %d, Words: %d, Lines: %d, Duration: %dms]\n",
-                   curl_easy_strerror (err),
+                   curl_easy_strerror (res_code),
                    ctx->stat.size_bytes,
                    ctx->stat.wcount,
                    ctx->stat.lcount,
@@ -864,16 +865,16 @@ filter_pass (struct req_stat_t *stat, struct res_filter_t *filters)
 }
 
 static void
-handle_response_context (RequestContext *ctx, int err)
+handle_response_context (RequestContext *ctx, CURLcode res_code)
 {
-  long res_code = 0;
+  long result = 0;
   double duration;
   struct req_stat_t *stat = &ctx->stat;
 
-  if (err == CURLE_OK)
+  if (res_code == CURLE_OK)
     {
-      curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &res_code);
-      stat->code = (int) res_code;
+      curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &result);
+      stat->code = (int) result;
       if (stat->size_bytes)
         { /* Starting from 1 */
           stat->lcount++;
@@ -883,8 +884,8 @@ handle_response_context (RequestContext *ctx, int err)
   curl_easy_getinfo (ctx->easy_handle, CURLINFO_TOTAL_TIME, &duration);
   stat->duration = (int) (duration * 1000.f);
 
-  if (filter_pass (stat, opt.filters))
-    print_stats_context (ctx, err);
+  if (CURLE_OK != res_code || filter_pass (stat, opt.filters))
+    print_stats_context (ctx, res_code);
 }
 
 static inline void
@@ -1478,6 +1479,8 @@ main (int argc, char **argv)
           {
             opt.progress.req_count++;
             opt.progress.req_count_dt++;
+            if (CURLE_OK != msg->data.result)
+              opt.progress.err_count++;
             handle_response_context (ctx, msg->data.result);
             /* Release the completed context */
             context_reset (ctx);
@@ -1489,5 +1492,10 @@ main (int argc, char **argv)
   }
   while (still_running > 0 || !opt.should_end);
 
+  if (opt.verbose)
+    warnln ("Total requests: %d,  Errors: %u (%u%%).",
+            opt.progress.req_count,
+            opt.progress.err_count,
+            opt.progress.err_count * 100 / opt.progress.req_count);
   return 0;
 }
