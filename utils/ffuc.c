@@ -157,33 +157,7 @@ const struct option lopts[] =
   };
 
 enum ffuc_flag_t
-  {
-    /**
-     *  Initialize request template
-     *
-     * URL_TEMPLATE:
-     *   Set the target URL (e.g. "http(s)://host:port")
-     * BODY_TEMPLATE:
-     *   Aappend to the request body; It handles `&` automatically
-     *   (e.g. "key1=val1&key2=val2" or "&key=val")
-     * HEADER_TEMPLATE:
-     *   Append Http header (e.g. "Header: value")
-     *
-     * WLIST_TEMPLATE:
-     *   To append a wordlist file path to templates
-     *   set_template function appends it to the latest
-     *   manipulated URL/Body/Header with above flags
-     *   It also handles count of FUZZ keywords
-     *   To append a wordlist manually, use `set_template_wlist`
-     * FINISH_TEMPLATE:
-     *   set_template MUST be called with this op at the end
-     */
-    URL_TEMPLATE      = 0,
-    BODY_TEMPLATE     = 1,
-    HEADER_TEMPLATE   = 2,
-    WLIST_TEMPLATE    = 3,
-    FINISH_TEMPLATE   = 126,
-    
+  {    
     /**
      *  Fuzz Modes (default is CLUSTERBOMB)
      *
@@ -225,6 +199,28 @@ enum ffuc_flag_t
     /* Internal (used in RequestContext.flag) */
     CTX_FREE          = 0,
     CTX_INUSE         = 1,
+  };
+
+enum template_op
+  {
+    /**
+     * URL_TEMPLATE:
+     *   Set the target URL (e.g. "http(s)://host:port")
+     * BODY_TEMPLATE:
+     *   Aappend to the request body; It handles `&` automatically
+     *   (e.g. "key1=val1&key2=val2" or "&key=val")
+     * HEADER_TEMPLATE:
+     *   Append Http header (e.g. "Header: value")
+     * WLIST_TEMPLATE:
+     *   To append a wordlist file path
+     * FINISH_TEMPLATE:
+     *   set_template MUST be called with this at the end
+     */
+    URL_TEMPLATE      = 0,
+    BODY_TEMPLATE     = 1,
+    HEADER_TEMPLATE   = 2,
+    WLIST_TEMPLATE    = 3,
+    FINISH_TEMPLATE   = 126,
   };
 
 const char *template_name[] = {
@@ -423,6 +419,22 @@ lookup_free_handle (RequestContext *ctxs, size_t len);
  */
 void init_progress (Progress *prog);
 static inline void tick_progress (Progress *prog);
+
+/**
+ *  Template setter functions
+ *
+ * set_template:
+ *   To set HTTP and wordlist templates
+ *   It handles `&` in HTTP body, keeps track of FUZZ keywords
+ *   and appends wordlist file path to the latest HTTP option
+ *   that has been set by this function.
+ * set_template_wlist:
+ *   To manually append wordlist file path.
+ */
+int set_template (FuzzTemplate *t, enum template_op op, void *param);
+static inline int
+set_template_wlist (FuzzTemplate *t, enum template_op op, void *param);
+
 
 #ifndef ffuc_malloc
 #define ffuc_malloc(len) malloc (len)
@@ -1102,6 +1114,9 @@ init_wordlists ()
 static int
 init_opt ()
 {
+  /* Finalize the HTTP request template */
+  set_template (&opt.fuzz_template, FINISH_TEMPLATE, NULL);
+  
   if (NULL == opt.fuzz_template.URL)
     {
       warnln ("no URL provided (use -u <URL>).");
@@ -1166,7 +1181,7 @@ init_opt ()
 }
 
 static inline int
-set_template_wlist (FuzzTemplate *t, int op, void *param)
+set_template_wlist (FuzzTemplate *t, enum template_op op, void *param)
 {
   char *path = (char *) param;
   switch (op)
@@ -1186,7 +1201,7 @@ set_template_wlist (FuzzTemplate *t, int op, void *param)
 }
 
 int
-set_template (FuzzTemplate *t, int op, void *param)
+set_template (FuzzTemplate *t, enum template_op op, void *param)
 {
   char *s = (char *) param;
   static int prev_op = -1;
@@ -1379,6 +1394,11 @@ parse_args (int argc, char **argv)
 
         case 't':
           opt.Rqueue.len = atol (optarg);
+          if (opt.Rqueue.len <= 0)
+            {
+              opt.Rqueue.len = DEFAULT_REQ_COUNT;
+              warnln ("invalid thread number was ignored.");
+            }
           break;
         case 'T':
           if ((opt.ttl = atoi (optarg)) <= 0)
@@ -1437,7 +1457,6 @@ parse_args (int argc, char **argv)
         }
     }
 
-  set_template (&opt.fuzz_template, FINISH_TEMPLATE, NULL);
   return 0;
 }
 
