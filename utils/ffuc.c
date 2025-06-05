@@ -168,10 +168,21 @@ enum ffuc_flag_t
      *   (e.g. "key1=val1&key2=val2" or "&key=val")
      * HEADER_TEMPLATE:
      *   Append Http header (e.g. "Header: value")
+     *
+     * WLIST_TEMPLATE:
+     *   To append a wordlist file path to templates
+     *   set_template function appends it to the latest
+     *   manipulated URL/Body/Header with above flags
+     *   It also handles count of FUZZ keywords
+     *   To append a wordlist manually, use `set_template_wlist`
+     * FINISH_TEMPLATE:
+     *   set_template MUST be called with this op at the end
      */
     URL_TEMPLATE      = 0,
     BODY_TEMPLATE     = 1,
     HEADER_TEMPLATE   = 2,
+    WLIST_TEMPLATE    = 3,
+    FINISH_TEMPLATE   = 126,
     
     /**
      *  Fuzz Modes (default is CLUSTERBOMB)
@@ -1177,30 +1188,61 @@ set_template_wlist (FuzzTemplate *t, int op, void *param)
 int
 set_template (FuzzTemplate *t, int op, void *param)
 {
-  int n;
   char *s = (char *) param;
+  static int prev_op = -1;
+  static int local_fuzz_count = -1;
+
+  switch (prev_op)
+    {
+    case URL_TEMPLATE:
+    case BODY_TEMPLATE:
+    case HEADER_TEMPLATE:
+      if (WLIST_TEMPLATE != op && 0 != local_fuzz_count)
+        {
+          /* We are not adding a new wordlist and
+             the previous http template doesn't have enough wordlists */
+          warnln ("not enough worlists provided for the "
+                  "HTTP option '%s', ignoring %d FUZZ keyword(s).",
+                  template_name[prev_op], local_fuzz_count);
+          for (int i=0; i < local_fuzz_count; ++i)
+            set_template_wlist (&opt.fuzz_template, prev_op, NULL);
+        }
+      break;
+
+    default:
+      break;
+    }
+
   switch (op)
     {
     case URL_TEMPLATE:
       {
+        if (t->URL)
+          {
+            warnln ("unexpected URL option was ignored.");
+            return -1;
+          }
+        prev_op = URL_TEMPLATE;
         Strrealloc (t->URL, s);
-        n = fuzz_count (t->URL);
-        if (n)
+        local_fuzz_count = fuzz_count (t->URL);
+        if (local_fuzz_count)
           FLG_SET (opt.fuzz_flag, URL_HASFUZZ);
       }
-      return n;
+      return local_fuzz_count;
 
     case HEADER_TEMPLATE:
       {
+        prev_op = HEADER_TEMPLATE;
         SLIST_APPEND (t->headers, s);
-        n = fuzz_count (s);
-        if (n)
+        local_fuzz_count = fuzz_count (s);
+        if (local_fuzz_count)
           FLG_SET (opt.fuzz_flag, HEADER_HASFUZZ);
       }
-      return n;
+      return local_fuzz_count;
 
     case BODY_TEMPLATE:
       {
+        prev_op = BODY_TEMPLATE;
         if (NULL == t->body)
           {
             t->body = strdup (s);
@@ -1222,11 +1264,43 @@ set_template (FuzzTemplate *t, int op, void *param)
                 strcpy (t->body + len , s);
               }
           }
-        n = fuzz_count (s);
-        if (n)
+        local_fuzz_count = fuzz_count (s);
+        if (local_fuzz_count)
           FLG_SET (opt.fuzz_flag, BODY_HASFUZZ);
       }
-      return n;
+      return local_fuzz_count;
+
+    case WLIST_TEMPLATE:
+      {
+        if (opt.mode == MODE_SINGULAR)
+          {
+            if (da_sizeof (opt.words) <= 0)
+              REGISTER_WLIST (optarg);
+            else
+              {
+                warnln ("wordlist (%s) was ignored -- singular mode "
+                        "only accepts one wordlist", optarg);
+                return -1;
+              }
+          }
+        else
+          {
+            if (local_fuzz_count <= 0)
+              warnln ("unexpected wordlist (%s) was ignored.", optarg);
+            else
+              {
+                /* prev_op indicates the latest http option that was set */
+                set_template_wlist (&opt.fuzz_template, prev_op, optarg);
+                local_fuzz_count--;
+              }
+          }
+      }
+      return 0;
+
+    case FINISH_TEMPLATE:
+      if (0 != local_fuzz_count)
+        return 1;
+      return 0;
     }
 
   return 0;
@@ -1281,20 +1355,6 @@ help ()
 int
 parse_args (int argc, char **argv)
 {
-  /* The last parsed fuzz template option */
-  int template = -1;
-  /* Count of FUZZ keywords in @template */
-  int local_fuzz_count = -1;
-
-#define ValidateWlists() do {                                       \
-    if (opt.mode != MODE_SINGULAR && local_fuzz_count > 0) {        \
-      warnln ("ignoring %d FUZZ keyword(s), "                       \
-              "in the previous HTTP option `%s`",                   \
-              local_fuzz_count, template_name[template]);           \
-      for (int i=0; i < local_fuzz_count; ++i)                      \
-        set_template_wlist (&opt.fuzz_template, template, NULL);    \
-    }} while (0)
-
   while (1)
     {
       int idx = 0;
@@ -1311,27 +1371,10 @@ parse_args (int argc, char **argv)
           return 1;
         case 'v':
           opt.verbose = true;
-          return 0;
+          break;
 
         case 'w':
-          if (opt.mode == MODE_SINGULAR)
-            {
-              if (da_sizeof (opt.words) <= 0)
-                REGISTER_WLIST (optarg);
-              else
-                warnln ("wordlist (%s) was ignored -- singular mode "
-                        "only accepts one wordlist", optarg);
-            }
-          else
-            {
-              if (local_fuzz_count <= 0)
-                warnln ("unexpected wordlist (%s) was ignored.", optarg);
-              else
-                {
-                  set_template_wlist (&opt.fuzz_template, template, optarg);
-                  local_fuzz_count--;
-                }
-            }
+          set_template (&opt.fuzz_template, WLIST_TEMPLATE, optarg);
           break;
 
         case 't':
@@ -1349,26 +1392,13 @@ parse_args (int argc, char **argv)
           break;
 
         case 'u':
-          ValidateWlists ();
-          if (NULL == opt.fuzz_template.URL)
-            {
-              template = URL_TEMPLATE;
-              local_fuzz_count = set_template (&opt.fuzz_template, template, optarg);
-            }
-          else
-            warnln ("unexpected URL option was ignored.");
+          set_template (&opt.fuzz_template, URL_TEMPLATE, optarg);
           break;
-
         case 'H':
-          ValidateWlists ();
-          template = HEADER_TEMPLATE;
-          local_fuzz_count = set_template (&opt.fuzz_template, template, optarg);
+          set_template (&opt.fuzz_template, HEADER_TEMPLATE, optarg);
           break;
-
         case 'd':
-          ValidateWlists ();
-          template = BODY_TEMPLATE;
-          local_fuzz_count = set_template (&opt.fuzz_template, template, optarg);
+          set_template (&opt.fuzz_template, BODY_TEMPLATE, optarg);
           break;
 
         case 'm':
@@ -1406,9 +1436,9 @@ parse_args (int argc, char **argv)
           break;
         }
     }
-  ValidateWlists ();
+
+  set_template (&opt.fuzz_template, FINISH_TEMPLATE, NULL);
   return 0;
-#undef ValidateWlists
 }
 
 void
