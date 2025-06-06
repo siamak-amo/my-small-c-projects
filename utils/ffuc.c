@@ -1098,7 +1098,7 @@ init_wordlists ()
 #define DO(paths) if (paths) {                      \
     da_foreach (paths, i) {                         \
       path = paths[i];                              \
-      fprintd ("register wordlist: '%s' -> %s\n",   \
+      fprintd ("register word-list: '%s' -> %s\n",   \
                (path) ? path : "(DUMMY)", #paths);  \
       REGISTER_WLIST (path);                        \
     }}
@@ -1114,15 +1114,14 @@ init_wordlists ()
 static int
 init_opt ()
 {
-  /* Finalize the HTTP request template */
-  set_template (&opt.fuzz_template, FINISH_TEMPLATE, NULL);
-  
   if (NULL == opt.fuzz_template.URL)
     {
       warnln ("no URL provided (use -u <URL>).");
       return -1;
     }
 
+  /* Finalizing the HTTP request template */
+  set_template (&opt.fuzz_template, FINISH_TEMPLATE, NULL);
   init_wordlists ();
   uint n = da_sizeof (opt.words);
   if (n == 0)
@@ -1133,7 +1132,7 @@ init_opt ()
     }
   opt.total_fuzz_count = n;
 
-   /* Initialize requests context */
+  /* Initialize requests context */
   opt.Rqueue.ctxs = ffuc_calloc (opt.Rqueue.len, sizeof (RequestContext));
    for (size_t i = 0; i < opt.Rqueue.len; i++)
      {
@@ -1217,8 +1216,11 @@ set_template (FuzzTemplate *t, enum template_op op, void *param)
           /* We are not adding a new wordlist and
              the previous http template doesn't have enough wordlists */
           warnln ("not enough worlists provided for the "
-                  "HTTP option '%s', ignoring %d FUZZ keyword(s).",
-                  template_name[prev_op], local_fuzz_count);
+                  "HTTP option '%s', ignoring %d FUZZ keyword%c.",
+                  template_name[prev_op],
+                  local_fuzz_count,
+                  (local_fuzz_count == 1) ? 0 : 's');
+
           for (int i=0; i < local_fuzz_count; ++i)
             set_template_wlist (&opt.fuzz_template, prev_op, NULL);
         }
@@ -1293,15 +1295,15 @@ set_template (FuzzTemplate *t, enum template_op op, void *param)
               REGISTER_WLIST (optarg);
             else
               {
-                warnln ("wordlist (%s) was ignored -- singular mode "
-                        "only accepts one wordlist", optarg);
+                warnln ("word-list (%s) was ignored -- singular mode "
+                        "only accepts one word-list", optarg);
                 return -1;
               }
           }
         else
           {
             if (local_fuzz_count <= 0)
-              warnln ("unexpected wordlist (%s) was ignored.", optarg);
+              warnln ("unexpected word-list (%s) was ignored.", optarg);
             else
               {
                 /* prev_op indicates the latest http option that was set */
