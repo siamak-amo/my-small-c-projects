@@ -103,7 +103,7 @@ static char tmp[TMP_CAP];
     fprintf (stream, element_format, (arr)[__idx]);         \
   } while (0)
 
-const char *lopt_cstr = "m:w:" "T:R:t:" "u:H:d:" "vh";
+const char *lopt_cstr = "m:w:" "T:R:t:p:" "u:H:d:" "vh";
 const struct option lopts[] =
   {
     /* We call it `thread` (-t) for compatibility with ffuf,
@@ -150,6 +150,7 @@ const struct option lopts[] =
     {"rate",                required_argument, NULL, 'R'},
     {"max_rate",            required_argument, NULL, 'R'},
     {"timeout",             required_argument, NULL, 'T'},
+    {"delay",               required_argument, NULL, 'p'},
     {"help",                no_argument,       NULL, 'h'},
     {"verbose",             no_argument,       NULL, 'v'},
     /* End of options */
@@ -520,6 +521,7 @@ struct Opt
     RequestContext *ctxs; /* Static array */
     size_t len; /* Length of @ctxs */
     size_t waiting; /* number of used elements */
+    useconds_t delay_ms;
   } Rqueue;
 
   /* Next FUZZ loader and */
@@ -1122,6 +1124,7 @@ init_opt ()
 
   /* Finalizing the HTTP request template */
   set_template (&opt.fuzz_template, FINISH_TEMPLATE, NULL);
+  /* Open and map wordlists */
   init_wordlists ();
   uint n = da_sizeof (opt.words);
   if (n == 0)
@@ -1409,6 +1412,13 @@ parse_args (int argc, char **argv)
               warnln ("invalid TTL was ignored.");
             }
           break;
+        case 'p':
+          if ((opt.Rqueue.delay_ms = atoi (optarg)) <= 0)
+            {
+              opt.Rqueue.delay_ms = 0;
+              warnln ("invalid TTL was ignored.");
+            }
+          break;
         case 'R':
           opt.max_rate = atoi (optarg);
           break;
@@ -1512,6 +1522,8 @@ main (int argc, char **argv)
           {
             opt.Rqueue.waiting++;
             register_contex (ctx);
+            if (opt.Rqueue.delay_ms)
+              usleep (opt.Rqueue.delay_ms * 1000);
           }
       }
 
