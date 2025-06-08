@@ -51,7 +51,7 @@
 #include <getopt.h>
 
 #define PROG_NAME "FFuc"
-#define PROG_VERSION "1.1-dev"
+#define PROG_VERSION "1.2-dev"
 
 #define SLIST_APPEND(list, val) \
   list = curl_slist_append (list, val)
@@ -185,21 +185,25 @@ enum ffuc_flag_t
     BODY_HASFUZZ      = (1 << 2),
     HEADER_HASFUZZ    = (1 << 3),
 
-    /* Output filter & match */
+    /* Internal (used in RequestContext.flag) */
+    CTX_FREE          = 0,
+    CTX_INUSE         = 1,
+  };
+
+/* Output filter & match, fits in `unsigned char` */
+enum filter_flag_t
+  {
     FILTER_CODE       = 1,
     FILTER_WCOUNT     = 2,
     FILTER_LCOUNT     = 3,
     FILTER_SIZE       = 4,
     FILTER_TIME       = 5,
+
     MATCH_CODE        = 127,
     MATCH_WCOUNT      = 126,
     MATCH_LCOUNT      = 125,
     MATCH_SIZE        = 124,
     MATCH_TIME        = 123,
-
-    /* Internal (used in RequestContext.flag) */
-    CTX_FREE          = 0,
-    CTX_INUSE         = 1,
   };
 
 enum template_op
@@ -207,13 +211,17 @@ enum template_op
     /**
      * URL_TEMPLATE:
      *   Set the target URL (e.g. "http(s)://host:port")
+     *
      * BODY_TEMPLATE:
      *   Aappend to the request body; It handles `&` automatically
      *   (e.g. "key1=val1&key2=val2" or "&key=val")
+     *
      * HEADER_TEMPLATE:
      *   Append Http header (e.g. "Header: value")
+     *
      * WLIST_TEMPLATE:
      *   To append a wordlist file path
+     *
      * FINISH_TEMPLATE:
      *   set_template MUST be called with this at the end
      */
@@ -224,11 +232,12 @@ enum template_op
     FINISH_TEMPLATE   = 126,
   };
 
-const char *template_name[] = {
-  [URL_TEMPLATE]    = "URL",
-  [BODY_TEMPLATE]   = "Body",
-  [HEADER_TEMPLATE] = "Header",
-};
+const char *template_name[] =
+  {
+    [URL_TEMPLATE]    = "URL",
+    [BODY_TEMPLATE]   = "Body",
+    [HEADER_TEMPLATE] = "Header",
+  };
 
 struct req_stat_t
 {
@@ -251,7 +260,7 @@ typedef struct progress_t
 } Progress;
 
 /* Calculate the current request rate (req/second) uint_t */
-#define REQ_RATE(prog) (int)((prog)->req_count_dt / DELTA_T)
+#define REQ_RATE(prog) ((prog)->req_count_dt / DELTA_T)
 
 struct res_filter_t
 {
@@ -1515,8 +1524,7 @@ main (int argc, char **argv)
     /* Find a free context (If there is any) and register it */
     while (!opt.should_end && opt.Rqueue.waiting < opt.Rqueue.len)
       {
-        /* TODO: Is this improvable? */
-        if (opt.max_rate <= REQ_RATE (&opt.progress))
+        if ((uint) opt.max_rate <= REQ_RATE (&opt.progress))
           break;
         if ((ctx = lookup_free_handle (opt.Rqueue.ctxs, opt.Rqueue.len)))
           {
