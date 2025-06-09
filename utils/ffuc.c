@@ -294,14 +294,15 @@ typedef struct
   {
     /* As libcurl keeps a copy of the URL,
        we don't need to keep track of it */
-    char *post_body;
-    struct curl_slist *http_headers;
+    char *body;
+    struct curl_slist *headers;
   } request;
 
 } RequestContext;
 
 typedef struct
 {
+  /* xxx_wlists means wordlist file paths */
   char *URL;
   char **URL_wlists;
 
@@ -316,17 +317,16 @@ typedef struct
  *  Fuzz word
  *
  *  We don't load the entire word-list files
- *  into the memory, instead mmap them and iterate
- *  on them using fw_next and fw_get.
+ *  into memory, instead mmap them and iterate
+ *  through them using fw_next and fw_get.
  */
 typedef struct
 {
   /**
-   *  The fw_get macro can be used to get the current word
-   *  The result is *NOT* null-terminated ('\0')
-   *  @len is the result's length
+   *  `fw_get` returns the current word. The result is NOT
+   *  null-terminated, and it's length is @len
    *
-   *  FW_FORMAT and FW_ARG macros can be used for printf
+   *  FW_FORMAT and FW_ARG macros can be used with printf
    */
   char *str;
   uint len; /* Length of the current word */
@@ -334,10 +334,10 @@ typedef struct
   /**
    *  Index of the current word and total words
    *
-   *  Each fw_next call, increments @idx by 1,
+   *  Each fw_next call, increments @index by 1,
    *  after @total_count resets to 0
    */
-  uint idx, total_count;
+  uint index, total_count;
 
   /* Internal */
   uint __offset; /* Offset of the current word in @str */
@@ -382,25 +382,25 @@ char *fw_next (Fword *fw);
 #define fw_get(fw) ((fw)->str + (fw)->__offset)
 
 /* Fword end of file & beginning of file */
-#define fw_eof(fw) ((fw)->idx + 1 == (fw)->total_count)
-#define fw_bof(fw) ((fw)->idx == 0)
+#define fw_eof(fw) ((fw)->index + 1 == (fw)->total_count)
+#define fw_bof(fw) ((fw)->index == 0)
 
 /**
  *  Fword functions
+ *  fw_next should be called after fw_init
  */
 void fw_init (Fword *fw, char *cstr, size_t cstr_len);
 Fword *fw_dup (const Fword *src);
 char *fw_next (Fword *fw);
 
 /**
- *  Strline - StrlineNull functions
+ *  Strline and StrlineNull Functions
  *
  *  These functions return a pointer to the first character
- *  of @cstr in the range [0x00, 0x1F], and NULL on '\0'.
+ *  in the string @cstr that falls within the range (0x00, 0x1F].
  *
- *  StrlineNull function is like Strline() except that,
- *  at the null-byte(s) and characters in the above range,
- *  it returns a pointer to them, rather than NULL.
+ *  Strline returns NULL, if a null-byte is encountered, but
+ *  StrlineNull, returns a pointer to null-byte.
  */
 static inline char *Strline (const char *cstr);
 static inline char *StrlineNull (const char *cstr);
@@ -409,9 +409,10 @@ static inline char *StrlineNull (const char *cstr);
  *  Libcurl handle lookup functions
  *
  * lookup_handle:
- *   Finds @handle in @ctxs array, NULL is not found
+ *   Finds @handle in @ctxs array, returns NULL is not found
  * lookup_free_handle:
- *   Finds the first free to use request context in @ctxs
+ *   Finds the first free request context in @ctxs,
+ *   returns null if couldn't find any
  */
 static inline RequestContext *
 lookup_handle (CURL *handle, RequestContext *ctxs, size_t len);
@@ -424,8 +425,8 @@ lookup_free_handle (RequestContext *ctxs, size_t len);
  * init_progress:
  *   Initializes the progress struct, sets the current time t0
  * tick_progress:
- *   Proceeds the timer and reset the progress if needed,
- *   It MUST be called and the end of the main loop.
+ *   Advances the timer and resets the progress if needed
+ *   It MUST be called at the end of the main loop
  */
 void init_progress (Progress *prog);
 static inline void tick_progress (Progress *prog);
@@ -434,12 +435,11 @@ static inline void tick_progress (Progress *prog);
  *  Template setter functions
  *
  * set_template:
- *   To set HTTP and wordlist templates
- *   It handles `&` in HTTP body, keeps track of FUZZ keywords
- *   and appends wordlist file path to the latest HTTP option
- *   that has been set by this function.
+ *   To set HTTP options and wordlist templates
+ *   It keeps track of FUZZ keywords, and appends
+ *   wordlist file path to the most recently modified HTTP option
  * set_template_wlist:
- *   To manually append wordlist file path.
+ *   To manually append wordlist file path
  */
 int set_template (FuzzTemplate *t, enum template_op op, void *param);
 static inline int
@@ -470,11 +470,14 @@ set_template_wlist (FuzzTemplate *t, enum template_op op, void *param);
   if (NULL != ptr) { ffuc_free (ptr); ptr = NULL; }
 
 /**
- *  As the primary bottleneck is the network,
- *  improving memory allocation is not probably
- *  going to enhance performance.
- *  To prevent memory leak, do NOT use ffuc_free & safe_free here
- *  because, Strrealloc is used in reading from word-lists.
+ **  The primary bottleneck is the network, so improving
+ **  memory allocation is unlikely to enhance performance.
+ **/
+
+/**
+ *  To prevent memory leaks, DO *NOT* use
+ *  `ffuc_free` or `safe_free` here, as Strrealloc is used for
+ *  reading from word-lists, and may be called thousands of time!
  */
 #define Strrealloc(dst, src) do {               \
     if (dst) free (dst);                        \
@@ -523,7 +526,7 @@ struct Opt
   struct progress_t progress;
 
   Fword **words; /* Dynamic array */
-  int total_fuzz_count; /* ~ length of @words */
+  int total_fuzz_count; /* Length of @words */
 
   struct request_queue_t
   {
@@ -553,11 +556,10 @@ struct Opt opt = {0};
     da_appd (opt.words, fw);                    \
   } while (0)
 
-
 /**
  *  We only require request statistics, so we pass
- *  this function as CURLOPT_WRITEFUNCTION to libcurl.
- *  Libcurl sets @optr to the corresponding request context *
+ *  this function as CURLOPT_WRITEFUNCTION to libcurl
+ *  Libcurl sets @optr to the corresponding request context
  */
 size_t
 curl_fwrite (void *ptr, size_t size, size_t nmemb, void *optr)
@@ -604,7 +606,7 @@ StrlineNull (const char *cstr)
 void
 fw_init (Fword *fw, char *cstr, size_t cstr_len)
 {
-  fw->idx=0;
+  fw->index = 0;
   fw->__offset = 0;
   fw->total_count = 0;
 
@@ -662,23 +664,23 @@ fw_next (Fword *fw)
       next = Strline (p);
       fw->len = next - p;
       fw->__offset = 0;
-      fw->idx = 0;
+      fw->index = 0;
       return fw->str;
     }
   fw->__offset = p - fw->str;
   fw->len = next - p;
-  fw->idx++;
-  if (fw->idx == fw->total_count)
-    fw->idx = 0;
+  fw->index++;
+  if (fw->index == fw->total_count)
+    fw->index = 0;
   return p;
 }
 
 /**
- *  FUZZ sprintf, substitutes the FUZZ keyword
- *  with the appropriate value from @FUZZ array
- *  The tailing element of @FUZZ MUST be NULL
- *
- *  @return: Number of consumed elements from @FUZZ
+ *  FUZZ sprintf substitutes the FUZZ keyword of @format
+ *  with the appropriate value from the @FUZZ array
+ *  The last element of @FUZZ MUST be NULL.
+ * return:
+ *  The number of elements consumed from @FUZZ.
  */
 int
 fuzz_snprintf (char *restrict dst, size_t dst_cap,
@@ -750,7 +752,7 @@ __next_fuzz_pitchfork (RequestContext *ctx)
   fprintd ("\n");
 
   if (fw_bof (opt.fuzz_ctx.longest))
-    opt.should_end = 1;
+    opt.should_end = true;
 }
 
 static void
@@ -905,6 +907,8 @@ handle_response_context (RequestContext *ctx, CURLcode res_code)
   double duration;
   struct req_stat_t *stat = &ctx->stat;
 
+  opt.progress.req_count++;
+  opt.progress.req_count_dt++;
   if (res_code == CURLE_OK)
     {
       curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &result);
@@ -915,6 +919,9 @@ handle_response_context (RequestContext *ctx, CURLcode res_code)
           stat->wcount++;
         }
     }
+  else
+    opt.progress.err_count++;
+
   curl_easy_getinfo (ctx->easy_handle, CURLINFO_TOTAL_TIME, &duration);
   stat->duration = (int) (duration * 1000.f);
 
@@ -947,16 +954,16 @@ __register_contex (RequestContext *dst)
 
   /**
    *  Generating POST body
-   *  based on opt.fuzz_template.post_body
+   *  based on opt.fuzz_template.body
    */
   if (template.body)
     {
       if (opt.fuzz_flag & BODY_HASFUZZ)
         {
           FUZZ += fuzz_snprintf (tmp, TMP_CAP, template.body, FUZZ);
-          Strrealloc (dst->request.post_body, tmp);
+          Strrealloc (dst->request.body, tmp);
           curl_easy_setopt (dst->easy_handle, CURLOPT_POSTFIELDS,
-                            dst->request.post_body);
+                            dst->request.body);
         }
       else
         {
@@ -973,7 +980,7 @@ __register_contex (RequestContext *dst)
     {
       if (opt.fuzz_flag & HEADER_HASFUZZ)
         {
-          struct curl_slist **headers = &dst->request.http_headers;
+          struct curl_slist **headers = &dst->request.headers;
           if (*headers)
             {
               curl_slist_free_all (*headers);
@@ -1138,7 +1145,7 @@ init_opt ()
   uint n = da_sizeof (opt.words);
   if (n == 0)
     {
-      opt.should_end = 1;
+      opt.should_end = true;
       warnln ("cannot continue with no word-list");
       return 1;
     }
@@ -1348,8 +1355,8 @@ cleanup (int c, void *p)
           RequestContext *ctx = &opt.Rqueue.ctxs[i];
           // curl_multi_remove_handle (opt.multi_handle, ctx->easy_handle);
           curl_easy_cleanup (ctx->easy_handle);
-          safe_free (ctx->request.post_body);
-          curl_slist_free_all (ctx->request.http_headers);
+          safe_free (ctx->request.body);
+          curl_slist_free_all (ctx->request.headers);
         }
     }
   curl_multi_cleanup (opt.multi_handle);
@@ -1546,12 +1553,8 @@ main (int argc, char **argv)
         assert (NULL != ctx && "Broken Logic!!\n"
                 "Completed easy_handle doesn't have request context.\n");
 
-        if (msg->msg == CURLMSG_DONE)
+        if (CURLMSG_DONE == msg->msg)
           {
-            opt.progress.req_count++;
-            opt.progress.req_count_dt++;
-            if (CURLE_OK != msg->data.result)
-              opt.progress.err_count++;
             handle_response_context (ctx, msg->data.result);
             /* Release the completed context */
             context_reset (ctx);
