@@ -432,6 +432,15 @@ void init_progress (Progress *prog);
 static inline void tick_progress (Progress *prog);
 
 /**
+ *  Sleeps for a random duration in microseconds
+ *  within the specified range @range
+ *
+ *  If range[1] is less than or equal to range[0], the functio
+ *  it will sleep for exactly range[0] microseconds
+ */
+static inline void range_usleep (useconds_t range[2]);
+
+/**
  *  Template setter functions
  *
  * set_template:
@@ -533,7 +542,7 @@ struct Opt
     RequestContext *ctxs; /* Static array */
     size_t len; /* Length of @ctxs */
     size_t waiting; /* number of used elements */
-    useconds_t delay_ms;
+    useconds_t delay_us[2]; /* delay range, microseconds */
   } Rqueue;
 
   /* Next FUZZ loader and */
@@ -1045,6 +1054,26 @@ tick_progress (Progress *prog)
 }
 
 //-- Utility functions --//
+static inline void
+range_usleep (useconds_t range[2])
+{
+  int duration;
+  if (range[0])
+    {
+      duration = range[1] - range[0];
+      if (duration > 0)
+        {
+          /* Sleep a random amount of time */
+          int r = rand () % (duration + 1);
+          usleep (range[0] + r);
+        }
+      else
+        {
+          usleep (range[0] * 1000);
+        }
+    }
+}
+
 size_t
 fuzz_count (const char *s)
 {
@@ -1428,13 +1457,43 @@ parse_args (int argc, char **argv)
               warnln ("invalid TTL was ignored.");
             }
           break;
+
         case 'p':
-          if ((opt.Rqueue.delay_ms = atoi (optarg)) <= 0)
-            {
-              opt.Rqueue.delay_ms = 0;
-              warnln ("invalid TTL was ignored.");
-            }
+          {
+            sscanf (optarg, "%u-%u",
+                    &opt.Rqueue.delay_us[0],
+                    &opt.Rqueue.delay_us[1]);
+
+            if ((int) opt.Rqueue.delay_us[0] < 0)
+              {
+                opt.Rqueue.delay_us[0] = 0;
+                warnln ("invalid TTL was ignored.");
+              }
+            if (opt.Rqueue.delay_us[1] != 0)
+              {
+                srand (time (NULL));
+                if ((int) opt.Rqueue.delay_us[1] <
+                    (int) opt.Rqueue.delay_us[0])
+                  {
+                    opt.Rqueue.delay_us[1] = 0;
+                    warnln ("invalid TTL range was fixed up.");
+                  }
+              }
+            if (strchr (optarg, 's'))
+              {
+                /* Convert to second */
+                opt.Rqueue.delay_us[0] *= 1000000;
+                opt.Rqueue.delay_us[1] *= 1000000;
+              }
+            else
+              {
+                /* Convert to millisecond */
+                opt.Rqueue.delay_us[0] *= 1000;
+                opt.Rqueue.delay_us[1] *= 1000;
+              }
+          }
           break;
+
         case 'R':
           opt.max_rate = atoi (optarg);
           break;
@@ -1537,8 +1596,7 @@ main (int argc, char **argv)
           {
             opt.Rqueue.waiting++;
             register_contex (ctx);
-            if (opt.Rqueue.delay_ms)
-              usleep (opt.Rqueue.delay_ms * 1000);
+            range_usleep (opt.Rqueue.delay_us);
           }
       }
 
