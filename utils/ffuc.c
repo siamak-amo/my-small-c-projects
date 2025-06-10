@@ -756,7 +756,7 @@ __next_fuzz_pitchfork (RequestContext *ctx)
       fw = opt.words[i];
       snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
       Strrealloc (ctx->FUZZ[i], tmp);
-      fprintd ("[%d]->`%s`\t", fw->idx, tmp);
+      fprintd ("[%d]->`%s`\t", fw->index, tmp);
       fw_next (fw);
     }
   fprintd ("\n");
@@ -779,7 +779,7 @@ __next_fuzz_clusterbomb (RequestContext *ctx)
       fw = opt.words[i];
       snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
       Strrealloc (ctx->FUZZ[i], tmp);
-      fprintd ("[%d]->`%s`\t", fw->idx, tmp);
+      fprintd ("[%d]->`%s`\t", fw->index, tmp);
 
       if (go_next)
         {
@@ -1146,7 +1146,7 @@ init_wordlists ()
 #define DO(paths) if (paths) {                      \
     da_foreach (paths, i) {                         \
       path = paths[i];                              \
-      fprintd ("register word-list: '%s' -> %s\n",   \
+      fprintd ("register word-list: '%s' -> %s\n",  \
                (path) ? path : "(DUMMY)", #paths);  \
       REGISTER_WLIST (path);                        \
     }}
@@ -1170,7 +1170,7 @@ init_opt ()
   if (n == 0)
     {
       opt.should_end = true;
-      warnln ("cannot continue with no word-list");
+      warnln ("cannot continue with no word-list.");
       return 1;
     }
   opt.total_fuzz_count = n;
@@ -1410,6 +1410,7 @@ help ()
 int
 parse_args (int argc, char **argv)
 {
+  char *last_wlist = NULL;
   while (1)
     {
       int idx = 0;
@@ -1573,7 +1574,6 @@ pre_init_opt ()
   opt.Rqueue.len = DEFAULT_REQ_COUNT;
   opt.max_rate = MAX_REQ_RATE;
   opt.streamout = stdout;
-  /* Initialize opt */
   opt.words = da_new (Fword *);
   /* Initialize libcurl & context of requests */
   curl_global_init (CURL_GLOBAL_DEFAULT);
@@ -1641,7 +1641,7 @@ main (int argc, char **argv)
   }
   while (still_running > 0 || !opt.should_end);
 
-  if (opt.verbose)
+  if (opt.verbose || opt.progress.err_count)
     warnln ("Total requests: %d,  Errors: %u (%u%%).",
             opt.progress.req_count,
             opt.progress.err_count,
