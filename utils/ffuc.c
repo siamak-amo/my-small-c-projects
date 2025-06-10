@@ -1340,22 +1340,22 @@ set_template (FuzzTemplate *t, enum template_op op, void *param)
         if (opt.mode == MODE_SINGULAR)
           {
             if (da_sizeof (opt.words) <= 0)
-              REGISTER_WLIST (optarg);
+              REGISTER_WLIST (s);
             else
               {
                 warnln ("word-list (%s) was ignored -- singular mode "
-                        "only accepts one word-list", optarg);
+                        "only accepts one word-list", s);
                 return -1;
               }
           }
         else
           {
             if (local_fuzz_count <= 0)
-              warnln ("unexpected word-list (%s) was ignored.", optarg);
+              warnln ("unexpected word-list (%s) was ignored.", s);
             else
               {
                 /* prev_op indicates the latest http option that was set */
-                set_template_wlist (&opt.fuzz_template, prev_op, optarg);
+                set_template_wlist (&opt.fuzz_template, prev_op, s);
                 local_fuzz_count--;
               }
           }
