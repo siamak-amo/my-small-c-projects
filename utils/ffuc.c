@@ -1070,7 +1070,7 @@ range_usleep (useconds_t range[2])
         }
       else
         {
-          usleep (range[0] * 1000);
+          usleep (range[0]);
         }
     }
 }
@@ -1544,7 +1544,7 @@ parse_args (int argc, char **argv)
       warnln ("no URL provided (use -u <URL>).");
       return -1;
     }
-  /* not FUZZ keyword */
+  /* No FUZZ keyword */
   if (! HAS_FLAG (opt.fuzz_flag, URL_HASFUZZ) &&
       ! HAS_FLAG (opt.fuzz_flag, BODY_HASFUZZ) &&
       ! HAS_FLAG (opt.fuzz_flag, HEADER_HASFUZZ))
