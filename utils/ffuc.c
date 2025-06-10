@@ -94,6 +94,7 @@ static char tmp[TMP_CAP];
 #define MIN(a,b) ((a < b) ? (a) : (b))
 
 #define FLG_SET(dst, flg) (dst |= flg)
+#define HAS_FLAG(val, flg) (val & flg)
 #define FLG_UNSET(dst, flg) (dst &= ~(flg))
 
 #define Fprintarr(stream, element_format, arr, len) do {    \
@@ -1161,12 +1162,6 @@ init_wordlists ()
 static int
 init_opt ()
 {
-  if (NULL == opt.fuzz_template.URL)
-    {
-      warnln ("no URL provided (use -u <URL>).");
-      return -1;
-    }
-
   /* Finalizing the HTTP request template */
   set_template (&opt.fuzz_template, FINISH_TEMPLATE, NULL);
   /* Open and map wordlists */
@@ -1282,11 +1277,6 @@ set_template (FuzzTemplate *t, enum template_op op, void *param)
     {
     case URL_TEMPLATE:
       {
-        if (t->URL)
-          {
-            warnln ("unexpected URL option was ignored.");
-            return -1;
-          }
         prev_op = URL_TEMPLATE;
         Strrealloc (t->URL, s);
         local_fuzz_count = fuzz_count (t->URL);
@@ -1439,6 +1429,7 @@ parse_args (int argc, char **argv)
           break;
 
         case 'w':
+          last_wlist = optarg;
           set_template (&opt.fuzz_template, WLIST_TEMPLATE, optarg);
           break;
 
@@ -1499,7 +1490,10 @@ parse_args (int argc, char **argv)
           break;
 
         case 'u':
-          set_template (&opt.fuzz_template, URL_TEMPLATE, optarg);
+          if (opt.fuzz_template.URL)
+            warnln ("unexpected URL option was ignored.");
+          else
+            set_template (&opt.fuzz_template, URL_TEMPLATE, optarg);
           break;
         case 'H':
           set_template (&opt.fuzz_template, HEADER_TEMPLATE, optarg);
@@ -1544,6 +1538,29 @@ parse_args (int argc, char **argv)
         }
     }
 
+  if (!opt.fuzz_template.URL)
+    {
+      warnln ("no URL provided (use -u <URL>).");
+      return -1;
+    }
+  /* not FUZZ keyword */
+  if (! HAS_FLAG (opt.fuzz_flag, URL_HASFUZZ) &&
+      ! HAS_FLAG (opt.fuzz_flag, BODY_HASFUZZ) &&
+      ! HAS_FLAG (opt.fuzz_flag, HEADER_HASFUZZ))
+    {
+      if (last_wlist)
+        {
+          warnln ("no FUZZ keyword found, fuzzing tail of URL.");
+          snprintf (tmp, TMP_CAP, "%s/FUZZ", opt.fuzz_template.URL);
+          set_template (&opt.fuzz_template, URL_TEMPLATE, tmp);
+          set_template (&opt.fuzz_template, WLIST_TEMPLATE, last_wlist);
+        }
+      else
+        {
+          warnln ("nothing to do, exiting.");
+          return 1;
+        }
+    }
   return 0;
 }
 
