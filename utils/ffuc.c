@@ -71,9 +71,9 @@ static char tmp[TMP_CAP];
 # define MAX_REQ_RATE 2048
 #endif
 
-/* Default delta time, for measuring speed */
-#ifndef DELTA_T
-# define DELTA_T 1
+/* Delta time (in seconds), for measuring request rate */
+#ifndef DELTA_TS
+# define DELTA_TS 1
 #endif
 
 /* Default connection/read timeuot */
@@ -261,7 +261,7 @@ typedef struct progress_t
 } Progress;
 
 /* Calculate the current request rate (req/second) uint_t */
-#define REQ_RATE(prog) ((prog)->req_count_dt / DELTA_T)
+#define REQ_RATE(prog) ((prog)->req_count_dt / DELTA_TS)
 
 struct res_filter_t
 {
@@ -436,8 +436,8 @@ static inline void tick_progress (Progress *prog);
  *  Sleeps for a random duration in microseconds
  *  within the specified range @range
  *
- *  If range[1] is less than or equal to range[0], the functio
- *  it will sleep for exactly range[0] microseconds
+ *  If range[1] is less than or equal to range[0],
+ *  then it will sleep for range[0] microseconds
  */
 static inline void range_usleep (useconds_t range[2]);
 
@@ -1047,7 +1047,7 @@ static inline void
 tick_progress (Progress *prog)
 {
   time_t t = time (NULL);
-  if (t - prog->t0 >= DELTA_T)
+  if (t - prog->t0 >= DELTA_TS)
     {
       prog->req_count_dt = 0;
       prog->t0 = t;
@@ -1544,6 +1544,7 @@ parse_args (int argc, char **argv)
       warnln ("no URL provided (use -u <URL>).");
       return -1;
     }
+#ifndef DO_NOT_FIX_NO_FUZZ
   /* No FUZZ keyword */
   if (! HAS_FLAG (opt.fuzz_flag, URL_HASFUZZ) &&
       ! HAS_FLAG (opt.fuzz_flag, BODY_HASFUZZ) &&
@@ -1552,6 +1553,7 @@ parse_args (int argc, char **argv)
       if (last_wlist)
         {
           warnln ("no FUZZ keyword found, fuzzing tail of URL.");
+          /* TODO: prevent double slash in URL before FUZZ */
           snprintf (tmp, TMP_CAP, "%s/FUZZ", opt.fuzz_template.URL);
           set_template (&opt.fuzz_template, URL_TEMPLATE, tmp);
           set_template (&opt.fuzz_template, WLIST_TEMPLATE, last_wlist);
@@ -1562,6 +1564,8 @@ parse_args (int argc, char **argv)
           return 1;
         }
     }
+#endif /* DO_NOT_FIX_NO_FUZZ */
+
   return 0;
 }
 
