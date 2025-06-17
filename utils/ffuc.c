@@ -166,7 +166,7 @@ const struct option lopts[] =
   };
 
 enum ffuc_flag_t
-  {    
+  {
     /**
      *  Fuzz Modes (default is CLUSTERBOMB)
      *
@@ -1051,7 +1051,7 @@ register_contex (RequestContext *ctx)
 void
 init_progress (Progress *prog)
 {
-  time (&prog->t0); // initialize t0
+  time (&prog->t0);
   prog->req_count = 0;
   prog->req_count_dt = 0;
 }
@@ -1116,7 +1116,7 @@ opt_append_filter (int type, const char *range)
   da_appd (opt.filters, fl);
 }
 
-static inline Fword *
+static Fword *
 make_fw_from_path (char *path)
 {
   int fd;
@@ -1172,6 +1172,7 @@ init_wordlists ()
 #undef DO
 }
 
+/* Initializes the global Opt, after parsing user options */
 static int
 init_opt ()
 {
@@ -1179,7 +1180,7 @@ init_opt ()
   set_template (&opt.fuzz_template, FINISH_TEMPLATE, NULL);
   /* Open and map wordlists */
   init_wordlists ();
-  uint n = da_sizeof (opt.words);
+  da_idx n = da_sizeof (opt.words);
   if (n == 0)
     {
       opt.should_end = true;
@@ -1188,15 +1189,16 @@ init_opt ()
     }
   opt.total_fuzz_count = n;
 
-  /* Initialize requests context */
+  /* Initializing request contexts */
   opt.Rqueue.ctxs = ffuc_calloc (opt.Rqueue.len, sizeof (RequestContext));
-   for (size_t i = 0; i < opt.Rqueue.len; i++)
-     {
-       opt.Rqueue.ctxs[i].easy_handle = curl_easy_init();
-       int cap_bytes = (n + 1) * sizeof (char *);
-       opt.Rqueue.ctxs[i].FUZZ = ffuc_malloc (cap_bytes);
-       Memzero (opt.Rqueue.ctxs[i].FUZZ, cap_bytes);
-     }
+  for (size_t i = 0; i < opt.Rqueue.len; i++)
+    {
+      opt.Rqueue.ctxs[i].easy_handle = curl_easy_init();
+      int cap_bytes = (n + 1) * sizeof (char *);
+      opt.Rqueue.ctxs[i].FUZZ = ffuc_malloc (cap_bytes);
+      Memzero (opt.Rqueue.ctxs[i].FUZZ, cap_bytes);
+    }
+
   /* Set the default filters if not disabled */
   if (NO_FILTER == opt.filters)
     opt.filters = NULL;
@@ -1209,12 +1211,12 @@ init_opt ()
          warnln ("sending body in 'GET' request.");
     }
 
-   switch (opt.mode)
+  switch (opt.mode)
     {
     case MODE_PITCHFORK:
       /* Find the longest wordlist, needed by pitchfork */
       opt.fuzz_ctx.longest = opt.words[0];
-      for (size_t i=0; i < n; ++i)
+      for (da_idx i=0; i < n; ++i)
         {
           if (opt.words[i]->total_count > opt.fuzz_ctx.longest->total_count)
             {
@@ -1232,7 +1234,7 @@ init_opt ()
 
     case MODE_CLUSTERBOMB:
       opt.progress.req_total = 1;
-      for (size_t i=0; i < n; ++i)
+      for (da_idx i=0; i < n; ++i)
         opt.progress.req_total *= opt.words[i]->total_count;
       opt.load_next_fuzz = __next_fuzz_clusterbomb;
       break;
@@ -1241,7 +1243,7 @@ init_opt ()
   return 0;
 }
 
-static inline int
+static int
 set_template_wlist (FuzzTemplate *t, enum template_op op, void *param)
 {
   char *path = (char *) param;
@@ -1261,6 +1263,10 @@ set_template_wlist (FuzzTemplate *t, enum template_op op, void *param)
     }
 }
 
+/* Although this may sounds lile OOP, it simplifies the
+   logic of parsing user options a lot easier;
+   As they may provide wrong number of word-lists or
+   forget `&` in their HTTP body options '-d' */
 int
 set_template (FuzzTemplate *t, enum template_op op, void *param)
 {
@@ -1527,7 +1533,7 @@ parse_args (int argc, char **argv)
 
         case 'm':
           /* Type the first letter OR complete name */
-          if ('p' == *optarg || 0 == strcmp ("pitchfork", optarg))
+               if ('p' == *optarg || 0 == strcmp ("pitchfork", optarg))
             opt.mode = MODE_PITCHFORK;
           else if ('s' == *optarg || 0 == strcmp ("singular", optarg))
             opt.mode = MODE_SINGULAR;
