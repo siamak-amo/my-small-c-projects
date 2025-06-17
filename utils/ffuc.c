@@ -104,7 +104,7 @@ static char tmp[TMP_CAP];
     fprintf (stream, element_format, (arr)[__idx]);         \
   } while (0)
 
-const char *lopt_cstr = "m:w:" "T:R:t:p:" "u:H:d:" "vh";
+const char *lopt_cstr = "m:w:" "T:R:t:p:A" "u:H:d:X:" "vh";
 const struct option lopts[] =
   {
     /* We call it `thread` (-t) for compatibility with ffuf,
@@ -116,6 +116,10 @@ const struct option lopts[] =
     {"url",                 required_argument, NULL, 'u'},
     {"header",              required_argument, NULL, 'H'},
     {"data",                required_argument, NULL, 'd'},
+    /* HTTP verb, does NOT accepts FUZZ keyword */
+    {"request",             required_argument, NULL, 'X'},
+    {"method",              required_argument, NULL, 'X'},
+    {"request-method",      required_argument, NULL, 'X'},
 
     /* Filter options */
     {"fc",                  required_argument, NULL, '0'},
@@ -143,6 +147,9 @@ const struct option lopts[] =
     {"ml",                  required_argument, NULL, '6'},
     {"mline",               required_argument, NULL, '6'},
     {"match-line",          required_argument, NULL, '6'},
+    /* Filter and Match disabled */
+    {"no-filter",           no_argument,       NULL, 'A'},
+    {"filter-no",           no_argument,       NULL, 'A'},
 
     /* Common options */
     {"word",                required_argument, NULL, 'w'},
@@ -274,6 +281,8 @@ struct res_filter_t
 
 /* The default filter to match success status codes */
 const struct res_filter_t default_filter = {MATCH_CODE, {200, 399}};
+/* To disable the default filter */
+#define NO_FILTER ((void *) -1)
 
 typedef struct
 {
@@ -526,6 +535,7 @@ struct Opt
   int ttl; /* Timeout in milliseconds */
   int verbose;
   int max_rate; /* Max request rate (req/sec) */
+  char *verb; /* HTTP verb */
   FILE *streamout;
   FuzzTemplate fuzz_template;
   struct res_filter_t *filters; /* Dynamic array */
@@ -1020,6 +1030,9 @@ register_contex (RequestContext *ctx)
   curl_easy_reset (ctx->easy_handle);
   {
     FLG_SET (ctx->flag, CTX_INUSE);
+    /* HTTP verb */
+    if (opt.verb)
+      curl_easy_setopt (curl, CURLOPT_CUSTOMREQUEST, opt.verb);
     /* Ignore certification check */
     curl_easy_setopt (curl, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt (curl, CURLOPT_SSL_VERIFYHOST, 0L);
@@ -1184,11 +1197,17 @@ init_opt ()
        opt.Rqueue.ctxs[i].FUZZ = ffuc_malloc (cap_bytes);
        Memzero (opt.Rqueue.ctxs[i].FUZZ, cap_bytes);
      }
+  /* Set the default filters if not disabled */
+  if (NO_FILTER == opt.filters)
+    opt.filters = NULL;
+  else if (NULL == opt.filters)
+    da_appd (opt.filters, default_filter);
 
-   if (NULL == opt.filters)
+  if (!opt.verb || 0 == Strcmp (opt.verb, "GET"))
      {
-       da_appd (opt.filters, default_filter);
-     }
+       if (opt.fuzz_template.body)
+         warnln ("sending body in 'GET' request.");
+    }
 
    switch (opt.mode)
     {
@@ -1502,6 +1521,9 @@ parse_args (int argc, char **argv)
         case 'd':
           set_template (&opt.fuzz_template, BODY_TEMPLATE, optarg);
           break;
+        case 'X':
+          opt.verb = optarg;
+          break;
 
         case 'm':
           /* Type the first letter OR complete name */
@@ -1515,7 +1537,11 @@ parse_args (int argc, char **argv)
             warnln ("invalid mode `%s` was ignored", optarg);
           break;
 
-#define AddFilter(type) opt_append_filter (type, optarg); break;
+#define AddFilter(ftype)                                    \
+          if (NO_FILTER != opt.filters)                     \
+            opt_append_filter (ftype, optarg);              \
+          else warnln ("filter and match is disabled.");    \
+          break;
         case '0':
           AddFilter (FILTER_CODE);
         case '1':
@@ -1532,6 +1558,12 @@ parse_args (int argc, char **argv)
           AddFilter (MATCH_WCOUNT);
         case '6':
           AddFilter (MATCH_LCOUNT);
+        case 'A':
+          if (opt.filters && NO_FILTER != opt.filters)
+            warnln ("disable filters along with filter options.");
+          else
+            opt.filters = NO_FILTER;
+          break;
 #undef AddFilter
 
         default:
