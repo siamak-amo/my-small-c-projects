@@ -195,6 +195,15 @@
 #  define logf(format, ...)
 #endif
 
+#ifndef _GNU_SOURCE
+void *
+mempcpy (void *dest, const void *src, size_t n)
+{
+    memcpy (dest, src, n);
+    return (unsigned char *) dest + n;
+}
+#endif /* _GNU_SOURCE */
+
 typedef struct Milexer_exp_
 {
   const char *begin;

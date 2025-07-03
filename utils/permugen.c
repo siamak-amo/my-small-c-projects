@@ -111,6 +111,8 @@
       If enabled, files will split by space characters
        define ONLY_FSCANF_STREAMS
  **/
+#undef _GNU_SOURCE
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

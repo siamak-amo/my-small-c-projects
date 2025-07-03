@@ -29,6 +29,8 @@
     Options:
       -D_DEBUG:  print debug information
  **/
+#undef _GNU_SOURCE
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
