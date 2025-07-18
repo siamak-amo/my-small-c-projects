@@ -356,8 +356,8 @@ struct Opt
       unescape (cstr);                          \
   } while (0)
 
-#undef IS_NUMBER
-#define IS_NUMBER(c) (c >= '0' && c <= '9')
+#undef IS_DIGIT
+#define IS_DIGIT(c) (c >= '0' && c <= '9')
 
 /**
  *  ASCII-printable character range
@@ -365,8 +365,7 @@ struct Opt
  */
 #define MIN_ASCII_PR 0x20
 #define MAX_ASCII_PR 0x7E
-#define IS_ASCII_PR(c) (c >= MIN_ASCII_PR && c <= MAX_ASCII_PR)
-/* Maximum length of character seeds */
+#define IS_CSEED_RANGE(c) (c >= MIN_ASCII_PR && c <= MAX_ASCII_PR)
 #define CSEED_MAXLEN (MAX_ASCII_PR - MIN_ASCII_PR + 1)
 
 #ifdef _CLEANUP_NO_FREE
@@ -437,10 +436,6 @@ cleanup (int, void *__opt)
   safe_free (opt->streamout_buff);
 #endif /* _USE_BIO */
 
-  /**
-   * `global_seed` is not a dynamic array.
-   *  It should have been allocated using malloc
-   */
   free_seed (opt->global_seeds);
   safe_free (opt->global_seeds);
 
@@ -461,24 +456,19 @@ cleanup (int, void *__opt)
 
   if (opt->seps)
     {
-      /**
-       *  Elements of opt->seps come from getopt (optarg)
-       *  which should NOT be freed by us
-       */
       da_free (opt->seps);
     }
 
-  /**
-   *  Two tokens have been allocated for regex parsing
-   */
+  /* Two tokens have been allocated for regex parsing */
   TOKEN_FREE (&opt->parser.general_tk);
   TOKEN_FREE (&opt->parser.special_tk);
+
 #endif /* _CLEANUP_NO_FREE */
 }
 
 /**
  *  Appends characters from @src to @s->cseed, until \0
- *  or !IS_ASCII_PR, returns the number of bytes written
+ *  or !IS_CSEED_RANGE, returns the number of bytes written
  *  @s->cseed will have unique chars after this call, if it did before
  *  Pass `len = -1` to stop only at the null byte
  *
@@ -784,7 +774,7 @@ __regular_perm (struct Opt *opt,
         }
       goto Print_Loop;
     }
-  /* End of Printing the current permutation */
+  /* End of Printing of the current permutation */
   if (opt->suffix)
     Puts (opt->suffix, opt);
   else
@@ -882,7 +872,7 @@ cseed_uniappd (struct Seed *s, const char *src, int len)
     {
       if (*src == '\0')
         break;
-      if (!IS_ASCII_PR (*src))
+      if (!IS_CSEED_RANGE (*src))
         goto END_OF_LOOP;
 
       for (int idx = s->cseed_len - 1; idx >= 0; idx--)
@@ -978,31 +968,29 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
       /* Ignore empty and comment lines */
       if (MIN_ASCII_PR > line[0] || '#' == line[0])
         break;
-      /* This should break when wseed max count is reached */
       if (wseed_uniappd (opt, s, line) < 0)
         break;
     }
   safe_free (line);
 }
 
-/* CLI options, getopt */
 const struct option lopts[] =
   {
-    /* seeds */
+    /* Seeds */
     {"seed",             required_argument, NULL, 's'},
     {"raw-seed",         required_argument, NULL, '0'},
     {"raw-wseed",        required_argument, NULL, '5'},
     {"seed-path",        required_argument, NULL, 'S'},
     {"wseed-path",       required_argument, NULL, 'S'},
-    /* output file */
+    /* Output file */
     {"output",           required_argument, NULL, 'o'},
     {"append",           required_argument, NULL, 'a'},
     {"oA",               required_argument, NULL, 'a'},
     {"help",             no_argument,       NULL, 'h'},
-    /* delimiter */
+    /* Delimiter */
     {"delim",            required_argument, NULL, 'p'},
     {"delimiter",        required_argument, NULL, 'p'},
-    /* depth */
+    /* Depth */
     {"depth",            required_argument, NULL, 'd'},
     {"depth-range",      required_argument, NULL, 'D'},
     {"range-depth",      required_argument, NULL, 'D'},
@@ -1013,28 +1001,27 @@ const struct option lopts[] =
     {"depth-to",         required_argument, NULL, '2'},
     {"to-depth",         required_argument, NULL, '2'},
     {"max-depth",        required_argument, NULL, '2'},
-    /* format */
+    /* Format */
     {"pref",             required_argument, NULL, '3'},
     {"prefix",           required_argument, NULL, '3'},
     {"suff",             required_argument, NULL, '4'},
     {"suffix",           required_argument, NULL, '4'},
-    /* regular mode */
+    /* Regular mode */
     {"regular",          no_argument,       NULL, 'r'},
     /* CLI */
     {"version",          no_argument,       NULL, 'v'},
     {"help",             no_argument,       NULL, 'h'},
-    /* end of options */
+    /* End of Options */
     {NULL,               0,                 NULL,  0 },
   };
 
 static int
 opt_getopt (int argc, char **argv, struct Opt *opt)
 {
-  /* we use 0,1,2,... as `helper` options and only to use getopt */
+  /* we use 0,1,2,... as `helper` options, see the @lopts array */
   const char *lopt_cstr = "s:S:o:a:p:d:D:0:1:2:3:4:5:vhrEe";
   int idx = 0;
 
-  /* Usage: case X:  NOT_IN_REGULAR_MODE("X") {...} */
 #define NOT_IN_REGULAR_MODE()                                           \
   if (opt->mode == REGULAR_MODE) {                                      \
     warnln ("wrong regular mode option (%s) was ignored",               \
@@ -1080,17 +1067,17 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
           opt->suffix = optarg;
           break;
 
-        case 'p': /* separator */
+        case 'p': /* separator(s) */
           if (NULL == opt->seps[0])
             opt->seps[0] = optarg;
           else
             da_appd (opt->seps, optarg);
           break;
 
-        case 'd': /* depth, format: '-d N' or '-d N,M' */
+        case 'd': /* depth interval */
           {
             char *p = strchr (optarg, '-');
-            if (!p)
+            if (NULL == p)
               {
                 opt->depth.min = atoi (optarg);
               }
@@ -1102,7 +1089,7 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
               }
             break;
           }
-        case 'D': /* depth range */
+        case 'D': /* depth 1...N */
           opt->depth.min = 1;
           opt->depth.max = atoi (optarg);
           break;
@@ -1114,17 +1101,14 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
           break;
 
           /* Only in normal mode */
-        case 'S': /* wseed file / stdin */
+        case 'S': /* wseed from file or stdin */
           NOT_IN_REGULAR_MODE ()
           {
             FILE *wseed_f = stdin;
-            /* using optarg value as filepath otherwise stdin */
             if (!Strcmp (optarg, "-"))
               wseed_f = safe_fopen (optarg, "r");
 
-            /* read from file and append to wseed */
             wseed_file_uniappd (opt, opt->global_seeds, wseed_f);
-
             if (wseed_f != stdin)
               safe_fclose (wseed_f);
           }
@@ -1134,7 +1118,6 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
           NOT_IN_REGULAR_MODE ()
           {
             opt->using_default_seed = 0;
-            /* This option disables the default seed config */
             parse_seed_regex (opt, opt->global_seeds, optarg);
           }
           break;
@@ -1207,12 +1190,13 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
   return 0;
 }
 
+/**
+ *  opt_init: initializes the default values of @opt
+ *  if they have not been set yet.
+ */
 static void
 opt_init (struct Opt *opt)
 {
-  /**
-   *  Initializing the default values if not set
-   */
   if (opt->outf == NULL)
     opt->outf = stdout;
 
@@ -1223,13 +1207,12 @@ opt_init (struct Opt *opt)
 
       if (opt->depth.min == 0 && opt->depth.max == 0)
         {
-          /* Uninitialized */
           opt->depth.min = max_depth;
           opt->depth.max = max_depth;
           break;
         }
 
-      /* Fix invalid ranges */
+      /* Fix up invalid ranges */
       opt->depth.min = MAX (opt->depth.min, 1);
       opt->depth.min = MIN (opt->depth.min, max_depth);
       opt->depth.max = MAX (opt->depth.max, opt->depth.min);
@@ -1239,7 +1222,7 @@ opt_init (struct Opt *opt)
     case NORMAL_MODE:
       if (opt->global_seeds->cseed_len == 0 && opt->using_default_seed)
         {
-          /* initializing with the default seed [a-z0-9] */
+          /* Default global_seeds */
           cseed_uniappd (opt->global_seeds,
                          charseed_az.c, charseed_az.len);
           cseed_uniappd (opt->global_seeds,
@@ -1248,18 +1231,16 @@ opt_init (struct Opt *opt)
 
       if (opt->depth.min <= 0 && opt->depth.max <= 0)
         {
-          /* Using the default values when not specified */
           opt->depth.min = DEF_DEPTH;
           opt->depth.max = DEF_DEPTH;
         }
       else if (opt->depth.max <= 0)
         {
-          /* Only depth.min is specified OR `-D` is being used */
           opt->depth.max = opt->depth.min;
         }
       if (opt->depth.min > opt->depth.max)
         {
-          /* Invalid min and max depths */
+          /* Invalid min and max depths, set them equal */
           opt->depth.max = opt->depth.min;
         }
       break;
@@ -1311,8 +1292,7 @@ static struct Opt *
 mk_opt ()
 {
   static struct Opt opt = {0};
-  {
-    /* Dynamic arrays */
+  { /* Dynamic arrays */
     opt.global_seeds = mk_seed (CSEED_MAXLEN, 1);
     opt.using_default_seed = 1;
 
@@ -1320,14 +1300,11 @@ mk_opt ()
     da_appd (opt.seps, NULL);
   }
 
-  {
-    /* Initializing the parser */
+  { /* Initializing the parser */
     opt.parser = (struct permugex) {
       .ml            = &ML,
-      /* parser inputs */
       .general_src   = {.lazy = 0},
       .special_src   = {.lazy = 0},
-      /* parser token output */
       .general_tk    = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN),
       .special_tk    = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN),
     };
@@ -1345,10 +1322,9 @@ main (int argc, char **argv)
   opt = mk_opt ();
   on_exit (cleanup, opt);
 
-  /* Read options */
+  /* Read CLI options & set the defaults */
   if (opt_getopt (argc, argv, opt))
     return EXIT_FAILURE;
-  /* Set defaults and finalize opt */
   opt_init (opt);
 
   switch (opt->mode)
@@ -1385,6 +1361,7 @@ main (int argc, char **argv)
   dprintf ("* buffer length of buffered_io: %d bytes\n", _BMAX);
 # endif /* _USE_BIO */
 
+#ifdef _DEBUG
   switch (opt->mode)
     {
     case REGULAR_MODE:
@@ -1434,6 +1411,7 @@ main (int argc, char **argv)
       printd_arr (opt->seps, "`%s`", da_sizeof (opt->seps));
     }
   dprintf ("* permutations:\n");
+#endif /* _DEBUG */
 
 
   /* Generating permutations */
@@ -1452,7 +1430,7 @@ main (int argc, char **argv)
 }
 
 
-/* Internal regex parser functions */
+/* Internal regex parser (permugex) functions */
 /**
  *  Word Seed regex parser
  *  inside `{...}`  -  comma-separated words
@@ -1504,7 +1482,7 @@ path_resolution (const char *path_cstr)
       const char* home = getenv ("HOME");
       if (!home)
         {
-          warnln ("$HOME is null");
+          warnln ("$HOME is (null), could not use '~'");
           return NULL;
         }
       tmp = malloc (len + strlen (home) + 1);
@@ -1538,34 +1516,36 @@ path_resolution (const char *path_cstr)
 static inline void
 pparse_cseed_regex (struct Opt *opt, struct Seed *dst_seed)
 {
-  char lastc = 0, *tok = opt->parser.general_tk.cstr;
+  char *token = opt->parser.general_tk.cstr;
   if (!opt->escape_disabled)
-    UNESCAPE (tok);
+    UNESCAPE (token);
 
-  for (char *p = tok; '\0' != *p; ++p)
+  char lastc = 0;
+  for (; '\0' != *token; ++token)
     {
-      if ('-' != *p || 0 == lastc)
+      if ('-' != *token || 0 == lastc)
         {
-          lastc = *p;
-          cseed_uniappd (dst_seed, p, 1);
+          lastc = *token;
+          cseed_uniappd (dst_seed, token, 1);
           continue;
         }
-      if ('\0' == *(p++)) /* skipping `-` */
+      if ('\0' == *(token++)) /* skipping `-` */
         {
           cseed_uniappd (dst_seed, "-", 1);
           break;
         }
 
-      int range_len = *p - lastc + 1;
+      int range_len = *token - lastc + 1;
       const char *range = NULL; /* NULL means custom range */
+
 #define MK_RANGE(charseed) do {                             \
-        if (! IN_RANGE (*p, (charseed).c[0],                \
+        if (! IN_RANGE (*token, (charseed).c[0],            \
                        (charseed).c[(charseed).len - 1]))   \
           range_len = 1;                                    \
         range = charseed.c + (lastc - charseed.c[0]);       \
       } while (0)
 
-      if (IN_RANGE (lastc, 'a', 'z'))
+           if (IN_RANGE (lastc, 'a', 'z'))
         MK_RANGE (charseed_az);
       else if (IN_RANGE (lastc, 'A', 'Z'))
         MK_RANGE (charseed_AZ);
@@ -1598,14 +1578,8 @@ pparse_wseed_regex (struct Opt *opt, struct Seed *dst_seed)
       if (NEXT_SHOULD_LOAD (_ret))
         break;
 
-      /**
-       *  As the length of @tmp->cstr is >= to WSEED_MAXLEN,
-       *  we handle fragmentation (NEXT_CHUNK) as
-       *  if we have received a new wseed (each chunk)
-       */
       if (tmp->type == TK_KEYWORD)
         {
-          /* This must be freed in the free_seed function */
           wseed_uniappd (opt, dst_seed, tmp->cstr);
         }
     }
@@ -1645,10 +1619,9 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
          *  previously provided seed
          */
         input++;
-        if (opt->mode == REGULAR_MODE && IS_NUMBER (*input))
+        if (opt->mode == REGULAR_MODE && IS_DIGIT (*input))
           {
             int n = strtol (input, NULL, 10) - 1;
-            /* Handle invalid indexes */
             if (n == opt->reg_seeds_len)
               {
                 warnln ("circular append was ignored");
@@ -1667,9 +1640,7 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
             else /* valid index */
               {
                 struct Seed *src = opt->reg_seeds[n];
-                /* append csseds */
                 cseed_uniappd (dst_seed, src->cseed, src->cseed_len);
-                /* append wseeds */
                 da_foreach (src->wseed, i)
                   {
                     wseed_uniappd (opt, dst_seed, src->wseed[i]);
@@ -1678,21 +1649,21 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
             break;
           }
 
-        /* Got \N where N is not a number */
+        /* Got \N where N is not a digit */
         switch (*input)
           {
-          case 'd': /* digits 0-9 */
+          case 'd': /* Digits 0-9 */
             cseed_uniappd (dst_seed,
                            charseed_09.c, charseed_09.len);
             break;
 
-          case 'l': /* lowercase letters */
+          case 'l': /* Lowercase letters */
           case 'a':
             cseed_uniappd (dst_seed,
                            charseed_az.c, charseed_az.len);
             break;
 
-          case 'U': /* uppercase letters */
+          case 'U': /* Uppercase letters */
           case 'u':
           case 'A':
             cseed_uniappd (dst_seed,
@@ -1785,12 +1756,12 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
           switch (tmp->id)
             {
             case EXP_SBRACKET:
-              /* Parsing contents of `[-xA-Zy-]` as cssed */
+              /* Parsing contents of `[-xA-Zy-]` as char seed */
               pparse_cseed_regex (opt, dst_seed);
               break;
 
             case EXP_CBRACE:
-              /* Parsing contents of `{xxx,yyy}` as wseed */
+              /* Parsing contents of `{xxx,yyy}` as word seed */
               pparse_wseed_regex (opt, dst_seed);
               break;
 
