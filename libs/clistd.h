@@ -23,6 +23,17 @@ const char *program_name = NULL;
   warnf (format "\n", ##__VA_ARGS__)
 
 /**
+ *  LASTOPT retrieves the latest option from argv, like:
+ *  '--xxx', '-x', or '-x<VALUE>', that was provided before optind.
+ *
+ *  This is useful for printing the exact option name, when
+ *  only the optarg (Argument of that option) is available.
+ */
+#define LASTOPT(argv)                                       \
+  ((NULL != optarg && '-' != argv[optind - 1][0]) ?         \
+   argv[optind - 2] : argv[optind - 1])
+
+/**
  *  The usage function prints usage of your program
  *  and when ecode >= 0, it should call the exit function
  *  with ecode as the exit code

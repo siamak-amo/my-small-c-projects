@@ -324,14 +324,14 @@ struct Opt
   struct Seed *global_seeds;
 
   /* Seed Configuration (Regular mode) */
-  struct Seed **reg_seeds; /* dynamic array of Seed struct */
+  struct Seed **reg_seeds; /* Dynamic array */
   int reg_seeds_len;
 
   /* Output Configuration */
-  FILE *outf; /* output file */
+  FILE *outf;
   char *prefix;
   char *suffix;
-  char **seps; /* component separator(s) (dynamic array) */
+  char **seps; /* component separator(s) (Dynamic array) */
 
   /* Output stream buffer */
 #ifdef _USE_BIO
@@ -340,8 +340,7 @@ struct Opt
   char *streamout_buff;
 #endif
 
-  /* regex parser */
-  struct permugex parser;
+  struct permugex parser; /* Regex parser */
 };
 
 /* Internal Macros */
@@ -352,8 +351,7 @@ struct Opt
   ((s1) != NULL && (s2) != NULL &&              \
    strcmp ((s1), (s2)) == 0)
 
-/* NULL safe unescape */
-#define UNESCAPE(cstr) do {                     \
+#define UNESCAPE(cstr) _Nullable do {           \
     if (NULL != cstr)                           \
       unescape (cstr);                          \
   } while (0)
@@ -370,16 +368,6 @@ struct Opt
 #define IS_ASCII_PR(c) (c >= MIN_ASCII_PR && c <= MAX_ASCII_PR)
 /* Maximum length of character seeds */
 #define CSEED_MAXLEN (MAX_ASCII_PR - MIN_ASCII_PR + 1)
-
-/**
- *  Retrieves the last option from argv (e.g., '--xxx',
- *  '-x', or '-x<VALUE>') that was provided before optind
- *  This is useful for printing the exact option, when
- *  only the optarg (the value of that option) is available
- */
-#define LASTOPT(argv)                                       \
-  ((NULL != optarg && '-' != argv[optind - 1][0]) ?         \
-   argv[optind - 2] : argv[optind - 1])
 
 #ifdef _CLEANUP_NO_FREE
 # define safe_free(...) _nothing
