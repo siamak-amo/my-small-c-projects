@@ -118,6 +118,8 @@ const struct option lopts[] =
     {"url",                 required_argument, NULL, 'u'},
     {"header",              required_argument, NULL, 'H'},
     {"data",                required_argument, NULL, 'd'},
+    {"data-ascii",          required_argument, NULL, 'd'},
+    {"data-binary",         required_argument, NULL, 'd'},
     /* HTTP verb, does NOT accepts FUZZ keyword */
     {"request",             required_argument, NULL, 'X'},
     {"method",              required_argument, NULL, 'X'},
@@ -150,6 +152,7 @@ const struct option lopts[] =
     {"mline",               required_argument, NULL, '6'},
     {"match-line",          required_argument, NULL, '6'},
     /* Filter and Match disabled */
+    {"all",                 no_argument,       NULL, 'A'},
     {"no-filter",           no_argument,       NULL, 'A'},
     {"filter-no",           no_argument,       NULL, 'A'},
 
@@ -160,6 +163,7 @@ const struct option lopts[] =
     {"rate",                required_argument, NULL, 'R'},
     {"max_rate",            required_argument, NULL, 'R'},
     {"timeout",             required_argument, NULL, 'T'},
+    {"ttl",                 required_argument, NULL, 'T'},
     {"delay",               required_argument, NULL, 'p'},
     {"help",                no_argument,       NULL, 'h'},
     {"verbose",             no_argument,       NULL, 'v'},
