@@ -1269,14 +1269,14 @@ set_template_wlist (FuzzTemplate *t, enum template_op op, void *param)
     }
 }
 
-/* Although this may sounds lile OOP, it simplifies the
+/* Although this may sounds lile OOP, it makes the
    logic of parsing user options a lot easier;
-   As they may provide wrong number of word-lists or
-   forget `&` in their HTTP body options '-d' */
+   As the user may provide wrong number of word-lists
+   or forget `&` in their HTTP body options '-d' */
 int
-set_template (FuzzTemplate *t, enum template_op op, void *param)
+set_template (FuzzTemplate *t, enum template_op op, void *_param)
 {
-  char *s = (char *) param;
+  char *param = (char *) _param;
   static int prev_op = -1;
   static int local_fuzz_count = -1;
 
@@ -1287,14 +1287,14 @@ set_template (FuzzTemplate *t, enum template_op op, void *param)
     case HEADER_TEMPLATE:
       if (WLIST_TEMPLATE != op && 0 != local_fuzz_count)
         {
-          /* We are not adding a new wordlist and
-             the previous http template doesn't have enough wordlists */
+          /* We are not adding a new word-list and the latest
+             modified HTTP template doesn't have enough word-lists */
           warnln ("not enough worlists provided for the "
                   "HTTP option '%s', ignoring %d FUZZ keyword%c.",
                   template_name[prev_op],
                   local_fuzz_count,
                   (local_fuzz_count == 1) ? 0 : 's');
-
+          /* Fill the previous template with dummy word-list */
           for (int i=0; i < local_fuzz_count; ++i)
             set_template_wlist (&opt.fuzz_template, prev_op, NULL);
         }
@@ -1309,7 +1309,7 @@ set_template (FuzzTemplate *t, enum template_op op, void *param)
     case URL_TEMPLATE:
       {
         prev_op = URL_TEMPLATE;
-        Strrealloc (t->URL, s);
+        Strrealloc (t->URL, param);
         local_fuzz_count = fuzz_count (t->URL);
         if (local_fuzz_count)
           FLG_SET (opt.fuzz_flag, URL_HASFUZZ);
@@ -1319,8 +1319,8 @@ set_template (FuzzTemplate *t, enum template_op op, void *param)
     case HEADER_TEMPLATE:
       {
         prev_op = HEADER_TEMPLATE;
-        SLIST_APPEND (t->headers, s);
-        local_fuzz_count = fuzz_count (s);
+        SLIST_APPEND (t->headers, param);
+        local_fuzz_count = fuzz_count (param);
         if (local_fuzz_count)
           FLG_SET (opt.fuzz_flag, HEADER_HASFUZZ);
       }
@@ -1331,26 +1331,26 @@ set_template (FuzzTemplate *t, enum template_op op, void *param)
         prev_op = BODY_TEMPLATE;
         if (NULL == t->body)
           {
-            t->body = strdup (s);
+            t->body = strdup (param);
           }
         else
           {
             size_t len = Strlen (t->body);
-            if ('&' != s[0] && '&' != t->body[len - 1])
+            if ('&' != param[0] && '&' != t->body[len - 1])
               {
                 /* We need an extra `&` */
-                Realloc (t->body, len + Strlen (s) + 2);
+                Realloc (t->body, len + Strlen (param) + 2);
                 char *p = t->body + len;
                 *p = '&';
-                strcpy (p + 1, s);
+                strcpy (p + 1, param);
               }
             else
               {
-                Realloc (t->body, len + Strlen (s) + 1);
-                strcpy (t->body + len , s);
+                Realloc (t->body, len + Strlen (param) + 1);
+                strcpy (t->body + len , param);
               }
           }
-        local_fuzz_count = fuzz_count (s);
+        local_fuzz_count = fuzz_count (param);
         if (local_fuzz_count)
           FLG_SET (opt.fuzz_flag, BODY_HASFUZZ);
       }
@@ -1361,22 +1361,22 @@ set_template (FuzzTemplate *t, enum template_op op, void *param)
         if (opt.mode == MODE_SINGULAR)
           {
             if (da_sizeof (opt.words) <= 0)
-              REGISTER_WLIST (s);
+              REGISTER_WLIST (param);
             else
               {
                 warnln ("word-list (%s) was ignored -- singular mode "
-                        "only accepts one word-list", s);
+                        "only accepts one word-list", param);
                 return -1;
               }
           }
         else
           {
             if (local_fuzz_count <= 0)
-              warnln ("unexpected word-list (%s) was ignored.", s);
+              warnln ("unexpected word-list (%s) was ignored.", param);
             else
               {
-                /* prev_op indicates the latest http option that was set */
-                set_template_wlist (&opt.fuzz_template, prev_op, s);
+                /* prev_op indicates the latest modified HTTP option */
+                set_template_wlist (&opt.fuzz_template, prev_op, param);
                 local_fuzz_count--;
               }
           }
