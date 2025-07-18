@@ -213,7 +213,7 @@ __attribute__((destructor)) cleanup()
   safe_fclose (stdout);
   safe_fclose (stderr);
 #ifndef _DEBUG
-  assert (mode != P_CHILD && "broken logic!");
+  assert (mode != P_CHILD && "Broken logic!");
 #endif
   wait (NULL);
 }
@@ -227,8 +227,6 @@ __attribute__((destructor)) cleanup()
 int
 isatty (int fd)
   __Override__
-  __Parent__
-  __Child__
 {
   struct stat buf;
 
@@ -249,7 +247,7 @@ int
 alter_main (int, char **, char **)
   __Child__
 {
-  assert (mode == P_CHILD && "broken logic!");
+  assert (mode == P_CHILD && "Broken logic!");
 
   /* A simple echo for debugging purposes */
 #ifdef _DEBUG
