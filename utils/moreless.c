@@ -141,7 +141,8 @@
 
 #ifndef _SHELLS
 #  define _SHELLS \
-  "sh:dash:bash:zsh:fish:csh"
+  "sh:dash:bash:zsh:fish:csh" \
+  ":python:python2:python3:ipython:ipython3"
 #endif /* _SHELLS */
 
 static const char *default_excludes = _EXCLUDES;
@@ -384,7 +385,7 @@ main_hook (int argc, char **argv, char **envp)
    *  When the user tries to run an interactive shell
    *  moreless shoud not less the output
    *
-   *  TODO: Is this a good way to detect interactive shells?
+   *  TODO: This is not a good way to detect interactive shells
    */
   if (excludestr (shells, cmd))
     {
