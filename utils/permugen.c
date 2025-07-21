@@ -1735,8 +1735,7 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
               {
                 /**
                  *  Since the `pparse_keys_regex` function is NOT
-                 *  fragment-safe, we should receive the entire token using
-                 *  the `catstr` function from the mini-lexer library.
+                 *  fragment-safe, we should receive the entire token.
                  */
                 if (!ml_catcstr (&extended_token, tmp->cstr, ret))
                   break;
@@ -1746,9 +1745,10 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
           }
 
         case TK_EXPRESSION:
-          char *__cstr = tmp->cstr;
+          char *exp = tmp->cstr;
+          /* Inside of expression tokens, might need extra parsing */
           SET_ML_SLICE (&opt->parser.special_src,
-                        __cstr, strlen (__cstr));
+                        exp, strlen (exp));
 
           switch (tmp->id)
             {
