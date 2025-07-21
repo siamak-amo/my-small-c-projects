@@ -1703,18 +1703,16 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
                   const char *input)
 {
   char *extended_token = NULL;
-  Milexer *ml = opt->parser.ml;
   Milexer_Token *tmp = &opt->parser.general_tk;
 
   /* Mini-lexer internal initialization */
   SET_ML_SLICE (&opt->parser.general_src,
-                input,
-                strlen (input));
+                input, strlen (input));
 
   int ret = 0;
   while (!NEXT_SHOULD_END (ret))
     {
-      ret = ml_next (ml,
+      ret = ml_next (opt->parser.ml,
                      &opt->parser.general_src,
                      tmp,
                      PFLAG_INEXP);
@@ -1750,23 +1748,19 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
         case TK_EXPRESSION:
           char *__cstr = tmp->cstr;
           SET_ML_SLICE (&opt->parser.special_src,
-                        __cstr,
-                        strlen (__cstr));
+                        __cstr, strlen (__cstr));
 
           switch (tmp->id)
             {
             case EXP_SBRACKET:
-              /* Parsing contents of `[-xA-Zy-]` as char seed */
               pparse_cseed_regex (opt, dst_seed);
               break;
 
             case EXP_CBRACE:
-              /* Parsing contents of `{xxx,yyy}` as word seed */
               pparse_wseed_regex (opt, dst_seed);
               break;
 
             case EXP_PAREN:
-              /* Parsing `(xxx)` as seed prefix OR suffix */
               pparse_format_regex (opt, dst_seed, tmp->cstr);
               break;
 
