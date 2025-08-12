@@ -183,7 +183,7 @@
 
 #undef _Nullable
 #define _Nullable
-#define _nothing ((void) NULL)
+#define NOP() (UNUSED (NULL))
 
 #ifdef _DEBUG /* debug macro */
 #  define dprintf(format, ...) \
@@ -213,8 +213,8 @@
     }} while (0)
 
 #else /* _DEBUG */
-#  define dprintf(...) _nothing
-#  define printd_arr(...) _nothing
+#  define dprintf(...) NOP()
+#  define printd_arr(...) NOP()
 #endif /* _DEBUG */
 
 struct char_seed
@@ -369,7 +369,7 @@ struct Opt
 #define CSEED_MAXLEN (MAX_ASCII_PR - MIN_ASCII_PR + 1)
 
 #ifdef _CLEANUP_NO_FREE
-# define safe_free(...) _nothing
+# define safe_free(...) NOP()
 #else
 # define safe_free(ptr) do {                    \
     if (ptr) {                                  \
