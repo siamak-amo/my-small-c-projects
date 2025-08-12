@@ -36,9 +36,9 @@
        $ permugen -s "\d \u \l"                    # 0-9 and A-Z and a-z
 
      * The set {XY, a,...,f}:
-       $ permugen -s "[XY] [a-f]" -d2             # depth=2 (strict)
-       $ permugen -s "[XYa-f]" -D4                # depth range [1 to 4]
-       $ permugen -s "[XYa-f]" -d 3-5             # depth range [3 to 5]
+       $ permugen -s "[XY] [a-f]" -d2              # depth=2 (strict)
+       $ permugen -s "[XYa-f]" -D4                 # depth range [1 to 4]
+       $ permugen -s "[XYa-f]" -d 3-5              # depth range [3 to 5]
 
      * To include words:
        $ permugen -s "{foo,bar}"
