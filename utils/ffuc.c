@@ -302,7 +302,7 @@ typedef struct
    *  All 'FUZZ' keywords within @opt.fuzz_template
    *  (URL, POST body, HTTP headers respectively)
    *  will be substituted with elements of this array.
-   *  It must contain opt.total_fuzz_count elements.
+   *  It must contain opt.total_fw_count elements.
    */
   char **FUZZ;
 
@@ -552,7 +552,7 @@ struct Opt
   struct progress_t progress;
 
   Fword **words; /* Dynamic array */
-  int total_fuzz_count; /* Length of @words */
+  int total_fw_count; /* Length of @words */
 
   struct request_queue_t
   {
@@ -565,15 +565,6 @@ struct Opt
   /* Next FUZZ loader and */
   void (*load_next_fuzz) (RequestContext *ctx);
   bool should_end; /* End of load_next_fuzz */
-  union fuzz_context_t
-    {
-      /**
-       *  Pitchfork needs to know which word-list
-       *  is the longest one.
-       */
-      Fword *longest;
-      void *__dummy; /* Unused */
-    } fuzz_ctx;
 };
 struct Opt opt = {0};
 
@@ -590,17 +581,18 @@ struct Opt opt = {0};
 size_t
 curl_fwrite (void *ptr, size_t size, size_t nmemb, void *optr)
 {
-  char *data = (char *) ptr;
-  int len = (int)(size * nmemb);
+  size_t len = (size_t)(size * nmemb);
+  unsigned char *data = (unsigned char *) ptr;
   RequestContext *ctx = (RequestContext *) optr;
 
   ctx->stat.size_bytes += len; /* Update size */
-  for (int i=0; i < len; ++i)
+  for (size_t i=0; i<len; ++i)
     {
       /* Update word count and line count */
-      if (data[i] == ' ')
+      unsigned char c = data[i];
+           if (c == ' ')
         ctx->stat.wcount++;
-      else if (data[i] < ' ')
+      else if (c < ' ')
         ctx->stat.lcount++;
     }
   return len; 
@@ -748,7 +740,7 @@ __next_fuzz_singular (RequestContext *ctx)
   snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
   Strrealloc (ctx->FUZZ[0], tmp);
 
-  da_idx i=1, N = opt.total_fuzz_count;
+  da_idx i=1, N = opt.total_fw_count;
   for (; i < N; ++i)
     ctx->FUZZ[i] = ctx->FUZZ[0];
   ctx->FUZZ[i] = NULL;
@@ -764,7 +756,19 @@ static void
 __next_fuzz_pitchfork (RequestContext *ctx)
 {
   Fword *fw;
-  size_t N = opt.total_fuzz_count;
+  size_t N = opt.total_fw_count;
+
+  static Fword *longest = NULL;
+  /* Find the longest wordlist */
+  if (! longest)
+    {
+      longest = opt.words[0];
+      for (size_t i=0; i < N; ++i)
+        {
+          if (opt.words[i]->total_count > longest->total_count)
+            longest = opt.words[i];
+        }
+    }
 
   fprintd ("pitchfork:  ");
   for (size_t i = 0; i < N; ++i)
@@ -777,7 +781,7 @@ __next_fuzz_pitchfork (RequestContext *ctx)
     }
   fprintd ("\n");
 
-  if (fw_bof (opt.fuzz_ctx.longest))
+  if (fw_bof (longest))
     opt.should_end = true;
 }
 
@@ -785,7 +789,7 @@ static void
 __next_fuzz_clusterbomb (RequestContext *ctx)
 {
   Fword *fw = NULL;
-  size_t N = opt.total_fuzz_count;
+  size_t N = opt.total_fw_count;
 
   size_t next = 0;
   bool go_next = true;
@@ -846,14 +850,14 @@ context_reset (RequestContext *ctx)
 static inline void
 __print_stats_fuzz (RequestContext *ctx)
 {
-  if (opt.total_fuzz_count == 1)
+  if (opt.total_fw_count == 1)
     {
       fprintf (opt.streamout, "%s \t\t\t ", ctx->FUZZ[0]);
     }
   else
     {
       fprintf (opt.streamout, "\n* FUZZ = [");
-      Fprintarr (opt.streamout, "'%s'", ctx->FUZZ, opt.total_fuzz_count);
+      Fprintarr (opt.streamout, "'%s'", ctx->FUZZ, opt.total_fw_count);
       fprintf (opt.streamout, "]:\n  ");
     }
 }
@@ -1193,7 +1197,7 @@ init_opt ()
       warnln ("cannot continue with no word-list.");
       return 1;
     }
-  opt.total_fuzz_count = n;
+  opt.total_fw_count = n;
 
   /* Initializing request contexts */
   opt.Rqueue.ctxs = ffuc_calloc (opt.Rqueue.len, sizeof (RequestContext));
@@ -1220,16 +1224,10 @@ init_opt ()
   switch (opt.mode)
     {
     case MODE_PITCHFORK:
-      /* Find the longest wordlist, needed by pitchfork */
-      opt.fuzz_ctx.longest = opt.words[0];
+      opt.progress.req_total = 0;
       for (da_idx i=0; i < n; ++i)
-        {
-          if (opt.words[i]->total_count > opt.fuzz_ctx.longest->total_count)
-            {
-              opt.fuzz_ctx.longest = opt.words[i];
-            }
-        }
-      opt.progress.req_total = opt.fuzz_ctx.longest->total_count;
+        if (opt.words[i]->total_count > opt.progress.req_total)
+          opt.progress.req_total = opt.words[i]->total_count;
       opt.load_next_fuzz = __next_fuzz_pitchfork;
       break;
 
