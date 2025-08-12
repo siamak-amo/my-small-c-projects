@@ -140,7 +140,7 @@ ssize_t unescape2 (char *restrict dest, const char *restrict src);
       /* simple escapes */                                      \
     case 'a': nextw_b ('\a');                                   \
     case 'b': nextw_b ('\b');                                   \
-    case 'e': nextw_b ('\e');                                   \
+    case 'e': nextw_b (0x1B);                                   \
     case 't': nextw_b ('\t');                                   \
     case 'n': nextw_b ('\n');                                   \
     case 'v': nextw_b ('\v');                                   \
