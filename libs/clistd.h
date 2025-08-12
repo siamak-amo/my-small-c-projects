@@ -70,6 +70,47 @@ parse_std_options_only (int argc, char **argv,
 
 #endif /* CLI_DEFAULT_GETOPT */
 
+
+/**
+ *  In Android (Termux), the `on_exit` function, does not exist;
+ *  but they usually have `atexit` function.
+ *
+ *  This implements `on_exit` function, but with these limitations:
+ *   1. It does not support program return code
+ *      your 'function', always gets 0 in the first parameter
+ *      TODO: Is there any workaround?
+ *   2. It does NOT support multiple function registrations
+ *      It can only be called once (returns failure afterward)
+ *      TODO: Fix this.
+ */
+#ifdef __ANDROID__
+static int __on_exit_code = 0; /* Where to get this?? */
+static void *__on_exit_arg = NULL;
+static void (*__on_exit_func)(int, void *);
+
+void
+__on_exit_wrapper (void)
+{
+  __on_exit_func (__on_exit_code, __on_exit_arg);
+}
+
+int
+on_exit (void (*function)(int, void *), void *arg)
+{
+  if (__on_exit_func)
+    return 1;
+
+  __on_exit_arg = arg;
+  if (function)
+    {
+      __on_exit_func = function;
+      atexit (__on_exit_wrapper);
+    }
+  return 0;
+}
+#endif /* __ANDROID__ */
+
+
 /**
  *  From: 'gnulib/lib/version-etc.c':version_etc_arn
  *  Prints version
