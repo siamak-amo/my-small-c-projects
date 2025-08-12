@@ -412,8 +412,9 @@ safe_fopen (const char *restrict pathname,
  *  outside of the main function's scope
  */
 void
-cleanup (int, void *__opt)
+cleanup (int code, void *__opt)
 {
+  UNUSED (code);
   struct Opt *opt = (struct Opt *)__opt;
   if (!opt)
     return;
@@ -623,8 +624,9 @@ __perm (const struct Opt *opt, const char *sep, const int depth)
   int idxs[depth];
   memset (idxs, 0, depth * sizeof (int));
 
+  int i;
  Perm_Loop: /* O(seeds^depth) */
-  int i = 0;
+  i = 0;
   if (opt->prefix)
     Fputs (opt->prefix, opt);
   if (opt->global_seeds->pref)
@@ -734,8 +736,9 @@ __regular_perm (struct Opt *opt,
    *  where: S_i = @lens[i], for i in [m to n], and
    *         m = @offset  and  n = @size + @offset
    */
+  int i;
  Reg_Perm_Loop:
-  int i = 0;
+  i = 0;
   struct Seed *current_seed;
   if (opt->prefix)
     Fputs (opt->prefix, opt);
@@ -1200,10 +1203,11 @@ opt_init (struct Opt *opt)
   if (opt->outf == NULL)
     opt->outf = stdout;
 
+  int max_depth;
   switch (opt->mode)
     {
     case REGULAR_MODE:
-      int max_depth = da_sizeof (opt->reg_seeds);
+      max_depth = da_sizeof (opt->reg_seeds);
 
       if (opt->depth.min == 0 && opt->depth.max == 0)
         {
@@ -1289,7 +1293,7 @@ mk_seed (int c_len, int w_len)
 }
 
 static struct Opt *
-mk_opt ()
+mk_opt (void)
 {
   static struct Opt opt = {0};
   { /* Dynamic arrays */
@@ -1606,6 +1610,7 @@ static inline void
 pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
                    const char *input)
 {
+  char *path;
   switch (*input)
     {
     case '\0':
@@ -1680,7 +1685,6 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
     case '.':
     case '/':
     case '~':
-      char *path;
       if ((path = path_resolution (input)))
         {
           FILE *f = safe_fopen (path, "r");
@@ -1717,6 +1721,7 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
                      tmp,
                      PFLAG_INEXP);
 
+      char *exp;
       switch (tmp->type)
         {
         case TK_KEYWORD:
@@ -1745,7 +1750,7 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
           }
 
         case TK_EXPRESSION:
-          char *exp = tmp->cstr;
+          exp = tmp->cstr;
           /* Inside of expression tokens, might need extra parsing */
           SET_ML_SLICE (&opt->parser.special_src,
                         exp, strlen (exp));

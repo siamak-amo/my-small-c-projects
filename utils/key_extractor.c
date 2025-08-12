@@ -156,8 +156,9 @@ char *in_buff = NULL; // milexer token buffer
 #define Outln() Outstr ("\n")
 
 void
-usage (int)
+usage (int c)
 {
+  UNUSED (c);
   printf ("\
 Usage: %s [OPTIONS]\n\
 ",
@@ -387,8 +388,10 @@ token_out (const Milexer_Token *tk)
   }} while (0)
 
 void
-cleanup (int, void *)
+cleanup (int code, void *ptr)
 {
+  UNUSED (code);
+  UNUSED (ptr);
   if (out_stream)
     {
       fflush (out_stream);

@@ -741,6 +741,7 @@ int
 ml_next (const Milexer *ml, Milexer_Slice *src,
                    Milexer_Token *tk, int flags)
 {
+  const char *le, *lp;
   if (tk->cstr == NULL || tk->cap <= 0 || tk->cstr == src->buffer)
     return NEXT_ERR;
 
@@ -753,7 +754,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
         {
           /* certainly the token type is expression */
           tk->type = TK_EXPRESSION;
-          const char *le = __get_last_exp (ml, src)->begin;
+          le = __get_last_exp (ml, src)->begin;
           char *__p = mempcpy (tk->cstr, le, strlen (le));
           tk->__idx += __p - tk->cstr;
         }
@@ -761,7 +762,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
       break;
 
     case SYN_PUNC__:
-      const char *lp = __get_last_punc (ml, src);
+      lp = __get_last_punc (ml, src);
       size_t lplen = strlen (lp);
       memcpy (tk->cstr, lp, lplen);
       LD_STATE (src);
@@ -848,7 +849,8 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
             TOKEN_FINISH (tk);
         }
       //--------------------------------//
-      char *__ptr, c;
+      int c;
+      char *__ptr;
       /* logf ("'%c' - %s, %s", *p,
             milexer_state_cstr[src->state],
             milexer_token_type_cstr[tk->type]); */
