@@ -229,19 +229,14 @@ const struct char_seed charseed_09 = {"0123456789", 10};
 /* To check @c belongs to the closed interval [a,b] */
 #define IN_RANGE(c, a,b) ((c) >= (a) && (c) <= (b))
 
-/**
- *  Seeds Container 
- *  To get the length of `wseed`, use `da_sizeof`.
- *  `cseed`, `pref`, and `suff` must be allocated using `malloc`
- *  `wseed` must be allocated using `da_new` (dyna.h)
- */
+/* Seed container */
 struct Seed
 {
-  /* Character seed */
+  /* Character seeds */
   char *cseed;
   int cseed_len;
 
-  /* Word seed, dynamic array */
+  /* Word seeds, (Dynamic array) */
   char **wseed;
 
   /* Only in regular mode */
@@ -408,8 +403,6 @@ safe_fopen (const char *restrict pathname,
 /**
  *  Frees all allocated memory and closes all open files
  *  This function should be called by `on_exit`
- *  The pointer `__opt` *MUST* be accessible
- *  outside of the main function's scope
  */
 void
 cleanup (int code, void *__opt)
@@ -1460,6 +1453,7 @@ pparse_cseed_regex (struct Opt *, struct Seed *dst_seed);
 static inline void
 pparse_keys_regex (struct Opt *, struct Seed *dst_seed,
                    const char *input);
+
 /**
  *  Provides prefix and suffix of @dst_seed using strdup,
  *  inside: `(...)` (only in regular mode)
