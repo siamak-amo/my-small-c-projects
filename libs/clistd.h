@@ -15,6 +15,8 @@
 
 const char *program_name = NULL;
 
+#define UNUSED(x) (void)(x)
+
 #undef warnf
 #define warnf(format, ...) \
   fprintf (stderr, "%s: "format, program_name, ##__VA_ARGS__)
