@@ -135,9 +135,9 @@
 # define WSEED_MAXLEN 511 // 1 byte for null-byte
 #endif
 
-/* stdout buffer length */
+/* stdout buffer length (default = page_size) */
 #ifndef _BMAX
-# define _BMAX 2048 // (page_size / 2) (bytes)
+# define _BMAX 4096
 #endif
 
 /* Maximum count of words in a seed */
