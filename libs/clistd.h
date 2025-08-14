@@ -9,8 +9,8 @@
 # include <getopt.h>
 #endif
 
-#ifndef __cli_def__
-# define __cli_def__ static inline
+#ifndef CLI_DEF
+# define CLI_DEF static inline
 #endif
 
 const char *program_name = NULL;
@@ -46,7 +46,7 @@ typedef void (*usage_fun) (int ecode);
  *  From: 'gnulib/lib/progname.c':set_program_name
  *  Sets the program_name pointer
  */
-__cli_def__ void
+CLI_DEF void
 set_program_name (const char *argv0);
 
 
@@ -65,7 +65,7 @@ static struct option const long_options[] =
  *  From: 'gnulib/lib/long-options.c':parse_gnu_standard_options_only
  *  Pasres help and version options and 
  */
-__cli_def__ void
+CLI_DEF void
 parse_std_options_only (int argc, char **argv,
                         const char *command_name, const char *version,
                         usage_fun usage);
@@ -117,12 +117,12 @@ on_exit (void (*function)(int, void *), void *arg)
  *  From: 'gnulib/lib/version-etc.c':version_etc_arn
  *  Prints version
  */
-__cli_def__ void
+CLI_DEF void
 version_etc (FILE *stream,
              const char *command_name, const char *version);
 
 #ifdef CLI_IMPLEMENTATION
-__cli_def__ void
+CLI_DEF void
 set_program_name (const char *argv0)
 {
   if (argv0 == NULL)
@@ -144,7 +144,7 @@ set_program_name (const char *argv0)
     goto null_argv0;
 }
 
-__cli_def__ void
+CLI_DEF void
 version_etc (FILE *stream, const char *command_name, const char *version)
 {
   if (command_name)
@@ -159,7 +159,7 @@ version_etc (FILE *stream, const char *command_name, const char *version)
  *  From: 'gnulib/lib/long-options.c':parse_gnu_standard_options_only
  *  Pasres help and version options and 
  */
-__cli_def__ void
+CLI_DEF void
 parse_std_options_only (int argc, char **argv,
                         const char *command_name, const char *version,
                         usage_fun usage)
