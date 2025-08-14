@@ -189,25 +189,21 @@
 #  define dprintf(format, ...) \
   fprintf (stderr, format, ##__VA_ARGS__)
 
-/**
- *  Helper macro to print arrays with seperator & end suffix
- *  @T: printf format for @arr members, @len: length of @arr
- */
-#  define printd_arr__H(arr, T, len, sep, end)      \
+/* To print arrays with seperator & end suffix */
+#  define printd_arr__H(arr, fmt, len, sep, end)    \
   for (ssize_t __idx = 0; __idx < len; __idx++) {   \
-    dprintf (T"%s", arr[__idx],                     \
+    dprintf (fmt "%s", arr[__idx],                  \
              (__idx < len-1) ? sep : end);          \
   }
 
 /**
- *  Debug macro to print arrays of type @T and length @len
- *  Ex: to print `int arr[7]`:  `printd_arr (arr, "%d", 7);`
- *  Output format: 'arr[.7] = {0,1, ..., 6}'
+ *  Debug macro to print arrays
+ *  Ex. `int arr[7]`:  `printd_arr (arr, "%d", 7);`
  */
-#  define printd_arr(arr, T, len) do {                  \
+#  define printd_arr(arr, fmt, len) do {                \
     if (len > 0 && arr) {                               \
       dprintf (CSTR (arr) "[.%d] = {", (int)(len));     \
-      printd_arr__H (arr, T, len, ", ", "}\n");         \
+      printd_arr__H (arr, fmt, len, ", ", "}\n");       \
     } else {                                            \
       dprintf (CSTR (arr) " is empty\n");               \
     }} while (0)
@@ -285,7 +281,7 @@ static Milexer ML =
 
 /**
  *  Permugen Regex Parser
- *  general_{src,tk}: for parsing option value of -r and -s
+ *  general_{src,tk}: for parsing option value(s) of -r and -s
  *  special_{src,tk}: when general_tk needs parsing
  *                    (e.g., '{AA,BB}' or '[a-b]')
  */
@@ -433,11 +429,6 @@ cleanup (int code, void *__opt)
   free_seed (opt->global_seeds);
   safe_free (opt->global_seeds);
 
-  /**
-   *  `reg_seeds` is a dynamic array (using dyna.h)
-   *  Each element of this array, is a seed pointer,
-   *  allocated via `mk_seed` and must be freed using `free_seed`
-   */
   if (opt->reg_seeds)
     {
       da_foreach (opt->reg_seeds, i)
@@ -453,7 +444,6 @@ cleanup (int code, void *__opt)
       da_free (opt->seps);
     }
 
-  /* Two tokens have been allocated for regex parsing */
   TOKEN_FREE (&opt->parser.general_tk);
   TOKEN_FREE (&opt->parser.special_tk);
 
