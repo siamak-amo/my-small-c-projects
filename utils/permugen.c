@@ -1599,10 +1599,15 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
   for (; '\\' == *input; ++input)
     {
       /**
-       *  Check for \N where N represents the index of a
+       *  Handle '\N' where N represents the index of a
        *  previously provided seed
        */
       input++;
+      if (REGULAR_MODE != opt->mode && IS_DIGIT (*input))
+        {
+          warnln ("regular mode specific shortcut \\%c was ignored", *input);
+          continue;
+        }
       if (REGULAR_MODE == opt->mode && IS_DIGIT (*input))
         {
           int n = strtol (input, NULL, 10) - 1;
