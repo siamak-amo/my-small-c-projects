@@ -1595,74 +1595,73 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
                    const char *input)
 {
   char *path;
+
+  for (; '\\' == *input; ++input)
+    {
+      /**
+       *  Check for \N where N represents the index of a
+       *  previously provided seed
+       */
+      input++;
+      if (REGULAR_MODE == opt->mode && IS_DIGIT (*input))
+        {
+          int n = strtol (input, NULL, 10) - 1;
+          if (n == opt->reg_seeds_len)
+            {
+              warnln ("circular append was ignored");
+              continue;
+            }
+          else if (n >= opt->reg_seeds_len)
+            {
+              warnln ("seed index %d is out of bound", n+1);
+              continue;
+            }
+          else if (n < 0)
+            {
+              warnln ("invalid seed index");
+              continue;
+            }
+          else /* valid index */
+            {
+              struct Seed *src = opt->reg_seeds[n];
+              cseed_uniappd (dst_seed, src->cseed, src->cseed_len);
+              da_foreach (src->wseed, i)
+                {
+                  wseed_uniappd (opt, dst_seed, src->wseed[i]);
+                }
+            }
+          continue;
+        }
+
+      /* Got \N where N is not a digit */
+      switch (*input)
+        {
+        case 'd': /* Digits 0-9 */
+          cseed_uniappd (dst_seed,
+                         charseed_09.c, charseed_09.len);
+          break;
+
+        case 'l': /* Lowercase letters */
+        case 'a':
+          cseed_uniappd (dst_seed,
+                         charseed_az.c, charseed_az.len);
+          break;
+
+        case 'U': /* Uppercase letters */
+        case 'u':
+        case 'A':
+          cseed_uniappd (dst_seed,
+                         charseed_AZ.c, charseed_AZ.len);
+          break;
+
+        default:
+          warnln ("invalid shortcut \\%c was ignored", *input);
+        }
+    }
+
   switch (*input)
     {
     case '\0':
-      break;
-
-      /* Shortcuts */
-    case '\\':
-      {
-        /**
-         *  Check for \N where N represents the index of a
-         *  previously provided seed
-         */
-        input++;
-        if (opt->mode == REGULAR_MODE && IS_DIGIT (*input))
-          {
-            int n = strtol (input, NULL, 10) - 1;
-            if (n == opt->reg_seeds_len)
-              {
-                warnln ("circular append was ignored");
-                break;
-              }
-            else if (n >= opt->reg_seeds_len)
-              {
-                warnln ("seed index %d is out of bound", n+1);
-                break;
-              }
-            else if (n < 0)
-              {
-                warnln ("invalid seed index");
-                break;
-              }
-            else /* valid index */
-              {
-                struct Seed *src = opt->reg_seeds[n];
-                cseed_uniappd (dst_seed, src->cseed, src->cseed_len);
-                da_foreach (src->wseed, i)
-                  {
-                    wseed_uniappd (opt, dst_seed, src->wseed[i]);
-                  }
-              }
-            break;
-          }
-
-        /* Got \N where N is not a digit */
-        switch (*input)
-          {
-          case 'd': /* Digits 0-9 */
-            cseed_uniappd (dst_seed,
-                           charseed_09.c, charseed_09.len);
-            break;
-
-          case 'l': /* Lowercase letters */
-          case 'a':
-            cseed_uniappd (dst_seed,
-                           charseed_az.c, charseed_az.len);
-            break;
-
-          case 'U': /* Uppercase letters */
-          case 'u':
-          case 'A':
-            cseed_uniappd (dst_seed,
-                           charseed_AZ.c, charseed_AZ.len);
-            break;
-
-          default:
-            warnln ("invalid shortcut \\%c was ignored", *input);
-          }
-      }
       break;
 
       /* File path */
