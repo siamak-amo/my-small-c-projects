@@ -135,7 +135,7 @@
 # define WSEED_MAXLEN 511 // 1 byte for null-byte
 #endif
 
-/* stdout buffer length (default = page_size) */
+/* Output stream buffer size (default = page_size) */
 #ifndef _BMAX
 # define _BMAX 4096
 #endif
@@ -222,8 +222,48 @@ const struct char_seed charseed_az = {"abcdefghijklmnopqrstuvwxyz", 26};
 const struct char_seed charseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 const struct char_seed charseed_09 = {"0123456789", 10};
 
-/* To check @c belongs to the closed interval [a,b] */
-#define IN_RANGE(c, a,b) ((c) >= (a) && (c) <= (b))
+/* getopt */
+const char *lopt_cstr = "s:S:o:a:p:d:D:0:1:2:3:4:5:vhrEe";
+const struct option lopts[] =
+  {
+    /* Seeds */
+    {"seed",             required_argument, NULL, 's'},
+    {"raw-seed",         required_argument, NULL, '0'},
+    {"raw-wseed",        required_argument, NULL, '5'},
+    {"seed-path",        required_argument, NULL, 'S'},
+    {"wseed-path",       required_argument, NULL, 'S'},
+    /* Output file */
+    {"output",           required_argument, NULL, 'o'},
+    {"append",           required_argument, NULL, 'a'},
+    {"oA",               required_argument, NULL, 'a'},
+    {"help",             no_argument,       NULL, 'h'},
+    /* Delimiter */
+    {"delim",            required_argument, NULL, 'p'},
+    {"delimiter",        required_argument, NULL, 'p'},
+    /* Depth */
+    {"depth",            required_argument, NULL, 'd'},
+    {"depth-range",      required_argument, NULL, 'D'},
+    {"range-depth",      required_argument, NULL, 'D'},
+    {"range",            required_argument, NULL, 'D'},
+    {"depth-from",       required_argument, NULL, '1'},
+    {"from-depth",       required_argument, NULL, '1'},
+    {"min-depth",        required_argument, NULL, '1'},
+    {"depth-to",         required_argument, NULL, '2'},
+    {"to-depth",         required_argument, NULL, '2'},
+    {"max-depth",        required_argument, NULL, '2'},
+    /* Format */
+    {"pref",             required_argument, NULL, '3'},
+    {"prefix",           required_argument, NULL, '3'},
+    {"suff",             required_argument, NULL, '4'},
+    {"suffix",           required_argument, NULL, '4'},
+    /* Regular mode */
+    {"regular",          no_argument,       NULL, 'r'},
+    /* CLI */
+    {"version",          no_argument,       NULL, 'v'},
+    {"help",             no_argument,       NULL, 'h'},
+    /* End of Options */
+    {NULL,               0,                 NULL,  0 },
+  };
 
 /* Seed container */
 struct Seed
@@ -281,7 +321,7 @@ static Milexer ML =
 
 /**
  *  Permugen Regex Parser
- *  general_{src,tk}: for parsing option value(s) of -r and -s
+ *  general_{src,tk}: for parsing value(s) of -r and -s
  *  special_{src,tk}: when general_tk needs parsing
  *                    (e.g., '{AA,BB}' or '[a-b]')
  */
@@ -301,11 +341,11 @@ enum mode
 /* Permugen's main configuration */
 struct Opt
 {
-  /* General configuration */
+  /* General */
   int mode;
   int escape_disabled; /* to disable backslash interpretation */
   int using_default_seed;
-
+  struct permugex parser; /* Regex parser */
   struct
   {
     int min, max;
@@ -320,8 +360,7 @@ struct Opt
 
   /* Output Configuration */
   FILE *outf;
-  char *prefix;
-  char *suffix;
+  char *prefix, *suffix; /* by malloc */
   char **seps; /* component separator(s) (Dynamic array) */
 
   /* Output stream buffer */
@@ -330,25 +369,17 @@ struct Opt
 #else
   char *streamout_buff;
 #endif
-
-  struct permugex parser; /* Regex parser */
 };
 
 /* Internal Macros */
 #define MIN(x, y) ((x < y) ? x : y)
 #define MAX(x, y) ((x < y) ? y : x)
 
-#define Strcmp(s1, s2)                          \
-  ((s1) != NULL && (s2) != NULL &&              \
-   strcmp ((s1), (s2)) == 0)
-
-#define UNESCAPE(cstr) _Nullable do {           \
-    if (NULL != cstr)                           \
-      unescape (cstr);                          \
-  } while (0)
-
 #undef IS_DIGIT
 #define IS_DIGIT(c) (c >= '0' && c <= '9')
+
+/* To check @c belongs to the closed interval [a,b] */
+#define IN_RANGE(c, a,b) ((c) >= (a) && (c) <= (b))
 
 /**
  *  ASCII-printable character range
@@ -359,6 +390,16 @@ struct Opt
 #define IS_CSEED_RANGE(c) (c >= MIN_ASCII_PR && c <= MAX_ASCII_PR)
 #define CSEED_MAXLEN (MAX_ASCII_PR - MIN_ASCII_PR + 1)
 
+/* NULL safe strcmp, unescape, free */
+#define Strcmp(s1, s2) _Nullable                \
+  ((s1) != NULL && (s2) != NULL &&              \
+   strcmp ((s1), (s2)) == 0)
+
+#define UNESCAPE(cstr) _Nullable do {           \
+    if (NULL != cstr)                           \
+      unescape (cstr);                          \
+  } while (0)
+
 #ifdef _CLEANUP_NO_FREE
 # define safe_free(...) NOP()
 #else
@@ -368,6 +409,7 @@ struct Opt
       ptr = NULL;                               \
     }} while (0)
 #endif /* _CLEANUP_NO_FREE */
+
 
 static inline void
 safe_fclose (FILE *_Nullable f)
@@ -960,52 +1002,9 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
   safe_free (line);
 }
 
-const struct option lopts[] =
-  {
-    /* Seeds */
-    {"seed",             required_argument, NULL, 's'},
-    {"raw-seed",         required_argument, NULL, '0'},
-    {"raw-wseed",        required_argument, NULL, '5'},
-    {"seed-path",        required_argument, NULL, 'S'},
-    {"wseed-path",       required_argument, NULL, 'S'},
-    /* Output file */
-    {"output",           required_argument, NULL, 'o'},
-    {"append",           required_argument, NULL, 'a'},
-    {"oA",               required_argument, NULL, 'a'},
-    {"help",             no_argument,       NULL, 'h'},
-    /* Delimiter */
-    {"delim",            required_argument, NULL, 'p'},
-    {"delimiter",        required_argument, NULL, 'p'},
-    /* Depth */
-    {"depth",            required_argument, NULL, 'd'},
-    {"depth-range",      required_argument, NULL, 'D'},
-    {"range-depth",      required_argument, NULL, 'D'},
-    {"range",            required_argument, NULL, 'D'},
-    {"depth-from",       required_argument, NULL, '1'},
-    {"from-depth",       required_argument, NULL, '1'},
-    {"min-depth",        required_argument, NULL, '1'},
-    {"depth-to",         required_argument, NULL, '2'},
-    {"to-depth",         required_argument, NULL, '2'},
-    {"max-depth",        required_argument, NULL, '2'},
-    /* Format */
-    {"pref",             required_argument, NULL, '3'},
-    {"prefix",           required_argument, NULL, '3'},
-    {"suff",             required_argument, NULL, '4'},
-    {"suffix",           required_argument, NULL, '4'},
-    /* Regular mode */
-    {"regular",          no_argument,       NULL, 'r'},
-    /* CLI */
-    {"version",          no_argument,       NULL, 'v'},
-    {"help",             no_argument,       NULL, 'h'},
-    /* End of Options */
-    {NULL,               0,                 NULL,  0 },
-  };
-
 static int
 opt_getopt (int argc, char **argv, struct Opt *opt)
 {
-  /* we use 0,1,2,... as `helper` options, see the @lopts array */
-  const char *lopt_cstr = "s:S:o:a:p:d:D:0:1:2:3:4:5:vhrEe";
   int idx = 0;
 
 #define NOT_IN_REGULAR_MODE()                                           \
