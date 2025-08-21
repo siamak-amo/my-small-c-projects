@@ -403,11 +403,10 @@ struct Opt
 #ifdef _CLEANUP_NO_FREE
 # define safe_free(...) NOP()
 #else
-# define safe_free(ptr) do {                    \
-    if (ptr) {                                  \
-      free (ptr);                               \
-      ptr = NULL;                               \
-    }} while (0)
+# define safe_free(ptr) if (ptr) {              \
+    free (ptr);                                 \
+    ptr = NULL;                                 \
+  }
 #endif /* _CLEANUP_NO_FREE */
 
 
