@@ -1480,39 +1480,31 @@ parse_args (int argc, char **argv)
           break;
 
         case 'p':
+          unsigned int d1, d2;
+          sscanf (optarg, "%u-%u", &d1, &d2);
           {
-            sscanf (optarg, "%u-%u",
-                    &opt.Rqueue.delay_us[0],
-                    &opt.Rqueue.delay_us[1]);
-
-            if ((int) opt.Rqueue.delay_us[0] < 0)
+            if ((int) d1 < 0)
               {
-                opt.Rqueue.delay_us[0] = 0;
-                warnln ("invalid TTL was ignored.");
+                d1 = 0;
+                warnln ("invalid delay value was ignored.");
               }
-            if (opt.Rqueue.delay_us[1] != 0)
+            if (d2 != 0)
               {
                 srand (time (NULL));
-                if ((int) opt.Rqueue.delay_us[1] <
-                    (int) opt.Rqueue.delay_us[0])
+                if ((int) d2 < (int) d1)
                   {
-                    opt.Rqueue.delay_us[1] = 0;
-                    warnln ("invalid TTL range was fixed up.");
+                    d2 = 0;
+                    warnln ("invalid delay interval was fixed.");
                   }
               }
+
             if (strchr (optarg, 's'))
-              {
-                /* Convert to second */
-                opt.Rqueue.delay_us[0] *= 1000000;
-                opt.Rqueue.delay_us[1] *= 1000000;
-              }
+              d1 *= 1000000, d2 *= 1000000; /* Convert to second */
             else
-              {
-                /* Convert to millisecond */
-                opt.Rqueue.delay_us[0] *= 1000;
-                opt.Rqueue.delay_us[1] *= 1000;
-              }
+              d1 *= 1000, d2 *= 1000; /* Convert to millisecond */
           }
+          opt.Rqueue.delay_us[0] = d1;
+          opt.Rqueue.delay_us[1] = d2;
           break;
 
         case 'R':
