@@ -1490,12 +1490,13 @@ parse_args (int argc, char **argv)
               }
             if (d2 != 0)
               {
-                srand (time (NULL));
                 if ((int) d2 < (int) d1)
                   {
                     d2 = 0;
                     warnln ("invalid delay interval was fixed.");
                   }
+                else
+                  srand (time (NULL)); /* range_usleep sleeps a random delay */
               }
 
             if (strchr (optarg, 's'))
