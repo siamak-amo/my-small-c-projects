@@ -166,12 +166,6 @@
 # define DYNADEF static inline
 #endif
 
-/**
- *  Ensure `da_idx` is a type with the size of
- *  your machine's word (default is `intptr_t`),
- *  to guarantee memory alignment of `dyna_t -> arr`.
- *  Otherwise, storing structs in `arr` may not be safe.
- */
 #ifndef da_idx
 # define da_idx intptr_t
 # define da_sidx intptr_t
@@ -188,7 +182,7 @@ typedef struct
   da_idx cell_bytes; /* size of each cell */
 
   /* Actual bytes of array */
-  char arr[];
+  char arr[] __attribute__((aligned(8)));
 } dyna_t;
 
 #ifdef _DA_DEBUG
