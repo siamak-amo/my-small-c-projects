@@ -273,4 +273,74 @@ parse_std_options_only (int argc, char **argv,
 #define B_WHITE(...)   __RAW_COLOR__ ("7", ##__VA_ARGS__, __BG__)
 /* End of ANSI color support */
 
+
+/**  Minimal ANSI terminal control support
+
+     Example #1:  Using CURSAFE along with CUR_UP/DOWN
+     ```{c}
+       printf ("\n\n\n\n\n" // allocating 5 lines
+               CURSAFE (
+                   CUR_UP(1)  "We are at line 5"
+                   CUR_UP(3)  "We are at line 2"
+                   CUR_DOWN() "We are at line 3"
+               )
+       );
+     ```
+
+     Example #2:  A minimal progress-bar
+     ```{c}
+       // Using printf along with the progress function:
+       //   printf( LINESAFE("format"), ...params );
+
+       void
+       progress (int percentage)
+       {
+         fprintf (stderr,
+                  LINESAFE ("::  Progress %02d%%  ::"),
+                  percentage
+         );
+       }
+     ```
+**/
+/* Clear the terminal */
+#define CLR_SCREEN  __ESC__ "2J"
+#define __CLR__(N)  __ESC__ #N "K"  // Internal
+#define CLR_RIGHT   __CLR__()       // Clear from the cursor to the end
+#define CLR_LEFT    __CLR__(1)      // Clear from the cursor to the start
+#define CLR_LINE    __CLR__(2)      // Clear the entire line
+
+/* Cursor enabled */
+#define CUR_ENABLE  __ESC__ "?25h"
+#define CUR_DISABLE __ESC__ "?25l"
+
+/* Cursor save (store: ST) and restore (load: LD) */
+#define CUR_ST __ESC__ "s" 
+#define CUR_LD __ESC__ "u"
+
+/* Set the cursor to an arbitrary position  */
+#define CUR_SET(X, Y) __ESC__ #Y ";" #X "H"
+/* Moving the cursor to the start and the end of line */
+#define CUR_START __ESC__ "0G"
+#define CUR_END   __ESC__ "K"
+
+/* Cursor safe, saves and restores the cursor */
+#define CURSAFE(str) CUR_ST str CUR_LD CUR_START
+/* Line safe, To place @str at the beginning of a cleared line */
+#define LINESAFE(str) CLR_LINE CUR_START str
+
+/**
+ *  CUR_UP(N), CUR_DOWN(N):
+ *    Moves the cursor N lines up/down, at the beginning of line.
+ *  CUR_RUP(N), CUR_RDOWN(N):
+ *    Relative up/down, preserving x position of the cursor.
+ */
+#define __CUR_MOVE__(N, DIR) __ESC__ #N  DIR
+#define CUR_FORWARD(N)  __CUR_MOVE__ (N, "C")
+#define CUR_BACKWARD(N) __CUR_MOVE__ (N, "D")
+#define CUR_RUP(N)      __CUR_MOVE__ (N, "A") 
+#define CUR_RDOWN(N)    __CUR_MOVE__ (N, "B")
+#define CUR_UP(N)         CUR_RUP(N)   CUR_START
+#define CUR_DOWN(N)       CUR_RDOWN(N) CUR_START
+/* End of ANSI terminal control */
+
 #endif /* CLI_STD__H__ */
