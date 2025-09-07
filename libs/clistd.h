@@ -197,40 +197,40 @@ parse_std_options_only (int argc, char **argv,
 #endif /* CLI_IMPLEMENTATION */
 
 
-/**
- *  ANSI color support
- *
- *  Usage:
- *  1. Using the `$` macro in printf format parameter:
- *     `$` macro, create strings with appropriate color code
- *     which will get concatenated by the compiler:
- *       $("Test: %s", F_RED())  generates:
- *       "[RED FG COLOR CODE]"  "Test: %s"  "[RESET COLOR]"
- *
- *  2. Using COLOR_FMT and COLOR_ARG macros:
- *     COLOR_FMT("(%d)")  create  "%s(%d)%s"  and,
- *     COLOR_ARG(123, B_RED())  generates 3 arguments:
- *       "[RED BG COLOR CODE]",  123,  "[RESET COLOR]"
- *
- *  For background color, B_xxx() and for foreground color F_xxx()
- *  macro can be used, these macros accept at most one argument:
- *   F_U, F_B, F_HI, F_HBI  and  B_HI for background.
- *
- *  Example: these two printf calls, generate identical output
- *  ```{c}
- *  printf ($("%s",    B_RED())       " -- "
- *          $("`%s`",  F_BLUE(F_U))   ".\n",
- *          "Error", "file.txt");
- *
- *  printf (COLOR_FMT("%s")  " -- "  COLOR_FMT("`%s`")  ".\n",
- *          COLOR_ARG("Error",     B_RED()),
- *          COLOR_ARG("file.txt",  F_BLUE(F_U)));
- *  ```
- **/
+/** ANSI color support
+
+    Usage:
+    1. Using the FCOLOR macro in printf format parameter:
+       FCOLOR macro, create strings with appropriate color code
+       which will get concatenated by the compiler:
+         FCOLOR("Test: %s", F_RED())  generates:
+         "[RED FG COLOR CODE]"  "Test: %s"  "[RESET COLOR]"
+
+    2. Using COLOR_FMT and COLOR_ARG macros:
+       COLOR_FMT("(%d)")  create  "%s(%d)%s"  and,
+       COLOR_ARG(123, B_RED())  generates 3 arguments:
+         "[RED BG COLOR CODE]",  123,  "[RESET COLOR]"
+
+    For background color, B_xxx() and for foreground color F_xxx()
+    macro can be used, these macros accept at most one argument:
+     F_U, F_B, F_HI, F_HBI  and  B_HI for background.
+
+    Example: these two printf calls, generate identical output
+    ```{c}
+      printf (FCOLOR("%s",   B_RED()) " -- "
+              FCOLOR("`%s`", F_BLUE(F_U)) ".\n",
+              "Error", "file.txt"
+      );
+      printf (COLOR_FMT("%s")  " -- " COLOR_FMT("`%s`")  ".\n",
+              COLOR_ARG("Error", B_RED()),
+              COLOR_ARG("file.txt", F_BLUE(F_UNDERLINE))
+      );
+    ```
+**/
 #define __ESC__  "\033["
 #define COLOR_RESET   __ESC__ "0m"
 
-#define $(fmt, ...) __VA_ARGS__ fmt COLOR_RESET
+#define FCOLOR(fmt, ...) __VA_ARGS__ fmt COLOR_RESET
 
 #define COLOR_FMT(x) "%s" x "%s"
 #define COLOR_ARG(x, __COLOR__) __COLOR__, x, COLOR_RESET
@@ -241,6 +241,9 @@ parse_std_options_only (int argc, char **argv,
 #define F_HI    "0;9"    // High intensity
 #define F_BHI   "1;9"    // Bold high intensity
 #define B_HI    "2;10"   // High intensity background
+
+#define F_UNDERLINE F_U
+#define F_BOLD F_B
 
 #define __FG__  "0;3"    // Regular foreground (Internal)
 #define __BG__  "4"      // Regular background (Internal)
