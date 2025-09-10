@@ -554,6 +554,7 @@ struct Opt
 
   Fword **words; /* Dynamic array */
   int words_len; /* Length of @words */
+  int words_none_empty; /* none dummy objects in @words */
 
   struct request_queue_t
   {
@@ -571,6 +572,7 @@ struct Opt opt = {0};
 
 #define REGISTER_WLIST(path) do {               \
     Fword *fw = make_fw_from_path (path);       \
+    if (path) opt.words_none_empty++;           \
     da_appd (opt.words, fw);                    \
   } while (0)
 
@@ -851,7 +853,7 @@ context_reset (RequestContext *ctx)
 static inline void
 __print_stats_fuzz (RequestContext *ctx)
 {
-  if (opt.total_fw_count == 1)
+  if (opt.words_none_empty == 1)
     {
       fprintf (opt.streamout, "%s \t\t\t ", ctx->FUZZ[0]);
     }
