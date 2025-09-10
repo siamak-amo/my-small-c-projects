@@ -283,6 +283,8 @@ typedef struct progress_t
   uint req_total;
   uint req_count; /* Count of sent requests */
   uint err_count; /* Count of errors */
+
+  bool progbar_enabled;
   uint progbar_refrate; /* Progress bar refresh rate */
 
   uint req_count_dt; /* Requests in delta time */
@@ -465,10 +467,14 @@ lookup_free_handle (RequestContext *ctxs, size_t len);
  * tick_progress:
  *   Advances the timer and resets the progress if needed
  *   It MUST be called at the end of the main loop
+ * update_progress_bar:
+ *   Prints a simple progress-bar is not disabled
  */
 static void init_progress (Progress *prog);
 static inline void tick_progress (Progress *prog);
-static void update_progress_bar (const Progress *prog);
+static void __update_progress_bar (const Progress *prog);
+#define update_progress_bar(prog) \
+  if ((prog)->progbar_enabled) __update_progress_bar (prog)
 
 /**
  *  Sleeps for a random duration in microseconds
@@ -566,6 +572,7 @@ struct Opt
   int max_rate; /* Max request rate (req/sec) */
   char *verb; /* HTTP verb */
   FILE *streamout;
+  bool streamout_tty;
   FuzzTemplate fuzz_template;
   struct res_filter_t *filters; /* Dynamic array */
 
@@ -875,8 +882,9 @@ context_reset (RequestContext *ctx)
 static inline void
 __print_stats_fuzz (RequestContext *ctx)
 {
-  /* Wiping the line out of the progress bar stuff */
-  fprintf (opt.streamout, LINESAFE ());
+  /* Wiping the line out of the progress-bar stuff */
+  if (opt.progress.progbar_enabled && opt.streamout_tty)
+    fprintf (opt.streamout, LINESAFE ());
 
   if (opt.words_none_empty == 1)
     {
@@ -1116,6 +1124,10 @@ init_progress (Progress *prog)
   prog->progbar_refrate = prog->req_total / 100;
   if (0 == prog->progbar_refrate)
     prog->progbar_refrate = 1;
+
+  prog->progbar_enabled = true;
+  if (! isatty (fileno (stderr)))
+    prog->progbar_enabled = false;
 }
 
 static inline void
@@ -1686,6 +1698,7 @@ pre_init_opt ()
   opt.Rqueue.len = DEFAULT_REQ_COUNT;
   opt.max_rate = MAX_REQ_RATE;
   opt.streamout = stdout;
+  opt.streamout_tty = isatty (fileno (opt.streamout));
   opt.words = da_new (Fword *);
   /* Initialize libcurl & context of requests */
   curl_global_init (CURL_GLOBAL_DEFAULT);
