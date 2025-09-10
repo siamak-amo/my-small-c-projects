@@ -260,7 +260,7 @@ struct req_stat_t
   uint size_bytes;
 
   int code; /* HTTP response code */
-  int duration; /* Total time to response */
+  uint duration; /* Total time to response */
 };
 
 typedef struct progress_t
@@ -302,7 +302,7 @@ typedef struct
    *  All 'FUZZ' keywords within @opt.fuzz_template
    *  (URL, POST body, HTTP headers respectively)
    *  will be substituted with elements of this array.
-   *  It must contain opt.total_fw_count elements.
+   *  It must contain opt.words_len elements.
    */
   char **FUZZ;
 
@@ -444,8 +444,9 @@ lookup_free_handle (RequestContext *ctxs, size_t len);
  *   Advances the timer and resets the progress if needed
  *   It MUST be called at the end of the main loop
  */
-void init_progress (Progress *prog);
+static void init_progress (Progress *prog);
 static inline void tick_progress (Progress *prog);
+static void update_progress_bar (const Progress *prog);
 
 /**
  *  Sleeps for a random duration in microseconds
@@ -552,7 +553,7 @@ struct Opt
   struct progress_t progress;
 
   Fword **words; /* Dynamic array */
-  int total_fw_count; /* Length of @words */
+  int words_len; /* Length of @words */
 
   struct request_queue_t
   {
@@ -740,7 +741,7 @@ __next_fuzz_singular (RequestContext *ctx)
   snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
   Strrealloc (ctx->FUZZ[0], tmp);
 
-  da_idx i=1, N = opt.total_fw_count;
+  da_idx i=1, N = opt.words_len;
   for (; i < N; ++i)
     ctx->FUZZ[i] = ctx->FUZZ[0];
   ctx->FUZZ[i] = NULL;
@@ -756,7 +757,7 @@ static void
 __next_fuzz_pitchfork (RequestContext *ctx)
 {
   Fword *fw;
-  size_t N = opt.total_fw_count;
+  size_t N = opt.words_len;
 
   static Fword *longest = NULL;
   /* Find the longest wordlist */
@@ -789,7 +790,7 @@ static void
 __next_fuzz_clusterbomb (RequestContext *ctx)
 {
   Fword *fw = NULL;
-  size_t N = opt.total_fw_count;
+  size_t N = opt.words_len;
 
   size_t next = 0;
   bool go_next = true;
@@ -857,7 +858,7 @@ __print_stats_fuzz (RequestContext *ctx)
   else
     {
       fprintf (opt.streamout, "\n* FUZZ = [");
-      Fprintarr (opt.streamout, "'%s'", ctx->FUZZ, opt.total_fw_count);
+      Fprintarr (opt.streamout, "'%s'", ctx->FUZZ, opt.words_len);
       fprintf (opt.streamout, "]:\n  ");
     }
 }
@@ -936,9 +937,10 @@ handle_response_context (RequestContext *ctx, CURLcode res_code)
   long result = 0;
   double duration;
   struct req_stat_t *stat = &ctx->stat;
+  struct progress_t *prog = &opt.progress;
 
-  opt.progress.req_count++;
-  opt.progress.req_count_dt++;
+  prog->req_count++;
+  prog->req_count_dt++;
   if (res_code == CURLE_OK)
     {
       curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &result);
@@ -950,13 +952,13 @@ handle_response_context (RequestContext *ctx, CURLcode res_code)
         }
     }
   else
-    opt.progress.err_count++;
+    prog->err_count++;
 
   curl_easy_getinfo (ctx->easy_handle, CURLINFO_TOTAL_TIME, &duration);
-  stat->duration = (int) (duration * 1000.f);
+  stat->duration = (uint) (duration * 1000.f);
 
   if (CURLE_OK != res_code || filter_pass (stat, opt.filters))
-    print_stats_context (ctx, res_code);
+      print_stats_context (ctx, res_code);
 }
 
 static inline void
@@ -1058,7 +1060,7 @@ register_contex (RequestContext *ctx)
 }
 
 //-- Progress statistics functions --//
-void
+static void
 init_progress (Progress *prog)
 {
   time (&prog->t0);
@@ -1197,7 +1199,7 @@ init_opt ()
       warnln ("cannot continue with no word-list.");
       return 1;
     }
-  opt.total_fw_count = n;
+  opt.words_len = n;
 
   /* Initializing request contexts */
   opt.Rqueue.ctxs = ffuc_calloc (opt.Rqueue.len, sizeof (RequestContext));
@@ -1680,10 +1682,10 @@ main (int argc, char **argv)
   }
   while (still_running > 0 || !opt.should_end);
 
-  if (opt.verbose || opt.progress.err_count)
-    warnln ("Total requests: %d,  Errors: %u (%u%%).",
-            opt.progress.req_count,
-            opt.progress.err_count,
-            opt.progress.err_count * 100 / opt.progress.req_count);
+  fprintf (stderr, "\n");
+  warnln ("Total requests: %d,  Errors: %u (%u%%).",
+          opt.progress.req_count,
+          opt.progress.err_count,
+          opt.progress.err_count * 100 / opt.progress.req_count);
   return 0;
 }
