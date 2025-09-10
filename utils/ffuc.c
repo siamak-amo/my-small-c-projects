@@ -275,6 +275,7 @@ struct req_stat_t
 
   int code; /* HTTP response code */
   uint duration; /* Total time to response */
+  CURLcode ccode;
 };
 
 typedef struct progress_t
@@ -890,16 +891,16 @@ __print_stats_fuzz (RequestContext *ctx)
 }
 
 static inline void
-print_stats_context (RequestContext *ctx, CURLcode res_code)
+print_stats_context (RequestContext *ctx)
 {
-  if (CURLE_OK != res_code)
+  if (CURLE_OK != ctx->stat.ccode)
     {
       if (opt.verbose)
         {
           __print_stats_fuzz (ctx);
           fprintf (opt.streamout, "\
 [Error: %s, Size: %d, Words: %d, Lines: %d, Duration: %dms]\n",
-                   curl_easy_strerror (res_code),
+                   curl_easy_strerror (ctx->stat.ccode),
                    ctx->stat.size_bytes,
                    ctx->stat.wcount,
                    ctx->stat.lcount,
@@ -958,7 +959,7 @@ filter_pass (struct req_stat_t *stat, struct res_filter_t *filters)
 }
 
 static void
-handle_response_context (RequestContext *ctx, CURLcode res_code)
+handle_response_context (RequestContext *ctx)
 {
   long result = 0;
   double duration;
@@ -970,7 +971,7 @@ handle_response_context (RequestContext *ctx, CURLcode res_code)
   if (0 == prog->req_count % prog->progbar_refrate)
     update_progress_bar (prog);
 
-  if (res_code == CURLE_OK)
+  if (CURLE_OK == ctx->stat.ccode)
     {
       curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &result);
       stat->code = (int) result;
@@ -986,9 +987,9 @@ handle_response_context (RequestContext *ctx, CURLcode res_code)
   curl_easy_getinfo (ctx->easy_handle, CURLINFO_TOTAL_TIME, &duration);
   stat->duration = (uint) (duration * 1000.f);
 
-  if (CURLE_OK != res_code || filter_pass (stat, opt.filters))
+  if (CURLE_OK != ctx->stat.ccode || filter_pass (stat, opt.filters))
     {
-      print_stats_context (ctx, res_code);
+      print_stats_context (ctx);
       update_progress_bar (prog);
     }
 }
@@ -1093,7 +1094,7 @@ register_contex (RequestContext *ctx)
 
 //-- Progress statistics functions --//
 static void
-update_progress_bar (const Progress *prog)
+__update_progress_bar (const Progress *prog)
 {
   int perc = REQ_PERC (prog);
   uint rate = REQ_RATE (prog);
@@ -1741,7 +1742,8 @@ main (int argc, char **argv)
 
         if (CURLMSG_DONE == msg->msg)
           {
-            handle_response_context (ctx, msg->data.result);
+            ctx->stat.ccode = msg->data.result;
+            handle_response_context (ctx);
             /* Release the completed context */
             context_reset (ctx);
             opt.Rqueue.waiting--;
