@@ -282,12 +282,15 @@ typedef struct progress_t
   uint req_total;
   uint req_count; /* Count of sent requests */
   uint err_count; /* Count of errors */
+  uint progbar_refrate; /* Progress bar refresh rate */
 
   uint req_count_dt; /* Requests in delta time */
   size_t dt; /* delta time in milliseconds */
   struct timeval __t0; /* Internal */
 } Progress;
 
+/* Percentage of progress */
+#define REQ_PERC(prog) ((prog)->req_count * 100 / (prog)->req_total)
 /* Request rate (req / second) */
 #define REQ_RATE(prog) \
   (((prog)->dt) ? (prog)->req_count_dt * 1000 / (prog)->dt : 0)
@@ -871,6 +874,9 @@ context_reset (RequestContext *ctx)
 static inline void
 __print_stats_fuzz (RequestContext *ctx)
 {
+  /* Wiping the line out of the progress bar stuff */
+  fprintf (opt.streamout, LINESAFE ());
+
   if (opt.words_none_empty == 1)
     {
       fprintf (opt.streamout, "%s \t\t\t ", ctx->FUZZ[0]);
@@ -961,6 +967,9 @@ handle_response_context (RequestContext *ctx, CURLcode res_code)
 
   prog->req_count++;
   prog->req_count_dt++;
+  if (0 == prog->req_count % prog->progbar_refrate)
+    update_progress_bar (prog);
+
   if (res_code == CURLE_OK)
     {
       curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &result);
@@ -978,7 +987,10 @@ handle_response_context (RequestContext *ctx, CURLcode res_code)
   stat->duration = (uint) (duration * 1000.f);
 
   if (CURLE_OK != res_code || filter_pass (stat, opt.filters))
+    {
       print_stats_context (ctx, res_code);
+      update_progress_bar (prog);
+    }
 }
 
 static inline void
@@ -1080,6 +1092,19 @@ register_contex (RequestContext *ctx)
 }
 
 //-- Progress statistics functions --//
+static void
+update_progress_bar (const Progress *prog)
+{
+  int perc = REQ_PERC (prog);
+  uint rate = REQ_RATE (prog);
+
+  fprintf (stderr, LINESAFE ("\
+::  Progress [%d/%d] %d%%  ::  Rate %dr/s  ::"),
+           prog->req_count, prog->req_total, perc,
+           rate
+  );
+}
+
 static void
 init_progress (Progress *prog)
 {
