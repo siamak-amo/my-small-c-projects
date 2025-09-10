@@ -105,6 +105,10 @@ static char tmp[TMP_CAP];
 # define POLL_TTL_MS 1000
 #endif
 
+#ifndef PRINT_MARGIN
+# define PRINT_MARGIN 20
+#endif
+
 #define NOP ((void) NULL)
 #define UNUSED(x) (void)(x)
 #define MIN(a,b) ((a < b) ? (a) : (b))
@@ -292,6 +296,7 @@ typedef struct progress_t
   struct timeval __t0; /* Internal */
 } Progress;
 
+#define MAX(x,y) (((x) > (y)) ? (x) : (y))
 /* Percentage of progress */
 #define REQ_PERC(prog) ((prog)->req_count * 100 / (prog)->req_total)
 /* Request rate (req / second) */
@@ -882,13 +887,16 @@ context_reset (RequestContext *ctx)
 static inline void
 __print_stats_fuzz (RequestContext *ctx)
 {
+  int n;
   /* Wiping the line out of the progress-bar stuff */
   if (opt.progress.progbar_enabled && opt.streamout_tty)
     fprintf (opt.streamout, LINESAFE ());
 
   if (opt.words_none_empty == 1)
     {
-      fprintf (opt.streamout, "%s \t\t\t ", ctx->FUZZ[0]);
+      fprintf (opt.streamout, "%s%n", ctx->FUZZ[0], &n);
+      n = MAX (2, PRINT_MARGIN - n);
+      fprintf (opt.streamout, "%*s", n, "");
     }
   else
     {
@@ -1104,13 +1112,14 @@ register_contex (RequestContext *ctx)
 static void
 __update_progress_bar (const Progress *prog)
 {
-  int perc = REQ_PERC (prog);
+  uint percentage = REQ_PERC (prog);
   uint rate = REQ_RATE (prog);
 
   fprintf (stderr, LINESAFE ("\
-::  Progress [%d/%d] %d%%  ::  Rate %dr/s  ::"),
-           prog->req_count, prog->req_total, perc,
-           rate
+::  Progress: %d%% [%d/%d] :: %d req/sec ::  Errors: %d  ::"),
+           percentage,
+           prog->req_count, prog->req_total,
+           rate, prog->err_count
   );
 }
 
@@ -1121,9 +1130,8 @@ init_progress (Progress *prog)
   prog->req_count_dt = 0;
   gettimeofday (&prog->__t0, NULL);
 
-  prog->progbar_refrate = prog->req_total / 100;
-  if (0 == prog->progbar_refrate)
-    prog->progbar_refrate = 1;
+  /* This makes progress-bar refresh at every 1% of progress */
+  prog->progbar_refrate = MAX (1, prog->req_total / 100);
 
   prog->progbar_enabled = true;
   if (! isatty (fileno (stderr)))
@@ -1768,9 +1776,5 @@ main (int argc, char **argv)
   while (still_running > 0 || !opt.should_end);
 
   fprintf (stderr, "\n");
-  warnln ("Total requests: %d,  Errors: %u (%u%%).",
-          opt.progress.req_count,
-          opt.progress.err_count,
-          opt.progress.err_count * 100 / opt.progress.req_count);
   return 0;
 }
