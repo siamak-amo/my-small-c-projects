@@ -73,9 +73,23 @@ static char tmp[TMP_CAP];
 # define MAX_REQ_RATE 2048
 #endif
 
-/* Delta time (in seconds), for measuring request rate */
-#ifndef DELTA_TS
-# define DELTA_TS 1
+/* Request rate measure interval (ms) */
+#ifndef RATE_MEASURE_DUR
+# define RATE_MEASURE_DUR 1000
+#endif
+
+/**
+ *  Minimum deltatime to call gettimeofday again.
+ *  In some systems, calling gettimeofday might introduce
+ *  overhead; when LIMIT_TIMEOFDAY_CALLS macro is defined,
+ *  we skip this calls SKIP_TIMEOFDAY_N times if encounter
+ *  any measured delta time less then MIN_TIMEOFDAY_DUR.
+ */
+#ifndef MIN_TIMEOFDAY_DUR
+# define MIN_TIMEOFDAY_DUR 10 // 10 ms
+#endif
+#ifndef SKIP_TIMEOFDAY_N
+# define SKIP_TIMEOFDAY_N 2  // 2 time skipping
 #endif
 
 /* Default connection/read timeuot */
@@ -270,11 +284,15 @@ typedef struct progress_t
   uint err_count; /* Count of errors */
 
   uint req_count_dt; /* Requests in delta time */
-  time_t t0;
+  size_t dt; /* delta time in milliseconds */
+  struct timeval __t0; /* Internal */
 } Progress;
 
-/* Calculate the current request rate (req/second) uint_t */
-#define REQ_RATE(prog) ((prog)->req_count_dt / DELTA_TS)
+/* Request rate (req / second) */
+#define REQ_RATE(prog) \
+  (((prog)->dt) ? (prog)->req_count_dt * 1000 / (prog)->dt : 0)
+/* Convert timeval struct to milliseconds */
+#define TV2MS(tv) (tv.tv_sec * 1000LL  +  tv.tv_usec / 1000)
 
 struct res_filter_t
 {
@@ -1065,20 +1083,45 @@ register_contex (RequestContext *ctx)
 static void
 init_progress (Progress *prog)
 {
-  time (&prog->t0);
   prog->req_count = 0;
   prog->req_count_dt = 0;
+  gettimeofday (&prog->__t0, NULL);
+
+  prog->progbar_refrate = prog->req_total / 100;
+  if (0 == prog->progbar_refrate)
+    prog->progbar_refrate = 1;
 }
 
 static inline void
 tick_progress (Progress *prog)
 {
-  time_t t = time (NULL);
-  if (t - prog->t0 >= DELTA_TS)
+#ifdef LIMIT_TIMEOFDAY_CALLS
+  static int n = 1;
+  if (n > 1) {
+    --n;
+    return;
+  }
+#endif /* LIMIT_TIMEOFDAY_CALLS */
+
+  struct timeval t1 = {0};
+  gettimeofday (&t1, NULL);
+  size_t DT = TV2MS (t1) - TV2MS (prog->__t0);
+
+#ifdef LIMIT_TIMEOFDAY_CALLS
+  if (DT < MIN_TIMEOFDAY_DUR) {
+    n += SKIP_TIMEOFDAY_N;
+    return;
+  }
+#endif /* LIMIT_TIMEOFDAY_CALLS */
+
+  prog->dt = DT;
+  if (DT > RATE_MEASURE_DUR)
     {
+      update_progress_bar (prog);
       prog->req_count_dt = 0;
-      prog->t0 = t;
+      prog->__t0 = t1;
     }
+  
 }
 
 //-- Utility functions --//
