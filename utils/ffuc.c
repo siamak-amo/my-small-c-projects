@@ -124,7 +124,7 @@ static char tmp[TMP_CAP];
     fprintf (stream, element_format, (arr)[__idx]);         \
   } while (0)
 
-const char *lopt_cstr = "m:w:" "T:R:t:p:A" "u:H:d:X:" "vh";
+const char *lopt_cstr = "m:w:" "T:R:t:p:A" "u:H:d:X:" "vhc";
 const struct option lopts[] =
   {
     /* We call it `thread` (-t) for compatibility with ffuf,
@@ -185,6 +185,7 @@ const struct option lopts[] =
     {"delay",               required_argument, NULL, 'p'},
     {"help",                no_argument,       NULL, 'h'},
     {"verbose",             no_argument,       NULL, 'v'},
+    {"color",               no_argument,       NULL, 'c'},
     /* End of options */
     {NULL,                  0,                 NULL,  0 },
   };
@@ -574,6 +575,7 @@ struct Opt
   int mode;
   int ttl; /* Timeout in milliseconds */
   bool verbose;
+  bool color_enabled;
   uint max_rate; /* Max request rate (req/sec) */
   char *verb; /* HTTP verb */
   FILE *streamout;
@@ -930,14 +932,14 @@ __print_stats_fuzz (RequestContext *ctx)
   if (1 == opt.words_none_empty)
     {
       int n;
-      fprintf (opt.streamout, COLOR_FMT("%s") "%n",
-               color_start, ctx->FUZZ[0], color_reset, &n);
+      fprintf (opt.streamout, COLOR_FMT("%s%n"),
+               color_start,  ctx->FUZZ[0], &n,  color_reset);
       n = MAX (2, PRINT_MARGIN - n);
       fprintf (opt.streamout, "%*s", n, "");
     }
   else
     {
-      fprintf (opt.streamout, "\n" COLOR_FMT("* FUZZ") " = [",
+      fprintf (opt.streamout, "\n* " COLOR_FMT("FUZZ") " = [",
                color_start, color_reset);
       Fprintarr (opt.streamout, "'%s'", ctx->FUZZ, opt.words_len);
       fprintf (opt.streamout, "]:\n  ");
@@ -1382,7 +1384,7 @@ init_opt ()
     }
   else
     {
-      opt.Printf.color = true;
+      opt.Printf.color = opt.color_enabled;
       if (opt.progress.progbar_enabled)
         opt.Printf.lineclear = true;
     }
@@ -1599,6 +1601,10 @@ parse_args (int argc, char **argv)
           return 1;
         case 'v':
           opt.verbose = true;
+          break;
+
+        case 'c':
+          opt.color_enabled = true;
           break;
 
         case 'w':
