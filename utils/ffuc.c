@@ -53,7 +53,7 @@
 #include <getopt.h>
 
 #define PROG_NAME "FFuc"
-#define PROG_VERSION "1.2-dev"
+#define PROG_VERSION "1.3-dev"
 
 #define SLIST_APPEND(list, val) \
   list = curl_slist_append (list, val)
@@ -573,8 +573,8 @@ struct Opt
   /* User options */
   int mode;
   int ttl; /* Timeout in milliseconds */
-  int verbose;
-  int max_rate; /* Max request rate (req/sec) */
+  bool verbose;
+  uint max_rate; /* Max request rate (req/sec) */
   char *verb; /* HTTP verb */
   FILE *streamout;
   bool streamout_tty;
@@ -1736,14 +1736,18 @@ main (int argc, char **argv)
   CURLMsg *msg;
   RequestContext *ctx;
   int numfds, res, still_running;
+  uint rate;
+
   do {
     /* Find a free context (If there is any) and register it */
     while (!opt.should_end && opt.Rqueue.waiting < opt.Rqueue.len)
       {
-        if ((uint) opt.max_rate <= REQ_RATE (&opt.progress))
+        rate = REQ_RATE (&opt.progress);
+        if (opt.max_rate <= rate)
           break;
+
         if ((ctx = lookup_free_handle (opt.Rqueue.ctxs, opt.Rqueue.len)))
-          {
+          { /* Registering the context */
             opt.Rqueue.waiting++;
             register_contex (ctx);
             range_usleep (opt.Rqueue.delay_us);
