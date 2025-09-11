@@ -106,7 +106,7 @@ static char tmp[TMP_CAP];
 #endif
 
 #ifndef PRINT_MARGIN
-# define PRINT_MARGIN 20
+# define PRINT_MARGIN 25
 #endif
 
 #define NOP ((void) NULL)
@@ -931,11 +931,14 @@ __print_stats_fuzz (RequestContext *ctx)
 
   if (1 == opt.words_none_empty)
     {
-      int n;
-      fprintf (opt.streamout, COLOR_FMT("%s%n"),
-               color_start,  ctx->FUZZ[0], &n,  color_reset);
-      n = MAX (2, PRINT_MARGIN - n);
-      fprintf (opt.streamout, "%*s", n, "");
+      int m, n;
+      fprintf (opt.streamout, COLOR_FMT("%n%s%n"),
+               color_start,  &m,ctx->FUZZ[0],&n,  color_reset);
+      int margin = MAX (0, PRINT_MARGIN - n + m);
+      if (margin)
+        fprintf (opt.streamout, "%*s", margin, "");
+      else
+        fprintf (opt.streamout, "\n%*s", PRINT_MARGIN, "");
     }
   else
     {
