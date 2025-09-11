@@ -577,7 +577,6 @@ struct Opt
   uint max_rate; /* Max request rate (req/sec) */
   char *verb; /* HTTP verb */
   FILE *streamout;
-  bool streamout_tty;
   FuzzTemplate fuzz_template;
   struct res_filter_t *filters; /* Dynamic array */
 
@@ -597,6 +596,12 @@ struct Opt
     size_t waiting; /* number of used elements */
     useconds_t delay_us[2]; /* delay range, microseconds */
   } Rqueue;
+
+  struct printf_t
+  {
+    bool lineclear; /* Should clear terminal */
+    bool color; /* Color enabled */
+  } Printf;
 
   /* Next FUZZ loader and */
   void (*load_next_fuzz) (RequestContext *ctx);
@@ -884,26 +889,60 @@ context_reset (RequestContext *ctx)
   memset (&ctx->stat, 0, sizeof (struct req_stat_t));
 }
 
+enum http_color_code
+  {
+    HTTP_NOCOLOR = 1,
+    HTTP_200 = 2,
+    HTTP_300 = 3,
+    HTTP_400 = 4,
+    HTTP_500 = 5
+  };
+
+const char *http_color[] =
+  {
+    [HTTP_NOCOLOR] = "",
+    [HTTP_200]     = F_GREEN(),
+    [HTTP_300]     = F_YELLOW(),
+    [HTTP_400]     = F_BLUE(),
+    [HTTP_500]     = F_RED(),
+  };
+
+#define HTTCOLOR(n) \
+  ((200<=(n) && (n)<300) ? HTTP_200 : \
+   (300<=(n) && (n)<400) ? HTTP_300 : \
+   (400<=(n) && (n)<500) ? HTTP_400 : \
+   (500<=(n) && (n)<600) ? HTTP_500 : HTTP_NOCOLOR)
+
 static inline void
 __print_stats_fuzz (RequestContext *ctx)
 {
-  int n;
   /* Wiping the line out of the progress-bar stuff */
-  if (opt.progress.progbar_enabled && opt.streamout_tty)
+  if (opt.Printf.lineclear)
     fprintf (opt.streamout, LINESAFE ());
 
-  if (opt.words_none_empty == 1)
+  const char *color_start = "", *color_reset = "";
+  if (opt.Printf.color)
     {
-      fprintf (opt.streamout, "%s%n", ctx->FUZZ[0], &n);
+      color_start = http_color[HTTCOLOR (ctx->stat.code)];
+      color_reset = COLOR_RESET;
+    }
+
+  if (1 == opt.words_none_empty)
+    {
+      int n;
+      fprintf (opt.streamout, COLOR_FMT("%s") "%n",
+               color_start, ctx->FUZZ[0], color_reset, &n);
       n = MAX (2, PRINT_MARGIN - n);
       fprintf (opt.streamout, "%*s", n, "");
     }
   else
     {
-      fprintf (opt.streamout, "\n* FUZZ = [");
+      fprintf (opt.streamout, "\n" COLOR_FMT("* FUZZ") " = [",
+               color_start, color_reset);
       Fprintarr (opt.streamout, "'%s'", ctx->FUZZ, opt.words_len);
       fprintf (opt.streamout, "]:\n  ");
     }
+#undef COLORIZE
 }
 
 static inline void
@@ -1132,10 +1171,6 @@ init_progress (Progress *prog)
 
   /* This makes progress-bar refresh at every 1% of progress */
   prog->progbar_refrate = MAX (1, prog->req_total / 100);
-
-  prog->progbar_enabled = true;
-  if (! isatty (fileno (stderr)))
-    prog->progbar_enabled = false;
 }
 
 static inline void
@@ -1336,6 +1371,21 @@ init_opt ()
       opt.load_next_fuzz = __next_fuzz_clusterbomb;
       break;
     } 
+
+  if (! isatty (fileno (stderr)))
+    opt.progress.progbar_enabled = false;
+
+  if (! isatty (fileno (opt.streamout)))
+    {
+      opt.Printf.color = false;
+      opt.Printf.lineclear = false;
+    }
+  else
+    {
+      opt.Printf.color = true;
+      if (opt.progress.progbar_enabled)
+        opt.Printf.lineclear = true;
+    }
 
   return 0;
 }
@@ -1706,11 +1756,11 @@ pre_init_opt ()
   opt.Rqueue.len = DEFAULT_REQ_COUNT;
   opt.max_rate = MAX_REQ_RATE;
   opt.streamout = stdout;
-  opt.streamout_tty = isatty (fileno (opt.streamout));
   opt.words = da_new (Fword *);
   /* Initialize libcurl & context of requests */
   curl_global_init (CURL_GLOBAL_DEFAULT);
   opt.multi_handle = curl_multi_init ();
+  opt.progress.progbar_enabled = true;
 }
 
 int
