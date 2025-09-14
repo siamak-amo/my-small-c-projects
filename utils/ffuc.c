@@ -32,14 +32,15 @@
 #undef _GNU_SOURCE
 #define _GNU_SOURCE
 #include <stdio.h>
-#include <fcntl.h>
-#include <errno.h>
+#include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
 #include <assert.h>
+
+#include <errno.h>
+#include <string.h>
 #include <stdbool.h>
 
-#include <stdlib.h>
+#include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 
@@ -53,7 +54,7 @@
 #include <getopt.h>
 
 #define PROG_NAME "FFuc"
-#define PROG_VERSION "1.3-dev"
+#define PROG_VERSION "1.4-dev"
 
 #define SLIST_APPEND(list, val) \
   list = curl_slist_append (list, val)
@@ -197,13 +198,15 @@ enum ffuc_flag_t
      *
      * Singular:
      *   Using only one wordlist for all FUZZ keywords
+     *
      * Pitchfork:
      *   Each FUZZ, uses it's own word-list
      *   word-lists are not necessarily the same size
-     *     O( Max( len(wlist 1), ..., len(wlist N) ) )
+     *     O( Max( len(wlist #1), ..., len(wlist #N) ) )
+     *
      * Clusterbomb:
      *   All combinations of word-list(s)
-     *     O( len(wlist 1) x ... x len(wlist N) )
+     *     O( len(wlist #1) x ... x len(wlist #N) )
      */
     MODE_CLUSTERBOMB  = 0,
     MODE_PITCHFORK    = 1,
@@ -211,14 +214,17 @@ enum ffuc_flag_t
     MODE_DEFAULT = MODE_CLUSTERBOMB,
 
     /**
-     *  Internal (used in opt.fuzz_flag)
      *  FUZZ keyword substitution enabled flags
+     *  Used in opt.fuzz_flag
      */
     URL_HASFUZZ       = (1 << 1),
     BODY_HASFUZZ      = (1 << 2),
     HEADER_HASFUZZ    = (1 << 3),
 
-    /* Internal (used in RequestContext.flag) */
+    /**
+     *  Request context in use flag
+     *  Used in RequestContext.flag
+     */
     CTX_FREE          = 0,
     CTX_INUSE         = 1,
   };
@@ -246,17 +252,20 @@ enum template_op
      *   Set the target URL (e.g. "http(s)://host:port")
      *
      * BODY_TEMPLATE:
-     *   Aappend to the request body; It handles `&` automatically
-     *   (e.g. "key1=val1&key2=val2" or "&key=val")
+     *   Aappend parameter to the body of requests
+     *   It handles `&` automatically:
+     *     (e.g. "key=val&..." or "&key=val")
      *
      * HEADER_TEMPLATE:
      *   Append Http header (e.g. "Header: value")
      *
      * WLIST_TEMPLATE:
-     *   To append a wordlist file path
+     *   To append a wordlist file path; It tries to
+     *   match it with the latest 'FUZZ' keyword
+     *   appended using the set_template function
      *
      * FINISH_TEMPLATE:
-     *   set_template MUST be called with this at the end
+     *   set_template MUST be called with it, at the end
      */
     URL_TEMPLATE      = 0,
     BODY_TEMPLATE     = 1,
@@ -274,27 +283,27 @@ const char *template_name[] =
 
 struct req_stat_t
 {
-  uint wcount; /* Count of words */
-  uint lcount; /* Count of lines */
+  uint wcount; /* count of words */
+  uint lcount; /* count of lines */
   uint size_bytes;
 
   int code; /* HTTP response code */
-  uint duration; /* Total time to response */
+  uint duration; /* total time to response */
   CURLcode ccode;
 };
 
 typedef struct progress_t
 {
   uint req_total;
-  uint req_count; /* Count of sent requests */
-  uint err_count; /* Count of errors */
+  uint req_count; /* count of sent requests */
+  uint err_count; /* count of errors */
 
   bool progbar_enabled;
-  uint progbar_refrate; /* Progress bar refresh rate */
+  uint progbar_refrate; /* progress bar refresh rate */
 
-  uint req_count_dt; /* Requests in delta time */
+  uint req_count_dt; /* requests in delta time */
   size_t dt; /* delta time in milliseconds */
-  struct timeval __t0; /* Internal */
+  struct timeval __t0; /* internal */
 } Progress;
 
 #define MAX(x,y) (((x) > (y)) ? (x) : (y))
@@ -338,8 +347,6 @@ typedef struct
 
   struct request_t
   {
-    /* As libcurl keeps a copy of the URL,
-       we don't need to keep track of it */
     char *body;
     struct curl_slist *headers;
   } request;
@@ -470,9 +477,11 @@ lookup_free_handle (RequestContext *ctxs, size_t len);
  *
  * init_progress:
  *   Initializes the progress struct, sets the current time t0
+ *
  * tick_progress:
  *   Advances the timer and resets the progress if needed
  *   It MUST be called at the end of the main loop
+ *
  * update_progress_bar:
  *   Prints a simple progress-bar is not disabled
  */
@@ -934,8 +943,8 @@ __print_stats_fuzz (RequestContext *ctx)
       int m, n;
       fprintf (opt.streamout, COLOR_FMT("%n%s%n"),
                color_start,  &m,ctx->FUZZ[0],&n,  color_reset);
-      int margin = MAX (0, PRINT_MARGIN - n + m);
-      if (margin)
+      int margin = PRINT_MARGIN - n + m;
+      if (margin > 0)
         fprintf (opt.streamout, "%*s", margin, "");
       else
         fprintf (opt.streamout, "\n%*s", PRINT_MARGIN, "");
@@ -947,7 +956,6 @@ __print_stats_fuzz (RequestContext *ctx)
       Fprintarr (opt.streamout, "'%s'", ctx->FUZZ, opt.words_len);
       fprintf (opt.streamout, "]:\n  ");
     }
-#undef COLORIZE
 }
 
 static inline void
@@ -1182,8 +1190,8 @@ static inline void
 tick_progress (Progress *prog)
 {
 #ifdef LIMIT_TIMEOFDAY_CALLS
-  static int n = 1;
-  if (n > 1) {
+  static int n = 0;
+  if (n) {
     --n;
     return;
   }
@@ -1207,27 +1215,22 @@ tick_progress (Progress *prog)
       prog->req_count_dt = 0;
       prog->__t0 = t1;
     }
-  
 }
 
 //-- Utility functions --//
-static inline void
+static void
 range_usleep (useconds_t range[2])
 {
-  int duration;
-  if (range[0])
+  int interval = range[1] - range[0];
+  if (0 >= interval)
     {
-      duration = range[1] - range[0];
-      if (duration > 0)
-        {
-          /* Sleep a random amount of time */
-          int r = rand () % (duration + 1);
-          usleep (range[0] + r);
-        }
-      else
-        {
-          usleep (range[0]);
-        }
+      if (range[0] > 0)
+        usleep (range[0]);
+    }
+  else
+    {
+      useconds_t r = rand () % (interval + 1);
+      usleep (range[0] + r);
     }
 }
 
@@ -1632,32 +1635,27 @@ parse_args (int argc, char **argv)
           break;
 
         case 'p':
-          unsigned int d1, d2;
-          sscanf (optarg, "%u-%u", &d1, &d2);
           {
-            if ((int) d1 < 0)
-              {
-                d1 = 0;
-                warnln ("invalid delay value was ignored.");
-              }
-            if (d2 != 0)
-              {
-                if ((int) d2 < (int) d1)
-                  {
-                    d2 = 0;
-                    warnln ("invalid delay interval was fixed.");
-                  }
-                else
-                  srand (time (NULL)); /* range_usleep sleeps a random delay */
-              }
+            int d1 = 0, d2 = 0;
+            sscanf (optarg, "%u-%u", &d1, &d2);
 
-            if (strchr (optarg, 's'))
-              d1 *= 1000000, d2 *= 1000000; /* Convert to second */
+            if (d1 < 0 || d2 < 0 || (0 != d2 && d2 < d1))
+              {
+                warnln ("invalid delay interval was ignored.");
+                break;
+              }
+            if (0 != d2)
+              srand (time (NULL)); /* random delay */
             else
-              d1 *= 1000, d2 *= 1000; /* Convert to millisecond */
+              d2 = d1; /* constant delay */
+
+            if (strstr (optarg, "ms"))
+              d1 *= 1000, d2 *= 1000;  /* convert to millisecond */
+            else
+              d1 *= 1000000, d2 *= 1000000; /* convert to second */
+            opt.Rqueue.delay_us[0] = d1;
+            opt.Rqueue.delay_us[1] = d2;
           }
-          opt.Rqueue.delay_us[0] = d1;
-          opt.Rqueue.delay_us[1] = d2;
           break;
 
         case 'R':
