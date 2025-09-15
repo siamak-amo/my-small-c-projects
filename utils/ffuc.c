@@ -125,7 +125,7 @@ static char tmp[TMP_CAP];
     fprintf (stream, element_format, (arr)[__idx]);         \
   } while (0)
 
-const char *lopt_cstr = "m:w:" "T:R:t:p:A" "u:H:d:X:" "vhc";
+const char *lopt_str = "m:w:" "T:R:t:p:A" "u:H:d:X:" "vhc";
 const struct option lopts[] =
   {
     /* We call it `thread` (-t) for compatibility with ffuf,
@@ -184,10 +184,17 @@ const struct option lopts[] =
     {"timeout",             required_argument, NULL, 'T'},
     {"ttl",                 required_argument, NULL, 'T'},
     {"delay",               required_argument, NULL, 'p'},
-    {"help",                no_argument,       NULL, 'h'},
     {"verbose",             no_argument,       NULL, 'v'},
     {"color",               no_argument,       NULL, 'c'},
     /* End of options */
+    {NULL,                  0,                 NULL,  0 },
+  };
+
+/* Higher priority options */
+const struct option pre_lopts[] =
+  {
+    {"mode",                required_argument, NULL, 'm'},
+    {"help",                no_argument,       NULL, 'h'},
     {NULL,                  0,                 NULL,  0 },
   };
 
@@ -566,7 +573,7 @@ set_template_wlist (FuzzTemplate *t, enum template_op op, void *param);
 #define Memcpy(dst, src, len) \
   if (NULL != dst) { memcpy (dst, src, len); }
 #define Strcmp(s1, s2) \
-  ((s1 == NULL || s2 == NULL) ? -1 : strcmp (s1, s2))
+  ((s1 == NULL || s2 == NULL) ? 1 : (0 == strcmp (s1, s2)))
 
 #ifdef _DEBUG
 # define fprintd(format, ...) \
@@ -1359,7 +1366,7 @@ init_opt ()
   else if (NULL == opt.filters)
     da_appd (opt.filters, default_filter);
 
-  if (!opt.verb || 0 == Strcmp (opt.verb, "GET"))
+  if (!opt.verb || Strcmp (opt.verb, "GET"))
      {
        if (opt.fuzz_template.body)
          warnln ("sending body in 'GET' request.");
@@ -1594,21 +1601,38 @@ help ()
 int
 parse_args (int argc, char **argv)
 {
+  int idx, flag;
   char *last_wlist = NULL;
-  while (1)
+
+  idx = 0, optind = 1;
+  while ((flag = getopt_long (argc,argv, lopt_str,pre_lopts, &idx)) != -1)
     {
-      int idx = 0;
-      int flag = getopt_long (argc, argv, lopt_cstr, lopts, &idx);
-      if (flag == -1)
-        {
-          /* End of Options */
-          break;
-        }
       switch (flag)
         {
         case 'h':
           help ();
           return SHOULD_EXIT;
+        case 'm':
+          {
+            /* Type the first letter OR complete name */
+                 if ('p' == *optarg || Strcmp ("pitchfork",   optarg))
+              opt.mode = MODE_PITCHFORK;
+            else if ('s' == *optarg || Strcmp ("singular",    optarg))
+              opt.mode = MODE_SINGULAR;
+            else if ('c' == *optarg || Strcmp ("clusterbomb", optarg))
+              opt.mode = MODE_CLUSTERBOMB;
+            else
+              warnln ("invalid mode `%s` was ignored", optarg);
+          }
+          break;
+        }
+    }
+
+  idx = 0, optind = 1;
+  while ((flag = getopt_long (argc,argv, lopt_str,lopts, &idx)) != -1)
+    {
+      switch (flag)
+        {
         case 'v':
           opt.verbose = true;
           break;
@@ -1680,18 +1704,6 @@ parse_args (int argc, char **argv)
           break;
         case 'X':
           opt.verb = optarg;
-          break;
-
-        case 'm':
-          /* Type the first letter OR complete name */
-               if ('p' == *optarg || 0 == strcmp ("pitchfork", optarg))
-            opt.mode = MODE_PITCHFORK;
-          else if ('s' == *optarg || 0 == strcmp ("singular", optarg))
-            opt.mode = MODE_SINGULAR;
-          else if ('c' == *optarg || 0 == strcmp ("clusterbomb", optarg))
-            opt.mode = MODE_CLUSTERBOMB;
-          else
-            warnln ("invalid mode `%s` was ignored", optarg);
           break;
 
 #define AddFilter(ftype)                                    \
