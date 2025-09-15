@@ -227,6 +227,10 @@ enum ffuc_flag_t
      */
     CTX_FREE          = 0,
     CTX_INUSE         = 1,
+
+    /* Exit codes */
+    EOFUZZ            = 1,
+    SHOULD_EXIT       = -1,
   };
 
 /* Output filter & match, fits in `unsigned char` */
@@ -616,9 +620,9 @@ struct Opt
 
   /* Next FUZZ loader and */
   void (*load_next_fuzz) (RequestContext *ctx);
-  bool should_end; /* End of load_next_fuzz */
+  bool eofuzz; /* End of load_next_fuzz */
 };
-struct Opt opt = {0};
+struct Opt opt;
 
 #define REGISTER_WLIST(path) do {               \
     Fword *fw = make_fw_from_path (path);       \
@@ -799,7 +803,7 @@ __next_fuzz_singular (RequestContext *ctx)
   ctx->FUZZ[i] = NULL;
 
   if (fw_eof (fw))
-    opt.should_end = true;
+    opt.eofuzz = true;
 
   fprintd ("singular:  [0-%ld]->`%s`\n", N, tmp);
   fw_next (fw);
@@ -835,7 +839,7 @@ __next_fuzz_pitchfork (RequestContext *ctx)
   fprintd ("\n");
 
   if (fw_bof (longest))
-    opt.should_end = true;
+    opt.eofuzz = true;
 }
 
 static void
@@ -865,7 +869,7 @@ __next_fuzz_clusterbomb (RequestContext *ctx)
   fprintd ("\n");
 
   if (next == N && fw_bof (fw))
-    opt.should_end = true;
+    opt.eofuzz = true;
 }
 
 //-- RequestContext functions --//
@@ -1324,14 +1328,15 @@ init_opt ()
 {
   /* Finalizing the HTTP request template */
   set_template (&opt.fuzz_template, FINISH_TEMPLATE, NULL);
+
   /* Open and map wordlists */
   init_wordlists ();
   da_idx n = da_sizeof (opt.words);
   if (n == 0)
     {
-      opt.should_end = true;
+      opt.eofuzz = true;
       warnln ("cannot continue with no word-list.");
-      return 1;
+      return EXIT_FAILURE;
     }
   opt.words_len = n;
 
@@ -1344,6 +1349,9 @@ init_opt ()
       opt.Rqueue.ctxs[i].FUZZ = ffuc_malloc (cap_bytes);
       Memzero (opt.Rqueue.ctxs[i].FUZZ, cap_bytes);
     }
+  /* Initialize libcurl & context of requests */
+  curl_global_init (CURL_GLOBAL_DEFAULT);
+  opt.multi_handle = curl_multi_init ();
 
   /* Set the default filters if not disabled */
   if (NO_FILTER == opt.filters)
@@ -1378,11 +1386,10 @@ init_opt ()
         opt.progress.req_total *= opt.words[i]->total_count;
       opt.load_next_fuzz = __next_fuzz_clusterbomb;
       break;
-    } 
+    }
 
   if (! isatty (fileno (stderr)))
     opt.progress.progbar_enabled = false;
-
   if (! isatty (fileno (opt.streamout)))
     {
       opt.Printf.color = false;
@@ -1395,7 +1402,7 @@ init_opt ()
         opt.Printf.lineclear = true;
     }
 
-  return 0;
+  return EXIT_SUCCESS;
 }
 
 static int
@@ -1434,6 +1441,8 @@ set_template (FuzzTemplate *t, enum template_op op, void *_param)
     case URL_TEMPLATE:
     case BODY_TEMPLATE:
     case HEADER_TEMPLATE:
+      if (opt.mode == MODE_SINGULAR)
+        break;
       if (WLIST_TEMPLATE != op && 0 != local_fuzz_count)
         {
           /* We are not adding a new word-list and the latest
@@ -1582,11 +1591,6 @@ help ()
 ", PROG_NAME, PROG_VERSION);
 }
 
-/**
- * @return: positive -> should exit
- *          negative -> error
- *              zero -> success
- */
 int
 parse_args (int argc, char **argv)
 {
@@ -1604,7 +1608,7 @@ parse_args (int argc, char **argv)
         {
         case 'h':
           help ();
-          return 1;
+          return SHOULD_EXIT;
         case 'v':
           opt.verbose = true;
           break;
@@ -1727,7 +1731,7 @@ parse_args (int argc, char **argv)
   if (!opt.fuzz_template.URL)
     {
       warnln ("no URL provided (use -u <URL>).");
-      return -1;
+      return EXIT_FAILURE;
     }
 #ifndef DO_NOT_FIX_NO_FUZZ
   /* No FUZZ keyword */
@@ -1746,29 +1750,13 @@ parse_args (int argc, char **argv)
       else
         {
           warnln ("nothing to do, exiting.");
-          return 1;
+          return SHOULD_EXIT;
         }
     }
 #endif /* DO_NOT_FIX_NO_FUZZ */
-
-  return 0;
+  return EXIT_SUCCESS;
 }
 
-void
-pre_init_opt ()
-{
-  /* Set default values */
-  opt.ttl = DEFAULT_TTL_MS;
-  opt.mode = MODE_DEFAULT;
-  opt.Rqueue.len = DEFAULT_REQ_COUNT;
-  opt.max_rate = MAX_REQ_RATE;
-  opt.streamout = stdout;
-  opt.words = da_new (Fword *);
-  /* Initialize libcurl & context of requests */
-  curl_global_init (CURL_GLOBAL_DEFAULT);
-  opt.multi_handle = curl_multi_init ();
-  opt.progress.progbar_enabled = true;
-}
 
 int
 main (int argc, char **argv)
@@ -1777,27 +1765,35 @@ main (int argc, char **argv)
   set_program_name (PROG_NAME);
   on_exit (cleanup, NULL);
 
+  opt = (struct Opt) {
+    .ttl = DEFAULT_TTL_MS,
+    .mode = MODE_DEFAULT,
+    .Rqueue.len = DEFAULT_REQ_COUNT,
+    .max_rate = MAX_REQ_RATE,
+    .streamout = stdout,
+    .words = da_new (Fword *),
+    .progress.progbar_enabled = true,
+  };
+
   /* Parse cmdline arguments & Initialize opt */
-  pre_init_opt ();
-  ret = parse_args (argc, argv);
-  if (0 != ret)
-    return (ret < 0) ? EXIT_FAILURE : EXIT_SUCCESS;
-  ret = init_opt ();
-  if (0 != ret)
-    return EXIT_FAILURE;
-  init_progress (&opt.progress);
+#define Return(n) return (n == SHOULD_EXIT) ? EXIT_SUCCESS : EXIT_FAILURE
+  if ((ret = parse_args (argc, argv)))
+    Return (ret);
+  if ((ret = init_opt ()))
+    Return (ret);
 
   /**
    *  Main Loop
    */
+  uint rate;
   CURLMsg *msg;
   RequestContext *ctx;
   int numfds, res, still_running;
-  uint rate;
 
+  init_progress (&opt.progress);
   do {
     /* Find a free context (If there is any) and register it */
-    while (!opt.should_end && opt.Rqueue.waiting < opt.Rqueue.len)
+    while (!opt.eofuzz && opt.Rqueue.waiting < opt.Rqueue.len)
       {
         rate = REQ_RATE (&opt.progress);
         if (opt.max_rate <= rate)
@@ -1834,7 +1830,7 @@ main (int argc, char **argv)
 
     tick_progress (&opt.progress);
   }
-  while (still_running > 0 || !opt.should_end);
+  while (still_running > 0 || !opt.eofuzz);
 
   fprintf (stderr, "\n");
   return 0;
