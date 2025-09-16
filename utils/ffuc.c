@@ -320,9 +320,6 @@ typedef struct progress_t
 #define MAX(x,y) (((x) > (y)) ? (x) : (y))
 /* Percentage of progress */
 #define REQ_PERC(prog) ((prog)->req_count * 100 / (prog)->req_total)
-/* Request rate (req / second) */
-#define REQ_RATE(prog) \
-  (((prog)->dt) ? (prog)->req_count_dt * 1000 / (prog)->dt : 0)
 /* Convert timeval struct to milliseconds */
 #define TV2MS(tv) (tv.tv_sec * 1000LL  +  tv.tv_usec / 1000)
 
@@ -496,6 +493,7 @@ lookup_free_handle (RequestContext *ctxs, size_t len);
 static void init_progress (Progress *prog);
 static inline void tick_progress (Progress *prog);
 static void __update_progress_bar (const Progress *prog);
+static inline size_t req_rate (const Progress *prog);
 #define update_progress_bar(prog) \
   if ((prog)->progbar_enabled) __update_progress_bar (prog)
 #define end_progress_bar(prog) \
@@ -934,7 +932,7 @@ __print_stats_fuzz (RequestContext *ctx)
 {
   /* Wiping the line out of the progress-bar stuff */
   if (opt.Printf.lineclear)
-    fprintf (opt.streamout, LINESAFE ());
+    fprintf (opt.streamout, CLEAN_LINE ());
 
   const char *color_start = "", *color_reset = "";
   if (opt.Printf.color)
@@ -1153,11 +1151,24 @@ register_contex (RequestContext *ctx)
 }
 
 //-- Progress statistics functions --//
+static inline size_t
+req_rate (const Progress *prog)
+{
+  static size_t rate = 0;
+  if (0 == prog->dt)
+    return rate;
+  rate = prog->req_count_dt * 1000 / prog->dt;
+
+  if (0 == rate && prog->req_count_dt)
+    return (rate = 1);
+  return rate;
+}
+
 static void
 __update_progress_bar (const Progress *prog)
 {
   uint percentage = REQ_PERC (prog);
-  uint rate = REQ_RATE (prog);
+  uint rate = req_rate (prog);
 
   fprintf (stderr, CLEAN_LINE ("\
 ::.   Progress: %d%% [%d/%d]  ::  %d req/sec  ::   Errors: %d   .::"),
