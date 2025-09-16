@@ -612,7 +612,6 @@ struct Opt
 
   Fword **words; /* Dynamic array */
   int words_len; /* Length of @words */
-  int words_none_empty; /* none dummy objects in @words */
 
   struct request_queue_t
   {
@@ -636,7 +635,6 @@ struct Opt opt;
 
 #define REGISTER_WLIST(path) do {               \
     Fword *fw = make_fw_from_path (path);       \
-    if (path) opt.words_none_empty++;           \
     da_appd (opt.words, fw);                    \
   } while (0)
 
@@ -952,7 +950,7 @@ __print_stats_fuzz (RequestContext *ctx)
       color_reset = COLOR_RESET;
     }
 
-  if (1 == opt.words_none_empty)
+  if (1 >= opt.words_len)
     {
       int m, n;
       fprintf (opt.streamout, COLOR_FMT("%n%s%n"),
