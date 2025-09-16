@@ -1805,9 +1805,9 @@ main (int argc, char **argv)
   /**
    *  Main Loop
    */
-  uint rate;
   CURLMsg *msg;
   RequestContext *ctx;
+  size_t rate=0, avg_rate=0;
   int numfds, res, still_running;
 
   init_progress (&opt.progress);
@@ -1816,6 +1816,7 @@ main (int argc, char **argv)
     while (!opt.eofuzz && opt.Rqueue.waiting < opt.Rqueue.len)
       {
         rate = REQ_RATE (&opt.progress);
+        avg_rate += rate, avg_rate /= 2;
         if (opt.max_rate <= rate)
           break;
 
@@ -1853,5 +1854,10 @@ Completed easy_handle doesn't have request context.\n");
   while (still_running > 0 || !opt.eofuzz);
 
   end_progress_bar (&opt.progress);
+  if (opt.verbose)
+    {
+      warnln ("Total requests: %d, Errors: %d, at ~%zu req/sec.",
+              opt.progress.req_total, opt.progress.err_count, avg_rate);
+    }
   return EXIT_SUCCESS;
 }
