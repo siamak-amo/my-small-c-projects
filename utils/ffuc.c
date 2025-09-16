@@ -535,6 +535,7 @@ set_template_wlist (FuzzTemplate *t, enum template_op op, void *param);
 #define ffuc_mmap(addr, len, prot, flg, fd, off) \
   mmap (addr, len, prot, flg, fd, off)
 #endif
+#define curl_setopt(...) curl_easy_setopt (__VA_ARGS__)
 
 #undef ffuc_free
 #ifndef SKIP_FREE
@@ -1078,12 +1079,10 @@ __register_contex (RequestContext *dst)
   if (opt.fuzz_flag & URL_HASFUZZ)
     {
       FUZZ += fuzz_snprintf (tmp, TMP_CAP, template.URL, FUZZ);
-      curl_easy_setopt (dst->easy_handle, CURLOPT_URL, tmp);
+      curl_setopt (dst->easy_handle, CURLOPT_URL, tmp);
     }
   else
-    {
-      curl_easy_setopt (dst->easy_handle, CURLOPT_URL, template.URL);
-    }
+    curl_setopt (dst->easy_handle, CURLOPT_URL, template.URL);
 
   /**
    *  Generating POST body
@@ -1095,14 +1094,10 @@ __register_contex (RequestContext *dst)
         {
           FUZZ += fuzz_snprintf (tmp, TMP_CAP, template.body, FUZZ);
           Strrealloc (dst->request.body, tmp);
-          curl_easy_setopt (dst->easy_handle, CURLOPT_POSTFIELDS,
-                            dst->request.body);
+          curl_setopt (dst->easy_handle, CURLOPT_POSTFIELDS, dst->request.body);
         }
       else
-        {
-          curl_easy_setopt (dst->easy_handle, CURLOPT_POSTFIELDS,
-                            template.body);
-        }
+        curl_setopt (dst->easy_handle, CURLOPT_POSTFIELDS, template.body);
     }
 
   /**
@@ -1125,13 +1120,10 @@ __register_contex (RequestContext *dst)
               FUZZ += fuzz_snprintf (tmp, TMP_CAP, h->data, FUZZ);
               *headers = curl_slist_append (*headers, tmp);
             }
-          curl_easy_setopt (dst->easy_handle, CURLOPT_HTTPHEADER, *headers);
+          curl_setopt (dst->easy_handle, CURLOPT_HTTPHEADER, *headers);
         }
       else
-        {
-          curl_easy_setopt (dst->easy_handle, CURLOPT_HTTPHEADER,
-                            template.headers);
-        }
+        curl_setopt (dst->easy_handle, CURLOPT_HTTPHEADER, template.headers);
     }
 }
 
