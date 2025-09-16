@@ -1636,14 +1636,8 @@ parse_args (int argc, char **argv)
         case 'v':
           opt.verbose = true;
           break;
-
         case 'c':
           opt.color_enabled = true;
-          break;
-
-        case 'w':
-          last_wlist = optarg;
-          set_template (&opt.fuzz_template, WLIST_TEMPLATE, optarg);
           break;
 
         case 't':
@@ -1661,7 +1655,6 @@ parse_args (int argc, char **argv)
               warnln ("invalid TTL was ignored.");
             }
           break;
-
         case 'p':
           {
             int d1 = 0, d2 = 0;
@@ -1685,11 +1678,11 @@ parse_args (int argc, char **argv)
             opt.Rqueue.delay_us[1] = d2;
           }
           break;
-
         case 'R':
           opt.max_rate = atoi (optarg);
           break;
 
+          /* HTTP options */
         case 'u':
           if (opt.fuzz_template.URL)
             warnln ("unexpected URL option was ignored.");
@@ -1705,28 +1698,39 @@ parse_args (int argc, char **argv)
         case 'X':
           opt.verb = optarg;
           break;
+        case 'w':
+          last_wlist = optarg;
+          set_template (&opt.fuzz_template, WLIST_TEMPLATE, optarg);
+          break;
 
 #define AddFilter(ftype)                                    \
           if (NO_FILTER != opt.filters)                     \
             opt_append_filter (ftype, optarg);              \
-          else warnln ("filter and match is disabled.");    \
-          break;
+          else warnln ("filter and match is disabled.");
         case '0':
           AddFilter (FILTER_CODE);
+          break;
         case '1':
           AddFilter (FILTER_SIZE);
+          break;
         case '2':
           AddFilter (FILTER_WCOUNT);
+          break;
         case '3':
           AddFilter (FILTER_LCOUNT);
+          break;
         case '9':
           AddFilter (MATCH_CODE);
+          break;
         case '8':
           AddFilter (MATCH_SIZE);
+          break;
         case '7':
           AddFilter (MATCH_WCOUNT);
+          break;
         case '6':
           AddFilter (MATCH_LCOUNT);
+          break;
         case 'A':
           if (opt.filters && NO_FILTER != opt.filters)
             warnln ("disable filters along with filter options.");
@@ -1773,6 +1777,8 @@ parse_args (int argc, char **argv)
 int
 main (int argc, char **argv)
 {
+#define Return(n) return (n == SHOULD_EXIT) ? EXIT_SUCCESS : EXIT_FAILURE
+
   int ret;
   set_program_name (PROG_NAME);
   on_exit (cleanup, NULL);
@@ -1788,7 +1794,6 @@ main (int argc, char **argv)
   };
 
   /* Parse cmdline arguments & Initialize opt */
-#define Return(n) return (n == SHOULD_EXIT) ? EXIT_SUCCESS : EXIT_FAILURE
   if ((ret = parse_args (argc, argv)))
     Return (ret);
   if ((ret = init_opt ()))
@@ -1827,8 +1832,8 @@ main (int argc, char **argv)
         CURL *completed_handle = msg->easy_handle;
         RequestContext *ctx = lookup_handle (completed_handle,
                                              opt.Rqueue.ctxs, opt.Rqueue.len);
-        assert (NULL != ctx && "Broken Logic!!\n"
-                "Completed easy_handle doesn't have request context.\n");
+        assert (NULL != ctx && "Broken Logic!!\n\
+Completed easy_handle doesn't have request context.\n");
 
         if (CURLMSG_DONE == msg->msg)
           {
@@ -1845,5 +1850,5 @@ main (int argc, char **argv)
   while (still_running > 0 || !opt.eofuzz);
 
   fprintf (stderr, "\n");
-  return 0;
+  return EXIT_SUCCESS;
 }
