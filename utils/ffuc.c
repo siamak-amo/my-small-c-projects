@@ -511,7 +511,7 @@ static void __update_progress_bar (const Progress *prog);
 static inline void range_usleep (useconds_t range[2]);
 
 /**
- *  Template setter functions
+ *  Template functions
  *
  * set_template:
  *   To set HTTP options and wordlist templates
@@ -922,7 +922,8 @@ const char *http_color[] =
   };
 
 #define HTTCOLOR(n) \
-  ((200<=(n) && (n)<300) ? HTTP_200 : \
+  (0 == (n) ? HTTP_500 :              \
+   (200<=(n) && (n)<300) ? HTTP_200 : \
    (300<=(n) && (n)<400) ? HTTP_300 : \
    (400<=(n) && (n)<500) ? HTTP_400 : \
    (500<=(n) && (n)<600) ? HTTP_500 : HTTP_NOCOLOR)
@@ -969,12 +970,8 @@ print_stats_context (RequestContext *ctx)
       if (opt.verbose)
         {
           __print_stats_fuzz (ctx);
-          fprintf (opt.streamout, "\
-[Error: %s, Size: %d, Words: %d, Lines: %d, Duration: %dms]\n",
+          fprintf (opt.streamout, "[Error: %s, Duration: %dms]\n",
                    curl_easy_strerror (ctx->stat.ccode),
-                   ctx->stat.size_bytes,
-                   ctx->stat.wcount,
-                   ctx->stat.lcount,
                    ctx->stat.duration);
         }
       return;
