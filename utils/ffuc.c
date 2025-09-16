@@ -366,15 +366,11 @@ typedef struct
 
 typedef struct
 {
-  /* xxx_wlists means wordlist file paths */
   char *URL;
-  char **URL_wlists;
-
   char *body;
-  char **body_wlists;
-
   struct curl_slist *headers;
-  char **header_wlists;
+
+  char **wlists;
 } FuzzTemplate;
 
 /**
@@ -426,7 +422,7 @@ void fw_init (Fword *fw, char *cstr, size_t cstr_len);
  *  returns dummy_fword on failure.
  *  The result always must be freed via fw_free
  */
-static inline Fword *make_fw_from_path (char *path);
+static inline Fword *make_fw_from_path (const char *path);
 
 /* Fword copy, duplicate and unmap */
 #define fw_cpy(dst, src) Memcpy (dst, src, sizeof (Fword))
@@ -632,11 +628,6 @@ struct Opt
   bool eofuzz; /* End of load_next_fuzz */
 };
 struct Opt opt;
-
-#define REGISTER_WLIST(path) do {               \
-    Fword *fw = make_fw_from_path (path);       \
-    da_appd (opt.words, fw);                    \
-  } while (0)
 
 /**
  *  We only require request statistics, so we pass
@@ -1230,6 +1221,33 @@ tick_progress (Progress *prog)
 }
 
 //-- Utility functions --//
+static inline int
+da_locate_str (char **haystack, const char *needle)
+{
+  if (! needle)
+    return -1;
+  da_foreach (haystack, i)
+    {
+      if (Strcmp (haystack[i], needle))
+        return i;
+    }
+  return -1;
+}
+
+static int
+register_wlist (const char *path)
+{
+  Fword *fw = make_fw_from_path (path);
+  if (! fw)
+    fw = fw_dup (&dummy_fword);
+  int idx = da_locate_str (opt.fuzz_template.wlists, path);
+  if (-1 == idx)
+    da_appd (opt.words, fw);
+  else /* We have already opened this file */
+    da_appd (opt.words, fw_dup (opt.words[idx]));
+  return 0;
+}
+
 static void
 range_usleep (useconds_t range[2])
 {
@@ -1275,19 +1293,18 @@ opt_append_filter (int type, const char *range)
 }
 
 static Fword *
-make_fw_from_path (char *path)
+make_fw_from_path (const char *path)
 {
   int fd;
   Fword tmp = {0};
-  /* NULL path is expected, It means,
-     the user hasn't provided enough wordlists */
   if (! path)
-    goto __return_dummy;
+    return NULL;
+
   fd = open (path, O_RDONLY);
   if (fd < 0)
     {
       warnln ("could not open file (%s) -- %s.", path, strerror (errno));
-      goto __return_dummy;
+      return NULL;
     }
 
   if (0 == fw_map (&tmp, fd))
@@ -1296,38 +1313,10 @@ make_fw_from_path (char *path)
     {
       warnln ("could not mmap file (%s).", path);
       close (fd);
-      goto __return_dummy;
+      return NULL;
     }
 
- __return_dummy:
-  return fw_dup (&dummy_fword);
-}
-
-/**
- *  Initializes wordlists (open and mmap)
- *  This function supports the clusterbomb and pitchfork modes
- *  For singular mode, use the REGISTER_WLIST macro
- *
- *  TODO: Can we prevent remapping already mmaped files
- */
-static void
-init_wordlists ()
-{
-  char *path;
-#define DO(paths) if (paths) {                      \
-    da_foreach (paths, i) {                         \
-      path = paths[i];                              \
-      fprintd ("register word-list: '%s' -> %s\n",  \
-               (path) ? path : "(DUMMY)", #paths);  \
-      REGISTER_WLIST (path);                        \
-    }}
-  {
-    FuzzTemplate *t = &opt.fuzz_template;
-    DO (t->URL_wlists);
-    DO (t->body_wlists);
-    DO (t->header_wlists);
-  }
-#undef DO
+  return NULL;
 }
 
 /* Initializes the global Opt, after parsing user options */
@@ -1338,7 +1327,6 @@ init_opt ()
   set_template (&opt.fuzz_template, FINISH_TEMPLATE, NULL);
 
   /* Open and map wordlists */
-  init_wordlists ();
   da_idx n = da_sizeof (opt.words);
   if (n == 0)
     {
@@ -1413,24 +1401,23 @@ init_opt ()
   return EXIT_SUCCESS;
 }
 
-static int
+static inline int
 set_template_wlist (FuzzTemplate *t, enum template_op op, void *param)
 {
   char *path = (char *) param;
   switch (op)
     {
     case URL_TEMPLATE:
-      da_appd (t->URL_wlists, path);
-      return 0;
     case BODY_TEMPLATE:
-      da_appd (t->body_wlists, path);
-      return 0;
     case HEADER_TEMPLATE:
-      da_appd (t->header_wlists, path);
+      register_wlist (path);
+      da_appd (t->wlists, param);
       return 0;
+
     default:
-      return 1;
+      break;
     }
+  return 1;
 }
 
 /* Although this may sounds lile OOP, it makes the
@@ -1526,12 +1513,12 @@ set_template (FuzzTemplate *t, enum template_op op, void *_param)
       {
         if (opt.mode == MODE_SINGULAR)
           {
-            if (da_sizeof (opt.words) <= 0)
-              REGISTER_WLIST (param);
+            if (0 == da_sizeof (opt.words))
+              register_wlist (param);
             else
               {
-                warnln ("word-list (%s) was ignored -- singular mode "
-                        "only accepts one word-list", param);
+                warnln ("word-list (%s) was ignored -- \
+singular mode, only accepts one word-list", param);
                 return -1;
               }
           }
@@ -1585,9 +1572,7 @@ cleanup (int c, void *p)
       fw_free (opt.words[i]);
     }
   /* Template cleanup */
-  da_free (opt.fuzz_template.URL_wlists);
-  da_free (opt.fuzz_template.body_wlists);
-  da_free (opt.fuzz_template.header_wlists);
+  da_free (opt.fuzz_template.wlists);
 #endif /* SKIP_FREE */
 }
 
