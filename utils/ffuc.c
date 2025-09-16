@@ -494,13 +494,16 @@ lookup_free_handle (RequestContext *ctxs, size_t len);
  *   It MUST be called at the end of the main loop
  *
  * update_progress_bar:
- *   Prints a simple progress-bar is not disabled
+ *   Prints a simple progress-bar if is not disabled,
+ *   It needs a newline at the end, use end_progress_bar()
  */
 static void init_progress (Progress *prog);
 static inline void tick_progress (Progress *prog);
 static void __update_progress_bar (const Progress *prog);
 #define update_progress_bar(prog) \
   if ((prog)->progbar_enabled) __update_progress_bar (prog)
+#define end_progress_bar(prog) \
+  if ((prog)->progbar_enabled) fprintf (stderr, "\n");
 
 /**
  *  Sleeps for a random duration in microseconds
@@ -1849,6 +1852,6 @@ Completed easy_handle doesn't have request context.\n");
   }
   while (still_running > 0 || !opt.eofuzz);
 
-  fprintf (stderr, "\n");
+  end_progress_bar (&opt.progress);
   return EXIT_SUCCESS;
 }
