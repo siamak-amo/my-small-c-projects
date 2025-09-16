@@ -1159,8 +1159,8 @@ __update_progress_bar (const Progress *prog)
   uint percentage = REQ_PERC (prog);
   uint rate = REQ_RATE (prog);
 
-  fprintf (stderr, LINESAFE ("\
-::  Progress: %d%% [%d/%d] :: %d req/sec ::  Errors: %d  ::"),
+  fprintf (stderr, CLEAN_LINE ("\
+::.   Progress: %d%% [%d/%d]  ::  %d req/sec  ::   Errors: %d   .::"),
            percentage,
            prog->req_count, prog->req_total,
            rate, prog->err_count

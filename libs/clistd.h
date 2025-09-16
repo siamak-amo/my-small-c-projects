@@ -325,8 +325,9 @@ parse_std_options_only (int argc, char **argv,
 
 /* Cursor safe, saves and restores the cursor */
 #define CURSAFE(str) CUR_ST str CUR_LD CUR_START
-/* Line safe, To place @str at the beginning of a cleared line */
-#define LINESAFE(str) CLR_LINE CUR_START str
+/* To ensure printing of @str at the beginning of a cleared line */
+#define CLEAN_LINE(str) CLR_LINE CUR_START str
+#define CLEANLN CLEAN_LINE
 
 /**
  *  CUR_UP(N), CUR_DOWN(N):
