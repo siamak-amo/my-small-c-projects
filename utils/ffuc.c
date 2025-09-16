@@ -1192,13 +1192,11 @@ init_progress (Progress *prog)
 static inline void
 tick_progress (Progress *prog)
 {
-#ifdef LIMIT_TIMEOFDAY_CALLS
   static int n = 0;
   if (n) {
     --n;
     return;
   }
-#endif /* LIMIT_TIMEOFDAY_CALLS */
 
   struct timeval t1 = {0};
   gettimeofday (&t1, NULL);
@@ -1210,6 +1208,12 @@ tick_progress (Progress *prog)
     return;
   }
 #endif /* LIMIT_TIMEOFDAY_CALLS */
+
+  if (DT < 100)
+    {
+      ++n;
+      return;
+    }
 
   prog->dt = DT;
   if (DT > RATE_MEASURE_DUR)
@@ -1798,8 +1802,6 @@ main (int argc, char **argv)
     /* Find a free context (If there is any) and register it */
     while (!opt.eofuzz && opt.Rqueue.waiting < opt.Rqueue.len)
       {
-        rate = REQ_RATE (&opt.progress);
-        avg_rate += rate, avg_rate /= 2;
         if (opt.max_rate <= rate)
           break;
 
@@ -1829,6 +1831,8 @@ Completed easy_handle doesn't have request context.\n");
             /* Release the completed context */
             context_reset (ctx);
             opt.Rqueue.waiting--;
+            rate = req_rate (&opt.progress);
+            avg_rate += rate, avg_rate /= 2;
           }
       }
 
