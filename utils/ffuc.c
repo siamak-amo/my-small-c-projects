@@ -19,7 +19,39 @@
 
     FFuc  -  ffuf program written in C
 
-    -- Not Completed --
+    Usage:
+      $ ffuc [OPTIONS] [[HTTP OPTION] [-w /path/to/wordlist]...]...
+      Provide HTTP component option, with or without FUZZ keyword,
+      then provide enough word-list file path for it.
+      see `ffuc -h` for more information.
+
+    Examples:
+      $ ffuc -u https://x.com/FUZZ.FUZZ -w /tmp/wl1 -w /tmp/wl2
+      (wl1 gets used for the first FUZZ keyword, and wl2 for the second one)
+
+      $ ffuc -u http://x.com/FUZZ -w /tmp/wl1  -H 'X-test: FUZZ' -w /tmp/wl2
+
+      $ ffuc -u https://x.com -w /tmp/words
+      (It assumes you want to fuzz the end of the URL -> https://z.com/FUZZ)
+
+      $ ffux -XPOST -u https://x.com  -d 'username=FUZZ' -w /tmp/words \
+                                      -d 'password=FUZZ' -w /tmp/rockyou.txt
+
+    Modes:
+      This concept only matters if you provide more than one word-list;
+      As in this case, we have more than one way to iterate over lists.
+
+      FFuc implements three different methods:
+        cluster-bomb (default):   [--mode c],[--mode clusterbomb]
+          Cartesian product of all word-lists.
+
+        pitchfork:  [--mode p],[--mode pitchfork]
+          Treats word-lists as circular lists, and picks words
+          one by one, until the longest word-list reaches the end.
+
+        singular:  [--mode s],[--mode singular]
+          Only accepts ONE word-list and use it for all FUZZ keywords.
+
 
     Compilation:
       cc -ggdb -O3 -Wall -Wextra -Werror \
@@ -54,7 +86,7 @@
 #include <getopt.h>
 
 #define PROG_NAME "FFuc"
-#define PROG_VERSION "1.4-dev"
+#define PROG_VERSION "2.0"
 
 #define SLIST_APPEND(list, val) \
   list = curl_slist_append (list, val)
@@ -1350,7 +1382,6 @@ init_opt ()
   /* Finalizing the HTTP request template */
   set_template (&opt.fuzz_template, FINISH_TEMPLATE, NULL);
 
-  /* Open and map wordlists */
   da_idx n = da_sizeof (opt.words);
   if (n == 0)
     {
@@ -1385,6 +1416,7 @@ init_opt ()
          warnln ("sending body in 'GET' request.");
     }
 
+  /* Mode depended initializations */
   switch (opt.mode)
     {
     case MODE_PITCHFORK:
@@ -1444,7 +1476,7 @@ set_template_wlist (FuzzTemplate *t, enum template_op op, void *param)
   return 1;
 }
 
-/* Although this may sounds lile OOP, it makes the
+/* Although this may sound lile OOP, it makes the
    logic of parsing user options a lot easier;
    As the user may provide wrong number of word-lists
    or forget `&` in their HTTP body options '-d' */
@@ -1629,7 +1661,8 @@ parse_args (int argc, char **argv)
               opt.mode = MODE_PITCHFORK;
             else if ('s' == *optarg || Strcmp ("singular",    optarg))
               opt.mode = MODE_SINGULAR;
-            else if ('c' == *optarg || Strcmp ("clusterbomb", optarg))
+            else if ('c' == *optarg || Strcmp ("clusterbomb",  optarg)
+                                    || Strcmp ("cluster-bomb", optarg))
               opt.mode = MODE_CLUSTERBOMB;
             else
               warnln ("invalid mode `%s` was ignored", optarg);
@@ -1647,7 +1680,7 @@ parse_args (int argc, char **argv)
           opt.verbose = true;
           break;
         case 'c':
-          opt.color_enabled = true;
+          opt.color_enabled ^= true;
           break;
 
         case 't':
@@ -1668,7 +1701,7 @@ parse_args (int argc, char **argv)
         case 'p':
           {
             int d1 = 0, d2 = 0;
-            sscanf (optarg, "%u-%u", &d1, &d2);
+            sscanf (optarg, "%d-%d", &d1, &d2);
 
             if (d1 < 0 || d2 < 0 || (0 != d2 && d2 < d1))
               {
@@ -1801,6 +1834,9 @@ main (int argc, char **argv)
     .streamout = stdout,
     .words = da_new (Fword *),
     .progress.progbar_enabled = true,
+#ifndef NO_DEFAULT_COLOR
+    .color_enabled = true,
+#endif /* NO_DEFAULT_COLOR */
   };
 
   /* Parse cmdline arguments & Initialize opt */
