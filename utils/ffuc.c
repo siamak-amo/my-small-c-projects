@@ -628,6 +628,31 @@ struct Opt
 };
 struct Opt opt;
 
+enum http_color_code
+  {
+    HTTP_NOCOLOR = 0,
+    HTTP_1xx = 1,
+    HTTP_2xx = 2,
+    HTTP_3xx = 3,
+    HTTP_4xx = 4,
+    HTTP_5xx = 5,
+    HTTP_ERR = 5
+  };
+
+const char *HttpPallet[] =
+  {
+    [HTTP_NOCOLOR] = "", // no color
+    [HTTP_1xx]     = "", // no color
+    [HTTP_2xx]     = F_GREEN(),
+    [HTTP_3xx]     = F_YELLOW(),
+    [HTTP_4xx]     = F_BLUE(),
+    [HTTP_5xx]     = F_RED(),
+  };
+
+/* COLOR_ARG color value based on HTTP code */
+static inline const char *http_pallet_of (int resp_code);
+#define colorof_ctx(ctx) http_pallet_of ((ctx)->stat.code)
+
 /**
  *  We only require request statistics, so we pass
  *  this function as CURLOPT_WRITEFUNCTION to libcurl
@@ -902,30 +927,21 @@ context_reset (RequestContext *ctx)
   memset (&ctx->stat, 0, sizeof (struct req_stat_t));
 }
 
-enum http_color_code
-  {
-    HTTP_NOCOLOR = 1,
-    HTTP_200 = 2,
-    HTTP_300 = 3,
-    HTTP_400 = 4,
-    HTTP_500 = 5
-  };
-
-const char *http_color[] =
-  {
-    [HTTP_NOCOLOR] = "",
-    [HTTP_200]     = F_GREEN(),
-    [HTTP_300]     = F_YELLOW(),
-    [HTTP_400]     = F_BLUE(),
-    [HTTP_500]     = F_RED(),
-  };
-
-#define HTTCOLOR(n) \
-  (0 == (n) ? HTTP_500 :              \
-   (200<=(n) && (n)<300) ? HTTP_200 : \
-   (300<=(n) && (n)<400) ? HTTP_300 : \
-   (400<=(n) && (n)<500) ? HTTP_400 : \
-   (500<=(n) && (n)<600) ? HTTP_500 : HTTP_NOCOLOR)
+static inline const char *
+http_pallet_of (int resp_code)
+{
+  if (resp_code < 100 || resp_code >= 600)
+    return HttpPallet[ HTTP_ERR ];
+  if (resp_code >= 200 && resp_code < 300)
+    return HttpPallet[ HTTP_2xx ];
+  if (resp_code >= 300 && resp_code < 400)
+    return HttpPallet[ HTTP_3xx ];
+  if (resp_code >= 400 && resp_code < 500)
+    return HttpPallet[ HTTP_4xx ];
+  if (resp_code >= 500)
+    return HttpPallet[ HTTP_5xx ];
+  return HttpPallet[ HTTP_NOCOLOR ];
+}
 
 static inline void
 __print_stats_fuzz (RequestContext *ctx)
@@ -934,30 +950,29 @@ __print_stats_fuzz (RequestContext *ctx)
   if (opt.Printf.lineclear)
     fprintf (opt.streamout, CLEAN_LINE ());
 
-  const char *color_start = "", *color_reset = "";
-  if (opt.Printf.color)
-    {
-      color_start = http_color[HTTCOLOR (ctx->stat.code)];
-      color_reset = COLOR_RESET;
-    }
-
   if (1 >= opt.words_len)
     {
-      int m, n;
-      fprintf (opt.streamout, COLOR_FMT("%n%s%n"),
-               color_start,  &m,ctx->FUZZ[0],&n,  color_reset);
-      int margin = PRINT_MARGIN - n + m;
-      if (margin > 0)
+      int m, n, margin;
+      if (opt.Printf.color)
+        fprintf (opt.streamout, COLOR_FMT ("%n%s%n"),
+                 COLOR_ARG (colorof_ctx(ctx),  &m,ctx->FUZZ[0],&n));
+      else
+        fprintf (opt.streamout, "%n%s%n",  &m,ctx->FUZZ[0],&n);
+ 
+      if ((margin = PRINT_MARGIN - n + m) > 0)
         fprintf (opt.streamout, "%*s", margin, "");
       else
         fprintf (opt.streamout, "\n%*s", PRINT_MARGIN, "");
     }
-  else
+  else /* Multiple FUZZ keywords provided */
     {
-      fprintf (opt.streamout, "\n* " COLOR_FMT("FUZZ") " = [",
-               color_start, color_reset);
+      if (opt.Printf.color)
+        fprintf (opt.streamout, "\n " COLOR_FMT("* FUZZ") " = [",
+                 COLOR_ARG(colorof_ctx (ctx)));
+      else
+        fprintf (opt.streamout, "\n * FUZZ = [");
       Fprintarr (opt.streamout, "'%s'", ctx->FUZZ, opt.words_len);
-      fprintf (opt.streamout, "]:\n  ");
+      fprintf (opt.streamout, "]:\n");
     }
 }
 
