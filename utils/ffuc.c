@@ -23,7 +23,6 @@
       $ ffuc [OPTIONS] [[HTTP OPTION] [-w /path/to/wordlist]...]...
       Provide HTTP component option, with or without FUZZ keyword,
       then provide enough word-list file path for it.
-      see `ffuc -h` for more information.
 
     Examples:
       $ ffuc -u https://x.com/FUZZ.FUZZ -w /tmp/wl1 -w /tmp/wl2
@@ -59,7 +58,14 @@
          ffuc.c -o ffuc -lcurl
 
     Options:
-      -D_DEBUG:  print debug information
+      -D_DEBUG:
+        Print debug information
+      -D SKIP_FREE:
+        Skip freeing heap memory in cleanup function
+      -D DO_NOT_FIX_NO_FUZZ:
+        Disables handing no FUZZ keyword provided scenarios
+      -D NO_DEFAULT_COLOR:
+        Disables output colors by default
  **/
 #undef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -212,6 +218,7 @@ const struct option lopts[] =
 
     /* Common options */
     {"word",                required_argument, NULL, 'w'},
+    {"wordlist",            required_argument, NULL, 'w'},
     {"word-list",           required_argument, NULL, 'w'},
     {"mode",                required_argument, NULL, 'm'},
     {"rate",                required_argument, NULL, 'R'},
@@ -1637,6 +1644,32 @@ help ()
 {
   fprintf (stdout, "\
 %s v%s - ffuf written in C\n\
+Usage:  ffuc [OPTIONS] [HTTP_OPTION [WORDLIST]...]...\n\
+\n\
+HTTP_OPTIONS:\n\
+  -u, --url         URL (mandatory)\n\
+  -d, --data        request bodt (only in POST requests)\n\
+  -H, --header      HTTP header\n\
+  -w, --wordlist    path to word-list(s)\n\
+                    if the previous HTTP component has FUZZ keyword\n\
+\n\
+OPTIONS:\n\
+    -R, --rate      maximum request rate (req/second)\n\
+  --fc, --mc        filter and match HTTP response code\n\
+                      e.g.  [--fc 429]  or  [--fc 400-500]\n\
+  --fs, --ms        filter and match size of response\n\
+  --fw, --mw        filter and match word count of response\n\
+  --fl, --ml        filter and match line count of response\n\
+    -p, --delay     add delay between requests (in seconds)\n\
+                      e.g.  [-p 1]  or  [-p 100-500ms] (random range)\n\
+    -T, --timeout   requests timeout\n\
+    -c, --color     toggle output color\n\
+    -v, --verbose   verbose\n\
+\n\
+MODE:\n\
+  -m, --mode        when more than one FUZZ keyword is provided\n\
+     (c)lusterbomb  (default),  (p)itchfork,  (s)ingular\n\
+     see the documentation for more details.\n\
 ", PROG_NAME, PROG_VERSION);
 }
 
