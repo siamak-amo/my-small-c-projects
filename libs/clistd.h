@@ -208,7 +208,7 @@ parse_std_options_only (int argc, char **argv,
 
     2. Using COLOR_FMT and COLOR_ARG macros:
        COLOR_FMT("(%d)")  create  "%s(%d)%s"  and,
-       COLOR_ARG(123, B_RED())  generates 3 arguments:
+       COLOR_ARG(B_RED(), 123)  generates 3 arguments:
          "[RED BG COLOR CODE]",  123,  "[RESET COLOR]"
 
     For background color, B_xxx() and for foreground color F_xxx()
@@ -222,8 +222,8 @@ parse_std_options_only (int argc, char **argv,
               "Error", "file.txt"
       );
       printf (COLOR_FMT("%s")  " -- " COLOR_FMT("`%s`")  ".\n",
-              COLOR_ARG("Error", B_RED()),
-              COLOR_ARG("file.txt", F_BLUE(F_UNDERLINE))
+              COLOR_ARG(B_RED(), "Error"),
+              COLOR_ARG(F_BLUE(F_UNDERLINE), "file.txt")
       );
     ```
 **/
@@ -233,7 +233,7 @@ parse_std_options_only (int argc, char **argv,
 #define FCOLOR(fmt, ...) __VA_ARGS__ fmt COLOR_RESET
 
 #define COLOR_FMT(x) "%s" x "%s"
-#define COLOR_ARG(x, __COLOR__) __COLOR__, x, COLOR_RESET
+#define COLOR_ARG(__COLOR__, ...) __COLOR__, ##__VA_ARGS__, COLOR_RESET
 
 /* To be used as argument for F_xxx() and B_xxx() macros */
 #define F_U     "4;3"    // Underline
