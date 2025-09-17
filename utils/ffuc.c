@@ -71,12 +71,15 @@ static char tmp[TMP_CAP];
 
 /* Maximum request rate (req/sec) */
 #ifndef MAX_REQ_RATE
-# define MAX_REQ_RATE 2048
+# define MAX_REQ_RATE 1000
 #endif
 
-/* Request rate measure interval (ms) */
-#ifndef RATE_MEASURE_DUR
-# define RATE_MEASURE_DUR 1000
+/* Request rate measure interval (ms) - Not accurate */
+#ifndef MAX_RATE_MEASURE_DUR
+# define MAX_RATE_MEASURE_DUR 1000
+#endif
+#ifndef MIN_RATE_MEASURE_DUR
+# define MIN_RATE_MEASURE_DUR 200
 #endif
 
 /**
@@ -90,7 +93,7 @@ static char tmp[TMP_CAP];
 # define MIN_TIMEOFDAY_DUR 10 // 10 ms
 #endif
 #ifndef SKIP_TIMEOFDAY_N
-# define SKIP_TIMEOFDAY_N 2  // 2 time skipping
+# define SKIP_TIMEOFDAY_N 2  // 2 times skipping
 #endif
 
 /* Default connection/read timeuot */
@@ -1207,15 +1210,20 @@ init_progress (Progress *prog)
 static inline void
 tick_progress (Progress *prog)
 {
+#ifdef LIMIT_TIMEOFDAY_CALLS
   static int n = 0;
-  if (n) {
+  if (0 != n) {
     --n;
     return;
   }
+#endif /* LIMIT_TIMEOFDAY_CALLS */
 
   struct timeval t1 = {0};
   gettimeofday (&t1, NULL);
+
   size_t DT = TV2MS (t1) - TV2MS (prog->__t0);
+  if (DT < MIN_RATE_MEASURE_DUR)
+    return;
 
 #ifdef LIMIT_TIMEOFDAY_CALLS
   if (DT < MIN_TIMEOFDAY_DUR) {
@@ -1224,14 +1232,8 @@ tick_progress (Progress *prog)
   }
 #endif /* LIMIT_TIMEOFDAY_CALLS */
 
-  if (DT < 100)
-    {
-      ++n;
-      return;
-    }
-
   prog->dt = DT;
-  if (DT > RATE_MEASURE_DUR)
+  if (DT > MAX_RATE_MEASURE_DUR)
     {
       update_progress_bar (prog);
       prog->req_count_dt = 0;
