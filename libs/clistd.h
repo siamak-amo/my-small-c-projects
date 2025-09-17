@@ -249,28 +249,40 @@ parse_std_options_only (int argc, char **argv,
 #define __BG__  "4"      // Regular background (Internal)
 
 #define VA_FIRST(x, ...) x
-#define __RAW_COLOR__(code, ...) \
-  __ESC__ VA_FIRST(__VA_ARGS__) code "m"
+#define RAW_COLOR(code, ...) \
+  __ESC__ VA_FIRST(__VA_ARGS__) _CSTR(code) "m"
+
+#define __CSTR(x) #x
+#define _CSTR(x) __CSTR(x)
+
+#define C_BLACK    0
+#define C_RED      1
+#define C_GREEN    2
+#define C_YELLOW   3
+#define C_BLUE     4
+#define C_PURPLE   5
+#define C_CYAN     6
+#define C_WHITE    7
 
 /* Foreground color definitions */
-#define F_BLACK(...)   __RAW_COLOR__ ("0", ##__VA_ARGS__, __FG__)
-#define F_RED(...)     __RAW_COLOR__ ("1", ##__VA_ARGS__, __FG__)
-#define F_GREEN(...)   __RAW_COLOR__ ("2", ##__VA_ARGS__, __FG__)
-#define F_YELLOW(...)  __RAW_COLOR__ ("3", ##__VA_ARGS__, __FG__)
-#define F_BLUE(...)    __RAW_COLOR__ ("4", ##__VA_ARGS__, __FG__)
-#define F_PURPLE(...)  __RAW_COLOR__ ("5", ##__VA_ARGS__, __FG__)
-#define F_CYAN(...)    __RAW_COLOR__ ("6", ##__VA_ARGS__, __FG__)
-#define F_WHITE(...)   __RAW_COLOR__ ("7", ##__VA_ARGS__, __FG__)
+#define F_BLACK(...)   RAW_COLOR (C_BLACK,   ##__VA_ARGS__, __FG__)
+#define F_RED(...)     RAW_COLOR (C_RED,     ##__VA_ARGS__, __FG__)
+#define F_GREEN(...)   RAW_COLOR (C_GREEN,   ##__VA_ARGS__, __FG__)
+#define F_YELLOW(...)  RAW_COLOR (C_YELLOW,  ##__VA_ARGS__, __FG__)
+#define F_BLUE(...)    RAW_COLOR (C_BLUE,    ##__VA_ARGS__, __FG__)
+#define F_PURPLE(...)  RAW_COLOR (C_PURPLE,  ##__VA_ARGS__, __FG__)
+#define F_CYAN(...)    RAW_COLOR (C_CYAN,    ##__VA_ARGS__, __FG__)
+#define F_WHITE(...)   RAW_COLOR (C_WHITE,   ##__VA_ARGS__, __FG__)
 
-/* Background color definitions */
-#define B_BLACK(...)   __RAW_COLOR__ ("0", ##__VA_ARGS__, __BG__)
-#define B_RED(...)     __RAW_COLOR__ ("1", ##__VA_ARGS__, __BG__)
-#define B_GREEN(...)   __RAW_COLOR__ ("2", ##__VA_ARGS__, __BG__)
-#define B_YELLOW(...)  __RAW_COLOR__ ("3", ##__VA_ARGS__, __BG__)
-#define B_BLUE(...)    __RAW_COLOR__ ("4", ##__VA_ARGS__, __BG__)
-#define B_PURPLE(...)  __RAW_COLOR__ ("5", ##__VA_ARGS__, __BG__)
-#define B_CYAN(...)    __RAW_COLOR__ ("6", ##__VA_ARGS__, __BG__)
-#define B_WHITE(...)   __RAW_COLOR__ ("7", ##__VA_ARGS__, __BG__)
+/* Background color defitions */
+#define B_BLACK(...)   RAW_COLOR (0, ##__VA_ARGS__, __BG__)
+#define B_RED(...)     RAW_COLOR (1, ##__VA_ARGS__, __BG__)
+#define B_GREEN(...)   RAW_COLOR (2, ##__VA_ARGS__, __BG__)
+#define B_YELLOW(...)  RAW_COLOR (3, ##__VA_ARGS__, __BG__)
+#define B_BLUE(...)    RAW_COLOR (4, ##__VA_ARGS__, __BG__)
+#define B_PURPLE(...)  RAW_COLOR (5, ##__VA_ARGS__, __BG__)
+#define B_CYAN(...)    RAW_COLOR (6, ##__VA_ARGS__, __BG__)
+#define B_WHITE(...)   RAW_COLOR (7, ##__VA_ARGS__, __BG__)
 /* End of ANSI color support */
 
 
