@@ -798,7 +798,10 @@ fuzz_snprintf (char *restrict dst, size_t dst_cap,
           if (end != start)
             dst = mempcpy (dst, start, (size_t)(end - start));
           start = end + 4;
-          if (*FUZZ)
+
+          if (opt.mode == MODE_SINGULAR)
+            dst = stpcpy (dst, *FUZZ); // replace all FUZZ with FUZZ[0]
+          else if (*FUZZ)
             {
               dst = stpcpy (dst, *FUZZ);
               FUZZ++, fuzz_used++;
