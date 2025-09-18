@@ -407,16 +407,16 @@ typedef struct
 } FuzzTemplate;
 
 /**
- *  Fuzz word
+ *  FFuc word (fw)
  *
- *  We don't load the entire word-list files
- *  into memory, instead mmap them and iterate
- *  through them using fw_next and fw_get.
+ *  Instead of loading the entire word-list files
+ *  into memory, we mmap them; To iterate over them,
+ *  we use functions fw_next and fw_get.
  */
 typedef struct
 {
   /**
-   *  `fw_get` returns the current word. The result is NOT
+   *  `fw_get` returns the current word; The result is *NOT*
    *  null-terminated, and it's length is @len
    *
    *  FW_FORMAT and FW_ARG macros can be used with printf
@@ -469,9 +469,9 @@ Fword *fw_dup (const Fword *src);
     safe_free (fw);                             \
   } while (0)
 
-/* Find the next word in the word-list */
+/* Moves to the next word in the word-list, and returns it */
 char *fw_next (Fword *fw);
-/* Fword get the current word of word-list */
+/* Returns the current word of the word-list */
 #define fw_get(fw) ((fw)->str + (fw)->__offset)
 
 /* Fword end of file & beginning of file */
@@ -689,11 +689,7 @@ const char *HttpPallet[] =
 static inline const char *http_pallet_of (int resp_code);
 #define colorof_ctx(ctx) http_pallet_of ((ctx)->stat.code)
 
-/**
- *  We only require request statistics, so we pass
- *  this function as CURLOPT_WRITEFUNCTION to libcurl
- *  Libcurl sets @optr to the corresponding request context
- */
+/** @optr: The corresponding request context, passed by libcurl **/
 size_t
 curl_fwrite (void *ptr, size_t size, size_t nmemb, void *optr)
 {
@@ -706,7 +702,7 @@ curl_fwrite (void *ptr, size_t size, size_t nmemb, void *optr)
     {
       /* Update word count and line count */
       unsigned char c = data[i];
-           if (c == ' ')
+      if (c == ' ')
         ctx->stat.wcount++;
       else if (c < ' ')
         ctx->stat.lcount++;
@@ -813,7 +809,7 @@ fw_next (Fword *fw)
  *  FUZZ sprintf substitutes the FUZZ keyword of @format
  *  with the appropriate value from the @FUZZ array
  *  The last element of @FUZZ MUST be NULL.
- * return:
+ * Return:
  *  The number of elements consumed from @FUZZ.
  */
 int
@@ -833,7 +829,7 @@ fuzz_snprintf (char *restrict dst, size_t dst_cap,
           start = end + 4;
 
           if (opt.mode == MODE_SINGULAR)
-            dst = stpcpy (dst, *FUZZ); // replace all FUZZ with FUZZ[0]
+            dst = stpcpy (dst, *FUZZ); // replacing all FUZZs with FUZZ[0]
           else if (*FUZZ)
             {
               dst = stpcpy (dst, *FUZZ);
@@ -1477,10 +1473,11 @@ set_template_wlist (FuzzTemplate *t, enum template_op op, void *param)
   return 1;
 }
 
-/* Although this may sound lile OOP, it makes the
-   logic of parsing user options a lot easier;
-   As the user may provide wrong number of word-lists
-   or forget `&` in their HTTP body options '-d' */
+/* While this may sound like OOP, it simplifies the
+   logic for parsing user options a lot.
+   Users might provide wrong number of word-lists
+   or forget the `&` in their HTTP body options;
+   This function will fix all of them */
 int
 set_template (FuzzTemplate *t, enum template_op op, void *_param)
 {
@@ -1613,7 +1610,6 @@ cleanup (int c, void *p)
       for (size_t i = 0; i < opt.Rqueue.len; i++)
         {
           RequestContext *ctx = &opt.Rqueue.ctxs[i];
-          // curl_multi_remove_handle (opt.multi_handle, ctx->easy_handle);
           curl_easy_cleanup (ctx->easy_handle);
           safe_free (ctx->request.body);
           curl_slist_free_all (ctx->request.headers);
