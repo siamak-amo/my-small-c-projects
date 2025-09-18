@@ -1662,7 +1662,7 @@ OPTIONS:\n\
 \n\
 MODE:\n\
   -m, --mode        when more than one FUZZ keyword is provided\n\
-     (c)lusterbomb  (default),  (p)itchfork,  (s)ingular\n\
+     clusterbomb  (default),  pitchfork,  singular\n\
      see the documentation for more details.\n\
 ", PROG_NAME, PROG_VERSION);
 }
@@ -1682,18 +1682,14 @@ parse_args (int argc, char **argv)
           help ();
           return SHOULD_EXIT;
         case 'm':
-          {
-            /* Type the first letter OR complete name */
-                 if ('p' == *optarg || Strcmp ("pitchfork",   optarg))
-              opt.mode = MODE_PITCHFORK;
-            else if ('s' == *optarg || Strcmp ("singular",    optarg))
-              opt.mode = MODE_SINGULAR;
-            else if ('c' == *optarg || Strcmp ("clusterbomb",  optarg)
-                                    || Strcmp ("cluster-bomb", optarg))
-              opt.mode = MODE_CLUSTERBOMB;
-            else
-              warnln ("invalid mode `%s` was ignored", optarg);
-          }
+          if (strcasestr ("pitchfork", optarg))
+            opt.mode = MODE_PITCHFORK;
+          else if (strcasestr ("singular", optarg))
+            opt.mode = MODE_SINGULAR;
+          else if (strcasestr ("clusterbomb", optarg) || strcasestr ("cluster-bomb", optarg))
+            opt.mode = MODE_CLUSTERBOMB;
+          else
+            warnln ("invalid mode `%s` was ignored", optarg);
           break;
         }
     }
