@@ -229,15 +229,9 @@ const struct option lopts[] =
     {"verbose",             no_argument,       NULL, 'v'},
     {"color",               no_argument,       NULL, 'c'},
     /* End of options */
-    {NULL,                  0,                 NULL,  0 },
-  };
-
-/* Higher priority options */
-const struct option pre_lopts[] =
-  {
     {"mode",                required_argument, NULL, 'm'},
     {"help",                no_argument,       NULL, 'h'},
-    {NULL,                  0,                 NULL,  0 },
+    {NULL,                  0,                 NULL,  0 }
   };
 
 enum ffuc_flag_t
@@ -1680,7 +1674,7 @@ parse_args (int argc, char **argv)
   char *last_wlist = NULL;
 
   idx = 0, optind = 1;
-  while ((flag = getopt_long (argc,argv, lopt_str,pre_lopts, &idx)) != -1)
+  while ((flag = getopt_long (argc,argv, lopt_str, lopts, &idx)) != -1)
     {
       switch (flag)
         {
