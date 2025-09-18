@@ -684,10 +684,10 @@ enum http_color_code
 const char *HttpPallet[] =
   {
     [HTTP_NOCOLOR] = "", // no color
-    [HTTP_1xx]     = "", // no color
+    [HTTP_1xx]     = F_BLUE(),
     [HTTP_2xx]     = F_GREEN(),
     [HTTP_3xx]     = F_YELLOW(),
-    [HTTP_4xx]     = F_BLUE(),
+    [HTTP_4xx]     = F_PURPLE(),
     [HTTP_5xx]     = F_RED(),
   };
 
