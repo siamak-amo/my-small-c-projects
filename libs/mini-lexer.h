@@ -1105,7 +1105,7 @@ ml_catcstr (char **restrict dst, const char *restrict src,
     *dst = strdup (src);
   else
     {
-      *dst = realloc (*dst, strlen (*dst) + strlen (src));
+      *dst = realloc (*dst, strlen (*dst) + strlen (src) + 1);
       strcat (*dst, src);
     }
 
