@@ -1706,6 +1706,13 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
                      &opt->parser.general_src,
                      tmp,
                      PFLAG_INEXP);
+      /**
+       *  Since the `pparse_xxx_regex` functions are NOT
+       *  fragment-safe, we should receive the entire token.
+       */
+      ml_catcstr (&extended_token, tmp->cstr, ret);
+      if (NEXT_CHUNK == ret)
+        break; /* break to receive the rest of the token */
 
       char *exp;
       switch (tmp->type)
@@ -1717,21 +1724,10 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
              *  or `-`, which indicates reading from stdin.
              *  We assume that file paths do not start with `-`.
              */
-            if ('-' == *tmp->cstr)
-              {
-                /* Read from stdin */
-                wseed_file_uniappd (opt, dst_seed, stdin);
-              }
+            if ('-' == *tmp->cstr)  /* Read from stdin */
+              wseed_file_uniappd (opt, dst_seed, stdin);
             else
-              {
-                /**
-                 *  Since the `pparse_keys_regex` function is NOT
-                 *  fragment-safe, we should receive the entire token.
-                 */
-                if (!ml_catcstr (&extended_token, tmp->cstr, ret))
-                  break;
-                pparse_keys_regex (opt, dst_seed, tmp->cstr);
-              }
+              pparse_keys_regex (opt, dst_seed, tmp->cstr);
             break;
           }
 
@@ -1763,6 +1759,7 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
         default:
           break;
         }
+
+      safe_free (extended_token);
     }
-  safe_free (extended_token);
 }
