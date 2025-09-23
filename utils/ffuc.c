@@ -1028,13 +1028,10 @@ print_stats_context (RequestContext *ctx)
 {
   if (CURLE_OK != ctx->stat.ccode)
     {
-      if (opt.verbose)
-        {
-          __print_stats_fuzz (ctx);
-          fprintf (opt.streamout, "[Error: %s, Duration: %dms]\n",
-                   curl_easy_strerror (ctx->stat.ccode),
-                   ctx->stat.duration);
-        }
+      __print_stats_fuzz (ctx);
+      fprintf (opt.streamout, "[Error: %s, Duration: %dms]\n",
+               curl_easy_strerror (ctx->stat.ccode),
+               ctx->stat.duration);
       return;
     }
 
