@@ -136,7 +136,7 @@ static char tmp[TMP_CAP];
 
 /* Default connection/read timeuot */
 #ifndef CONN_TTL_MS
-# define CONN_TTL_MS 10000
+# define CONN_TTL_MS 10000L
 #endif
 #ifndef DEFAULT_TTL_MS
 # define DEFAULT_TTL_MS 10000
@@ -1205,7 +1205,7 @@ register_contex (RequestContext *ctx)
     curl_easy_setopt (curl, CURLOPT_WRITEDATA, ctx);
     curl_easy_setopt (curl, CURLOPT_WRITEFUNCTION, curl_fwrite);
     /* Timeout */
-    curl_easy_setopt (curl, CURLOPT_TIMEOUT_MS, opt.ttl);
+    curl_easy_setopt (curl, CURLOPT_TIMEOUT_MS, (size_t) opt.ttl);
     curl_easy_setopt (curl, CURLOPT_CONNECTTIMEOUT_MS, CONN_TTL_MS);
   }
   __register_contex (ctx);
