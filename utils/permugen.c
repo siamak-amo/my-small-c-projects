@@ -94,6 +94,17 @@
        - The first component uses {} and the second one uses ()
        $ permugen -r  "({) {One} (})"  "(\() {Two} (\))"
 
+     * Custom format
+       - This configures prefix and suffix of seeds
+         based on a format string, by default FUZZ keyword (see -I)
+       - Using other prefix/suffix options along with format,
+         will override this option
+       $ permugen -s "[ab]"  --format "--FUZZ=="
+       - uses `--` for prefix and `==` for suffix
+       $ permugen -r "{A}"  "{B,C}"  -f "((FUZZ)) , [[FUZZ]]"
+       - uses double parenthesis for the first seed, and
+         double square brackets for the second seed
+
 
    Compilation:
      cc -ggdb -O3 -Wall -Wextra -Werror -I../libs \
@@ -610,6 +621,12 @@ ARGUMENTS:\n\
        \'[ab0-9] {foo,bar} /path/to/wordlist.txt\'\n\
       to also read from stdin:\n\
        \'- [ab0-9] {foo,bar} ~/wordlist.txt\'\n\
+\n\
+  Format: output format string\n\
+    The `FUZZ' keyword can be replaced using (-I, --replace-str)\n\
+    Ex:  --format \" 1 FUZZ 2 FUZZ ... FUZZ N \"\n\
+      sets prefix of seed #1 to ` 1 '\n\
+      sets suffix of seed #N to ` N '  for 1 to N\n\
 \n\
   Raw: backslash interpretation usage\n\
        \\\\:  to pass a single `\\`\n\
