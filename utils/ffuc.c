@@ -217,6 +217,7 @@ const struct option lopts[] =
     {"filter-no",           no_argument,       NULL, 'A'},
 
     /* Common options */
+    {"mode",                required_argument, NULL, 'm'},
     {"word",                required_argument, NULL, 'w'},
     {"wordlist",            required_argument, NULL, 'w'},
     {"word-list",           required_argument, NULL, 'w'},
@@ -228,11 +229,10 @@ const struct option lopts[] =
     {"delay",               required_argument, NULL, 'p'},
     {"verbose",             no_argument,       NULL, 'v'},
     {"color",               no_argument,       NULL, 'c'},
-    /* End of options */
-    {"mode",                required_argument, NULL, 'm'},
     {"proxy",               required_argument, NULL, 'x'},
     {"http-proxy",          required_argument, NULL, 'x'},
     {"help",                no_argument,       NULL, 'h'},
+    /* End of options */
     {NULL,                  0,                 NULL,  0 }
   };
 
@@ -1836,7 +1836,8 @@ parse_args (int argc, char **argv)
     {
       if (last_wlist)
         {
-          warnln ("no FUZZ keyword found, fuzzing tail of URL.");
+          warnln ("\
+no FUZZ keyword found, fuzzing tail of URL (with %s).", last_wlist);
           /* TODO: prevent double slash in URL before FUZZ */
           snprintf (tmp, TMP_CAP, "%s/FUZZ", opt.fuzz_template.URL);
           set_template (&opt.fuzz_template, URL_TEMPLATE, tmp);
