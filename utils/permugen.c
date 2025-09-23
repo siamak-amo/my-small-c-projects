@@ -147,6 +147,11 @@
 # define WSEED_MAXCNT 8192
 #endif
 
+/* Format replace string placeholder */
+#ifndef DEFAULT_REPSTR
+# define DEFAULT_REPSTR "FUZZ"
+#endif
+
 /**
  **  The following files are available in `../libs`:
  **
@@ -223,7 +228,7 @@ const struct char_seed charseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 const struct char_seed charseed_09 = {"0123456789", 10};
 
 /* getopt */
-const char *lopt_cstr = "s:S:o:a:p:d:D:0:1:2:3:4:5:vhrEe";
+const char *lopt_cstr = "s:S:o:a:p:d:D:f:I:0:1:2:3:4:5:vhrEe";
 const struct option lopts[] =
   {
     /* Seeds */
@@ -252,6 +257,9 @@ const struct option lopts[] =
     {"to-depth",         required_argument, NULL, '2'},
     {"max-depth",        required_argument, NULL, '2'},
     /* Format */
+    {"format",           required_argument, NULL, 'f'},
+    {"fmt",              required_argument, NULL, 'f'},
+    {"replace-str",      required_argument, NULL, 'I'},
     {"pref",             required_argument, NULL, '3'},
     {"prefix",           required_argument, NULL, '3'},
     {"suff",             required_argument, NULL, '4'},
@@ -362,6 +370,7 @@ struct Opt
   FILE *outf;
   char *prefix, *suffix; /* by malloc */
   char **seps; /* component separator(s) (Dynamic array) */
+  char *format, *replace_str;
 
   /* Output stream buffer */
 #ifdef _USE_BIO
@@ -549,6 +558,8 @@ OPTIONS:\n\
       -p, --delimiter         permutations component separator\n\
           --prefix            output prefix\n\
           --suffix            output suffix\n\
+      -f, --format            output format\n\
+      -I, --replace-str       to change FUZZ keyword in format\n\
       -h, --help              print help and exit\n\
       -v, --version           print version and exit\n\n\
   Depth settings:\n\
@@ -1083,6 +1094,12 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
         case '2': /* max depth */
           opt->depth.max = atoi (optarg);
           break;
+        case 'f':
+          opt->format = optarg;
+          break;
+        case 'I':
+          opt->replace_str = optarg;
+          break;
 
           /* Only in normal mode */
         case 'S': /* wseed from file or stdin */
@@ -1239,6 +1256,42 @@ opt_init (struct Opt *opt)
       da_foreach (opt->seps, i)
         {
           UNESCAPE (opt->seps[i]);
+        }
+    }
+
+  /* Init output format */
+  if (opt->format)
+    {
+      if (! opt->replace_str)
+        opt->replace_str = DEFAULT_REPSTR;
+      int repstr_len = strlen (opt->replace_str);
+
+      struct Seed **dst = &opt->global_seeds;
+      int dst_len = 1;
+      if (opt->mode == REGULAR_MODE)
+        dst = opt->reg_seeds, dst_len = opt->reg_seeds_len;
+
+      int index = 0;
+      for (char *start=opt->format, *end=start;
+           end != NULL && index < dst_len + 1;
+           ++index, start = end + repstr_len)
+        {
+          end = strstr (start, opt->replace_str);
+          if (start != end && *start != '\0')
+            {
+              if (end && index < dst_len)
+                start[(int) (end - start)] = '\0';
+              if (index == 0)
+                {
+                  if (! dst[0]->pref)
+                    dst[0]->pref = strdup (start);
+                }
+              else
+                {
+                  if (! dst[index-1]->suff) 
+                    dst[index-1]->suff = strdup (start);
+                }
+            }
         }
     }
 }
