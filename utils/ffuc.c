@@ -166,7 +166,7 @@ static char tmp[TMP_CAP];
     fprintf (stream, element_format, (arr)[__idx]);         \
   } while (0)
 
-const char *lopt_str = "m:w:" "T:R:t:p:A" "u:H:d:X:" "vhc";
+const char *lopt_str = "m:w:" "T:R:t:p:A" "u:H:d:X:x:" "vhc";
 const struct option lopts[] =
   {
     /* We call it `thread` (-t) for compatibility with ffuf,
@@ -230,6 +230,8 @@ const struct option lopts[] =
     {"color",               no_argument,       NULL, 'c'},
     /* End of options */
     {"mode",                required_argument, NULL, 'm'},
+    {"proxy",               required_argument, NULL, 'x'},
+    {"http-proxy",          required_argument, NULL, 'x'},
     {"help",                no_argument,       NULL, 'h'},
     {NULL,                  0,                 NULL,  0 }
   };
@@ -633,6 +635,7 @@ struct Opt
   uint max_rate; /* Max request rate (req/sec) */
   char *verb; /* HTTP verb */
   FILE *streamout;
+  char *proxy;
   FuzzTemplate fuzz_template;
   struct res_filter_t *filters; /* Dynamic array */
 
@@ -1204,6 +1207,8 @@ register_contex (RequestContext *ctx)
     /* Timeout */
     curl_easy_setopt (curl, CURLOPT_TIMEOUT_MS, (size_t) opt.ttl);
     curl_easy_setopt (curl, CURLOPT_CONNECTTIMEOUT_MS, CONN_TTL_MS);
+    /* Proxy */
+    curl_easy_setopt (curl, CURLOPT_PROXY, opt.proxy);
   }
   __register_contex (ctx);
   curl_multi_add_handle (opt.multi_handle, curl);
@@ -1772,6 +1777,9 @@ parse_args (int argc, char **argv)
         case 'w':
           last_wlist = optarg;
           set_template (&opt.fuzz_template, WLIST_TEMPLATE, optarg);
+          break;
+        case 'x':
+          opt.proxy = optarg;
           break;
 
 #define AddFilter(ftype)                                    \
