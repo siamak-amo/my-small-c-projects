@@ -590,46 +590,46 @@ OPTIONS:\n\
 \n\
 ARGUMENTS:\n\
   All argument values will be backslash-interpreted by default\n\
-  disable this feature with `-E`\n\
+  disable this feature with `-E'\n\
 \n\
-  Seed: argument value of `-s, --seed` and `-r, --regular`\n\
+  Seed: argument value of `-s, --seed' and `-r, --regular'\n\
         accepts any combination of the following patterns\n\
-    `{word1,word2}`   to include 'word1' and 'word2'\n\
-    `[XYZ]`:          to include characters X,Y,Z\n\
-    `[a-f]`:          to include character range a,...,f\n\
-    `\\N`:             to reuse (append) previous seeds, only in regular mode\n\
-                      where `N` is the index of a prior given seed, starting from 1\n\
+    '{word1,word2}'   to include `word1' and `word2'\n\
+    '[XYZ]':          to include characters X,Y,Z\n\
+    '[a-f]':          to include character range a,...,f\n\
+    '\\N':             to reuse (append) previous seeds, only in regular mode\n\
+                      where N is the index of a prior given seed, starting from 1\n\
     character range shortcuts:\n\
-      '\\d' for [0-9],  '\\l','\\a' for [a-z],  '\\u','\\U','\\A' for [A-Z]\n\
+      '\\d' for [0-9],   '\\l','\\a' for [a-z],   '\\u','\\U','\\A' for [A-Z]\n\
     inside these regex's, you might also use:\n\
       '\\{ and \\['       for '{', '}' and '[', ']' characters\n\
       '\\, or \\x2c'      for comma, alternatively use --raw-xxx in normal mode\n\
       '\\xNN or \\0HHH'   hex and octal byte, for example: \\x5c for backslash\n\
                         see the raw section for more details\n\
-    `-`:              to read word seeds from the stdin up until Ctrl-D\n\
-                      equivalently, an empty line and then the word `EOF`\n\
-    `/path/to/file`:  to read words from a file (line by line)\n\
+    '-':              to read word seeds from the stdin up until Ctrl-D\n\
+                      equivalently, an empty line and then the word `EOF'\n\
+    `/path/to/file':  to read words from a file (line by line)\n\
                       lines with '#' will be ignored\n\
-    `(pref) (suff)`:  (in regular mode) to add custom prefix and suffix\n\
+    `(pref) (suff)':  (in regular mode) to add custom prefix and suffix\n\
                       for parenthesis, use: \\( and \\)  or  \\x28 and \\x29\n\
                       the suffix will overwrite the separator if provided\n\
 \n\
     Examples:\n\
-      to include a,b and 0,...,9 and also words `foo` and `bar`:\n\
-       \'[ab0-9] {foo,bar}\'  or equivalently  \'[ab] {foo,bar} [0-9]\'\n\
+      to include a,b and 0,...,9 and also words `foo' and `bar':\n\
+       '[ab0-9] {foo,bar}'  or equivalently  '[ab] {foo,bar} [0-9]'\n\
       to also include words from wordlist.txt:\n\
-       \'[ab0-9] {foo,bar} /path/to/wordlist.txt\'\n\
+       '[ab0-9] {foo,bar} /path/to/wordlist.txt'\n\
       to also read from stdin:\n\
-       \'- [ab0-9] {foo,bar} ~/wordlist.txt\'\n\
+       '- [ab0-9] {foo,bar} ~/wordlist.txt'\n\
 \n\
   Format: output format string\n\
-    The `FUZZ' keyword can be replaced using (-I, --replace-str)\n\
+    The `FUZZ' keyword can be replaced using `-I, --replace-str'\n\
     Ex:  --format \" 1 FUZZ 2 FUZZ ... FUZZ N \"\n\
       sets prefix of seed #1 to ` 1 '\n\
       sets suffix of seed #N to ` N '  for 1 to N\n\
 \n\
   Raw: backslash interpretation usage\n\
-       \\\\:  to pass a single `\\`\n\
+       \\\\:  to pass a single '\\'\n\
             some shells might eliminate them, so it would be more convenient\n\
             to use this inside single quotes instead of double quotes\n\
        \\x:  for \\t, \\v, \\r, \\a, \\b, \\f, \\n \n\
