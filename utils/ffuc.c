@@ -988,12 +988,24 @@ __print_stats_fuzz (RequestContext *ctx)
   if (1 >= opt.words_len)
     {
       int m, n, margin;
+#ifndef __ANDROID__ /* Android does not implement %n printf */
+      #define __FMT__ "%n%s%n"
+      #define __ARG__ &m, ctx->FUZZ[0], &n
+#else
+      #define __FMT__ "%s"
+      #define __ARG__ ctx->FUZZ[0]
+      m = 0, n = 0; /* just ignore margins */
+#endif /* __ANDROID__ */
+
       if (opt.Printf.color)
-        fprintf (opt.streamout, COLOR_FMT ("%n%s%n"),
-                 COLOR_ARG (colorof_ctx(ctx),  &m,ctx->FUZZ[0],&n));
+        fprintf (opt.streamout,
+                 COLOR_FMT( __FMT__ ),
+                 COLOR_ARG( colorof_ctx(ctx), __ARG__ ));
       else
-        fprintf (opt.streamout, "%n%s%n",  &m,ctx->FUZZ[0],&n);
- 
+        fprintf ( opt.streamout, __FMT__, __ARG__ );
+
+#undef __FMT__
+#undef __ARG__
       if ((margin = PRINT_MARGIN - n + m) > 0)
         fprintf (opt.streamout, "%*s", margin, "");
       else
