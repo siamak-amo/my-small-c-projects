@@ -1894,6 +1894,7 @@ main (int argc, char **argv)
     /* Find a free context (If there is any) and register it */
     while (!opt.eofuzz && opt.Rqueue.waiting < opt.Rqueue.len)
       {
+        rate = req_rate (&opt.progress);
         if (opt.max_rate <= rate)
           break;
 
@@ -1923,7 +1924,6 @@ Completed easy_handle doesn't have request context.\n");
             /* Release the completed context */
             context_reset (ctx);
             opt.Rqueue.waiting--;
-            rate = req_rate (&opt.progress);
             avg_rate += rate, avg_rate /= 2;
           }
       }
