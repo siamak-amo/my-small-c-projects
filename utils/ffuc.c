@@ -1195,18 +1195,19 @@ register_contex (RequestContext *ctx)
     FLG_SET (ctx->flag, CTX_INUSE);
     /* HTTP verb */
     if (opt.verb)
-      curl_easy_setopt (curl, CURLOPT_CUSTOMREQUEST, opt.verb);
+      curl_setopt (curl, CURLOPT_CUSTOMREQUEST, opt.verb);
     /* Ignore certification check */
-    curl_easy_setopt (curl, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt (curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    curl_setopt (curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_setopt (curl, CURLOPT_SSL_VERIFYHOST, 0L);
     /* Deliver @ctx to curl_fwrite (custom fwrite function) */
-    curl_easy_setopt (curl, CURLOPT_WRITEDATA, ctx);
-    curl_easy_setopt (curl, CURLOPT_WRITEFUNCTION, curl_fwrite);
+    curl_setopt (curl, CURLOPT_WRITEDATA, ctx);
+    curl_setopt (curl, CURLOPT_WRITEFUNCTION, curl_fwrite);
     /* Timeout */
-    curl_easy_setopt (curl, CURLOPT_TIMEOUT_MS, (size_t) opt.ttl);
-    curl_easy_setopt (curl, CURLOPT_CONNECTTIMEOUT_MS, CONN_TTL_MS);
+    curl_setopt (curl, CURLOPT_TIMEOUT_MS, (size_t) opt.ttl);
+    curl_setopt (curl, CURLOPT_CONNECTTIMEOUT_MS, CONN_TTL_MS);
     /* Proxy */
-    curl_easy_setopt (curl, CURLOPT_PROXY, opt.proxy);
+    if (opt.proxy)
+      curl_setopt (curl, CURLOPT_PROXY, opt.proxy);
   }
   __register_contex (ctx);
   curl_multi_add_handle (opt.multi_handle, curl);
