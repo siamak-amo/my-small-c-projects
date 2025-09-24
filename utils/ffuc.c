@@ -353,6 +353,7 @@ typedef struct progress_t
 
   bool progbar_enabled;
   uint progbar_refrate; /* progress bar refresh rate */
+  uint rate;
 
   uint req_count_dt; /* requests in delta time */
   size_t dt; /* delta time in milliseconds */
@@ -531,11 +532,18 @@ lookup_free_handle (RequestContext *ctxs, size_t len);
  * update_progress_bar:
  *   Prints a simple progress-bar if is not disabled,
  *   It needs a newline at the end, use end_progress_bar()
+ *
+ * req_rate and update_req_rate:
+ *   Both return the current request rate
+ *   update_req_rate also updates prog->rate
  */
 static void init_progress (Progress *prog);
 static inline void tick_progress (Progress *prog);
-static void __update_progress_bar (const Progress *prog);
+
 static inline size_t req_rate (const Progress *prog);
+#define update_req_rate(prog) ((prog)->rate = req_rate (prog))
+
+static void __update_progress_bar (const Progress *prog);
 #define update_progress_bar(prog) \
   if ((prog)->progbar_enabled) __update_progress_bar (prog)
 #define end_progress_bar(prog) \
@@ -1230,14 +1238,12 @@ req_rate (const Progress *prog)
 static void
 __update_progress_bar (const Progress *prog)
 {
-  uint percentage = REQ_PERC (prog);
-  uint rate = req_rate (prog);
-
   fprintf (stderr, CLEAN_LINE ("\
 ::.   Progress: %d%% [%d/%d]  ::  %d req/sec  ::   Errors: %d   .::"),
-           percentage,
+           REQ_PERC (prog),
            prog->req_count, prog->req_total,
-           rate, prog->err_count
+           prog->rate,
+           prog->err_count
   );
 }
 
@@ -1250,6 +1256,7 @@ init_progress (Progress *prog)
 
   /* This makes progress-bar refresh at every 1% of progress */
   prog->progbar_refrate = MAX (1, prog->req_total / 100);
+  update_progress_bar (prog);
 }
 
 static inline void
@@ -1925,13 +1932,13 @@ Completed easy_handle doesn't have request context.\n");
         if (CURLMSG_DONE == msg->msg)
           {
             ctx->stat.ccode = msg->data.result;
+            rate = update_req_rate (&opt.progress);
             handle_response_context (ctx);
             /* Release the completed context */
             context_reset (ctx);
             opt.Rqueue.waiting--;
             if (opt.verbose)
               {
-                rate = req_rate (&opt.progress);
                 avg_rate += rate;
                 avg_rate /= 2;
               }
