@@ -1403,7 +1403,7 @@ init_opt ()
 
   /* Initializing request contexts */
   if (opt.Rqueue.len > opt.max_rate) /* prevent exceeding max rate */
-    opt.Rqueue.len = opt.max_rate;
+    opt.Rqueue.len = MAX (opt.max_rate, 1);
   opt.Rqueue.ctxs = ffuc_calloc (opt.Rqueue.len, sizeof (RequestContext));
   for (size_t i = 0; i < opt.Rqueue.len; i++)
     {
@@ -1929,7 +1929,12 @@ Completed easy_handle doesn't have request context.\n");
             /* Release the completed context */
             context_reset (ctx);
             opt.Rqueue.waiting--;
-            avg_rate += rate, avg_rate /= 2;
+            if (opt.verbose)
+              {
+                rate = req_rate (&opt.progress);
+                avg_rate += rate;
+                avg_rate /= 2;
+              }
           }
       }
 
