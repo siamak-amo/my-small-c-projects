@@ -148,7 +148,11 @@ static char tmp[TMP_CAP];
 #endif
 
 #ifndef PRINT_MARGIN
-# define PRINT_MARGIN 25
+# ifndef __ANDROID__
+#   define PRINT_MARGIN 25
+# else /* smaller screen width in Android */
+#   define PRINT_MARGIN 4
+# endif
 #endif
 
 #define NOP ((void) NULL)
@@ -997,7 +1001,7 @@ __print_stats_fuzz (RequestContext *ctx)
 #else
       #define __FMT__ "%s"
       #define __ARG__ ctx->FUZZ[0]
-      m = 0, n = 0; /* just ignore margins */
+      m = 0, n = PRINT_MARGIN; /* forces newline */
 #endif /* __ANDROID__ */
 
       if (opt.Printf.color)
