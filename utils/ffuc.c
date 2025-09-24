@@ -1402,6 +1402,8 @@ init_opt ()
   opt.words_len = n;
 
   /* Initializing request contexts */
+  if (opt.Rqueue.len > opt.max_rate) /* prevent exceeding max rate */
+    opt.Rqueue.len = opt.max_rate;
   opt.Rqueue.ctxs = ffuc_calloc (opt.Rqueue.len, sizeof (RequestContext));
   for (size_t i = 0; i < opt.Rqueue.len; i++)
     {
