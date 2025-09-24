@@ -1425,6 +1425,9 @@ init_opt ()
          warnln ("sending body in 'GET' request.");
     }
 
+  /* Improve performance, sets mode=singular for one wordlist */
+  if (opt.words_len <= 1)
+    opt.mode = MODE_SINGULAR;
   /* Mode depended initializations */
   switch (opt.mode)
     {
