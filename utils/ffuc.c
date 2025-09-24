@@ -617,7 +617,7 @@ set_template_wlist (FuzzTemplate *t, enum template_op op, void *param);
 
 #ifdef _DEBUG
 # define fprintd(format, ...) \
-  fprintf (stderr, format, ##__VA_ARGS__)
+  fprintf (stderr, CLEAN_LINE(format), ##__VA_ARGS__)
 # define printd(format, ...) \
   fprintd ("%s:%d: " format, __FILE__, __LINE__, ##__VA_ARGS__);
 #else
@@ -870,7 +870,7 @@ __next_fuzz_singular (RequestContext *ctx)
   if (fw_eof (fw))
     opt.eofuzz = true;
 
-  fprintd ("singular:  [0-%ld]->`%s`\n", N, tmp);
+  fprintd ("singular:  [%ld-%ld]->`%s`\n", i, N, tmp);
   fw_next (fw);
 }
 
