@@ -972,21 +972,15 @@ context_reset (RequestContext *ctx)
 static inline const char *
 http_pallet_of (int resp_code)
 {
-  if (resp_code < 100 || resp_code >= 600)
-    return HttpPallet[ HTTP_ERR ];
-  if (resp_code >= 200 && resp_code < 300)
-    return HttpPallet[ HTTP_2xx ];
-  if (resp_code >= 300 && resp_code < 400)
-    return HttpPallet[ HTTP_3xx ];
-  if (resp_code >= 400 && resp_code < 500)
-    return HttpPallet[ HTTP_4xx ];
-  if (resp_code >= 500)
-    return HttpPallet[ HTTP_5xx ];
-  return HttpPallet[ HTTP_NOCOLOR ];
+  resp_code /= 100;
+  if (resp_code <= 0 || resp_code >= 6)
+      return HttpPallet[ HTTP_ERR ];
+  else
+    return HttpPallet[ resp_code ];
 }
 
 static inline void
-__print_stats_fuzz (RequestContext *ctx)
+print_stats_fuzz (RequestContext *ctx)
 {
   /* Wiping the line out of the progress-bar stuff */
   if (opt.Printf.lineclear)
@@ -1035,14 +1029,14 @@ print_stats_context (RequestContext *ctx)
 {
   if (CURLE_OK != ctx->stat.ccode)
     {
-      __print_stats_fuzz (ctx);
+      print_stats_fuzz (ctx);
       fprintf (opt.streamout, "[Error: %s, Duration: %dms]\n",
                curl_easy_strerror (ctx->stat.ccode),
                ctx->stat.duration);
       return;
     }
 
-  __print_stats_fuzz (ctx);
+  print_stats_fuzz (ctx);
   fprintf (opt.streamout, "\
 [Status: %-3d,  Size: %d,  Words: %d,  Lines: %d,  Duration: %dms]\n",
            ctx->stat.code,
