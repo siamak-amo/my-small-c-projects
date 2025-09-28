@@ -1294,20 +1294,19 @@ opt_init (struct Opt *opt)
            ++index, start = end + repstr_len)
         {
           end = strstr (start, opt->replace_str);
-          if (start != end && *start != '\0')
+          if (start == end && *start == '\0')
+            break;
+          if (end && index < dst_len)
+            start[(int) (end - start)] = '\0';
+          if (index == 0)
             {
-              if (end && index < dst_len)
-                start[(int) (end - start)] = '\0';
-              if (index == 0)
-                {
-                  if (! dst[0]->pref)
-                    dst[0]->pref = strdup (start);
-                }
-              else
-                {
-                  if (! dst[index-1]->suff) 
-                    dst[index-1]->suff = strdup (start);
-                }
+              if (! dst[0]->pref)
+                dst[0]->pref = strdup (start);
+            }
+          else
+            {
+              if (! dst[index-1]->suff)
+                dst[index-1]->suff = strdup (start);
             }
         }
     }
