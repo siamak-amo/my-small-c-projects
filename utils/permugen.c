@@ -1215,14 +1215,13 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
 static void
 opt_init (struct Opt *opt)
 {
-  if (opt->outf == NULL)
-    opt->outf = stdout;
-
-  int max_depth;
+  int max_depth = 0;
+  struct Seed **current_seed = NULL;
   switch (opt->mode)
     {
     case REGULAR_MODE:
-      max_depth = da_sizeof (opt->reg_seeds);
+      current_seed = opt->reg_seeds;
+      max_depth = da_sizeof (current_seed);
 
       if (opt->depth.min == 0 && opt->depth.max == 0)
         {
@@ -1239,6 +1238,8 @@ opt_init (struct Opt *opt)
       break;
 
     case NORMAL_MODE:
+      max_depth = 1;
+      current_seed = &opt->global_seeds;
       if (opt->global_seeds->cseed_len == 0 && opt->using_default_seed)
         {
           /* Default global_seeds */
@@ -1281,37 +1282,40 @@ opt_init (struct Opt *opt)
     {
       if (! opt->escape_disabled)
         UNESCAPE (opt->format);
-      if (! opt->replace_str)
-        opt->replace_str = DEFAULT_REPSTR;
+
       int repstr_len = strlen (opt->replace_str);
-
-      struct Seed **dst = &opt->global_seeds;
-      int dst_len = 1;
-      if (opt->mode == REGULAR_MODE)
-        dst = opt->reg_seeds, dst_len = opt->reg_seeds_len;
-
-      int index = 0;
-      for (char *start=opt->format, *end=start;
-           end != NULL && index < dst_len + 1;
-           ++index, start = end + repstr_len)
+      char *start=opt->format, *end=start;
+      for (int i=0; NULL != end && i < max_depth+1;
+           ++i, start = end + repstr_len)
         {
           end = strstr (start, opt->replace_str);
           if (start == end && *start == '\0')
             break;
-          if (end && index < dst_len)
+          if (NULL != end && i < max_depth)
             start[(int) (end - start)] = '\0';
-          if (index == 0)
+          if (i == 0)
             {
-              if (! dst[0]->pref)
-                dst[0]->pref = strdup (start);
+              if (! current_seed[0]->pref)
+                current_seed[0]->pref = strdup (start);
             }
           else
             {
-              if (! dst[index-1]->suff)
-                dst[index-1]->suff = strdup (start);
+              if (! current_seed[i-1]->suff)
+                current_seed[i-1]->suff = strdup (start);
             }
         }
     }
+
+  /* Initializing the output stream buffer */
+#ifndef _USE_BIO
+  opt->streamout_buff = malloc (_BMAX);
+  if (!!setvbuf (opt->outf, opt->streamout_buff, _IOFBF, _BMAX))
+    warnln ("failed to set buffer for stdout!");
+#else
+  opt->bio = malloc (sizeof (BIO_t));
+  *opt->bio = bio_new (_BMAX, malloc (_BMAX), fileno (opt->outf));
+  dprintf ("* buffer length of buffered_io: %d bytes\n", _BMAX);
+# endif /* _USE_BIO */
 }
 
 static inline void
@@ -1348,23 +1352,17 @@ static struct Opt *
 mk_opt (void)
 {
   static struct Opt opt = {0};
-  { /* Dynamic arrays */
-    opt.global_seeds = mk_seed (CSEED_MAXLEN, 1);
-    opt.using_default_seed = 1;
 
-    opt.seps = da_newn (char *, 1);
-    da_appd (opt.seps, NULL);
-  }
+  opt.global_seeds = mk_seed (CSEED_MAXLEN, 1);
+  opt.using_default_seed = 1;
 
-  { /* Initializing the parser */
-    opt.parser = (struct permugex) {
-      .ml            = &ML,
-      .general_src   = {.lazy = 0},
-      .special_src   = {.lazy = 0},
-      .general_tk    = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN),
-      .special_tk    = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN),
-    };
-  }
+  opt.seps = da_newn (char *, 1);
+  da_appd (opt.seps, NULL);
+
+  opt.outf = stdout;
+  opt.replace_str = DEFAULT_REPSTR;
+  opt.mode = NORMAL_MODE;
+  opt.escape_disabled = false;
 
   return &opt;
 }
@@ -1402,20 +1400,6 @@ main (int argc, char **argv)
         }
       break;
     }
-
-  /* Initializing the output stream buffer */
-#ifndef _USE_BIO
-  opt->streamout_buff = malloc (_BMAX);
-  if (!!setvbuf (opt->outf, opt->streamout_buff, _IOFBF, _BMAX))
-    {
-      warnln ("failed to set buffer for stdout");
-      exit (EXIT_FAILURE);
-    }
-#else
-  opt->bio = malloc (sizeof (BIO_t));
-  *opt->bio = bio_new (_BMAX, malloc (_BMAX), fileno (opt->outf));
-  dprintf ("* buffer length of buffered_io: %d bytes\n", _BMAX);
-# endif /* _USE_BIO */
 
 #ifdef _DEBUG
   switch (opt->mode)
