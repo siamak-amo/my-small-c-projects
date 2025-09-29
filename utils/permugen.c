@@ -133,7 +133,7 @@
 #include <errno.h>
 
 #define PROGRAM_NAME "permugen"
-#define Version "2.12"
+#define Version "2.14"
 
 #define CLI_IMPLEMENTATION
 #include "clistd.h"
@@ -1279,6 +1279,8 @@ opt_init (struct Opt *opt)
   /* Init output format */
   if (opt->format)
     {
+      if (! opt->escape_disabled)
+        UNESCAPE (opt->format);
       if (! opt->replace_str)
         opt->replace_str = DEFAULT_REPSTR;
       int repstr_len = strlen (opt->replace_str);
