@@ -65,34 +65,6 @@
 #ifndef UNESCAPE__H__
 #define UNESCAPE__H__
 
-/* Hex */
-#define hchr2num(HH)                                \
-  (  (HH >= '0' && HH <= '9') ? (HH - '0' + 0x00)   \
-   : (HH >= 'A' && HH <= 'F') ? (HH - 'A' + 0x0A)   \
-   : (HH >= 'a' && HH <= 'f') ? (HH - 'a' + 0x0a)   \
-   : -1  )
-/* Octal */
-#define nchr2num(NNN)                           \
-  (  (NNN >= '0' && NNN <= '7') ? (NNN - '0')   \
-     : -1  )
-
-/* internal helper functions */
-// @return:  length of hex \xHH in @ptr after x
-static inline int __scanhex (const char *restrict ptr,
-                          unsigned char *restrict result);
-// @return:  length of octal \0NNN in @ptr after 0
-static inline int __scanoct (const char *restrict ptr,
-                          unsigned char *restrict result);
-
-/**
- *  Macros to set value of @ptr equal to @val
- *  and move @ptr forward by 1 or @n
- *  *BE* careful with NULL character, you don't probably
- *  mean to increase @ptr when encounter '\0'
- */
-#define __next_eq(ptr, val) *((ptr)++) = val
-#define __next_eqn(ptr, val, n) *((ptr) += n) = val
-
 /**
  *  Interprets the backslash `\` character(s)
  *  of the @buff in-place until Null character or error
@@ -115,14 +87,39 @@ ssize_t unescape (char *buff);
 /* The same as `unescape` */
 ssize_t unescape2 (char *restrict dest, const char *restrict src);
 
+
+#ifdef UNESCAPE_IMPLEMENTATION
+
+/* Internal helper functions */
+// @return:  length of hex \xHH in @ptr after x
+static inline int __scanhex (const char *restrict ptr,
+                          unsigned char *restrict result);
+// @return:  length of octal \0NNN in @ptr after 0
+static inline int __scanoct (const char *restrict ptr,
+                          unsigned char *restrict result);
+
 /* internal macros */
-#define nextw_b(val) {                          \
-    if (val) __next_eq (w_ptr, val);            \
-    else *w_ptr = val;                          \
-    break;                                      \
+#define __next_eq(ptr, val) *((ptr)++) = val
+#define __next_eqn(ptr, val, n) *((ptr) += n) = val
+
+#define nextw_b(val) {                                          \
+    if (val) __next_eq (w_ptr, val);                            \
+    else *w_ptr = val;                                          \
+    break;                                                      \
   }
 
-#define __unscape(w_ptr, r_ptr)                                 \
+/* Hex */
+#define HEXCHAR2NUM(HH)                                         \
+  (  (HH >= '0' && HH <= '9') ? (HH - '0' + 0x00)               \
+     : (HH >= 'A' && HH <= 'F') ? (HH - 'A' + 0x0A)             \
+     : (HH >= 'a' && HH <= 'f') ? (HH - 'a' + 0x0a)             \
+     : -1  )
+/* Octal */
+#define OCTCHAR2NUM(NNN)                                        \
+  (  (NNN >= '0' && NNN <= '7') ? (NNN - '0')                   \
+     : -1  )
+
+#define __UNSCAPE__(w_ptr, r_ptr)                               \
   for ( ;; ++(r_ptr)) {                                         \
     if (*(r_ptr) == '\0') {                                     \
       *(w_ptr) = '\0';                                          \
@@ -178,22 +175,22 @@ ssize_t unescape2 (char *restrict dest, const char *restrict src);
   }
 
 /**
- *  internal functions to read hex and octal
+ *  Internal functions to read hex and octal
  *  values from @ptr and store it into @result
  *  these functions return the strlen of the read number
  *  for `\xab`  ->  @ptr must be pointing to `a`
  */
 static inline int
 __scanhex (const char *restrict ptr,
-        unsigned char *restrict result)
+           unsigned char *restrict result)
 {
   int h1 = 0, h2 = 0;
-  if (*ptr == '\0' || (h1 = hchr2num (*ptr)) == -1)
+  if (*ptr == '\0' || (h1 = HEXCHAR2NUM (*ptr)) == -1)
     {
       return 0;
     }
   ptr++;
-  if (*ptr == '\0' || (h2 = hchr2num (*ptr)) == -1)
+  if (*ptr == '\0' || (h2 = HEXCHAR2NUM (*ptr)) == -1)
     {
       *result = h1;
       return 1;
@@ -204,21 +201,21 @@ __scanhex (const char *restrict ptr,
 
 static inline int
 __scanoct (const char *restrict ptr,
-        unsigned char *restrict result)
+           unsigned char *restrict result)
 {
   int n1 = 0, n2 = 0, n3 = 0;
-  if (*ptr == '\0' || (n1 = nchr2num (*ptr)) == -1)
+  if (*ptr == '\0' || (n1 = OCTCHAR2NUM (*ptr)) == -1)
     {
       return 0;
     }
   ptr++;
-  if (*ptr == '\0' || (n2 = nchr2num (*ptr)) == -1)
+  if (*ptr == '\0' || (n2 = OCTCHAR2NUM (*ptr)) == -1)
     {
       *result = n1;
       return 1;
     }
   ptr++;
-  if (*ptr == '\0' || (n3 = nchr2num (*ptr)) == -1)
+  if (*ptr == '\0' || (n3 = OCTCHAR2NUM (*ptr)) == -1)
     {
       *result = n1 * 8 + n2 * 1;
       return 2;
@@ -227,16 +224,13 @@ __scanoct (const char *restrict ptr,
   return 3;
 }
 
-
-/* implementation */
-#ifdef UNESCAPE_IMPLEMENTATION
 ssize_t
 unescape2 (char *restrict dest, const char *restrict src)
 {
   char *w_ptr = dest;
   const char *r_ptr = src;
 
-  __unscape (w_ptr, r_ptr);
+  __UNSCAPE__ (w_ptr, r_ptr);
 
   /* success return */
   return (ssize_t)(w_ptr - dest);
@@ -252,7 +246,7 @@ unescape (char *buff)
   char *w_ptr = buff;
   char *r_ptr = buff;
 
-  __unscape (w_ptr, r_ptr);
+  __UNSCAPE__ (w_ptr, r_ptr);
   
   /* success return */
   return (ssize_t)(w_ptr - buff);
