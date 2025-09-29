@@ -346,6 +346,7 @@ static Milexer ML =
  */
 struct permugex
 {
+  struct Opt *opt;
   Milexer *ml;
   Milexer_Slice general_src, special_src; /* input sources */
   Milexer_Token general_tk, special_tk;   /* result tokens */
@@ -364,7 +365,6 @@ struct Opt
   int mode;
   int escape_disabled; /* to disable backslash interpretation */
   int using_default_seed;
-  struct permugex parser; /* Regex parser */
   struct
   {
     int min, max;
@@ -505,9 +505,6 @@ cleanup (int code, void *__opt)
       da_free (opt->seps);
     }
 
-  TOKEN_FREE (&opt->parser.general_tk);
-  TOKEN_FREE (&opt->parser.special_tk);
-
 #endif /* _CLEANUP_NO_FREE */
 }
 
@@ -543,8 +540,51 @@ wseed_file_uniappd (const struct Opt *, struct Seed *s, FILE *f);
  *  If `prefix` and `suffix` are not NULL, they are allocated using
  *  `strdup`, and `wseed` is appended using `wseed_uniappd` function
  */
-void parse_seed_regex (struct Opt *, struct Seed *s,
+void parse_seed_regex (struct permugex *parser, struct Seed *s,
                        const char *input);
+
+/**
+ *  Word Seed regex parser
+ *  inside `{...}`  -  comma-separated words
+ *  wseed_uniappd call will backslash interpret the result
+ *  This function uses special_tk and special_src for parsing
+ */
+static inline void
+pparse_wseed_regex (struct permugex *parser, struct Seed *dst_seed);
+
+/**
+ *  Character Seed regex parser
+ *  inside: `[...]`
+ *  It backslash interprets the result if not disabled
+ */
+static inline void
+pparse_cseed_regex (struct permugex *parser, struct Seed *dst_seed);
+
+/**
+ *  Detects file paths, previous seed indexes (\N)
+ *  and other shortcuts like \d, \u, and \U
+ *  This function uses special_tk and special_src for parsing
+ */
+static inline void
+pparse_keys_regex (struct permugex *parser, struct Seed *dst_seed,
+                   const char *input);
+
+/**
+ *  Provides prefix and suffix of @dst_seed using strdup,
+ *  inside: `(...)` (only in regular mode)
+ *  The first call sets @dst_seed->pref (prefix) and
+ *  the second call sets @dst_seed->suff (suffix)
+ */
+static inline void
+pparse_format_regex (struct permugex *parser,
+                     struct Seed *dst_seed, char *input);
+
+/* Init and destroy the parser */
+static struct permugex *
+pparse_init_parser (struct Opt *opt);
+void
+pparse_deinit_parser (int, void *__parser);
+
 
 void
 usage (int ecode)
@@ -1030,7 +1070,8 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
 }
 
 static int
-opt_getopt (int argc, char **argv, struct Opt *opt)
+opt_getopt (int argc, char **argv,
+            struct Opt *opt, struct permugex *parser)
 {
   int idx = 0;
 
@@ -1136,7 +1177,7 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
           NOT_IN_REGULAR_MODE ()
           {
             opt->using_default_seed = 0;
-            parse_seed_regex (opt, opt->global_seeds, optarg);
+            parse_seed_regex (parser, opt->global_seeds, optarg);
           }
           break;
 
@@ -1185,7 +1226,7 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
                   {
                     optind++;
                     struct Seed *tmp = mk_seed (CSEED_MAXLEN, 1);
-                    parse_seed_regex (opt, tmp, argv[i]);
+                    parse_seed_regex (parser, tmp, argv[i]);
                     if (tmp->cseed_len == 0 && da_sizeof (tmp->wseed) == 0)
                       {
                         warnln ("empty regular seed configuration was ignored");
@@ -1371,13 +1412,17 @@ int
 main (int argc, char **argv)
 {
   struct Opt *opt;
+  struct permugex *parser;
   set_program_name (*argv);
 
   opt = mk_opt ();
+  parser = pparse_init_parser (opt);
+
   on_exit (cleanup, opt);
+  on_exit (pparse_deinit_parser, parser);
 
   /* Read CLI options & set the defaults */
-  if (opt_getopt (argc, argv, opt))
+  if (opt_getopt (argc, argv, opt, parser))
     return EXIT_FAILURE;
   opt_init (opt);
 
@@ -1469,44 +1514,6 @@ main (int argc, char **argv)
   return 0;
 }
 
-
-/* Internal regex parser (permugex) functions */
-/**
- *  Word Seed regex parser
- *  inside `{...}`  -  comma-separated words
- *  wseed_uniappd call will backslash interpret the result
- *  This function uses special_tk and special_src for parsing
- */
-static inline void
-pparse_wseed_regex (struct Opt *, struct Seed *dst_seed);
-
-/**
- *  Character Seed regex parser
- *  inside: `[...]`
- *  It backslash interprets the result if not disabled
- */
-static inline void
-pparse_cseed_regex (struct Opt *, struct Seed *dst_seed);
-
-/**
- *  Detects file paths, previous seed indexes (\N)
- *  and other shortcuts like \d, \u, and \U
- *  This function uses special_tk and special_src for parsing
- */
-static inline void
-pparse_keys_regex (struct Opt *, struct Seed *dst_seed,
-                   const char *input);
-
-/**
- *  Provides prefix and suffix of @dst_seed using strdup,
- *  inside: `(...)` (only in regular mode)
- *  The first call sets @dst_seed->pref (prefix) and
- *  the second call sets @dst_seed->suff (suffix)
- */
-static inline void
-pparse_format_regex (struct Opt *,
-                     struct Seed *dst_seed, char *input);
-
 /**
  *  Path resolver
  *  Supported formats: '~/' , '../' , '/./'
@@ -1554,11 +1561,15 @@ path_resolution (const char *path_cstr)
     }
 }
 
+
+/**
+   Internal regex parser (permugex) functions
+ **/
 static inline void
-pparse_cseed_regex (struct Opt *opt, struct Seed *dst_seed)
+pparse_cseed_regex (struct permugex *parser, struct Seed *dst_seed)
 {
-  char *token = opt->parser.general_tk.cstr;
-  if (!opt->escape_disabled)
+  char *token = parser->general_tk.cstr;
+  if (! parser->opt->escape_disabled)
     UNESCAPE (token);
 
   char lastc = 0;
@@ -1606,14 +1617,14 @@ pparse_cseed_regex (struct Opt *opt, struct Seed *dst_seed)
 }
 
 static inline void
-pparse_wseed_regex (struct Opt *opt, struct Seed *dst_seed)
+pparse_wseed_regex (struct permugex *parser, struct Seed *dst_seed)
 {
-  Milexer_Token *tmp = &opt->parser.special_tk;
+  Milexer_Token *tmp = &parser->special_tk;
 
   for (int _ret = 0; !NEXT_SHOULD_END (_ret); )
     {
-      _ret = ml_next (opt->parser.ml,
-                      &opt->parser.special_src,
+      _ret = ml_next (parser->ml,
+                      &parser->special_src,
                       tmp,
                       PFLAG_DEFAULT);
       if (NEXT_SHOULD_LOAD (_ret))
@@ -1621,18 +1632,18 @@ pparse_wseed_regex (struct Opt *opt, struct Seed *dst_seed)
 
       if (tmp->type == TK_KEYWORD)
         {
-          wseed_uniappd (opt, dst_seed, tmp->cstr);
+          wseed_uniappd (parser->opt, dst_seed, tmp->cstr);
         }
     }
 }
 
 static inline void
-pparse_format_regex (struct Opt *opt,
+pparse_format_regex (struct permugex *parser,
                      struct Seed *dst_seed, char *input)
 {
   if (!input)
     return;
-  if (!opt->escape_disabled)
+  if (! parser->opt->escape_disabled)
     UNESCAPE (input);
 
   if (dst_seed->pref == NULL)
@@ -1644,7 +1655,7 @@ pparse_format_regex (struct Opt *opt,
 }
 
 static inline void
-pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
+pparse_keys_regex (struct permugex *parser, struct Seed *dst_seed,
                    const char *input)
 {
   char *path;
@@ -1656,20 +1667,20 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
        *  previously provided seed
        */
       input++;
-      if (REGULAR_MODE != opt->mode && IS_DIGIT (*input))
+      if (REGULAR_MODE != parser->opt->mode && IS_DIGIT (*input))
         {
           warnln ("regular mode specific shortcut \\%c was ignored", *input);
           continue;
         }
-      if (REGULAR_MODE == opt->mode && IS_DIGIT (*input))
+      if (REGULAR_MODE == parser->opt->mode && IS_DIGIT (*input))
         {
           int n = strtol (input, NULL, 10) - 1;
-          if (n == opt->reg_seeds_len)
+          if (n == parser->opt->reg_seeds_len)
             {
               warnln ("circular append was ignored");
               continue;
             }
-          else if (n >= opt->reg_seeds_len)
+          else if (n >= parser->opt->reg_seeds_len)
             {
               warnln ("seed index %d is out of bound", n+1);
               continue;
@@ -1681,11 +1692,11 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
             }
           else /* valid index */
             {
-              struct Seed *src = opt->reg_seeds[n];
+              struct Seed *src = parser->opt->reg_seeds[n];
               cseed_uniappd (dst_seed, src->cseed, src->cseed_len);
               da_foreach (src->wseed, i)
                 {
-                  wseed_uniappd (opt, dst_seed, src->wseed[i]);
+                  wseed_uniappd (parser->opt, dst_seed, src->wseed[i]);
                 }
             }
           continue;
@@ -1731,7 +1742,7 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
           FILE *f = safe_fopen (path, "r");
           if (f)
             {
-              wseed_file_uniappd (opt, dst_seed, f);
+              wseed_file_uniappd (parser->opt, dst_seed, f);
               if (f != stdin)
                 safe_fclose (f);
             }
@@ -1744,21 +1755,20 @@ pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
 }
 
 void
-parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
-                  const char *input)
+parse_seed_regex (struct permugex *parser,
+                  struct Seed *dst_seed, const char *input)
 {
   char *extended_token = NULL;
-  Milexer_Token *tmp = &opt->parser.general_tk;
+  Milexer_Token *tmp = &parser->general_tk;
 
   /* Mini-lexer internal initialization */
-  SET_ML_SLICE (&opt->parser.general_src,
-                input, strlen (input));
+  SET_ML_SLICE (&parser->general_src, input, strlen (input));
 
   int ret = 0;
   while (!NEXT_SHOULD_END (ret))
     {
-      ret = ml_next (opt->parser.ml,
-                     &opt->parser.general_src,
+      ret = ml_next (parser->ml,
+                     &parser->general_src,
                      tmp,
                      PFLAG_INEXP);
       /**
@@ -1780,30 +1790,29 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
              *  We assume that file paths do not start with `-`.
              */
             if ('-' == *tmp->cstr)  /* Read from stdin */
-              wseed_file_uniappd (opt, dst_seed, stdin);
+              wseed_file_uniappd (parser->opt, dst_seed, stdin);
             else
-              pparse_keys_regex (opt, dst_seed, tmp->cstr);
+              pparse_keys_regex (parser, dst_seed, tmp->cstr);
             break;
           }
 
         case TK_EXPRESSION:
           exp = tmp->cstr;
           /* Inside of expression tokens, might need extra parsing */
-          SET_ML_SLICE (&opt->parser.special_src,
-                        exp, strlen (exp));
+          SET_ML_SLICE (&parser->special_src, exp, strlen (exp));
 
           switch (tmp->id)
             {
             case EXP_SBRACKET:
-              pparse_cseed_regex (opt, dst_seed);
+              pparse_cseed_regex (parser, dst_seed);
               break;
 
             case EXP_CBRACE:
-              pparse_wseed_regex (opt, dst_seed);
+              pparse_wseed_regex (parser, dst_seed);
               break;
 
             case EXP_PAREN:
-              pparse_format_regex (opt, dst_seed, tmp->cstr);
+              pparse_format_regex (parser, dst_seed, tmp->cstr);
               break;
 
             default:
@@ -1817,4 +1826,29 @@ parse_seed_regex (struct Opt *opt, struct Seed *dst_seed,
 
       safe_free (extended_token);
     }
+}
+
+static struct permugex *
+pparse_init_parser (struct Opt *opt)
+{
+  static struct permugex res =
+    {
+      .ml            = &ML,
+      .general_src   = {.lazy = 0},
+      .special_src   = {.lazy = 0},
+    };
+  res.general_tk = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN);
+  res.special_tk = TOKEN_ALLOC (TOKEN_MAX_BUF_LEN);
+  res.opt = opt;
+  return &res;
+}
+
+void
+pparse_deinit_parser (int, void *__parser)
+{
+#ifndef _CLEANUP_NO_FREE
+  struct permugex *parser = (struct permugex *)__parser;
+  TOKEN_FREE (&parser->general_tk);
+  TOKEN_FREE (&parser->special_tk);
+#endif
 }
