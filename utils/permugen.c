@@ -97,6 +97,7 @@
      * Custom format
        - This configures prefix and suffix of seeds
          based on a format string, by default FUZZ keyword (see -I)
+       - Not suitable to be used with depth (-d) in regular mode
        - Using other prefix/suffix options along with format,
          will override this option
        $ permugen -s "[ab]"  --format "--FUZZ=="
@@ -583,7 +584,7 @@ pparse_format_regex (struct permugex *parser,
 static struct permugex *
 pparse_init_parser (struct Opt *opt);
 void
-pparse_deinit_parser (int, void *__parser);
+pparse_deinit_parser (struct permugex *parser);
 
 
 void
@@ -1416,15 +1417,14 @@ main (int argc, char **argv)
   set_program_name (*argv);
 
   opt = mk_opt ();
-  parser = pparse_init_parser (opt);
-
   on_exit (cleanup, opt);
-  on_exit (pparse_deinit_parser, parser);
+  parser = pparse_init_parser (opt);
 
   /* Read CLI options & set the defaults */
   if (opt_getopt (argc, argv, opt, parser))
     return EXIT_FAILURE;
   opt_init (opt);
+  pparse_deinit_parser (parser);
 
   switch (opt->mode)
     {
@@ -1844,10 +1844,9 @@ pparse_init_parser (struct Opt *opt)
 }
 
 void
-pparse_deinit_parser (int, void *__parser)
+pparse_deinit_parser (struct permugex *parser)
 {
 #ifndef _CLEANUP_NO_FREE
-  struct permugex *parser = (struct permugex *)__parser;
   TOKEN_FREE (&parser->general_tk);
   TOKEN_FREE (&parser->special_tk);
 #endif
