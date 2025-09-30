@@ -1418,12 +1418,15 @@ main (int argc, char **argv)
 
   opt = mk_opt ();
   on_exit (cleanup, opt);
-  parser = pparse_init_parser (opt);
 
   /* Read CLI options & set the defaults */
-  if (opt_getopt (argc, argv, opt, parser))
-    return EXIT_FAILURE;
-  opt_init (opt);
+  parser = pparse_init_parser (opt);
+  {
+    int ret = opt_getopt (argc, argv, opt, parser);
+    if (ret)
+      return EXIT_FAILURE;
+    opt_init (opt);
+  }
   pparse_deinit_parser (parser);
 
   switch (opt->mode)
@@ -1521,44 +1524,38 @@ main (int argc, char **argv)
 static char *
 path_resolution (const char *path_cstr)
 {
+  static char PATH[PATH_MAX];
   char *tmp;
   size_t len = strlen (path_cstr);
-  static char PATH[PATH_MAX];
 
   if (*path_cstr == '~')
     {
-      const char* home = getenv ("HOME");
-      if (!home)
+      const char *home = getenv ("HOME");
+      if (! home)
         {
           warnln ("$HOME is (null), could not use '~'");
           return NULL;
         }
-      tmp = malloc (len + strlen (home) + 1);
-      char *p;
-      p = mempcpy (tmp, home, strlen (home));
-      p = mempcpy (p, path_cstr + 1, len - 1);
-      *p = '\0';
+      ++path_cstr; /* ignore ~ character */
+      tmp = malloc (len + strlen (home));
+      strcat (tmp, home);
+      strcat (tmp, path_cstr);
     }
   else
     {
-      tmp = malloc (len + 1);
-      *((char *) mempcpy (tmp, path_cstr, len)) = '\0';
+      tmp = strdup (path_cstr);
     }
 
-  /* Interpret `\<space>` */
-  UNESCAPE (tmp);
-
-  if (realpath (tmp, PATH))
+  UNESCAPE (tmp); /* \<space> */
+  errno = 0;
+  if (NULL == realpath (tmp, PATH))
     {
-      safe_free (tmp);
-      return PATH;
-    }
-  else
-    {
-      warnln ("path resolution failed -- %s (%s)", strerror (errno), tmp);
-      safe_free (tmp);
+      warnln ("path resolution failed -- %s (%s)",
+              strerror (errno), tmp);
       return NULL;
     }
+  safe_free (tmp);
+  return PATH;
 }
 
 
