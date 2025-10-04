@@ -183,6 +183,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #ifdef _ML_DEBUG
 #  include <stdio.h>
@@ -210,6 +211,7 @@ typedef struct Milexer_exp_
   const char *end;
 
   // int __tag; // internal nesting
+  bool disabled;
 } _exp_t;
 
 /**
@@ -219,6 +221,7 @@ typedef struct
 {
   int len;
   const char **exp;
+  bool disabled;
 } Milexer_BEXP;
 
 /**
@@ -228,6 +231,7 @@ typedef struct
 {
   int len;
   struct Milexer_exp_ *exp;
+  bool disabled;
 } Milexer_AEXP;
 
 
@@ -498,6 +502,18 @@ typedef struct Milexer_t
 #define ML_UNSET(field) (field = (typeof (field)) {0})
 
 /**
+ *  Disable/Enable feature macros
+ *    for basic expressions:
+ *      ML_DISABLE(ml.keywords)
+ *    for advanced expressions:
+ *      ML_DISABLE(ml.expressions.exp[.n])
+ *    Or disable all of them at once:
+ *      ML_DISABLE(ml.expressions)
+ */
+#define ML_DISABLE(field) ((field)->disabled = true)
+#define ML_ENABLE(field) ((field)->disabled = false)
+
+/**
  **  Function definitions
  **  you shoud only call these functions
  **/
@@ -584,6 +600,8 @@ __detect_puncs (const Milexer *ml, Milexer_Slice *src,
   res->cstr[res->__idx] = '\0';
   for (int i=0; i < ml->puncs.len; ++i)
     {
+      if (ml->puncs.disabled)
+        continue;
       const char *punc = ml->puncs.exp[i];
       size_t len = strlen (punc);
       if (res->__idx < len)
@@ -612,6 +630,9 @@ static inline char *
 __is_expression_suff (const Milexer *ml, Milexer_Slice *src,
                      Milexer_Token *tk)
 {
+  /* If we reach here, expressions cannot be totally disabled */
+  assert (ml->expression.disabled == false && "Broken logic!!");
+
   /* looking for closing, O(1) */
   _exp_t *e = __get_last_exp (ml, src);
   size_t len = strlen (e->end);
@@ -637,9 +658,14 @@ static inline char *
 __is_mline_commented_suff (const Milexer *ml, Milexer_Slice *src,
                        Milexer_Token *tk)
 {
+  if (ml->a_comment.disabled)
+    return NULL;
   for (int i=0; i < ml->a_comment.len; ++i)
     {
-      const char *pref = ml->a_comment.exp[i].end;
+      _exp_t *a_comment = &ml->a_comment.exp[i];
+      if (a_comment->disabled)
+        continue;
+      const char *pref = a_comment->end;
       size_t len = strlen (pref);
       char *__cstr = tk->cstr + tk->__idx - len;
 
@@ -656,6 +682,8 @@ static inline char *
 __is_sline_commented_pref (const Milexer *ml, Milexer_Slice *src,
                        Milexer_Token *tk)
 {
+  if (ml->b_comment.disabled)
+    return NULL;
   for (int i=0; i < ml->b_comment.len; ++i)
     {
       const char *pref = ml->b_comment.exp[i];
@@ -675,9 +703,14 @@ static inline char *
 __is_mline_commented_pref (const Milexer *ml, Milexer_Slice *src,
                        Milexer_Token *tk)
 {
+  if (ml->a_comment.disabled)
+    return NULL;
   for (int i=0; i < ml->a_comment.len; ++i)
     {
-      const char *pref = ml->a_comment.exp[i].begin;
+      _exp_t *a_comment = &ml->a_comment.exp[i];
+      if (a_comment->disabled)
+        continue;
+      const char *pref = a_comment->begin;
       size_t len = strlen (pref);
       char *__cstr = tk->cstr + tk->__idx - len;
 
@@ -694,6 +727,8 @@ static inline char *
 __is_expression_pref (const Milexer *ml, Milexer_Slice *src,
                      Milexer_Token *tk)
 {
+  if (ml->expression.disabled)
+    return NULL;
   /* looking for opening, O(ml->expression.len) */
   char *p;
   char *__cstr = tk->cstr;
@@ -707,6 +742,8 @@ __is_expression_pref (const Milexer *ml, Milexer_Slice *src,
   for (int i=0; i < ml->expression.len; ++i)
     {
       _exp_t *e = ml->expression.exp + i;
+      if (e->disabled)
+        continue;
       if ((p = strstr (__cstr, e->begin)))
         {
           src->__last_exp_idx = i;
@@ -721,7 +758,7 @@ ml_set_keyword_id (const Milexer *ml, Milexer_Token *res)
 {
   if (res->type != TK_KEYWORD)
     return -1;
-  if (ml->keywords.len > 0)
+  if (ml->keywords.len > 0 && !ml->keywords.disabled)
     {
       for (int i=0; i < ml->keywords.len; ++i)
         {
