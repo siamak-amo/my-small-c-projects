@@ -1623,6 +1623,57 @@ main (void)
     DO_TEST (&t, "inner long expressions");
   }
 
+  puts ("-- partially disabled features --");
+  {
+    ML_DISABLE (&ml.puncs); /* disbale punctuation's */
+    t = (test_t) {
+      .test_number = 6,
+      .parsing_flags = PFLAG_DEFAULT,
+      .input = "AAA +BBB (te st) ",
+      .etk = (Milexer_Token []){
+        {.type = TK_KEYWORD,    .cstr = "AAA"},
+        {.type = TK_KEYWORD,    .cstr = "+BBB"},
+        {.type = TK_EXPRESSION, .cstr = "(te st)"},
+        {0}
+      }};
+    DO_TEST (&t, "disable all punctuation's");
+    ML_ENABLE (&ml.puncs); /* undo ML_DISABLE */
+
+    ML_DISABLE (&ml.expression.exp[EXP_CBRACE]); /* disable curly braces */
+    t = (test_t) {
+      .test_number = 7,
+      .parsing_flags = PFLAG_DEFAULT,
+      .input = "()AAA+{XXX YYY }(t e s t)",
+      .etk = (Milexer_Token []){
+        {.type = TK_EXPRESSION, .cstr = "()"},
+        {.type = TK_KEYWORD,    .cstr = "AAA"},
+        {.type = TK_PUNCS,      .cstr = "+"},
+        {.type = TK_KEYWORD,    .cstr = "{XXX"},
+        {.type = TK_KEYWORD,    .cstr = "YYY"},
+        {.type = TK_KEYWORD,    .cstr = "}"},
+        {.type = TK_EXPRESSION, .cstr = "(t e s t)"},
+        {0}
+      }};
+    DO_TEST (&t, "disable only a single expression");
+    ML_ENABLE (&ml.expression.exp[EXP_CBRACE]); /* undo ML_DISABLE */
+
+    ML_DISABLE (&ml.expression); /* disable all expressions */
+    t = (test_t) {
+      .test_number = 8,
+      .parsing_flags = PFLAG_DEFAULT,
+      .input = "AAA+{XXX }( test) ",
+      .etk = (Milexer_Token []){
+        {.type = TK_KEYWORD,    .cstr = "AAA"},
+        {.type = TK_PUNCS,      .cstr = "+"},
+        {.type = TK_KEYWORD,    .cstr = "{XXX"},
+        {.type = TK_KEYWORD,    .cstr = "}("},
+        {.type = TK_KEYWORD,    .cstr = "test)"},
+        {0}
+      }};
+    DO_TEST (&t, "disable all expressions");
+    ML_ENABLE (&ml.expression); /* undo ML_DISABLE */
+  }
+
   puts ("-- parser flags --");
   {
     t = (test_t) {
