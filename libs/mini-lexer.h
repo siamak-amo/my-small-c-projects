@@ -111,6 +111,18 @@
             }
         }
       TOKEN_FREE (&tk);
+
+
+      //-- Disabling some features -----//
+      // As your parser proceeds, it might be useful to
+      // disable/enable some expressions or punctuation's dynamically,
+      // ML_DISABLE and ML_ENABLE macros can be used for this purpose.
+
+      ML_DISABLE( &ml.puncs ); // Disbale all punctuation's
+      ML_DISABLE( &ml.expression ); // Disable all expressions
+
+      // Disable the string expression in this example
+      ML_DISABLE( &ml.expression.exp[EXP_STR] );
     ```
   
     Known Issues:
