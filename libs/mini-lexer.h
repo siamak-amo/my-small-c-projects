@@ -1385,25 +1385,23 @@ main (void)
 
 typedef struct
 {
-  int test_number;
   int parsing_flags;
   char *input;
   const Milexer_Token* etk; /* expected tokens */
 } test_t;
 
-
 /* testing token */
 static Milexer_Token tk;
 
 int
-do_test__H (test_t *t, Milexer_Slice *src)
+do_test__H (test_t *t, Milexer_Slice *src, int line_number)
 {
 #define Return(n, format, ...)                      \
   if (n == -1) {                                    \
     puts ("pass");                                  \
   } else {                                          \
-    printf ("fail!\n test %d:%d:  "format"\n",      \
-            t->test_number, n, ##__VA_ARGS__);      \
+    printf ("fail!\n%s:%d: " format "\n",           \
+            __FILE__, line_number, ##__VA_ARGS__);  \
   } return n;
 
   int ret = 0, counter = 1;
@@ -1447,17 +1445,20 @@ do_test__H (test_t *t, Milexer_Slice *src)
 }
 
 int
-do_test (test_t *t, const char *msg, Milexer_Slice *src)
+do_test (test_t *t, const char *msg, Milexer_Slice *src, int line_n)
 {
   int ret;
+  static int test_number = 0;
+
+  ++test_number;
 #ifdef _ML_DEBUG
-  printf ("Test #%d: %s\n", t->test_number, msg);
+  printf ("Test #%d: %s\n", test_number, msg);
 #else
-  printf ("Test #%d: %s... ", t->test_number, msg);
+  printf ("Test #%d: %s... ", test_number, msg);
 #endif
 
   SET_ML_SLICE (src, t->input, strlen (t->input));
-  if ((ret = do_test__H (t, src)) != -1)
+  if ((ret = do_test__H (t, src, line_n)) != -1)
     return ret;
   return -1;
 }
@@ -1465,11 +1466,12 @@ do_test (test_t *t, const char *msg, Milexer_Slice *src)
 int
 main (void)
 {
-  static Milexer_Slice src = {.lazy = 1};
 #define DO_TEST(test, msg)                         \
-  if (do_test (test, msg, &src) != -1)             \
-    { ret = 1; goto eo_main; }
+  if (do_test (test, msg, &src, __LINE__) != -1)   \
+    { ret = 1; goto eof_main; }
 
+
+  static Milexer_Slice src = {.lazy = 1};
   test_t t = {0};
   int ret = 0;
   tk = TOKEN_ALLOC (16);
@@ -1477,7 +1479,6 @@ main (void)
   puts ("-- elementary tests -- ");
   {
     t = (test_t) {
-      .test_number = 1,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "aa bb ",
       .etk = (Milexer_Token []){
@@ -1490,7 +1491,6 @@ main (void)
     /* this test does not have a tailing delimiter
        and the parser must continue reading */
     t = (test_t) {
-      .test_number = 2,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "ccc",
       .etk = (Milexer_Token []){
@@ -1500,7 +1500,6 @@ main (void)
     DO_TEST (&t, "after delimiter");
 
     t = (test_t) {
-      .test_number = 3,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "xxx    ",
       .etk = (Milexer_Token []){
@@ -1513,7 +1512,6 @@ main (void)
   puts ("-- long tokens --");
   {
     t = (test_t) {
-      .test_number = 4,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "aaaaaaaaaaaaaabcdefghi",
       .etk = (Milexer_Token []){
@@ -1524,7 +1522,6 @@ main (void)
     DO_TEST (&t, "after load recovery");
 
     t = (test_t) {
-      .test_number = 5,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "6789abcdef\t",
       .etk = (Milexer_Token []){
@@ -1537,7 +1534,6 @@ main (void)
   puts ("-- expressions & punctuations --");
   {
     t = (test_t) {
-      .test_number = 6,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "AAA + BBB (te st) ",
       .etk = (Milexer_Token []){
@@ -1550,7 +1546,6 @@ main (void)
     DO_TEST (&t, "basic puncs & expressions");
 
     t = (test_t) {
-      .test_number = 7,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "()AAA+{a string . }(t e s t)",
       .etk = (Milexer_Token []){
@@ -1567,7 +1562,6 @@ main (void)
        but as it was an expression, the parser must
        treat this one as a separate token */
     t = (test_t) {
-      .test_number = 8,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "AA!=BB!= CC !=DD",
       .etk = (Milexer_Token []){
@@ -1583,7 +1577,6 @@ main (void)
     DO_TEST (&t, "multi-character puncs");
     
     t = (test_t) {
-      .test_number = 9,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "!= EEE ",
       .etk = (Milexer_Token []){
@@ -1596,7 +1589,6 @@ main (void)
 
     /* long expression prefix & suffix */
     t = (test_t) {
-      .test_number = 10,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "aa<<e x>>+<< AA>> <<BB >>",
       .etk = (Milexer_Token []){
@@ -1611,7 +1603,6 @@ main (void)
  
     /* fragmented expressions */
     t = (test_t) {
-      .test_number = 11,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "<<0123456789a b c d e f>><<>>",
       .etk = (Milexer_Token []){
@@ -1627,7 +1618,6 @@ main (void)
   {
     ML_DISABLE (&ml.puncs); /* disbale punctuation's */
     t = (test_t) {
-      .test_number = 6,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "AAA +BBB (te st) ",
       .etk = (Milexer_Token []){
@@ -1641,7 +1631,6 @@ main (void)
 
     ML_DISABLE (&ml.expression.exp[EXP_CBRACE]); /* disable curly braces */
     t = (test_t) {
-      .test_number = 7,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "()AAA+{XXX YYY }(t e s t)",
       .etk = (Milexer_Token []){
@@ -1659,7 +1648,6 @@ main (void)
 
     ML_DISABLE (&ml.expression); /* disable all expressions */
     t = (test_t) {
-      .test_number = 8,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "AAA+{XXX }( test) ",
       .etk = (Milexer_Token []){
@@ -1677,7 +1665,6 @@ main (void)
   puts ("-- parser flags --");
   {
     t = (test_t) {
-      .test_number = 12,
       .parsing_flags = PFLAG_IGSPACE,
       .input = "a b c (x y z)  de f\n",
       .etk = (Milexer_Token []){
@@ -1689,7 +1676,6 @@ main (void)
     DO_TEST (&t, "ignore space flag");
     
     t = (test_t) {
-      .test_number = 13,
       .parsing_flags = PFLAG_INEXP,
       .input = "AA'++'{ x y z}(test 2 . )",
       .etk = (Milexer_Token []){
@@ -1702,7 +1688,6 @@ main (void)
     DO_TEST (&t, "inner expression flag");
     
     t = (test_t) {
-      .test_number = 14,
       .parsing_flags = PFLAG_INEXP,
       .input = "<<o n e>><<t w o>> <<x y z >><<>>",
       .etk = (Milexer_Token []){
@@ -1722,7 +1707,6 @@ main (void)
     ml.delim_ranges = (Milexer_BEXP)GEN_MKCFG (delims);
     {
       t = (test_t) {
-        .test_number = 15,
         .parsing_flags = PFLAG_INEXP,
         .input = "a@b cde0123 test.1xyz42",
         .etk = (Milexer_Token []){
@@ -1735,7 +1719,6 @@ main (void)
       DO_TEST (&t, "basic custom delimiter");
 
       t = (test_t) {
-        .test_number = 16,
         .parsing_flags = PFLAG_ALLDELIMS,
         .input = "a b cde0123 test.1xyz42",
         .etk = (Milexer_Token []){
@@ -1755,7 +1738,6 @@ main (void)
   puts ("-- escape --");
   {
     t = (test_t) {
-      .test_number = 17,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "\\(xx(aa\\)bb)\\)yyy ",
       .etk = (Milexer_Token []){
@@ -1767,7 +1749,6 @@ main (void)
     DO_TEST (&t, "basic escape in expressions");
       
     t = (test_t) {
-      .test_number = 18,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "(xx\\))(aa\\)bb \\)cc\\) dd \\) )",
       .etk = (Milexer_Token []){
@@ -1779,7 +1760,6 @@ main (void)
     DO_TEST (&t, "complex escape in expressions");
 
     t = (test_t) {
-      .test_number = 19,
       .parsing_flags = PFLAG_INEXP,
       .input = "(\\(\\(\\(\\)test)\\(\\((yy)",
       .etk = (Milexer_Token []){
@@ -1794,7 +1774,6 @@ main (void)
   puts ("-- single-line comment --");
   {
     t = (test_t) {
-      .test_number = 20,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "#0123456789abcdef 0123456789abcdef\n",
       .etk = (Milexer_Token []){
@@ -1804,7 +1783,6 @@ main (void)
     DO_TEST (&t, "basic comment");
 
     t = (test_t) {
-      .test_number = 21,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "AAA#0123456789abcdef\n",
       .etk = (Milexer_Token []){
@@ -1815,7 +1793,6 @@ main (void)
     DO_TEST (&t, "keyword before comment");
 
     t = (test_t) {
-      .test_number = 22,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "AAA+#0123456789abcdef\n",
       .etk = (Milexer_Token []){
@@ -1827,7 +1804,6 @@ main (void)
     DO_TEST (&t, "punc before comment");
     
     t = (test_t) {
-      .test_number = 23,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "AAA(e x p)#0123456789abcdef\n",
       .etk = (Milexer_Token []){
@@ -1839,7 +1815,6 @@ main (void)
     DO_TEST (&t, "expression before comment");
 
     t = (test_t) {
-      .test_number = 24,
       .parsing_flags = PFLAG_INCOMMENT,
       .input = "AAA(e x p)#0123456789abcdefghi\n",
       .etk = (Milexer_Token []){
@@ -1856,7 +1831,6 @@ main (void)
   puts ("-- multi-line comment --");
   {
     t = (test_t) {
-      .test_number = 25,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "/*t e \n s t*/ XXX/*t e \n s t*/YYY ",
       .etk = (Milexer_Token []){
@@ -1867,7 +1841,6 @@ main (void)
     DO_TEST (&t, "basic multi-line comment");
 
     t = (test_t) {
-      .test_number = 26,
       .parsing_flags = PFLAG_INCOMMENT,
       .input = "XXX/*aaaaaaaabbbbbbbbccccccccdddddddd*/YYY ",
       .etk = (Milexer_Token []){
@@ -1886,7 +1859,6 @@ main (void)
   {
     END_ML_SLICE (&src);
     t = (test_t) {
-      .test_number = 0,
       .parsing_flags = PFLAG_DEFAULT,
       .input = "",
       .etk = (Milexer_Token []){
@@ -1895,8 +1867,8 @@ main (void)
     DO_TEST (&t, "end of lazy loading");
   }
 
-  puts ("\n *** All tests were passed *** ");
- eo_main:
+  printf ("\n ***  All tests passed  ***\n");
+ eof_main:
   TOKEN_FREE (&tk);
   return ret;
 }
