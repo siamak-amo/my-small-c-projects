@@ -1198,7 +1198,7 @@ enum LANG
     PUNC_NEQUAL,
     /* expressions */
     EXP_PAREN = 0,
-    EXP_CBRACE,
+    EXP_CURLY,
     EXP_STR,
     EXP_STR2,
     EXP_LONG,
@@ -1224,7 +1224,7 @@ static const char *Puncs[] = {
 };
 static struct Milexer_exp_ Expressions[] = {
   [EXP_PAREN]       = {"(", ")"},
-  [EXP_CBRACE]      = {"{", "}"},
+  [EXP_CURLY]      = {"{", "}"},
   [EXP_STR]         = {"\"", "\""},
   [EXP_STR2]        = {"'", "'"},
   [EXP_LONG]        = {"<<", ">>"},
@@ -1255,7 +1255,7 @@ static Milexer ml = {
 #ifdef ML_EXAMPLE_1
 static const char *exp_cstr[] = {
   [EXP_PAREN]       = "(*)",
-  [EXP_CBRACE]       = "{*}",
+  [EXP_CURLY]       = "{*}",
   [EXP_STR]         = "\"*\"",
   [EXP_STR2]        = "'*'",
 };
@@ -1641,7 +1641,7 @@ main (void)
     DO_TEST (&t, "disable all punctuation's");
     ML_ENABLE (&ml.puncs); /* undo ML_DISABLE */
 
-    ML_DISABLE (&ml.expression.exp[EXP_CBRACE]); /* disable curly braces */
+    ML_DISABLE (&ml.expression.exp[EXP_CURLY]); /* disable curly braces */
     t = (test_t) {
       .parsing_flags = PFLAG_DEFAULT,
       .input = "()AAA+{XXX YYY }(t e s t)",
@@ -1656,7 +1656,7 @@ main (void)
         {0}
       }};
     DO_TEST (&t, "disable only a single expression");
-    ML_ENABLE (&ml.expression.exp[EXP_CBRACE]); /* undo ML_DISABLE */
+    ML_ENABLE (&ml.expression.exp[EXP_CURLY]); /* undo ML_DISABLE */
 
     ML_DISABLE (&ml.expression); /* disable all expressions */
     t = (test_t) {
