@@ -55,8 +55,14 @@
           ...
         };
   
-      static const char *Keywords[] = { [KEY_IF] = "if", ... };
-      static const char *SL_Comments[] = { [SL_SL_COMM_1] = "#", ...};
+      static const char *Keywords[] = {
+        [KEY_IF] = "if",
+        ...
+      };
+      static const char *SL_Comments[] = {
+        [SL_SL_COMM_1] = "#",
+        ...
+      };
   
       static struct Milexer_exp_ Puncs[] = {
         [PUNC_COMMA] = GEN_EXP(","),
@@ -201,6 +207,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <assert.h>
+
+#define MILEXER_VERSION "2.1"
 
 #ifdef _ML_DEBUG
 #  include <stdio.h>
