@@ -223,6 +223,10 @@ typedef struct Milexer_exp_
 {
   const char *begin;
   const char *end;
+  struct
+  {
+    int begin, end;
+  } len;
 
   // int __tag; // internal nesting
   bool disabled;
@@ -472,7 +476,7 @@ typedef struct
 #define __get_last_exp(ml, src) \
   ((ml)->expression.exp + (src)->__last_exp_idx)
 #define __get_last_punc(ml, src) \
-  ((ml)->puncs.exp[(src)->__last_punc_idx].begin)
+  ((ml)->puncs.exp + (src)->__last_punc_idx)
 
 typedef struct Milexer_t
 {
@@ -497,6 +501,18 @@ typedef struct Milexer_t
 
 #define GEN_LENOF(arr) (sizeof (arr) / sizeof ((arr)[0]))
 #define GEN_MLCFG(exp_ptr) {.exp = exp_ptr, .len = GEN_LENOF (exp_ptr)}
+
+/**
+ *  Expression (_exp_t) generator macro
+ *  some advanced exps (like: Milexer->puncs) only have one
+ *  identifier, but some others (like: Milexer->expressions)
+ *  have both `begin` and `end` which this macro handles.
+ */
+#define GEN_EXP(begin, ...) __GEN_EXP(begin, ##__VA_ARGS__, "")
+#define __GEN_EXP(BEGIN, END, ...)                        \
+  (struct Milexer_exp_) {.begin = BEGIN, .end = END,      \
+      .len = {.begin = strlen(BEGIN), .end=strlen(END)}   \
+  }
 
 #define MLCFG_A_(s) (Milexer_AEXP) GEN_MLCFG (s)
 #define MLCFG_B_(s) (Milexer_BEXP) GEN_MLCFG (s)
@@ -619,7 +635,7 @@ __detect_puncs (const Milexer *ml, Milexer_Slice *src,
       _exp_t *punc = &ml->puncs.exp[i];
       if (punc->disabled)
         continue;
-      size_t len = strlen (punc->begin);
+      size_t len = punc->len.begin;
       if (res->__idx < len)
         continue;
       char *p = res->cstr + res->__idx - len;
@@ -651,7 +667,7 @@ __is_expression_suff (const Milexer *ml, Milexer_Slice *src,
 
   /* looking for closing, O(1) */
   _exp_t *e = __get_last_exp (ml, src);
-  size_t len = strlen (e->end);
+  size_t len = e->len.end;
 
   if (tk->__idx < len)
     return NULL;;
@@ -682,7 +698,7 @@ __is_mline_commented_suff (const Milexer *ml, Milexer_Slice *src,
       if (a_comment->disabled)
         continue;
       const char *pref = a_comment->end;
-      size_t len = strlen (pref);
+      size_t len = a_comment->len.end;
       char *__cstr = tk->cstr + tk->__idx - len;
 
       if (strncmp (pref, __cstr, len) == 0)
@@ -727,7 +743,7 @@ __is_mline_commented_pref (const Milexer *ml, Milexer_Slice *src,
       if (a_comment->disabled)
         continue;
       const char *pref = a_comment->begin;
-      size_t len = strlen (pref);
+      size_t len = a_comment->len.begin;
       char *__cstr = tk->cstr + tk->__idx - len;
 
       if (strncmp (pref, __cstr, len) == 0)
@@ -794,7 +810,7 @@ int
 ml_next (const Milexer *ml, Milexer_Slice *src,
                    Milexer_Token *tk, int flags)
 {
-  const char *le, *lp;
+  struct Milexer_exp_ *last_exp;
   if (tk->cstr == NULL || tk->cap <= 0 || tk->cstr == src->buffer)
     return NEXT_ERR;
 
@@ -807,20 +823,19 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
         {
           /* certainly the token type is expression */
           tk->type = TK_EXPRESSION;
-          le = __get_last_exp (ml, src)->begin;
-          char *__p = mempcpy (tk->cstr, le, strlen (le));
+          last_exp = __get_last_exp (ml, src);
+          char *__p = mempcpy (tk->cstr, last_exp->begin, last_exp->len.begin);
           tk->__idx += __p - tk->cstr;
         }
       src->state = SYN_NO_DUMMY;
       break;
 
     case SYN_PUNC__:
-      lp = __get_last_punc (ml, src);
-      size_t lplen = strlen (lp);
-      memcpy (tk->cstr, lp, lplen);
+      last_exp = __get_last_punc (ml, src);
+      memcpy (tk->cstr, last_exp->begin, last_exp->len.begin);
       LD_STATE (src);
       /* just to make to null-terminated */
-      tk->__idx = lplen;
+      tk->__idx = last_exp->len.begin;
       tk->type = TK_PUNCS;
       tk->id = src->__last_punc_idx;
       TOKEN_FINISH (tk);
@@ -1059,7 +1074,7 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
             }
           else if (__detect_puncs (ml, src, tk))
             {
-              const char *_punc = __get_last_punc (ml, src);
+              const char *_punc = __get_last_punc (ml, src)->begin;
               size_t n = strlen (_punc);
               if (n == tk->__idx)
                 {
