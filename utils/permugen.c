@@ -323,7 +323,7 @@ enum LANG
 
 static struct Milexer_exp_ Puncs[] =
   {
-    [PUNC_COMMA]         = ",",
+    [PUNC_COMMA]         = {",", .disabled=true},
   };
 
 static struct Milexer_exp_ Expressions[] =
@@ -1805,7 +1805,10 @@ parse_seed_regex (struct permugex *parser,
               break;
 
             case EXP_CBRACE:
+              /* We only need to parse comma in this case: {xx,yy,...} */
+              ML_ENABLE (&Puncs[PUNC_COMMA]);
               pparse_wseed_regex (parser, dst_seed);
+              ML_ENABLE (&Puncs[PUNC_COMMA]);
               break;
 
             case EXP_PAREN:
