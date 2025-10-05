@@ -470,13 +470,13 @@ typedef struct
 #define __get_last_exp(ml, src) \
   ((ml)->expression.exp + (src)->__last_exp_idx)
 #define __get_last_punc(ml, src) \
-  ((ml)->puncs.exp[(src)->__last_punc_idx])
+  ((ml)->puncs.exp[(src)->__last_punc_idx].begin)
 
 typedef struct Milexer_t
 {
   /* Configurations */
   Milexer_BEXP escape;    // Not implemented
-  Milexer_BEXP puncs;
+  Milexer_AEXP puncs;
   Milexer_BEXP keywords;
   Milexer_AEXP expression;
   Milexer_BEXP b_comment;
@@ -610,16 +610,18 @@ __detect_puncs (const Milexer *ml, Milexer_Slice *src,
   int longest_match_idx = -1;
   size_t longest_match_len = 0;
   res->cstr[res->__idx] = '\0';
+  if (ml->puncs.disabled)
+    return NULL;
   for (int i=0; i < ml->puncs.len; ++i)
     {
-      if (ml->puncs.disabled)
+      _exp_t *punc = &ml->puncs.exp[i];
+      if (punc->disabled)
         continue;
-      const char *punc = ml->puncs.exp[i];
-      size_t len = strlen (punc);
+      size_t len = strlen (punc->begin);
       if (res->__idx < len)
         continue;
       char *p = res->cstr + res->__idx - len;
-      if (strncmp (punc, p, len) == 0)
+      if (strncmp (punc->begin, p, len) == 0)
         {
           if (len >= longest_match_len)
             {
