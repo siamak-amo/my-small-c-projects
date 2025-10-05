@@ -584,21 +584,20 @@ typedef struct Milexer_t
  *  To set the ID of keyword tokens
  *  @return 0 on success, -1 if not detected
  */
-int ml_set_keyword_id (const Milexer *, Milexer_Token *t);
+int ml_set_keyword_id (const Milexer *ml, Milexer_Token *tk);
 
 /**
  *  Retrieves the next token
  *
  *  @src is the input buffer source and
- *  The result will be stored in @t
+ *  The result will be stored in @tk
  *
- *  Memory management for @src and @t is up to
+ *  Memory management for @src and @tk is up to
  *  the user of this library
- *  @src and @t buffers *MUST* be distinct
+ *  @src and @tk buffers *MUST* be distinct
  */
-int ml_next (Milexer *ml,
-             Milexer_Slice *src, Milexer_Token *t,
-             int flags);
+int ml_next (Milexer *ml, Milexer_Slice *src,
+             Milexer_Token *tk, int flg);
 
 /**
  *  Concatenates @src to @dst[0]
@@ -607,7 +606,7 @@ int ml_next (Milexer *ml,
  *  otherwise returns @dst[0]
  */
 char * ml_catcstr (char **restrict dst, const char *restrict src,
-            enum milexer_next_t ret);
+                   enum milexer_next_t ret);
 
 
 #ifdef ML_IMPLEMENTATION
@@ -660,8 +659,8 @@ __detect_delim (const Milexer *ml, unsigned char p, int flags)
 }
 
 static inline char *
-__detect_puncs (const Milexer *ml, Milexer_Slice *src,
-                Milexer_Token *res)
+__detect_puncs (const Milexer *ml,
+                Milexer_Slice *src, Milexer_Token *res)
 {
   int longest_match_idx = -1;
   size_t longest_match_len = 0;
@@ -697,8 +696,8 @@ __detect_puncs (const Milexer *ml, Milexer_Slice *src,
 }
 
 static inline char *
-__is_expression_suff (const Milexer *ml, Milexer_Slice *src,
-                     Milexer_Token *tk)
+__is_expression_suff (const Milexer *ml,
+                      Milexer_Slice *src, Milexer_Token *tk)
 {
   /* If we reach here, expressions cannot be totally disabled */
   assert (ml->expression.disabled == false && "Broken logic!!");
@@ -725,8 +724,8 @@ __is_expression_suff (const Milexer *ml, Milexer_Slice *src,
 }
 
 static inline char *
-__is_mline_commented_suff (const Milexer *ml, Milexer_Slice *src,
-                       Milexer_Token *tk)
+__is_mline_commented_suff (const Milexer *ml,
+                           Milexer_Slice *src, Milexer_Token *tk)
 {
   if (ml->a_comment.disabled)
     return NULL;
@@ -749,8 +748,8 @@ __is_mline_commented_suff (const Milexer *ml, Milexer_Slice *src,
 }
 
 static inline char *
-__is_sline_commented_pref (const Milexer *ml, Milexer_Slice *src,
-                       Milexer_Token *tk)
+__is_sline_commented_pref (const Milexer *ml,
+                           Milexer_Slice *src, Milexer_Token *tk)
 {
   if (ml->b_comment.disabled)
     return NULL;
@@ -770,8 +769,8 @@ __is_sline_commented_pref (const Milexer *ml, Milexer_Slice *src,
 }
 
 static inline char *
-__is_mline_commented_pref (const Milexer *ml, Milexer_Slice *src,
-                       Milexer_Token *tk)
+__is_mline_commented_pref (const Milexer *ml,
+                           Milexer_Slice *src, Milexer_Token *tk)
 {
   if (ml->a_comment.disabled)
     return NULL;
@@ -794,8 +793,8 @@ __is_mline_commented_pref (const Milexer *ml, Milexer_Slice *src,
 }
 
 static inline char *
-__is_expression_pref (const Milexer *ml, Milexer_Slice *src,
-                     Milexer_Token *tk)
+__is_expression_pref (const Milexer *ml,
+                      Milexer_Slice *src, Milexer_Token *tk)
 {
   if (ml->expression.disabled)
     return NULL;
