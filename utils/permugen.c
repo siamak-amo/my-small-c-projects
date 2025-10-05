@@ -321,7 +321,7 @@ enum LANG
     EXP_SBRACKET,      /* [xxx] */
   };
 
-static const char *Puncs[] =
+static struct Milexer_exp_ Puncs[] =
   {
     [PUNC_COMMA]         = ",",
   };
@@ -335,8 +335,8 @@ static struct Milexer_exp_ Expressions[] =
 
 static Milexer ML =
   {
-    .expression = GEN_MKCFG (Expressions),
-    .puncs      = GEN_MKCFG (Puncs),
+    .expression = GEN_MLCFG (Expressions),
+    .puncs      = GEN_MLCFG (Puncs),
   };
 
 /**
