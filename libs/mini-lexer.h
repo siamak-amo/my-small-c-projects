@@ -56,9 +56,11 @@
         };
   
       static const char *Keywords[] = { [KEY_IF] = "if", ... };
-      static const char *Puncs[] = { [PUNC_COMMA] = ",", ... };
       static const char *SL_Comments[] = { [SL_SL_COMM_1] = "#", ...};
   
+      static struct Milexer_exp_ Puncs[] = {
+        [PUNC_COMMA] = ",", ...
+      };
       static struct Milexer_exp_ Expressions[] = {
         [EXP_STR] = {"'", "'"}, ...
       };
@@ -1281,13 +1283,14 @@ main (void)
   /* token type */
   Milexer_Token tk = TOKEN_ALLOC (32);
 
-  printf (
-          "Mini-Lexer Example 1\n"
-          "This program parses your input and detects some pre-defined "
-          "punctuations, expressions, and keywords.\n"
-          "It also parses the contents of expressions within parentheses separately, "
-          "allowing the space character, which is a delimiter outside of these expressions.\n\n"
-          );
+  printf ("\
+Mini-Lexer Example 1\n\n\
+This program parses your input and detects some pre-defined \
+punctuation's, expressions, and keywords.\n\
+It also parses the contents of expressions within parentheses \
+separately, allowing the space character, which is a delimiter \
+outside of these expressions.\n\n\
+");
 
   char *line = NULL;
   const int flg = PFLAG_INEXP;
