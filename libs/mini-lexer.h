@@ -555,8 +555,10 @@ typedef struct Milexer_t
  *    Or disable all of them at once:
  *      ML_DISABLE(ml.expressions)
  */
-#define ML_DISABLE(field) ((field)->disabled = true)
-#define ML_ENABLE(field) ((field)->disabled = false)
+#define ML_DISABLE(field, ...) __SET_DISABLE (field, true)
+#define ML_ENABLE(field, ...) __SET_DISABLE (field, false)
+
+#define __SET_DISABLE(field, v, ...) ((field)->disabled = v)
 
 /**
  **  Function definitions
@@ -1688,7 +1690,7 @@ main (void)
     DO_TEST (&t, "disable all punctuation's");
     ML_ENABLE (&ml.puncs); /* undo ML_DISABLE */
 
-    ML_DISABLE (&ml.puncs.exp[PUNC_MINUS]); /* disbale only minus */
+    ML_DISABLE (&Puncs[PUNC_MINUS]); /* disbale only minus */
     t = (test_t) {
       .parsing_flags = PFLAG_DEFAULT,
       .input = "AAA+-BBB+",
@@ -1700,9 +1702,9 @@ main (void)
         {0}
       }};
     DO_TEST (&t, "disable a single punctuation");
-    ML_ENABLE (&ml.puncs); /* undo ML_DISABLE */
+    ML_ENABLE (&Puncs[PUNC_MINUS]); /* undo ML_DISABLE */
 
-    ML_DISABLE (&ml.expression.exp[EXP_CURLY]); /* disable curly braces */
+    ML_DISABLE (&Expressions[EXP_CURLY]); /* disable curly braces */
     t = (test_t) {
       .parsing_flags = PFLAG_DEFAULT,
       .input = "()AAA+{XXX YYY }(t e s t)",
@@ -1717,7 +1719,7 @@ main (void)
         {0}
       }};
     DO_TEST (&t, "disable only a single expression");
-    ML_ENABLE (&ml.expression.exp[EXP_CURLY]); /* undo ML_DISABLE */
+    ML_ENABLE (&Expressions[EXP_CURLY]); /* undo ML_DISABLE */
 
     ML_DISABLE (&ml.expression); /* disable all expressions */
     t = (test_t) {
