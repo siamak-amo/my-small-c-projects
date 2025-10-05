@@ -59,13 +59,16 @@
       static const char *SL_Comments[] = { [SL_SL_COMM_1] = "#", ...};
   
       static struct Milexer_exp_ Puncs[] = {
-        [PUNC_COMMA] = ",", ...
+        [PUNC_COMMA] = GEN_EXP(","),
+        ...
       };
       static struct Milexer_exp_ Expressions[] = {
-        [EXP_STR] = {"'", "'"}, ...
+        [EXP_STR] = GEN_EXP("'", "'"),
+        ...
       };
       static struct Milexer_exp_ ML_Comments[] = {
-        [ML_SL_COMM_1] = {"-(", ")-"}, ...
+        [ML_SL_COMM_1] = GEN_EXP("-(", ")-"),
+        ...
       };
   
       // Define delimiter ranges if deeded
@@ -1233,27 +1236,27 @@ static const char *Keywords[] = {
   [LANG_FI]         = "fi",
 };
 static struct Milexer_exp_ Puncs[] = {
-  [PUNC_PLUS]       = {"+"},
-  [PUNC_MINUS]      = {"-"},
-  [PUNC_MULT]       = {"*"},
+  [PUNC_PLUS]       = GEN_EXP ("+"),
+  [PUNC_MINUS]      = GEN_EXP ("-"),
+  [PUNC_MULT]       = GEN_EXP ("*"),
   // [PUNC_DIV]        = "/", otherwise we cannot have /*comment*/
-  [PUNC_COMMA]      = {","},
-  [PUNC_EQUAL]      = {"="}, /* you cannot have "==" */
-  [PUNC_NEQUAL]     = {"!="}, /* also "!===" */
+  [PUNC_COMMA]      = GEN_EXP (","),
+  [PUNC_EQUAL]      = GEN_EXP ("="), /* you cannot have "==" */
+  [PUNC_NEQUAL]     = GEN_EXP ("!="), /* also "!===" */
 };
 static struct Milexer_exp_ Expressions[] = {
-  [EXP_PAREN]       = {"(", ")"},
-  [EXP_CURLY]      = {"{", "}"},
-  [EXP_STR]         = {"\"", "\""},
-  [EXP_STR2]        = {"'", "'"},
-  [EXP_LONG]        = {"<<", ">>"},
+  [EXP_PAREN]       = GEN_EXP ("(", ")"),
+  [EXP_CURLY]       = GEN_EXP ("{", "}"),
+  [EXP_STR]         = GEN_EXP ("\"", "\""),
+  [EXP_STR2]        = GEN_EXP ("'", "'"),
+  [EXP_LONG]        = GEN_EXP ("<<", ">>"),
 };
 static const char *SL_Comments[] = {
   [SL_COMM_1]          = "#",
   [SL_COMM_2]          = "//",
 };
 static struct Milexer_exp_ ML_Comments[] = {
-  [ML_COMM_1]         = {"/*", "*/"},
+  [ML_COMM_1]         = GEN_EXP ("/*", "*/"),
 };
 //-- Milexer main configuration --------//
 static Milexer ml = {
