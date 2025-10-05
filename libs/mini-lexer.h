@@ -65,15 +65,15 @@
       };
   
       static struct Milexer_exp_ Puncs[] = {
-        [PUNC_COMMA] = GEN_EXP(","),
+        [PUNC_COMMA] = {","},
         ...
       };
       static struct Milexer_exp_ Expressions[] = {
-        [EXP_STR] = GEN_EXP("'", "'"),
+        [EXP_STR] = { "'", "'" },
         ...
       };
       static struct Milexer_exp_ ML_Comments[] = {
-        [ML_SL_COMM_1] = GEN_EXP("-(", ")-"),
+        [ML_SL_COMM_1] = { "-(", ")-" },
         ...
       };
   
@@ -1252,27 +1252,27 @@ static const char *Keywords[] = {
   [LANG_FI]         = "fi",
 };
 static struct Milexer_exp_ Puncs[] = {
-  [PUNC_PLUS]       = GEN_EXP ("+"),
-  [PUNC_MINUS]      = GEN_EXP ("-"),
-  [PUNC_MULT]       = GEN_EXP ("*"),
+  [PUNC_PLUS]       = {"+"},
+  [PUNC_MINUS]      = {"-"},
+  [PUNC_MULT]       = {"*"},
   // [PUNC_DIV]        = "/", otherwise we cannot have /*comment*/
-  [PUNC_COMMA]      = GEN_EXP (","),
-  [PUNC_EQUAL]      = GEN_EXP ("="), /* you cannot have "==" */
-  [PUNC_NEQUAL]     = GEN_EXP ("!="), /* also "!===" */
+  [PUNC_COMMA]      = {","},
+  [PUNC_EQUAL]      = {"="}, /* you cannot have "==" */
+  [PUNC_NEQUAL]     = {"!="}, /* also "!===" */
 };
 static struct Milexer_exp_ Expressions[] = {
-  [EXP_PAREN]       = GEN_EXP ("(", ")"),
-  [EXP_CURLY]       = GEN_EXP ("{", "}"),
-  [EXP_STR]         = GEN_EXP ("\"", "\""),
-  [EXP_STR2]        = GEN_EXP ("'", "'"),
-  [EXP_LONG]        = GEN_EXP ("<<", ">>"),
+  [EXP_PAREN]       = {"(", ")"},
+  [EXP_CURLY]       = {"{", "}"},
+  [EXP_STR]         = {"\"", "\""},
+  [EXP_STR2]        = {"'", "'"},
+  [EXP_LONG]        = {"<<", ">>"},
 };
 static const char *SL_Comments[] = {
   [SL_COMM_1]          = "#",
   [SL_COMM_2]          = "//",
 };
 static struct Milexer_exp_ ML_Comments[] = {
-  [ML_COMM_1]         = GEN_EXP ("/*", "*/"),
+  [ML_COMM_1]         = {"/*", "*/"},
 };
 //-- Milexer main configuration --------//
 static Milexer ml = {
