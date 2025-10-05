@@ -221,6 +221,8 @@
 #  define logf(format, ...)
 #endif
 
+#define ML_STRLEN(cstr) ((cstr) ? strlen (cstr) : 0)
+
 #ifndef _GNU_SOURCE
 void *
 mempcpy (void *dest, const void *src, size_t n)
@@ -261,8 +263,12 @@ typedef struct
   int len;
   struct Milexer_exp_ *exp;
   bool disabled;
+  bool clean; /* Not dirty */
 } Milexer_AEXP;
 
+#define EXP_SET_STRLEN(exp)                               \
+  ((exp)->len.begin = ML_STRLEN ((exp)->begin),           \
+   (exp)->len.end   = ML_STRLEN ((exp)->end))
 
 enum __buffer_state_t
   {
@@ -514,18 +520,6 @@ typedef struct Milexer_t
 #define GEN_LENOF(arr) (sizeof (arr) / sizeof ((arr)[0]))
 #define GEN_MLCFG(exp_ptr) {.exp = exp_ptr, .len = GEN_LENOF (exp_ptr)}
 
-/**
- *  Expression (_exp_t) generator macro
- *  some advanced exps (like: Milexer->puncs) only have one
- *  identifier, but some others (like: Milexer->expressions)
- *  have both `begin` and `end` which this macro handles.
- */
-#define GEN_EXP(begin, ...) __GEN_EXP(begin, ##__VA_ARGS__, "")
-#define __GEN_EXP(BEGIN, END, ...)                        \
-  (struct Milexer_exp_) {.begin = BEGIN, .end = END,      \
-      .len = {.begin = strlen(BEGIN), .end=strlen(END)}   \
-  }
-
 #define MLCFG_A_(s) (Milexer_AEXP) GEN_MLCFG (s)
 #define MLCFG_B_(s) (Milexer_BEXP) GEN_MLCFG (s)
 
@@ -576,7 +570,7 @@ int ml_set_keyword_id (const Milexer *, Milexer_Token *t);
  *  the user of this library
  *  @src and @t buffers *MUST* be distinct
  */
-int ml_next (const Milexer *,
+int ml_next (Milexer *ml,
              Milexer_Slice *src, Milexer_Token *t,
              int flags);
 
@@ -595,6 +589,18 @@ char * ml_catcstr (char **restrict dst, const char *restrict src,
 /**
  **  Internal functions
  **/
+static void
+__set_strlens (Milexer_AEXP *adv_exp)
+{
+  for (int i=0; i < adv_exp->len; ++i)
+    {
+      EXP_SET_STRLEN (&adv_exp->exp[i]);
+    }
+}
+/* update strlen of Milexer_AEXP if needed */
+#define UPDATE_STRLEN(exp) \
+  if (! (exp)->clean) { __set_strlens (exp); (exp)->clean = true; }
+
 /* returns @p when @p is a delimiter, and -1 on null-byte */
 static inline int
 __detect_delim (const Milexer *ml, unsigned char p, int flags)
@@ -813,8 +819,8 @@ ml_set_keyword_id (const Milexer *ml, Milexer_Token *res)
 }
 
 int
-ml_next (const Milexer *ml, Milexer_Slice *src,
-                   Milexer_Token *tk, int flags)
+ml_next (Milexer *ml, Milexer_Slice *src,
+         Milexer_Token *tk, int flags)
 {
   struct Milexer_exp_ *last_exp;
   if (tk->cstr == NULL || tk->cap <= 0 || tk->cstr == src->buffer)
@@ -861,6 +867,13 @@ ml_next (const Milexer *ml, Milexer_Slice *src,
           tk->__idx = len;
           src->__last_comm = NULL;
         }
+      break;
+
+    case SYN_DUMMY:
+    case SYN_DONE:
+      UPDATE_STRLEN (&ml->puncs);
+      UPDATE_STRLEN (&ml->expression);
+      UPDATE_STRLEN (&ml->a_comment);
       break;
 
     default:
