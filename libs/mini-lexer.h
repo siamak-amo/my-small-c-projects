@@ -1215,14 +1215,14 @@ static const char *Keywords[] = {
   [LANG_ELSE]       = "else",
   [LANG_FI]         = "fi",
 };
-static const char *Puncs[] = {
-  [PUNC_PLUS]       = "+",
-  [PUNC_MINUS]      = "-",
-  [PUNC_MULT]       = "*",
+static struct Milexer_exp_ Puncs[] = {
+  [PUNC_PLUS]       = {"+"},
+  [PUNC_MINUS]      = {"-"},
+  [PUNC_MULT]       = {"*"},
   // [PUNC_DIV]        = "/", otherwise we cannot have /*comment*/
-  [PUNC_COMMA]      = ",",
-  [PUNC_EQUAL]      = "=", /* you cannot have "==" */
-  [PUNC_NEQUAL]     = "!=", /* also "!===" */
+  [PUNC_COMMA]      = {","},
+  [PUNC_EQUAL]      = {"="}, /* you cannot have "==" */
+  [PUNC_NEQUAL]     = {"!="}, /* also "!===" */
 };
 static struct Milexer_exp_ Expressions[] = {
   [EXP_PAREN]       = {"(", ")"},
@@ -1641,6 +1641,20 @@ main (void)
         {0}
       }};
     DO_TEST (&t, "disable all punctuation's");
+    ML_ENABLE (&ml.puncs); /* undo ML_DISABLE */
+
+    ML_DISABLE (&ml.puncs.exp[PUNC_MINUS]); /* disbale only minus */
+    t = (test_t) {
+      .parsing_flags = PFLAG_DEFAULT,
+      .input = "AAA+-BBB+",
+      .etk = (Milexer_Token []){
+        {.type = TK_KEYWORD,    .cstr = "AAA"},
+        {.type = TK_PUNCS,      .cstr = "+"},
+        {.type = TK_KEYWORD,    .cstr = "-BBB"},
+        {.type = TK_PUNCS,      .cstr = "+"},
+        {0}
+      }};
+    DO_TEST (&t, "disable a single punctuation");
     ML_ENABLE (&ml.puncs); /* undo ML_DISABLE */
 
     ML_DISABLE (&ml.expression.exp[EXP_CURLY]); /* disable curly braces */
