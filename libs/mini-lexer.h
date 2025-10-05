@@ -230,6 +230,15 @@ mempcpy (void *dest, const void *src, size_t n)
     memcpy (dest, src, n);
     return (unsigned char *) dest + n;
 }
+
+char *
+strdup (const char *s)
+{
+  size_t n = strlen (s);
+  char *res = malloc (n + 1);
+  *((char *) mempcpy (res, s, n)) = '\0';
+  return res;
+}
 #endif /* _GNU_SOURCE */
 
 typedef struct Milexer_exp_
@@ -862,9 +871,8 @@ ml_next (Milexer *ml, Milexer_Slice *src,
       if (src->__last_comm && HAS_FLAG (flags, PFLAG_INCOMMENT))
         {
           tk->type = TK_COMMENT;
-          size_t len = strlen (src->__last_comm);
-          *((char *) mempcpy (tk->cstr, src->__last_comm, len)) = 0;
-          tk->__idx = len;
+          tk->__idx = strlen (src->__last_comm);
+          strncpy (tk->cstr, src->__last_comm, tk->__idx);
           src->__last_comm = NULL;
         }
       break;
