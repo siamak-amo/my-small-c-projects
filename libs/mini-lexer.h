@@ -77,12 +77,12 @@
   
       // The main configuration of Mini-Lexer
       static Milexer ml = {
-        .puncs         = GEN_MKCFG (Puncs),
-        .keywords      = GEN_MKCFG (Keywords),
-        .expression    = GEN_MKCFG (Expressions),
-        .b_comment     = GEN_MKCFG (SL_Comments),
-        .a_comment     = GEN_MKCFG (ML_Comments),
-        .delim_ranges  = GEN_MKCFG (Delimiters),
+        .puncs         = GEN_MLCFG (Puncs),
+        .keywords      = GEN_MLCFG (Keywords),
+        .expression    = GEN_MLCFG (Expressions),
+        .b_comment     = GEN_MLCFG (SL_Comments),
+        .a_comment     = GEN_MLCFG (ML_Comments),
+        .delim_ranges  = GEN_MLCFG (Delimiters),
       };
   
       //-- Actual Parsing --------------//
@@ -496,10 +496,10 @@ typedef struct Milexer_t
 } Milexer;
 
 #define GEN_LENOF(arr) (sizeof (arr) / sizeof ((arr)[0]))
-#define GEN_MKCFG(exp_ptr) {.exp = exp_ptr, .len = GEN_LENOF (exp_ptr)}
+#define GEN_MLCFG(exp_ptr) {.exp = exp_ptr, .len = GEN_LENOF (exp_ptr)}
 
-#define MKCFG_A_(s) (Milexer_AEXP) GEN_MKCFG (s)
-#define MKCFG_B_(s) (Milexer_BEXP) GEN_MKCFG (s)
+#define MLCFG_A_(s) (Milexer_AEXP) GEN_MLCFG (s)
+#define MLCFG_B_(s) (Milexer_BEXP) GEN_MLCFG (s)
 
 /**
  *  To simply initialize Milexer internals, outside
@@ -507,11 +507,11 @@ typedef struct Milexer_t
  *    ML.expression = MKEXP (Expressions);
  *    ML.punctuation = MKPUNC (Punctuations);
  */
-#define MKEXP(exp) MKCFG_A_ (exp)
-#define MKPUNC(pun) MKCFG_B_ (pun)
-#define MKKEYWORD(keyw) MKCFG_B_ (key)
-#define MKCOMMENT_SL(c) MKCFG_B_ (c)
-#define MKCOMMENT_ML(c) MKCFG_A_ (c)
+#define MKEXP(exp) MLCFG_A_ (exp)
+#define MKPUNC(pun) MLCFG_B_ (pun)
+#define MKKEYWORD(keyw) MLCFG_B_ (key)
+#define MKCOMMENT_SL(c) MLCFG_B_ (c)
+#define MKCOMMENT_ML(c) MLCFG_A_ (c)
 
 #define ML_UNSET(field) (field = (typeof (field)) {0})
 
@@ -1242,11 +1242,11 @@ static struct Milexer_exp_ ML_Comments[] = {
 };
 //-- Milexer main configuration --------//
 static Milexer ml = {
-    .puncs       = GEN_MKCFG (Puncs),
-    .keywords    = GEN_MKCFG (Keywords),
-    .expression  = GEN_MKCFG (Expressions),
-    .b_comment   = GEN_MKCFG (SL_Comments),
-    .a_comment   = GEN_MKCFG (ML_Comments),
+    .puncs       = GEN_MLCFG (Puncs),
+    .keywords    = GEN_MLCFG (Keywords),
+    .expression  = GEN_MLCFG (Expressions),
+    .b_comment   = GEN_MLCFG (SL_Comments),
+    .a_comment   = GEN_MLCFG (ML_Comments),
   };
 //--------------------------------------//
 #endif /* defined (ML_EXAMPLE_1) || defined (ML_TEST_1) */
@@ -1735,7 +1735,7 @@ main (void)
   {
     /* making `.`,`@` and `0`,...,`9` delimiters */
     const char *delims[] = {".", "09", "@"};
-    ml.delim_ranges = (Milexer_BEXP)GEN_MKCFG (delims);
+    ml.delim_ranges = (Milexer_BEXP)GEN_MLCFG (delims);
     {
       t = (test_t) {
         .parsing_flags = PFLAG_INEXP,
