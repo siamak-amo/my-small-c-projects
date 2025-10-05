@@ -493,6 +493,7 @@ typedef struct Milexer_t
 {
   /* Configurations */
   Milexer_BEXP escape;    // Not implemented
+  /* puncs only uses begin from _exp_t, end is empty string */
   Milexer_AEXP puncs;
   Milexer_BEXP keywords;
   Milexer_AEXP expression;
@@ -560,12 +561,6 @@ typedef struct Milexer_t
  **/
 
 /**
- *  Milexer init, this function should be called
- *  at the beginning, before `next()`
- */
-int milexer_init (Milexer *, bool lazy_mode);
-
-/**
  *  To set the ID of keyword tokens
  *  @return 0 on success, -1 if not detected
  */
@@ -595,11 +590,11 @@ char * ml_catcstr (char **restrict dst, const char *restrict src,
             enum milexer_next_t ret);
 
 
+#ifdef ML_IMPLEMENTATION
+
 /**
  **  Internal functions
  **/
-#ifdef ML_IMPLEMENTATION
-
 /* returns @p when @p is a delimiter, and -1 on null-byte */
 static inline int
 __detect_delim (const Milexer *ml, unsigned char p, int flags)
