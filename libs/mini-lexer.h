@@ -134,6 +134,21 @@
 
       // Disable the string expression in this example
       ML_DISABLE( &ml.expression.exp[EXP_STR] );
+
+
+      //-- Changing the language -------//
+      // Milexer supports changing language dynamically at runtime,
+      // users can simply assign new item to the main struct:
+
+      static struct Milexer_exp_ NewPuncs[] = {
+         [xxx] = {"x"}, ...
+      };
+      ml.puncs = GEN_MLCFG (NewPuncs);
+
+      // This assignment clears the @clear field of _exp_t struct,
+      // and `ml_next` will update the necessary Milexer internals
+      // Changing the language in middle of yielding tokens
+      // (ret: NEXT_CHUNK) has no effect until the token is ready
     ```
   
     Known Issues:
@@ -208,7 +223,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#define MILEXER_VERSION "2.1"
+#define MILEXER_VERSION "2.2"
 
 #ifdef _ML_DEBUG
 #  include <stdio.h>
