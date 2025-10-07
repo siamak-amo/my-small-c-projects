@@ -25,12 +25,8 @@
      This library was developed for my personal use and may not be 
      suitable for tokenizing any arbitrary language or regex.
 
-    Known issues:
-     - Unicode/utf8 is NOT supported.
-     - Token fragmentation (when it's buffer overflows) breaks the
-       logic of punctuation and expression detection.
 
-    Usage Example:
+ ** Usage Example:
     ```{c}
       #define ML_IMPLEMENTATION
       #include "mini-lexer.h"
@@ -105,62 +101,76 @@
           switch (ret)
             {
             case NEXT_NEED_LOAD:
-              // Load the data to be parsed
-              SET_ML_SLICE (&src, buffer, buffer_length);
-              // If your input data is complete
-              END_ML_SLICE (&src);
+              // Load the data to parse
+              if ( has_more_data )
+                SET_ML_SLICE (&src, buffer, buffer_length);
+              // If your input data is completed
+              if ( end_of_data )
+                END_ML_SLICE (&src);
               break; 
   
             case NEXT_MATCH:   // match
             case NEXT_CHUNK:   // you are receiving a chunk of the result
             case NEXT_ZTERM:   // the parser has encountered a null-byte
-              printf ("got `%s` of type %s\n", tk.cstr,
-                      milexer_token_type_cstr[tk.type]);
+              {
+                // If the token is recognized correctly, Milexer_Token->id
+                // is set to the index of the token within the corresponding
+                // language entry, for example:
+                if ( tk.type == TK_KEYWORD  &&  tk.id == KEY_IF ) {
+                    puts ("[IF keyword]");
+                } else if ( tk.type == TK_PUNCS  &&  tk.id == PUNC_COMMA ) {
+                    puts ("[Comma]");
+                }
+                // some other else if ...
+
+                if ( tk.id == TK_NOT_SET ) {
+                    printf ("[Unrecognized] `%s` of type %s\n",
+                            tk.cstr,
+                            milexer_token_type_cstr[tk.type]);
+                }
+              }
               break;
   
             default: break;
             }
         }
       TOKEN_FREE (&tk);
+      ```
 
+ ** Disabling some features:
+      As your parser proceeds, it might be useful to
+      disable/enable some expressions or punctuation's dynamically,
+      ML_DISABLE and ML_ENABLE macros can be used for this purpose:
+      {
+        ML_DISABLE( &ml.puncs );        // Disbale all punctuation's
+        ML_DISABLE( &ml.expression );   // Disable all expressions
+      }
 
-      //-- Disabling some features -----//
-      // As your parser proceeds, it might be useful to
-      // disable/enable some expressions or punctuation's dynamically,
-      // ML_DISABLE and ML_ENABLE macros can be used for this purpose.
+      Disabling string expression and comma in this example:
+      {
+        ML_DISABLE( Expressions[EXP_STR] );
+        ML_DISABLE( Puncs[EXP_STR] );
+      }
 
-      ML_DISABLE( &ml.puncs ); // Disbale all punctuation's
-      ML_DISABLE( &ml.expression ); // Disable all expressions
+    Changing the language:
+      Milexer supports changing language dynamically at runtime,
+      users can simply assign new item to the main struct:
+      {
+        static struct Milexer_exp_ NewPuncs[] = {
+           [xxx] = {"x"}, ...
+        };
+        ml.puncs = GEN_MLCFG (NewPuncs);
+      }
 
-      // Disable the string expression in this example
-      ML_DISABLE( &ml.expression.exp[EXP_STR] );
-
-
-      //-- Changing the language -------//
-      // Milexer supports changing language dynamically at runtime,
-      // users can simply assign new item to the main struct:
-
-      static struct Milexer_exp_ NewPuncs[] = {
-         [xxx] = {"x"}, ...
-      };
-      ml.puncs = GEN_MLCFG (NewPuncs);
-
-      // This assignment clears the @clear field of _exp_t struct,
-      // and `ml_next` will update the necessary Milexer internals
-      // Changing the language in middle of yielding tokens
-      // (ret: NEXT_CHUNK) has no effect until the token is ready
-    ```
-  
-    Known Issues:
-      As this library parses the input one character at a time, 
-      these issues may be irresolvable:
-      1. If you define `/` as a punctuation, comments like `//` will NOT work
-      2. If you define `=` as a punctuation, you cannot define 
-         any other punctuation with an `=` prefix (e.g. `==`, `===`, `=xxx`)
-  
-    Parsing the contents of a retrieved *Expression* token again:
-      For a complete example, see the `ML_EXAMPLE_1` program included in this file
-    ```{c}
+      This assignment clears the @clear field of _exp_t struct,
+      and `ml_next` will update the necessary Milexer internals.
+      Changing the language in middle of yielding tokens chunks
+      (ret: NEXT_CHUNK) has no effect until the token is ready.
+      
+    Paser in Parser:
+      Parsing the contents of a retrieved *Expression* token again:
+      (For a complete example, see the `ML_EXAMPLE_1`)
+      ```{c}
       // You *MUST* pass the INEXP flag to the parser; otherwise,
       // the result will contain the expression prefix and suffix,
       // which may potentially cause an infinite loop
@@ -198,11 +208,58 @@
           ret = ml_next (&ml, &src, &tk, PFLAG_INEXP);
   
         } while (!NEXT_SHOULD_LOAD (ret));
-    ```
+      ```
 
-    If you need to receive the whole token, not a chunk of if
+    To receive the entire token, when it's chunked,
     see the `ml_catcstr` function.
+
+
+    Flex compatibility:
+      Although Milixer provides low-level access to it's internal
+      tokens and configurations, some users might prefer to use
+      a higher level API like Flex.
+
+      Milixer implements a subset of Flex API which can be enabled,
+      using ML_FLEX macro:
+      ```
+      #define ML_FLEX
+      #define ML_IMPLEMENTATION
+      #include "mini-lexer.h"
+      ```
+      After include, you have access to these global variables:
+        yytext:   C string of the current token
+        yyleng:   strlen of yytext
+        yyid:     equivalent to Milexer_Token->id   (Not standard)
+
+      Example:
+      ```
+      // Define the language as before:
+      static Milexer ml = { ... };
+
+      int main( void )
+      {
+         int type;
+         YY_BUFFER_STATE *buffer = yy_scan_string( "if flex > milexer" );
+         while ( (type = yylex()) )
+           {
+             if ( type != TK_NOT_SET )
+               printf( "token:'%s'\n", yytext );
+
+             // maybe disable/enable some features here, or
+             // create another lexer with a different behavior
+           }
+         yy_delete_buffer( buffer );
+      }
+      ```
   
+    Known Issues:
+      1. If you define `/` as a punctuation, comments like `//` will NOT work
+      2. If you define `=` as a punctuation, you cannot define 
+         any other punctuation with an `=` prefix (e.g. `==`, `===`, `=xxx`)
+      3. Unicode/utf8 is NOT supported.
+      4. Token fragmentation (when it's buffer overflows) breaks the
+         logic of punctuation and expression detection.
+
     Compilation:
      The test program:
        cc -x c -O0 -ggdb -Wall -Wextra -Werror \
@@ -586,16 +643,6 @@ typedef struct Milexer_t
 
 #define __SET_DISABLE(field, v, ...) ((field)->disabled = v)
 
-/**
- **  Function definitions
- **  you shoud only call these functions
- **/
-
-/**
- *  To set the ID of keyword tokens
- *  @return 0 on success, -1 if not detected
- */
-int ml_set_keyword_id (const Milexer *ml, Milexer_Token *tk);
 
 /**
  *  Retrieves the next token
@@ -636,6 +683,12 @@ __set_strlens (Milexer_AEXP *adv_exp)
 /* update strlen of Milexer_AEXP if needed */
 #define UPDATE_STRLEN(exp) \
   if (! (exp)->clean) { __set_strlens (exp); (exp)->clean = true; }
+
+/**
+ *  To set the ID of keyword tokens
+ *  @return 0 on success, -1 if not detected
+ */
+int ml_set_keyword_id (const Milexer *ml, Milexer_Token *tk);
 
 /* returns @p when @p is a delimiter, and -1 on null-byte */
 static inline int
@@ -1287,8 +1340,7 @@ ml_catcstr (char **restrict dst, const char *restrict src,
 
 #undef logf
 #undef fprintd
-#endif /* MINI_LEXER__H */
-
+#endif /* ML_IMPLEMENTATION */
 
 
 /**
