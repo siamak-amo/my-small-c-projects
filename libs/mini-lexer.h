@@ -1457,6 +1457,7 @@ outside of these expressions.\n\n\
  **  test_1 program
  **/
 #ifdef ML_TEST_1
+#include <stdarg.h>
 
 typedef struct
 {
@@ -1468,30 +1469,54 @@ typedef struct
 /* testing token */
 static Milexer_Token tk;
 
-int
-do_test__H (test_t *t, Milexer_Slice *src, int line_number)
+int breakp_test = -1, breakp_subtest = -1;
+
+void
+test_vlogf (int n, int _line_, int test_number,
+          const char *format, ...)
 {
-#define Return(n, format, ...)                      \
-  if (n == -1) {                                    \
-    puts ("pass");                                  \
-  } else {                                          \
-    printf ("fail!\n%s:%d: " format "\n",           \
-            __FILE__, line_number, ##__VA_ARGS__);  \
-  } return n;
+  if (n > 0)
+    {
+      va_list ap;
+      va_start (ap, format);
+      printf ("fail!\n%s:%d:#%d:  ", __FILE__, _line_, n);
+      vprintf (format, ap);
+      printf ("\n  |  \
+run it with debugger, and pass the first argument `%d:%d` \
+for more investigating.",
+              test_number, n);
+      va_end (ap);
+    }
+  else
+    puts ("pass.");
+}
+
+int
+do_test__H (test_t *t, Milexer_Slice *src,
+            int _line_, int test_number)
+{
+#define Return(n, format, ...) do {             \
+    test_vlogf (n, _line_, test_number,         \
+                format, ##__VA_ARGS__);         \
+    if (n != -1) return n;                      \
+  } while (0)
 
   int ret = 0, counter = 1;
   for (const Milexer_Token *tcase = t->etk;
        tcase != NULL && tcase->cstr != NULL; ++tcase, ++counter)
     {
-      if (NEXT_SHOULD_END (ret))
+      /* This only works on x86!! */
+      if (test_number == breakp_test && counter == breakp_subtest)
         {
-          Return (counter, "unexpected NEXT_END");
+          printf ("\n\n***  Debugging Test %d:%d  ***\n\n",
+                  test_number, counter);
+          asm ("int3");
         }
 
+      /* Retrieve the next token */
+      if (NEXT_SHOULD_END (ret))
+        Return (counter, "unexpected NEXT_END");
       ret = ml_next (&ml, src, &tk, t->parsing_flags);
-#ifdef _ML_DEBUG
-      printf (" test %d:%d: expect `%s`... ", t->test_number, counter, tcase->cstr);
-#endif
 
       if (strcmp (tcase->cstr, tk.cstr) != 0)
         {
@@ -1508,15 +1533,11 @@ do_test__H (test_t *t, Milexer_Slice *src, int line_number)
         {
           Return (counter, "unexpected NEXT_NEED_LOAD");
         }
-
-#ifdef _ML_DEBUG
-      printf ("pass\n");
-#endif
-
     }
 
-  Return (-1, "");
+  Return (-1, NULL);
 #undef Return
+  return -1;
 }
 
 int
@@ -1533,18 +1554,27 @@ do_test (test_t *t, const char *msg, Milexer_Slice *src, int line_n)
 #endif
 
   SET_ML_SLICE (src, t->input, strlen (t->input));
-  if ((ret = do_test__H (t, src, line_n)) != -1)
+  if ((ret = do_test__H (t, src, line_n, test_number)) != -1)
     return ret;
   return -1;
 }
 
 int
-main (void)
+main (int argc, char **argv)
 {
 #define DO_TEST(test, msg)                         \
   if (do_test (test, msg, &src, __LINE__) != -1)   \
     { ret = 1; goto eof_main; }
 
+  if (2 == argc)
+    {
+      char *p;
+      breakp_test = atoi (argv[1]);
+      if ((p = strchr (argv[1], ':')))
+        breakp_subtest = atoi (p+1);
+      else
+        breakp_subtest = 1;
+    }
 
   static Milexer_Slice src = {.lazy = 1};
   test_t t = {0};
