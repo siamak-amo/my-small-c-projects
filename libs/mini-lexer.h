@@ -18,15 +18,14 @@
     created on: 16 Dec 2024
   
     Mini-Lexer
-    A minimal lexical tokenization library based on
-    a customizable rule-based language
+    A minimal lexical tokenization library.
   
-    ** Disclaimer **
+ ** Disclaimer **
      This library was developed for my personal use and may not be 
      suitable for tokenizing any arbitrary language or regex.
 
 
- ** Usage Example:
+ -- Usage Example ---------------------------------------------------
     ```{c}
       #define ML_IMPLEMENTATION
       #include "mini-lexer.h"
@@ -137,39 +136,10 @@
       TOKEN_FREE (&tk);
       ```
 
- ** Disabling some features:
-      As your parser proceeds, it might be useful to
-      disable/enable some expressions or punctuation's dynamically,
-      ML_DISABLE and ML_ENABLE macros can be used for this purpose:
-      {
-        ML_DISABLE( &ml.puncs );        // Disbale all punctuation's
-        ML_DISABLE( &ml.expression );   // Disable all expressions
-      }
+ -- Paser in Parser -------------------------------------------------
+      Parsing the contents of Expression tokens again
+      For a complete example, see the `ML_EXAMPLE_1`
 
-      Disabling string expression and comma in this example:
-      {
-        ML_DISABLE( Expressions[EXP_STR] );
-        ML_DISABLE( Puncs[EXP_STR] );
-      }
-
-    Changing the language:
-      Milexer supports changing language dynamically at runtime,
-      users can simply assign new item to the main struct:
-      {
-        static struct Milexer_exp_ NewPuncs[] = {
-           [xxx] = {"x"}, ...
-        };
-        ml.puncs = GEN_MLCFG (NewPuncs);
-      }
-
-      This assignment clears the @clear field of _exp_t struct,
-      and `ml_next` will update the necessary Milexer internals.
-      Changing the language in middle of yielding tokens chunks
-      (ret: NEXT_CHUNK) has no effect until the token is ready.
-      
-    Paser in Parser:
-      Parsing the contents of a retrieved *Expression* token again:
-      (For a complete example, see the `ML_EXAMPLE_1`)
       ```{c}
       // You *MUST* pass the INEXP flag to the parser; otherwise,
       // the result will contain the expression prefix and suffix,
@@ -214,25 +184,56 @@
     see the `ml_catcstr` function.
 
 
-    Flex compatibility:
-      Although Milixer provides low-level access to it's internal
-      tokens and configurations, some users might prefer to use
-      a higher level API like Flex.
+ -- Disabling some features -----------------------------------------
+    As your parser proceeds, it might be useful to
+    disable/enable some expressions or punctuation's dynamically,
+    ML_DISABLE and ML_ENABLE macros can be used for this purpose:
+      {
+        ML_DISABLE( &ml.puncs );        // Disbale all punctuation's
+        ML_DISABLE( &ml.expression );   // Disable all expressions
+      }
 
-      Milixer implements a subset of Flex API which can be enabled,
-      using ML_FLEX macro:
+    Disabling string expression and comma in this example:
+      {
+        ML_DISABLE( Expressions[EXP_STR] );
+        ML_DISABLE( Puncs[EXP_STR] );
+      }
+
+ -- Changing the language -------------------------------------------
+    Milexer supports changing language dynamically at runtime,
+    users can simply assign new item to the main struct:
+      {
+        static struct Milexer_exp_ NewPuncs[] = {
+           [xxx] = {"x"}, ...
+        };
+        ml.puncs = GEN_MLCFG (NewPuncs);
+      }
+
+    This assignment clears the @clear field of _exp_t struct,
+    and `ml_next` will update the necessary Milexer internals.
+    Changing the language in middle of yielding tokens chunks
+    (ret: NEXT_CHUNK) has no effect until the token is ready.
+
+
+ -- Flex compatibility ----------------------------------------------
+    Although Milixer provides low-level access to it's internal
+    tokens and configurations, some users might prefer to use
+    a higher level API like Flex.
+
+    Milixer implements a subset of Flex API which can be enabled,
+    using ML_FLEX macro:
       ```
       #define ML_FLEX
       #define ML_IMPLEMENTATION
       #include "mini-lexer.h"
       ```
-      After include, you have access to these global variables:
-        yytext:   C string of the current token
-        yyleng:   strlen of yytext
-        yyid:     equivalent to Milexer_Token->id   (Not standard)
+    After include, you have access to these global variables:
+      yytext:   C string of the current token
+      yyleng:   strlen of yytext
+      yyid:     equivalent to Milexer_Token->id   (Not standard)
 
-      Example:
-      ```
+    Example:
+      ```{c}
       // Define the language as before:
       static Milexer ml = { ... };
 
@@ -252,24 +253,25 @@
       }
       ```
   
-    Known Issues:
-      1. If you define `/` as a punctuation, comments like `//` will NOT work
-      2. If you define `=` as a punctuation, you cannot define 
-         any other punctuation with an `=` prefix (e.g. `==`, `===`, `=xxx`)
-      3. Unicode/utf8 is NOT supported.
-      4. Token fragmentation (when it's buffer overflows) breaks the
-         logic of punctuation and expression detection.
+ -- Known Issues ----------------------------------------------------
+    1. If you define `/` as a punctuation, then
+       comments like `//` will NOT work.
+    2. If you define `=` as a punctuation, you cannot define any
+       other punctuation with `=` prefix (e.g. `==`, `=xxx`).
+    3. Unicode/UTF8 is NOT supported.
+    4. Token fragmentation (when the buffer overflows) breaks
+       the logic of punctuation and expression detection.
 
-    Compilation:
-     The test program:
-       cc -x c -O0 -ggdb -Wall -Wextra -Werror \
+ -- Compilation -----------------------------------------------------
+    The test program:
+      cc -x c -O0 -ggdb -Wall -Wextra -Werror \
           -D ML_IMPLEMENTATION -D ML_TEST_1 \
           mini-lexer.h -o test.out
-     The example program:
-       pass `-D ML_EXAMPLE_1` instead of `ML_TEST_1`
+    The example program:
+      pass `-D ML_EXAMPLE_1` instead of `ML_TEST_1`
   
-     Compilation Options:
-       Debug Info:  define `-D_ML_DEBUG`
+    Compilation Options:
+      Debug Info:  define `-D_ML_DEBUG`
  **/
 #ifndef MINI_LEXER__H
 #define MINI_LEXER__H
