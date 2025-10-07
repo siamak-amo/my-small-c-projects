@@ -666,6 +666,109 @@ int ml_next (Milexer *ml, Milexer_Slice *src,
 char * ml_catcstr (char **restrict dst, const char *restrict src,
                    enum milexer_next_t ret);
 
+#ifdef ML_FLEX
+
+static char    *yytext;   /* Milexer_Token->cstr */
+static size_t   yyleng;   /* strlen of Milexer_Token->cstr */
+static int      yyid;     /* Milexer_Token->id */
+static FILE    *yyin;     /* stream input file */
+
+typedef struct yy_buffer_state
+{
+  int ret;
+  FILE *yy_input_file;
+  int   yy_is_interactive;
+  char *base;
+  bool  yy_base_is_our_buff;
+
+  Milexer_Slice src;
+  Milexer_Token tk;
+
+} YY_BUFFER_STATE;
+
+/**
+ *  Stack of input buffers (Internal)
+ *  Must be allocated and freed using `yyensure_buffer_stack`
+ */
+static YY_BUFFER_STATE * yy_buffer_stack = NULL;   /* Stack as an array  */
+static size_t            yy_buffer_stack_top = 0;  /* index of top of stack */
+static size_t            yy_buffer_stack_max = 0;  /* capacity of stack */
+
+/* To retrieve the top of the stack */
+#define YY_CURRENT_BUFFER \
+  ((yy_buffer_stack) ? *YY_CURRENT_BUFFER_LVALUE : NULL)
+/* top of the stack without NULL check */
+#define YY_CURRENT_BUFFER_LVALUE \
+  ((YY_BUFFER_STATE **)(yy_buffer_stack + yy_buffer_stack_top))
+
+#ifndef yyfree
+#define yy_free(ptr) if (ptr) { free(ptr); ptr = NULL; }
+#endif
+#ifndef yyalloc
+#define yyalloc malloc
+#endif
+#ifndef yyrealloc
+#define yyrealloc realloc
+#endif
+
+/**
+ *  The main  lex  function, to retrieve the next token
+ *  Sets the global variables to the corresponding values
+ *
+ *  The return valuse of this function is one of `TK_XXX`
+ * Return:
+ *   On the end of tokens:  0  (=TK_NOT_SET)
+ *   Successful lex:   Milixer_Token->type
+ */
+int yylex (void);
+
+/**
+ *  To delete a buffer from the stack
+ *  This should be called by the users, if they
+ *  are handling the lexer memory themselves
+ */
+void yy_delete_buffer (YY_BUFFER_STATE *b);
+
+/**
+ *  Allocates new state buffer from @base
+ *  It should be freed by `yy_delete_buffer`
+ */
+YY_BUFFER_STATE * yy_scan_buffer (char *base, size_t size);
+
+/**
+ *  Like yy_scan_buffer, but keep a malloc copy of @bytes
+ *  yy_delete_buffer will free it and it's copy of @bytes
+ */
+YY_BUFFER_STATE * yy_scan_bytes (const char *bytes, size_t len);
+
+/* C string version of yy_scan_bytes */
+YY_BUFFER_STATE * yy_scan_string (const char *str);
+
+/**
+ *  Create state buffer from file
+ *  @size is size of the internal buffer to read from @file
+ *  If @file is NULL, it read from stdin
+ */
+YY_BUFFER_STATE * yy_create_buffer (FILE *file, int size);
+
+/**
+ *  To ensure all the allocated memory are freed,
+ *  call it at the end of parsing
+ */
+int yylex_destroy (void);
+
+
+/**
+ **  No `yy_delete_buffer` needed functions
+ **  These functions return value should NOT
+ **  be freed by the users
+ **/
+/* Switch to reading from @file */
+YY_BUFFER_STATE * yy_restart (FILE *file);
+
+
+#endif /* ML_FLEX */
+#endif /* MINI_LEXER__H */
 
 #ifdef ML_IMPLEMENTATION
 
@@ -1336,7 +1439,36 @@ ml_catcstr (char **restrict dst, const char *restrict src,
     return *dst;
 }
 
-#endif /* ML_IMPLEMENTATION */
+#ifdef ML_FLEX
+
+/**
+ *  Allocates the stack if it does not exist.
+ *  Guarantees space for at least one push.
+ *  Just a simple dynamic array for yy_buffer_stack
+ */
+static void yyensure_buffer_stack (void);
+
+/* Pushes @new_buffer and update top of the stack */
+static void yypush_buffer (YY_BUFFER_STATE *new_buffer);
+
+/* Only pops the top of the stack, NO FREE */
+static void yypop_buffer_state (void);
+/* Internal malloc/memset to allocate YY_BUFFER_STATE struct */
+static YY_BUFFER_STATE * yy_alloc_buffer (void);
+/* Internal global values setter */
+static inline void yy_set_global (YY_BUFFER_STATE *b);
+
+/**
+ *  It deletes and pops the previous state buffer, so
+ *  it should *NOT* be freed again
+ */
+static void yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer);
+
+/* If FILE is provided, this will read the next chunk */
+static int yy_get_next_input (YY_BUFFER_STATE *b);
+
+#endif /* ML_FLEX */
+
 
 #undef logf
 #undef fprintd
