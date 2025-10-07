@@ -1232,7 +1232,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
               ml_set_keyword_id (ml, tk);
             }
           TOKEN_FINISH (tk);
-          return NEXT_END;
+          return NEXT_MATCH;
         }
        else
         {
@@ -1243,6 +1243,11 @@ ml_next (Milexer *ml, Milexer_Slice *src,
     }
   /* end of src slice */
   src->idx = 0;
+  if (tk->__idx == 0)
+    {
+      *dst = '\0';
+      return NEXT_NEED_LOAD;
+    }
   *(dst + 1) = '\0';
   if (tk->type == TK_NOT_SET)
     {
