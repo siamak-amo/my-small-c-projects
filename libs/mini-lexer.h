@@ -507,11 +507,17 @@ typedef struct
  *  END_ML_SLICE:
  *    Ends a slice, after this, the parser
  *    will always return NEXT_END
+ *  GETLINE_SLICE:
+ *   Uses getline to fill and manage slices,
+ *   slice->buffer MUST be malloc pointer or NULL
  */
 #define SET_ML_SLICE(src, buf, n) \
   ((src)->buffer = buf, (src)->cap = n, (src)->idx = 0)
 /* to indicate that lazy loading is over */
 #define END_ML_SLICE(src) ((src)->cap = 0, (src)->eof_lazy = 1)
+#define RESET_ML_SLICE(src) ((src)->idx = 0)
+#define GETLINE_SLICE(src, stream) \
+  getline ((char **)&(src)->buffer, &(src)->cap, stream)
 
 /** Internal macros **/
 /* set new state, load the previous state */
@@ -944,7 +950,9 @@ ml_next (Milexer *ml, Milexer_Slice *src,
       return NEXT_NEED_LOAD;
     }
 
-  /* parsing main logic */
+  /**
+   *  The main loop
+   */
   const char *p;
   char *dst = tk->cstr;
   if (src->idx == 0)
