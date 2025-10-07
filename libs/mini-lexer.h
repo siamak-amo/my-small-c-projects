@@ -454,8 +454,12 @@ typedef struct
   char *cstr;
   size_t cap;
 
+  /* line/column number of the token in the input */
+  size_t line, col;
+
   /* Internal */
   size_t __idx;
+  size_t __line_idx; /* start of the current line's index */
 } Milexer_Token;
 
 /* to allocate/free a token using malloc */
@@ -492,6 +496,7 @@ typedef struct
   /* TODO: for nesting, these should be arrays */
   int __last_exp_idx;
   int __last_punc_idx;
+  int __last_newline;
   const char *__last_comm;
 } Milexer_Slice;
 
@@ -843,6 +848,14 @@ ml_set_keyword_id (const Milexer *ml, Milexer_Token *res)
   return -1;
 }
 
+#define TK_MARK_NEWLINE(src, tk)                \
+  ((src)->__last_newline = 0,                   \
+   (tk)->line++,                                \
+   (tk)->__line_idx = (src)->idx)
+#define TK_MARK_COLUMN(src, tk) \
+  ((tk)->col = (src)->idx - (tk)->__line_idx)
+#define TK_RESET_LINE(tk) ((tk)->line = 1, (tk)->__line_idx = 0)
+
 int
 ml_next (Milexer *ml, Milexer_Slice *src,
          Milexer_Token *tk, int flags)
@@ -856,6 +869,8 @@ ml_next (Milexer *ml, Milexer_Slice *src,
   switch (src->state)
     {
     case SYN_NO_DUMMY__:
+      if (HAS_FLAG (flags, PFLAG_INEXP))
+        TK_MARK_COLUMN (src, tk);
       if (!HAS_FLAG (flags, PFLAG_INEXP) && src->__last_exp_idx != -1)
         {
           /* certainly the token type is expression */
@@ -863,11 +878,14 @@ ml_next (Milexer *ml, Milexer_Slice *src,
           last_exp = __get_last_exp (ml, src);
           char *__p = mempcpy (tk->cstr, last_exp->begin, last_exp->len.begin);
           tk->__idx += __p - tk->cstr;
+          TK_MARK_COLUMN (src, tk);
+          tk->col -= last_exp->len.begin;
         }
       src->state = SYN_NO_DUMMY;
       break;
 
     case SYN_PUNC__:
+      TK_MARK_COLUMN (src, tk);
       last_exp = __get_last_punc (ml, src);
       memcpy (tk->cstr, last_exp->begin, last_exp->len.begin);
       LD_STATE (src);
@@ -875,6 +893,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
       tk->__idx = last_exp->len.begin;
       tk->type = TK_PUNCS;
       tk->id = src->__last_punc_idx;
+      tk->col -= last_exp->len.begin;
       TOKEN_FINISH (tk);
       return NEXT_MATCH;
       break;
@@ -884,6 +903,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
       break;
 
     case SYN_ML_COMM:
+      TK_MARK_COLUMN (src, tk);
       if (src->__last_comm && HAS_FLAG (flags, PFLAG_INCOMMENT))
         {
           tk->type = TK_COMMENT;
@@ -895,12 +915,18 @@ ml_next (Milexer *ml, Milexer_Slice *src,
 
     case SYN_DUMMY:
     case SYN_DONE:
+      TK_MARK_COLUMN (src, tk);
+      if (src->__last_newline)
+        {
+          TK_MARK_NEWLINE (src, tk);
+        }
       UPDATE_STRLEN (&ml->puncs);
       UPDATE_STRLEN (&ml->expression);
       UPDATE_STRLEN (&ml->a_comment);
       break;
 
     default:
+      TK_MARK_COLUMN (src, tk);
       break;
     }
 
@@ -921,6 +947,8 @@ ml_next (Milexer *ml, Milexer_Slice *src,
   /* parsing main logic */
   const char *p;
   char *dst = tk->cstr;
+  if (src->idx == 0)
+    TK_RESET_LINE (tk);
   for (; src->idx < src->cap; )
     {
       p = src->buffer + (src->idx++);
@@ -972,8 +1000,11 @@ ml_next (Milexer *ml, Milexer_Slice *src,
           break;
 
         case SYN_COMM:
+          if (*p == '\n')
+            TK_MARK_NEWLINE (src, tk);
           if (*p == '\n' || *p == '\r')
             {
+              TK_MARK_COLUMN (src, tk);
               ST_STATE (src, SYN_DUMMY);
               tk->type = TK_COMMENT;
               TOKEN_FINISH (tk);
@@ -990,8 +1021,11 @@ ml_next (Milexer *ml, Milexer_Slice *src,
           break;
 
           case SYN_ML_COMM:
+          if (*p == '\n')
+            TK_MARK_NEWLINE (src, tk);
           if ((__ptr = __is_mline_commented_suff (ml, src, tk)))
             {
+              TK_MARK_COLUMN (src, tk);
               ST_STATE (src, SYN_DUMMY);
               TOKEN_FINISH (tk);
               if (HAS_FLAG (flags, PFLAG_INCOMMENT))
@@ -1021,6 +1055,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
                   ST_STATE (src, SYN_NO_DUMMY);
                   if (HAS_FLAG (flags, PFLAG_INEXP))
                     {
+                      TK_MARK_COLUMN (src, tk);
                       TOKEN_FINISH (tk);
                     }
                 }
@@ -1048,6 +1083,9 @@ ml_next (Milexer *ml, Milexer_Slice *src,
             }
           else
             {
+              if (c == '\n')
+                TK_MARK_NEWLINE (src, tk);
+              TK_MARK_COLUMN (src, tk);
               TOKEN_FINISH (tk);
             }
           break;
@@ -1097,9 +1135,11 @@ ml_next (Milexer *ml, Milexer_Slice *src,
                 {
                   TOKEN_FINISH (tk);
                   return NEXT_ZTERM;
-                } 
+                }
               if (tk->__idx > 1)
                 {
+                  if (c == '\n')
+                    ++src->__last_newline;
                   *dst = '\0';
                   if (tk->type == TK_NOT_SET)
                     {
@@ -1113,6 +1153,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
               else
                 {
                   TOKEN_FINISH (tk);
+                  TK_MARK_COLUMN (src, tk);
                 }
             }
           else if (__detect_puncs (ml, src, tk))
@@ -1150,7 +1191,10 @@ ml_next (Milexer *ml, Milexer_Slice *src,
                 {
                   tk->type = TK_EXPRESSION;
                   if (HAS_FLAG (flags, PFLAG_INEXP))
-                    TOKEN_FINISH (tk);
+                    {
+                      TOKEN_FINISH (tk);
+                      TK_MARK_COLUMN (src, tk);
+                    }
                   ST_STATE (src, SYN_NO_DUMMY);
                 }
             }
