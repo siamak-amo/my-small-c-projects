@@ -16,14 +16,17 @@
 
 /** file: mini-lexer.h
     created on: 16 Dec 2024
-  
+
     Mini-Lexer
     A minimal lexical tokenization library.
-  
- ** Disclaimer **
-     This library was developed for my personal use and may not be 
-     suitable for tokenizing any arbitrary language or regex.
 
+ ** Disclaimer **
+    This library was developed for my personal use and may not be 
+    suitable for tokenizing any arbitrary language or regex.
+
+   This library comes with a self-test program, and two other
+   example programs, for further information see ML_EXAMPLE_ macros
+   and compilation sections.
 
  -- Usage Example ---------------------------------------------------
     ```{c}
@@ -230,7 +233,8 @@
     After include, you have access to these global variables:
       yytext:   C string of the current token
       yyleng:   strlen of yytext
-      yyid:     equivalent to Milexer_Token->id   (Not standard)
+      yyid:     equivalent to Milexer_Token->id      (Not standard)
+      yyml:     to set the global Milexer language   (Not standard)
 
     Example:
       ```{c}
@@ -429,15 +433,15 @@ enum milexer_next_t
 #define NEXT_SHOULD_LOAD(ret) \
   (ret == NEXT_NEED_LOAD && !NEXT_SHOULD_END (ret))
 
-const char *milexer_next_cstr[] = {
-  [NEXT_MATCH]                   = "Match",
-  [NEXT_CHUNK]                   = "Chunk",
-  [NEXT_ZTERM]                   = "zero-byte",
-  [NEXT_NEED_LOAD]               = "Load",
-  [NEXT_END]                     = "END",
-  [NEXT_ERR]                     = "Error"
-};
-
+const char *milexer_next_cstr[] =
+  {
+    [NEXT_MATCH]                   = "Match",
+    [NEXT_CHUNK]                   = "Chunk",
+    [NEXT_ZTERM]                   = "zero-byte",
+    [NEXT_NEED_LOAD]               = "Load",
+    [NEXT_END]                     = "END",
+    [NEXT_ERR]                     = "Error"
+  };
 
 #define __flag__(n) (1 << (n))
 #define HAS_FLAG(n, flag) (n & (flag))
@@ -484,13 +488,14 @@ enum milexer_token_t
     TK_EXPRESSION,
   };
 
-const char *milexer_token_type_cstr[] = {
-  [TK_NOT_SET]         = "NAN",
-  [TK_PUNCS]           = "Punctuation",
-  [TK_KEYWORD]         = "Keyword",
-  [TK_EXPRESSION]      = "Expression",
-  [TK_COMMENT]         = "Comment",
-};
+const char *milexer_token_type_cstr[] =
+  {
+    [TK_NOT_SET]         = "NAN",
+    [TK_PUNCS]           = "Punctuation",
+    [TK_KEYWORD]         = "Keyword",
+    [TK_EXPRESSION]      = "Expression",
+    [TK_COMMENT]         = "Comment",
+  };
 
 typedef struct
 {
@@ -535,6 +540,14 @@ typedef struct
 /* Internal macros */
 #define TOKEN_FINISH(t) \
   ((t)->cstr[(t)->__idx] = 0 , (t)->__idx = 0)
+#define TK_MARK_COLUMN(src, tk) \
+  ((tk)->col = (src)->idx - (tk)->__line_idx)
+#define TK_RESET_LINE(tk) ((tk)->line = 1, (tk)->__line_idx = 0)
+#define TK_MARK_NEWLINE(src, tk)                \
+  ((src)->__last_newline = 0,                   \
+   (tk)->line++,                                \
+   (tk)->__line_idx = (src)->idx)
+
 
 typedef struct
 {
@@ -1011,14 +1024,6 @@ ml_set_keyword_id (const Milexer *ml, Milexer_Token *res)
     }
   return -1;
 }
-
-#define TK_MARK_NEWLINE(src, tk)                \
-  ((src)->__last_newline = 0,                   \
-   (tk)->line++,                                \
-   (tk)->__line_idx = (src)->idx)
-#define TK_MARK_COLUMN(src, tk) \
-  ((tk)->col = (src)->idx - (tk)->__line_idx)
-#define TK_RESET_LINE(tk) ((tk)->line = 1, (tk)->__line_idx = 0)
 
 int
 ml_next (Milexer *ml, Milexer_Slice *src,
