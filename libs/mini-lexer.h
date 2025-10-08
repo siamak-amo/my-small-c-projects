@@ -685,8 +685,10 @@ char * ml_catcstr (char **restrict dst, const char *restrict src,
 
 static char    *yytext;   /* Milexer_Token->cstr */
 static size_t   yyleng;   /* strlen of Milexer_Token->cstr */
-static int      yyid;     /* Milexer_Token->id */
 static FILE    *yyin;     /* stream input file */
+
+static Milexer *yyml;     /* Milexer Language */
+static int      yyid;     /* Milexer_Token->id */
 
 typedef struct yy_buffer_state
 {
@@ -694,7 +696,7 @@ typedef struct yy_buffer_state
   FILE *yy_input_file;
   int   yy_is_interactive;
   char *base;
-  bool  yy_base_is_our_buff;
+  int yybase_is_our_buff; /* alloced by us */
 
   Milexer_Slice src;
   Milexer_Token tk;
@@ -1474,6 +1476,240 @@ static void yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer);
 /* If FILE is provided, this will read the next chunk */
 static int yy_get_next_input (YY_BUFFER_STATE *b);
 
+YY_BUFFER_STATE *
+yy_alloc_buffer (void)
+{
+  YY_BUFFER_STATE *b = (YY_BUFFER_STATE *)
+    malloc (sizeof (struct yy_buffer_state));
+  memset (b, 0, sizeof (struct yy_buffer_state));
+  return b;
+}
+
+void yy_delete_buffer (YY_BUFFER_STATE *b)
+{
+  if (! b)
+    return;
+  if (b == YY_CURRENT_BUFFER) /* Not sure if we should pop here. */
+    *YY_CURRENT_BUFFER_LVALUE = NULL;
+
+  TOKEN_FREE (&b->tk);
+  if (b->yybase_is_our_buff)
+    yy_free (b->base);
+  yy_free (b);
+}
+
+static void
+yyensure_buffer_stack (void)
+{
+  int entry2alloc, new_size_b;
+  if (! yy_buffer_stack)
+    {
+      entry2alloc = 1;
+      yy_buffer_stack_top = 0;
+      yy_buffer_stack_max = entry2alloc;
+      new_size_b = entry2alloc * sizeof (YY_BUFFER_STATE *);
+
+      yy_buffer_stack = (YY_BUFFER_STATE *) malloc (new_size_b);
+      memset (yy_buffer_stack, 0, new_size_b);
+      return;
+    }
+  if (yy_buffer_stack_top >= yy_buffer_stack_max -1)
+    {
+      int grow = 8;
+      entry2alloc = yy_buffer_stack_max + grow;
+      new_size_b = entry2alloc * sizeof (YY_BUFFER_STATE *);
+      yy_buffer_stack = (YY_BUFFER_STATE *)
+        realloc (yy_buffer_stack, new_size_b);
+      memset (yy_buffer_stack + yy_buffer_stack_max, 0,
+              grow * sizeof (YY_BUFFER_STATE *));
+      yy_buffer_stack_max = entry2alloc;
+      return;
+    }
+}
+
+void
+yypush_buffer (YY_BUFFER_STATE *new_buffer)
+{
+  if (new_buffer == NULL)
+    return;
+  yyensure_buffer_stack();
+
+  /* Only push if top exists. Otherwise, replace top. */
+  if (YY_CURRENT_BUFFER)
+    yy_buffer_stack_top++;
+
+  *YY_CURRENT_BUFFER_LVALUE = new_buffer;
+}
+void yypop_buffer_state (void)
+{
+  if (!YY_CURRENT_BUFFER)
+    return;
+
+  *YY_CURRENT_BUFFER_LVALUE = NULL;
+  if (yy_buffer_stack_top > 0)
+    --yy_buffer_stack_top;
+}
+
+static inline void
+yy_set_global (YY_BUFFER_STATE *b)
+{
+  if (! b || b->tk.type == TK_NOT_SET)
+    {
+      yytext = NULL;
+      yyleng = 0;
+      return;
+    }
+  yytext = b->tk.cstr;
+  yyleng = strlen (yytext);
+}
+
+static inline YY_BUFFER_STATE *
+yy_scan_buffer (char *base, size_t size)
+{
+  YY_BUFFER_STATE *b = yy_alloc_buffer ();
+  b->src.lazy = false;
+  b->base = base;
+  SET_ML_SLICE (&b->src, b->base, size);
+  b->tk = TOKEN_ALLOC (32);
+  yy_set_global (b);
+  yypush_buffer (b);
+  return b;
+}
+
+YY_BUFFER_STATE *
+yy_scan_bytes (const char *bytes, size_t len)
+{
+  char *buf = malloc (len + 1);
+  memcpy (buf, bytes, len);
+  return yy_scan_buffer (buf, len);
+}
+YY_BUFFER_STATE *
+yy_scan_string (const char *str)
+{
+  return yy_scan_bytes (str, strlen (str));
+}
+
+YY_BUFFER_STATE *
+yy_create_buffer (FILE *file, int size)
+{
+  if (! file)
+    return NULL;
+  YY_BUFFER_STATE *b = yy_alloc_buffer ();
+  b->src.lazy = true;
+  b->tk = TOKEN_ALLOC (32);
+  b->yy_input_file = file;
+  int tty = isatty (fileno (file));
+  b->yy_is_interactive = (tty > 0);
+  if (tty <= 0)
+    {
+      b->base = malloc (size);
+      SET_ML_SLICE (&b->src, b->base, size);
+    }
+  yypush_buffer (b);
+  return b;
+}
+
+
+YY_BUFFER_STATE *
+yy_restart (FILE *file)
+{
+  YY_BUFFER_STATE *b = yy_create_buffer (file, 156);
+  b->we_handle_mem = true;
+  return b;
+}
+void
+yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer)
+{
+  if (! new_buffer)
+    return;
+  yyensure_buffer_stack ();
+  YY_BUFFER_STATE *b = YY_CURRENT_BUFFER;
+  if (b == new_buffer)
+    return;
+  yy_delete_buffer (b);
+  yypush_buffer (new_buffer);
+}
+
+static int
+yy_get_next_input (YY_BUFFER_STATE *b)
+{
+  ssize_t rw;
+  size_t buf_cap = b->src.cap;
+  if (b->yy_is_interactive)
+    {
+      // TODO: delete me
+      rw = getline (&b->base, &b->src.cap, b->yy_input_file);
+      if (rw >= 0)
+        {
+          b->src.buffer = b->base;
+          return 0;
+        }
+    }
+  else
+    {
+      // TODO: we should handle errors
+      rw = fread (b->base, 1, buf_cap, b->yy_input_file);
+      if (rw > 0)
+        {
+          SET_ML_SLICE (&b->src, b->base, rw);
+          return 0;
+        }
+    }
+  END_ML_SLICE (&b->src);
+  return 1;
+}
+
+int
+yylex_destroy (void)
+{
+  while (YY_CURRENT_BUFFER)
+    {
+      yy_delete_buffer( YY_CURRENT_BUFFER  );
+      *YY_CURRENT_BUFFER_LVALUE = NULL;
+    }
+  /* Destroy the stack itself. */
+  if (yy_buffer_stack)
+    {
+      yy_free (yy_buffer_stack);
+      yy_buffer_stack = NULL;
+    }
+    return 0;
+}
+
+int
+yylex (void)
+{
+  YY_BUFFER_STATE *b = YY_CURRENT_BUFFER;
+  if (! b)
+    {
+      yyin = stdin;
+      b = yy_restart (yyin);
+    }
+
+  b->ret = ml_next (&ml, &b->src, &b->tk, 0);
+  switch (b->ret)
+    {
+    case NEXT_NEED_LOAD:
+      yy_get_next_input (b);
+      return b->tk.type;
+
+    case NEXT_MATCH:
+    case NEXT_CHUNK:
+    case NEXT_ZTERM:
+      yy_set_global (b);
+      return b->tk.type;
+      break;
+
+    case NEXT_END:
+      if (b->we_handle_mem)
+        {
+          yy_delete_buffer (b);
+        }
+      yypop_buffer_state ();
+      return -1;
+    }
+  return 0;
+}
 #endif /* ML_FLEX */
 
 
@@ -1484,9 +1720,11 @@ static int yy_get_next_input (YY_BUFFER_STATE *b);
 
 /**
  **  Common headers for both
- **  example_1 and test_1 programs
+ **  example_n and test_1 programs
  **/
-#if defined (ML_EXAMPLE_1) || defined (ML_TEST_1)
+#if defined (ML_EXAMPLE_1) || \
+    defined (ML_EXAMPLE_2) || \
+    defined (ML_TEST_1)
 # include <stdio.h>
 # include <stdlib.h>
 # include <stdbool.h>
@@ -1560,7 +1798,23 @@ static Milexer ml = {
 
 
 /**
- **  Example_1 program
+ **  Example 2 program
+ **  Demonstrates Milexer flex API compatibility
+ **/
+#ifdef ML_EXAMPLE_2
+int
+main (void)
+{
+  yyml = &ml;
+  (void) (yyml);
+  puts ("hello from flexer!");
+}
+#endif /* ML_EXAMPLE_2 */
+
+
+
+/**
+ **  Example 1 program
  **/
 #ifdef ML_EXAMPLE_1
 static const char *exp_cstr[] = {
