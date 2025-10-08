@@ -1181,10 +1181,22 @@ ml_next (Milexer *ml, Milexer_Slice *src,
                       ml_set_keyword_id (ml, tk);
                     }
                 }
-              /* max token len reached */
-              ST_STATE (src, SYN_CHUNK);
+              /**
+               *  max token len reached, this will be
+               *  the next chunk unless this is end of src
+               */
               TOKEN_FINISH (tk);
-              return NEXT_CHUNK;
+              if (src->idx == src->cap)
+                {
+                  *dst = '\0';
+                  ST_STATE (src, SYN_DUMMY);
+                  return NEXT_MATCH;
+                }
+              else
+                {
+                  ST_STATE (src, SYN_CHUNK);
+                  return NEXT_CHUNK;
+                }
             }
           else
             TOKEN_FINISH (tk);
