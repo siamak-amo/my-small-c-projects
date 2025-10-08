@@ -1027,6 +1027,20 @@ ml_set_keyword_id (const Milexer *ml, Milexer_Token *res)
   return -1;
 }
 
+static inline bool
+tk_set_defaults (const Milexer *ml, Milexer_Token *tk)
+{
+  if (tk->type == TK_NOT_SET)
+    {
+      tk->type = TK_KEYWORD;
+      ml_set_keyword_id (ml, tk);
+      TOKEN_FINISH (tk);
+      return true;
+    }
+  TOKEN_FINISH (tk);
+  return false;
+}
+
 int
 ml_next (Milexer *ml, Milexer_Slice *src,
          Milexer_Token *tk, int flags)
@@ -1249,7 +1263,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
             {
               if (c == -1)
                 {
-                  TOKEN_FINISH (tk);
+                  tk_set_defaults (ml, tk);
                   return NEXT_ZTERM;
                 }
               src->state = SYN_MIDDLE;
@@ -1273,13 +1287,8 @@ ml_next (Milexer *ml, Milexer_Slice *src,
                 }
               else
                 {
-                  if (tk->type == TK_NOT_SET)
-                    {
-                      tk->type = TK_KEYWORD; 
-                      ml_set_keyword_id (ml, tk);
-                    }
+                  tk_set_defaults (ml, tk);
                   *__ptr = 0;
-                  TOKEN_FINISH (tk);
                   return NEXT_MATCH;
                 }
             }
@@ -1292,13 +1301,8 @@ ml_next (Milexer *ml, Milexer_Slice *src,
                 }
               else
                 {
-                  if (tk->type == TK_NOT_SET)
-                    {
-                      tk->type = TK_KEYWORD; 
-                      ml_set_keyword_id (ml, tk);
-                    }
                   *__ptr = 0;
-                  TOKEN_FINISH (tk);
+                  tk_set_defaults (ml, tk);
                   return NEXT_MATCH;
                 }
             }
@@ -1306,7 +1310,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
             {
               if (c == -1)
                 {
-                  TOKEN_FINISH (tk);
+                  tk_set_defaults (ml, tk);
                   return NEXT_ZTERM;
                 }
               if (tk->__idx > 1)
@@ -1314,13 +1318,8 @@ ml_next (Milexer *ml, Milexer_Slice *src,
                   if (c == '\n')
                     ++src->__last_newline;
                   *dst = '\0';
-                  if (tk->type == TK_NOT_SET)
-                    {
-                      tk->type = TK_KEYWORD; 
-                      ml_set_keyword_id (ml, tk);
-                    }
+                  tk_set_defaults (ml, tk);
                   ST_STATE (src, SYN_DUMMY);
-                  TOKEN_FINISH (tk);
                   return NEXT_MATCH;
                 }
               else
@@ -1399,12 +1398,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
     {
       if (tk->__idx >= 1)
         {
-          if (tk->type == TK_NOT_SET)
-            {
-              tk->type = TK_KEYWORD;
-              ml_set_keyword_id (ml, tk);
-            }
-          TOKEN_FINISH (tk);
+          tk_set_defaults (ml, tk);
           return NEXT_MATCH;
         }
        else
