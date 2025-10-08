@@ -496,6 +496,7 @@ const char *milexer_token_type_cstr[] =
     [TK_EXPRESSION]      = "Expression",
     [TK_COMMENT]         = "Comment",
   };
+#define ml_token_type_cstr milexer_token_type_cstr
 
 typedef struct
 {
@@ -1790,6 +1791,7 @@ enum LANG
     LANG_IF = 0,
     LANG_ELSE,
     LANG_FI,
+    LANG_FILE,
     /* punctuations */
     PUNC_PLUS = 0,
     PUNC_MINUS,
@@ -1814,6 +1816,7 @@ static const char *Keywords[] = {
   [LANG_IF]         = "if",
   [LANG_ELSE]       = "else",
   [LANG_FI]         = "fi",
+  [LANG_FILE]       = "file",
 };
 static struct Milexer_exp_ Puncs[] = {
   [PUNC_PLUS]       = {"+"},
@@ -1856,12 +1859,65 @@ static Milexer ml = {
  **  Demonstrates Milexer flex API compatibility
  **/
 #ifdef ML_EXAMPLE_2
+#include <errno.h>
+
+/**
+ *  In this example, we let the library handles
+ *  all the memory managements by it's own, only
+ *  calling yylex_destroy is required at the end.
+ */
 int
 main (void)
 {
+  FILE *f;
+  int ret;
+
+  /* Set the language */
   yyml = &ml;
-  (void) (yyml);
-  puts ("hello from flexer!");
+
+  /* Read tokens from stdin */
+  while ( (ret = yylex() ) != -1)
+    {
+      printf ("Token[%.*s]: '%s'\n",
+              3, ml_token_type_cstr[ret],
+              yytext);
+
+      if ( TK_KEYWORD == ret )
+        switch (yyid)
+          {
+          case LANG_IF:    puts ("[IF]");   break;
+          case LANG_ELSE:  puts ("[ELSE]"); break;
+          case LANG_FI:    puts ("[FI]");   break;
+          case LANG_FILE:
+            {
+              puts("-- lexing file ------------------------------");
+              /* filepath might contain comma! */
+              ML_DISABLE( &Puncs[PUNC_COMMA] );
+
+              ret = yylex(); /* get the next token as filepath */
+              if (-1 == ret)
+                break;
+              if ((f = fopen (yytext, "r")))
+                {
+                  yy_restart( f );
+                  while ((ret = yylex()) != -1)
+                    printf ("  \\->{%s}\n", yytext);
+                  fclose (f);
+                }
+              else
+                {
+                  printf ("(%s): %s\n", yytext, strerror (errno));
+                }
+
+              ML_ENABLE( &Puncs[PUNC_COMMA] ); /* undo ML_DISABLE */
+              puts ("-- EOF --------------------------------------");
+            }
+            break;
+          }
+    }
+
+  yylex_destroy ();
+  return 0;
 }
 #endif /* ML_EXAMPLE_2 */
 
