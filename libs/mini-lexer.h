@@ -697,21 +697,36 @@ char * ml_catcstr (char **restrict dst, const char *restrict src,
                    enum milexer_next_t ret);
 
 #ifdef ML_FLEX
+#include <stdio.h>
+#include <unistd.h>
 
-static char    *yytext;   /* Milexer_Token->cstr */
-static size_t   yyleng;   /* strlen of Milexer_Token->cstr */
-static FILE    *yyin;     /* stream input file */
+#ifndef __UNUSED__
+#define __UNUSED__ __attribute__((unused))
+#endif /* __UNUSED__ */
 
-static Milexer *yyml;     /* Milexer Language */
-static int      yyid;     /* Milexer_Token->id */
+static char    *yytext  __UNUSED__;   /* Milexer_Token->cstr */
+static size_t   yyleng  __UNUSED__;   /* strlen of Milexer_Token->cstr */
+static FILE    *yyin    __UNUSED__;     /* stream input file */
+
+static Milexer *yyml    __UNUSED__;     /* Milexer Language */
+static int      yyid    __UNUSED__;     /* Milexer_Token->id */
+
+enum yy_memflag
+  {
+    USER_MEM = 0, /* Allocated by the user */
+    ITS_OUR_STATE_BUF = (1<<1),  /* yy_buffer_state is allocated by us */
+    ITS_OUR_BASE_BUF =  (1<<2),  /* yy_buffer_state->base is allocated by us */
+  };
 
 typedef struct yy_buffer_state
 {
   int ret;
   FILE *yy_input_file;
   int   yy_is_interactive;
+
+  int memflgs;
   char *base;
-  int yybase_is_our_buff; /* alloced by us */
+  int   base_cap;
 
   Milexer_Slice src;
   Milexer_Token tk;
@@ -734,7 +749,7 @@ static size_t            yy_buffer_stack_max = 0;  /* capacity of stack */
   ((YY_BUFFER_STATE **)(yy_buffer_stack + yy_buffer_stack_top))
 
 #ifndef yyfree
-#define yy_free(ptr) if (ptr) { free(ptr); ptr = NULL; }
+#define yy_free free
 #endif
 #ifndef yyalloc
 #define yyalloc malloc
@@ -1492,7 +1507,7 @@ static inline void yy_set_global (YY_BUFFER_STATE *b);
  *  It deletes and pops the previous state buffer, so
  *  it should *NOT* be freed again
  */
-static void yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer);
+static void yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer) __UNUSED__;
 
 /* If FILE is provided, this will read the next chunk */
 static int yy_get_next_input (YY_BUFFER_STATE *b);
@@ -1510,11 +1525,9 @@ void yy_delete_buffer (YY_BUFFER_STATE *b)
 {
   if (! b)
     return;
-  if (b == YY_CURRENT_BUFFER) /* Not sure if we should pop here. */
-    *YY_CURRENT_BUFFER_LVALUE = NULL;
 
   TOKEN_FREE (&b->tk);
-  if (b->yybase_is_our_buff)
+  if (b->memflgs & ITS_OUR_BASE_BUF)
     yy_free (b->base);
   yy_free (b);
 }
@@ -1578,20 +1591,23 @@ yy_set_global (YY_BUFFER_STATE *b)
     {
       yytext = NULL;
       yyleng = 0;
+      yyid = -1;
       return;
     }
   yytext = b->tk.cstr;
-  yyleng = strlen (yytext);
+  yyid = b->tk.id;
+  yyleng = b->tk.occ;
 }
 
-static inline YY_BUFFER_STATE *
+inline YY_BUFFER_STATE *
 yy_scan_buffer (char *base, size_t size)
 {
   YY_BUFFER_STATE *b = yy_alloc_buffer ();
   b->src.lazy = false;
   b->base = base;
-  SET_ML_SLICE (&b->src, b->base, size);
-  b->tk = TOKEN_ALLOC (32);
+  b->base_cap = size;
+  SET_ML_SLICE (&b->src, base, size);
+  b->tk = TOKEN_ALLOC (39);
   yy_set_global (b);
   yypush_buffer (b);
   return b;
@@ -1602,7 +1618,9 @@ yy_scan_bytes (const char *bytes, size_t len)
 {
   char *buf = malloc (len + 1);
   memcpy (buf, bytes, len);
-  return yy_scan_buffer (buf, len);
+  YY_BUFFER_STATE *res = yy_scan_buffer (buf, len);
+  res->memflgs |= ITS_OUR_BASE_BUF;
+  return res;
 }
 YY_BUFFER_STATE *
 yy_scan_string (const char *str)
@@ -1615,30 +1633,32 @@ yy_create_buffer (FILE *file, int size)
 {
   if (! file)
     return NULL;
+  yyin = file;
   YY_BUFFER_STATE *b = yy_alloc_buffer ();
+  b->yy_input_file = yyin;
+
   b->src.lazy = true;
-  b->tk = TOKEN_ALLOC (32);
-  b->yy_input_file = file;
-  int tty = isatty (fileno (file));
+  int tty = isatty (fileno (yyin));
   b->yy_is_interactive = (tty > 0);
-  if (tty <= 0)
-    {
-      b->base = malloc (size);
-      SET_ML_SLICE (&b->src, b->base, size);
-    }
+
+  b->base_cap = size;
+  b->base = malloc (size);
+  b->memflgs |= ITS_OUR_BASE_BUF;
+
+  b->tk = TOKEN_ALLOC (39);
   yypush_buffer (b);
   return b;
 }
 
-
 YY_BUFFER_STATE *
 yy_restart (FILE *file)
 {
-  YY_BUFFER_STATE *b = yy_create_buffer (file, 156);
-  b->we_handle_mem = true;
+  YY_BUFFER_STATE *b = yy_create_buffer (file, 1024);
+  b->memflgs |= ITS_OUR_STATE_BUF;
   return b;
 }
-void
+
+static void
 yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer)
 {
   if (! new_buffer)
@@ -1654,22 +1674,31 @@ yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer)
 static int
 yy_get_next_input (YY_BUFFER_STATE *b)
 {
-  ssize_t rw;
-  size_t buf_cap = b->src.cap;
+  ssize_t rw = 0;
+
   if (b->yy_is_interactive)
     {
-      // TODO: delete me
-      rw = getline (&b->base, &b->src.cap, b->yy_input_file);
-      if (rw >= 0)
+      int c;
+      while (1)
         {
-          b->src.buffer = b->base;
+          c = getc (yyin);
+          if (c < ' ')
+            break;
+          b->base[rw] = (char) c;
+          ++rw;
+        }
+      if ( c == '\n' )
+        {
+          b->base[rw++] = (char) c;
+          SET_ML_SLICE (&b->src, b->base, rw);
           return 0;
         }
     }
   else
     {
-      // TODO: we should handle errors
-      rw = fread (b->base, 1, buf_cap, b->yy_input_file);
+      rw = fread (b->base, 1, b->base_cap, yyin);
+      if (feof (yyin) || ferror (yyin)) /* EOF */
+        b->src.lazy = false;
       if (rw > 0)
         {
           SET_ML_SLICE (&b->src, b->base, rw);
@@ -1707,29 +1736,33 @@ yylex (void)
       b = yy_restart (yyin);
     }
 
-  b->ret = ml_next (&ml, &b->src, &b->tk, 0);
+ beginning_of_lex:
+  b->ret = ml_next (yyml, &b->src, &b->tk, 0);
   switch (b->ret)
     {
-    case NEXT_NEED_LOAD:
-      yy_get_next_input (b);
-      return b->tk.type;
-
     case NEXT_MATCH:
-    case NEXT_CHUNK:
     case NEXT_ZTERM:
       yy_set_global (b);
       return b->tk.type;
-      break;
+
+    case NEXT_CHUNK:
+      TOKEN_EXTEND (&b->tk, 12);
+      printf ("@%p realocated: new size=%ld\n", &b->tk, b->tk.cap);
+      goto beginning_of_lex;
+
+    case NEXT_NEED_LOAD:
+      if (yy_get_next_input (b))
+        goto next_end;
+      goto beginning_of_lex;
 
     case NEXT_END:
-      if (b->we_handle_mem)
-        {
-          yy_delete_buffer (b);
-        }
+    next_end:
+      if (b->memflgs & ITS_OUR_STATE_BUF)
+        yy_delete_buffer (b);
       yypop_buffer_state ();
       return -1;
     }
-  return 0;
+  return -1;
 }
 #endif /* ML_FLEX */
 
