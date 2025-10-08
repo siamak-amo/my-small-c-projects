@@ -529,6 +529,8 @@ typedef struct
 /* to allocate/free a token using malloc */
 #define TOKEN_ALLOC(n) \
   (Milexer_Token){.cstr = malloc (n+1), .cap = n}
+#define TOKEN_REALLOC(tk, new_cap) \
+  ((tk)->cstr = realloc ((tk)->cstr, new_cap), (tk)->cap = new_cap)
 #define TOKEN_FREE(t) if ((t)->cstr) {free ((t)->cstr);}
 /* to only drop contents of a token */
 #define TOKEN_DROP(t) \
@@ -536,6 +538,19 @@ typedef struct
    (t)->type = TK_NOT_SET, (t)->cstr[0] = '\0')
 /* to check if the token @t is defined in Milexer language */
 #define TOKEN_IS_KNOWN(t) ((t)->id >= 0)
+/* free capacity space of a token */
+#define TOKEN_LEFT_CAP(tk) ((tk)->cap - ((tk)->occ))
+#define TOKEN_HAS_CAP(tk) (TOKEN_LEFT_CAP (tk) > 0)
+
+/**
+ *  Extends a token when it runs out of memory
+ *  Only use this macro after ml_next call, and use it
+ *  until ml_next returns NEXT_CHUNK.
+ */
+#define TOKEN_EXTEND(tk, grow_cap)              \
+  ((tk)->__idx = (tk)->occ,                     \
+   (tk)->cap += grow_cap,                       \
+   TOKEN_REALLOC (tk, (tk)->cap + 1))           \
 
 /* Internal macros */
 #define TOKEN_FINISH(t) \
