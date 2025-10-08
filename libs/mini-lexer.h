@@ -516,7 +516,7 @@ typedef struct
    *  The `TOKEN_ALLOC` macro allocates a token using malloc
    */
   char *cstr;
-  size_t cap;
+  size_t cap, occ;  /* capacity and occupied (=strlen) */
 
   /* line/column number of the token in the input */
   size_t line, col;
@@ -539,7 +539,7 @@ typedef struct
 
 /* Internal macros */
 #define TOKEN_FINISH(t) \
-  ((t)->cstr[(t)->__idx] = 0 , (t)->__idx = 0)
+  ((t)->cstr[(t)->__idx] = 0 , (t)->occ=(t)->__idx, (t)->__idx=0)
 #define TK_MARK_COLUMN(src, tk) \
   ((tk)->col = (src)->idx - (tk)->__line_idx)
 #define TK_RESET_LINE(tk) ((tk)->line = 1, (tk)->__line_idx = 0)
