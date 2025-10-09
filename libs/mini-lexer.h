@@ -714,17 +714,10 @@ typedef struct Milexer_t
 int ml_next (Milexer *ml, Milexer_Slice *src,
              Milexer_Token *tk, int flg);
 
-/**
- *  Concatenates @src to @dst[0]
- *  It uses malloc to allocate @dst[0], and it should be freed by free()
- *  This call returns NULL while @ret is equal to NEXT_CHUNK and
- *  otherwise returns @dst[0]
- */
-char * ml_catcstr (char **restrict dst, const char *restrict src,
-                   enum milexer_next_t ret);
 
 #ifdef ML_FLEX
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #ifndef __UNUSED__
@@ -1543,24 +1536,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
   return NEXT_NEED_LOAD;
 }
 
-char *
-ml_catcstr (char **restrict dst, const char *restrict src,
-            enum milexer_next_t ret)
-{
-  if (*dst == NULL)
-    *dst = strdup (src);
-  else
-    {
-      *dst = realloc (*dst, strlen (*dst) + strlen (src) + 1);
-      strcat (*dst, src);
-    }
-
-  if (ret == NEXT_CHUNK)
-    return NULL;
-  else
-    return *dst;
-}
-
+/* Flex compatibility implementation */
 #ifdef ML_FLEX
 
 /**
@@ -1824,7 +1800,6 @@ yylex (void)
 
     case NEXT_CHUNK:
       TOKEN_EXTEND (&b->tk, 12);
-      printf ("@%p realocated: new size=%ld\n", &b->tk, b->tk.cap);
       goto beginning_of_lex;
 
     case NEXT_NEED_LOAD:
