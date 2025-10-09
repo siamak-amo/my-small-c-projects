@@ -535,35 +535,49 @@ typedef struct
   size_t __line_idx; /* start of the current line's index */
 } Milexer_Token;
 
-/* to allocate/free a token using malloc */
-#define TOKEN_ALLOC(n) \
-  (Milexer_Token){.cstr = malloc (n+1), .cap = n}
-#define TOKEN_REALLOC(tk, new_cap) \
-  ((tk)->cstr = realloc ((tk)->cstr, new_cap), (tk)->cap = new_cap)
-#define TOKEN_FREE(t) if ((t)->cstr) {free ((t)->cstr);}
-/* to only drop contents of a token */
-#define TOKEN_DROP(t) \
-  ((t)->__idx = 0, (t)->len = 0, \
-   (t)->type = TK_NOT_SET, (t)->cstr[0] = '\0')
-/* to check if the token @t is defined in Milexer language */
-#define TOKEN_IS_KNOWN(t) ((t)->id >= 0)
-/* free capacity space of a token */
-#define TOKEN_LEFT_CAP(tk) ((tk)->cap - ((tk)->occ))
-#define TOKEN_HAS_CAP(tk) (TOKEN_LEFT_CAP (tk) > 0)
+/* Users only use these macros */
+#define TK_DECLARE    TOKEN_DECLARE
+#define TK_ALLOC      TOKEN_ALLOC   /* needs stdlib malloc */
+#define TK_FREE       TOKEN_FREE    /* needs stdlib free */
+#define TK_EXTEND     TOKEN_EXTEND  /* needs stdlib realloc */
+#define TK_EXTEND2    TOKEN_EXTEND2
+#define TK_STRLEN     TOKEN_STRLEN
+#define TK_FREE_SPACE TOKEN_FREE_SPCAE
+
+/* To allocate/free tokens using malloc */
+#define TOKEN_DECLARE(mem, len) (Milexer_Token){.cstr=mem, .cap=len}
+#define TOKEN_ALLOC(n) TOKEN_DECLARE (ml_malloc(n+1), n)
+#define TOKEN_FREE(t) if ((t)->cstr) {ml_free ((t)->cstr);}
 
 /**
- *  Extends a token when it runs out of memory
- *  Only use this macro after ml_next call, and use it
+ *  Extends a token when it runs out of memory so
+ *  ml_next can continue using it.
+ *  Only use these macros after ml_next call, and use it
  *  until ml_next returns NEXT_CHUNK.
+ * @grow: how many bytes to extend
  */
-#define TOKEN_EXTEND(tk, grow_cap)              \
+#define TOKEN_EXTEND(tk, grow) \
+  TOKEN_EXTEND2(tk, ml_realloc((tk)->cstr, (tk)->cap + grow +1), grow)
+/* To extend tokens manually */
+#define TOKEN_EXTEND2(tk, new_mem, delta_size)  \
   ((tk)->__idx = (tk)->occ,                     \
-   (tk)->cap += grow_cap,                       \
-   TOKEN_REALLOC (tk, (tk)->cap + 1))           \
+   (tk)->cap  += delta_size,                    \
+   (tk)->cstr  = new_mem)
+
+/* strlen and free space of tokens */
+#define TOKEN_STRLEN(tk) ((tk)->occ)
+#define TOKEN_LEFT_CAP(tk) ((tk)->cap - ((tk)->occ))
+#define TOKEN_FREE_SPCAE TOKEN_LEFT_CAP
 
 /* Internal macros */
+#define TOKEN_IS_KNOWN(t) ((t)->id >= 0)
 #define TOKEN_FINISH(t) \
   ((t)->cstr[(t)->__idx] = 0 , (t)->occ=(t)->__idx, (t)->__idx=0)
+/* realloc token buffer */
+#define _REALLOC(ptr, len) ptr = ml_realloc(ptr, len)
+#define TOKEN_REALLOC(tk, new_cap) \
+  (_REALLOC( (tk)->cstr, new_cap), (tk)->cap=new_cap)
+/* line/column number marker macros */
 #define TK_MARK_COLUMN(src, tk) \
   ((tk)->col = (src)->idx - (tk)->__line_idx)
 #define TK_RESET_LINE(tk) ((tk)->line = 1, (tk)->__line_idx = 0)
@@ -571,6 +585,10 @@ typedef struct
   ((src)->__last_newline = 0,                   \
    (tk)->line++,                                \
    (tk)->__line_idx = (src)->idx)
+/* Reset the token @t, NO free */
+#define TOKEN_RESET(t) \
+  ((t)->__idx = 0, (t)->len = 0, \
+   (t)->type = TK_NOT_SET, (t)->cstr[0] = '\0')
 
 
 typedef struct
