@@ -30,6 +30,7 @@
 
  -- Usage Example ---------------------------------------------------
     ```{c}
+      #include <stlib.h>
       #define ML_IMPLEMENTATION
       #include "mini-lexer.h"
   
@@ -92,11 +93,14 @@
         .delim_ranges  = GEN_MLCFG (Delimiters),
       };
   
-      //-- Actual Parsing --------------//
       const int flg = PFLAG_DEFAULT;
       Milexer_Slice src = {.lazy = true};
+
+      // To allocate tokens on stack use the TOKEN_DECLARE macro,
+      // but here we use TOKEN_ALLOC which works with malloc:
       Milexer_Token tk = TOKEN_ALLOC (32);
   
+      //-- Actual Parsing --------------//
       for (int ret = 0; !NEXT_SHOULD_END (ret); )
         {
           ret = ml_next (&ml, &src, &tk, flg);
@@ -144,11 +148,11 @@
       For a complete example, see the `ML_EXAMPLE_1`
 
       ```{c}
-      // You *MUST* pass the INEXP flag to the parser; otherwise,
+      // You *MUST* pass the INEXP flag to the parser; Otherwise,
       // the result will contain the expression prefix and suffix,
       // which may potentially cause an infinite loop
       ret = ml_next (&ml, &src, &tk, PFLAG_INEXP);
-      ...
+
       if (tk.type == TK_EXPRESSION)
       {
         int _ret;
@@ -158,10 +162,12 @@
         // As we are using @tk.cstr in new_src, we cannot also
         // store the result data into the @tk itself, so
         // you *MUST* also allocate a new token, @new_token
+        Milexer_Token new_token = TOKEN_ALLOC (32);
   
         do {
           // Indicates to the parser when it should stop
           new_src.eof_lazy = (ret != NEXT_CHUNK);
+
           // Prepare the new parsing data source, @new_src
           SET_ML_SLICE (&new_src, tk.cstr, strlen (tk.cstr));
   
@@ -183,9 +189,21 @@
         } while (!NEXT_SHOULD_LOAD (ret));
       ```
 
-    To receive the entire token, when it's chunked,
-    see the `ml_catcstr` function.
+ -- Extending chunked tokens ----------------------------------------
+    If Milexer_Token->cstr is allocated via malloc, for example:
+    TOKEN_ALLOC macro is used, it can be extended to receive
+    the actual intended data when it's chunked.
+    The TOKEN_EXTEND macro can be used to extend the capacity:
+    ```{c}
+      while (ret == NEXT_CHUNK)
+        {
+          // Grow the token @tk, 12 bytes using realloc
+          TOKEN_EXTEND (&tk, 12);
 
+          // Continue filling the token
+          ret = ml_next (&ml, &src, &tk, ...);
+        }
+    ```
 
  -- Disabling some features -----------------------------------------
     As your parser proceeds, it might be useful to
@@ -281,9 +299,7 @@
 #define MINI_LEXER__H
 
 #include <string.h>
-#include <stddef.h>
 #include <stdbool.h>
-#include <stdlib.h>
 #include <assert.h>
 
 #define MILEXER_VERSION "2.2"
@@ -299,25 +315,17 @@
 #  define logf(format, ...)
 #endif
 
+#ifndef ml_malloc
+#define ml_malloc malloc
+#endif
+#ifndef ml_realloc
+#define ml_realloc realloc
+#endif
+#ifndef ml_free
+#define ml_free free
+#endif
+
 #define ML_STRLEN(cstr) ((cstr) ? strlen (cstr) : 0)
-
-#ifndef _GNU_SOURCE
-void *
-mempcpy (void *dest, const void *src, size_t n)
-{
-    memcpy (dest, src, n);
-    return (unsigned char *) dest + n;
-}
-
-char *
-strdup (const char *s)
-{
-  size_t n = strlen (s);
-  char *res = malloc (n + 1);
-  *((char *) mempcpy (res, s, n)) = '\0';
-  return res;
-}
-#endif /* _GNU_SOURCE */
 
 typedef struct Milexer_exp_
 {
