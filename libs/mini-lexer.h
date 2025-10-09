@@ -775,15 +775,65 @@ static size_t            yy_buffer_stack_max = 0;  /* capacity of stack */
 #define YY_CURRENT_BUFFER_LVALUE \
   ((YY_BUFFER_STATE **)(yy_buffer_stack + yy_buffer_stack_top))
 
-#ifndef yyfree
-#define yy_free free
-#endif
-#ifndef yyalloc
-#define yyalloc malloc
-#endif
-#ifndef yyrealloc
-#define yyrealloc realloc
-#endif
+#ifdef ML_DEBUG
+# define ml_dprintf(format, ...) \
+  fprintf (stderr, format, ##__VA_ARGS__)
+#else
+#define ml_dprintf(...)
+#endif /* ML_DEBUG */
+
+#ifndef ML_DEBUG
+# ifndef yy_free
+#   define yy_free free
+# endif
+# ifndef yy_malloc
+#   define yy_malloc malloc
+# endif
+# ifndef yy_realloc
+#   define yy_realloc realloc
+# endif
+#else /* ML_DEBUG */
+# ifndef yy_free
+# define yy_free(ptr) __yyfree (ptr, __FILE__, __LINE__)
+void
+__yyfree (void *ptr, const char *src_name, int _line_)
+{
+  ml_dprintf ("%s:%d:  free(%p)\n", src_name, _line_, ptr);
+  free (ptr);
+}
+# endif /* yy_free */
+# ifndef yy_malloc
+# define yy_malloc(n) __yymalloc (n, __FILE__, __LINE__)
+void *
+__yymalloc (size_t size, const char *src_name, int _line_)
+{
+  void *ptr = malloc (size);
+  ml_dprintf ("%s:%d:  malloc(%ld) -> %p\n",
+              src_name, _line_, size, ptr);
+  return ptr;
+}
+# endif /* yy_alloc */
+# ifndef yy_realloc
+# define yy_realloc(ptr, n) __yyrealloc (ptr, n, __FILE__, __LINE__)
+void *
+__yyrealloc (void *ptr, size_t size, const char *src_name, int _line_)
+{
+  intptr_t __ptr = (intptr_t) ptr; // just to shut up the compiler
+  void *res = realloc (ptr, size);
+  ml_dprintf ("%s:%d:  realloc(0x%lx, %ld) -> %p\n",
+              src_name, _line_, __ptr, size, res);
+  return res;
+}
+# endif /* yy_realloc */
+
+#undef ml_malloc
+#define ml_malloc yy_malloc
+#undef ml_realloc
+#define ml_realloc yy_realloc
+#undef ml_free
+#define ml_free yy_free
+
+#endif /* ML_DEBUG */
 
 /**
  *  The main  lex  function, to retrieve the next token
