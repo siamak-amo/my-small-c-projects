@@ -840,6 +840,16 @@ __yyrealloc (void *ptr, size_t size, const char *src_name, int _line_)
 int yylex (void);
 
 /**
+ *  Getline function
+ *  Reads from @stream at most @len bytes, write it on @buffer
+ *  @buffer should have a newline character at the end
+ *
+ *  Minilexer has implemented a minimal getline function,
+ *  and it can be overridden using YY_CUSTOM_GETLINE macro
+ */
+size_t yy_getline (FILE *stream, char *buffer, size_t len);
+
+/**
  *  To delete a buffer from the stack
  *  This should be called by the users, if they
  *  are handling the lexer memory themselves
@@ -1732,6 +1742,22 @@ yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer)
   yypush_buffer (new_buffer);
 }
 
+#ifndef YY_CUSTOM_GETLINE
+size_t
+yy_getline (FILE *stream, char *buffer, size_t len)
+{
+  size_t rw = 0;
+  for (int c = '*'; c >= ' ' && rw < len-1; ++rw)
+    {
+      c = getc (stream);
+      buffer[rw] = (char) c;
+      if (c == EOF)
+        return rw;
+    }
+  return rw;
+}
+#endif /* YY_CUSTOM_GETLINE */
+
 static int
 yy_get_next_input (YY_BUFFER_STATE *b)
 {
@@ -1739,18 +1765,9 @@ yy_get_next_input (YY_BUFFER_STATE *b)
 
   if (b->yy_is_interactive)
     {
-      int c;
-      while (1)
+      rw = yy_getline (yyin, b->base, b->base_cap);
+      if (0 != rw)
         {
-          c = getc (yyin);
-          if (c < ' ')
-            break;
-          b->base[rw] = (char) c;
-          ++rw;
-        }
-      if ( c == '\n' )
-        {
-          b->base[rw++] = (char) c;
           SET_ML_SLICE (&b->src, b->base, rw);
           return 0;
         }
