@@ -240,6 +240,7 @@
     Although Milixer provides low-level access to it's internal
     tokens and configurations, some users might prefer to use
     a higher level API like Flex.
+    see the Example_2 for a quick example.
 
     Milixer implements a subset of Flex API which can be enabled,
     using ML_FLEX macro:
@@ -251,6 +252,7 @@
     After include, you have access to these global variables:
       yytext:   C string of the current token
       yyleng:   strlen of yytext
+      yyin:     the current input FILE pointer
       yyid:     equivalent to Milexer_Token->id      (Not standard)
       yyml:     to set the global Milexer language   (Not standard)
 
@@ -262,19 +264,39 @@
       int main( void )
       {
          int type;
-         YY_BUFFER_STATE *buffer = yy_scan_string( "if flex > milexer" );
-         while ( (type = yylex()) )
+         yyml = &ml; // set the global language
+         YY_BUFFER_STATE *buffer;
+
+         buffer = yy_scan_string( "if flex > milexer" );
+         while ( (type = yylex()) != -1 )
            {
-             if ( type != TK_NOT_SET )
-               printf( "token:'%s'\n", yytext );
+             printf( "token:'%s'\n", yytext );
 
              // maybe disable/enable some features here, or
              // create another lexer with a different behavior
            }
          yy_delete_buffer( buffer );
+         yylex_destroy(); // global destroy
       }
       ```
-  
+
+      There are other variants of yy functions which make memory
+      managements automatic:
+      {
+        // yy_restart return pointers, do not need to be freed
+        FILE *f = fopen( "/path/to/file", "r" );
+        yy_restart( f );
+
+        // but, yy_create_buffer requires yy_delete_buffer
+        YY_BUFFER_STATE *b yy_create_buffer( f, 4096 );
+
+        yy_delete_buffer( b );
+        fclose (f);
+      }
+      yylex_destroy call's steal required to free global memories.
+      see headers for more information.
+
+
  -- Known Issues ----------------------------------------------------
     1. If you define `/` as a punctuation, then
        comments like `//` will NOT work.
@@ -851,8 +873,9 @@ int yylex (void);
 
 /**
  *  Getline function
- *  Reads from @stream at most @len bytes, write it on @buffer
- *  @buffer should have a newline character at the end
+ *  Reads from @stream at most @len bytes, writes on @buffer,
+ *  @buffer should have a newline character at the end, to be
+ *  distinguished from the rest of the input
  *
  *  Minilexer has implemented a minimal getline function,
  *  and it can be overridden using YY_CUSTOM_GETLINE macro
@@ -1735,6 +1758,8 @@ YY_BUFFER_STATE *
 yy_restart (FILE *file)
 {
   YY_BUFFER_STATE *b;
+  if (! file)
+    file = stdin;
   b = yy_create_buffer (file, YY_BUFFER_CAP);
   b->memflgs |= ITS_OUR_STATE_BUF;
   return b;
@@ -2013,9 +2038,11 @@ main (void)
                 {
                   yy_restart( f );
                   while ( (ret = yylex() ) != -1)
-                    printf ("-- token[%.*s]: {%s}\n",
-                            3, ml_token_type_cstr[ret],
-                            yytext);
+                    {
+                      printf ("-- token[%.*s]: {%s}\n",
+                              3, ml_token_type_cstr[ret],
+                              yytext);
+                    }
                   fclose (f);
                 }
               else
