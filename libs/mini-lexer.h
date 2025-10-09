@@ -1637,19 +1637,27 @@ void yypop_buffer_state (void)
     --yy_buffer_stack_top;
 }
 
-static inline void
+static void
 yy_set_global (YY_BUFFER_STATE *b)
 {
-  if (! b || b->tk.type == TK_NOT_SET)
+  if (! b)
     {
-      yytext = NULL;
+      yyin = NULL, yytext = NULL;
       yyleng = 0;
-      yyid = -1;
+      yyid = TK_NOT_SET;
       return;
     }
-  yytext = b->tk.cstr;
+  yyin = b->yy_input_file;
   yyid = b->tk.id;
-  yyleng = b->tk.occ;
+  if (TK_NOT_SET == b->tk.type)
+    {
+      yytext = NULL, yyleng = 0;
+    }
+  else
+    {
+      yytext = b->tk.cstr;
+      yyleng = b->tk.occ;
+    }
 }
 
 inline YY_BUFFER_STATE *
@@ -1784,10 +1792,8 @@ yylex (void)
 {
   YY_BUFFER_STATE *b = YY_CURRENT_BUFFER;
   if (! b)
-    {
-      yyin = stdin;
-      b = yy_restart (yyin);
-    }
+    b = yy_restart (stdin);
+  yy_set_global (b);
 
  beginning_of_lex:
   b->ret = ml_next (yyml, &b->src, &b->tk, 0);
