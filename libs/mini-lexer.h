@@ -768,6 +768,16 @@ static size_t            yy_buffer_stack_max = 0;  /* capacity of stack */
 #define YY_CURRENT_BUFFER_LVALUE \
   ((YY_BUFFER_STATE **)(yy_buffer_stack + yy_buffer_stack_top))
 
+#ifndef YY_BUFFER_CAP
+#define YY_BUFFER_CAP 4096  /* disk pgae size, to read from disk */
+#endif
+#ifndef YY_TOKEN_CAP
+#define YY_TOKEN_CAP 512
+#endif
+#ifndef YY_TOKEN_GROW
+#define YY_TOKEN_GROW 128  /* token realloc grow factor */
+#endif
+
 #ifdef ML_DEBUG
 # define ml_dprintf(format, ...) \
   fprintf (stderr, format, ##__VA_ARGS__)
@@ -1678,7 +1688,7 @@ yy_scan_buffer (char *base, size_t size)
   b->base = base;
   b->base_cap = size;
   SET_ML_SLICE (&b->src, base, size);
-  b->tk = TOKEN_ALLOC (39);
+  b->tk = TOKEN_ALLOC (YY_TOKEN_CAP);
   yy_set_global (b);
   yypush_buffer (b);
   return b;
@@ -1716,7 +1726,7 @@ yy_create_buffer (FILE *file, int size)
   b->base = yy_malloc (size);
   b->memflgs |= ITS_OUR_BASE_BUF;
 
-  b->tk = TOKEN_ALLOC (39);
+  b->tk = TOKEN_ALLOC (YY_TOKEN_CAP);
   yypush_buffer (b);
   return b;
 }
@@ -1724,7 +1734,8 @@ yy_create_buffer (FILE *file, int size)
 YY_BUFFER_STATE *
 yy_restart (FILE *file)
 {
-  YY_BUFFER_STATE *b = yy_create_buffer (file, 1024);
+  YY_BUFFER_STATE *b;
+  b = yy_create_buffer (file, YY_BUFFER_CAP);
   b->memflgs |= ITS_OUR_STATE_BUF;
   return b;
 }
@@ -1822,7 +1833,7 @@ yylex (void)
       return b->tk.type;
 
     case NEXT_CHUNK:
-      TOKEN_EXTEND (&b->tk, 12);
+      TOKEN_EXTEND (&b->tk, YY_TOKEN_GROW);
       goto beginning_of_lex;
 
     case NEXT_NEED_LOAD:
