@@ -1935,6 +1935,33 @@ static Milexer ml = {
 #ifdef ML_EXAMPLE_2
 #include <errno.h>
 
+/* To redefine yy_getline,
+   For this example, pass it to the compiler */
+#ifdef YY_CUSTOM_GETLINE
+#include <readline/readline.h>
+#include <readline/history.h>
+size_t
+yy_getline (FILE *stream, char *buffer, size_t len)
+{
+  (void) stream;
+  static char *tmp = NULL;
+  if (tmp)
+    free (tmp);
+  tmp = readline (">>> ");
+  if (tmp)
+    {
+      size_t n;
+      if ((n = strlen (tmp)))
+        add_history (tmp);
+      n = (n < len) ? n : len;
+      *((char *) mempcpy (buffer, tmp, n)) = '\n';
+      return n+1;
+    }
+  else
+    return 0;
+}
+#endif /* YY_CUSTOM_GETLINE */
+
 /**
  *  In this example, we let the library handles
  *  all the memory managements by it's own, only
