@@ -1569,7 +1569,7 @@ YY_BUFFER_STATE *
 yy_alloc_buffer (void)
 {
   YY_BUFFER_STATE *b = (YY_BUFFER_STATE *)
-    malloc (sizeof (struct yy_buffer_state));
+    yy_malloc (sizeof (struct yy_buffer_state));
   memset (b, 0, sizeof (struct yy_buffer_state));
   return b;
 }
@@ -1596,7 +1596,7 @@ yyensure_buffer_stack (void)
       yy_buffer_stack_max = entry2alloc;
       new_size_b = entry2alloc * sizeof (YY_BUFFER_STATE *);
 
-      yy_buffer_stack = (YY_BUFFER_STATE *) malloc (new_size_b);
+      yy_buffer_stack = (YY_BUFFER_STATE *) yy_malloc (new_size_b);
       memset (yy_buffer_stack, 0, new_size_b);
       return;
     }
@@ -1606,7 +1606,7 @@ yyensure_buffer_stack (void)
       entry2alloc = yy_buffer_stack_max + grow;
       new_size_b = entry2alloc * sizeof (YY_BUFFER_STATE *);
       yy_buffer_stack = (YY_BUFFER_STATE *)
-        realloc (yy_buffer_stack, new_size_b);
+        yy_realloc (yy_buffer_stack, new_size_b);
       memset (yy_buffer_stack + yy_buffer_stack_max, 0,
               grow * sizeof (YY_BUFFER_STATE *));
       yy_buffer_stack_max = entry2alloc;
@@ -1669,7 +1669,7 @@ yy_scan_buffer (char *base, size_t size)
 YY_BUFFER_STATE *
 yy_scan_bytes (const char *bytes, size_t len)
 {
-  char *buf = malloc (len + 1);
+  char *buf = yy_malloc (len + 1);
   memcpy (buf, bytes, len);
   YY_BUFFER_STATE *res = yy_scan_buffer (buf, len);
   res->memflgs |= ITS_OUR_BASE_BUF;
@@ -1695,7 +1695,7 @@ yy_create_buffer (FILE *file, int size)
   b->yy_is_interactive = (tty > 0);
 
   b->base_cap = size;
-  b->base = malloc (size);
+  b->base = yy_malloc (size);
   b->memflgs |= ITS_OUR_BASE_BUF;
 
   b->tk = TOKEN_ALLOC (39);
