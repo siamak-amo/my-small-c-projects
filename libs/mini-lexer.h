@@ -1924,7 +1924,7 @@ static Milexer ml = {
     .a_comment   = GEN_MLCFG (ML_Comments),
   };
 //--------------------------------------//
-#endif /* defined (ML_EXAMPLE_1) || defined (ML_TEST_1) */
+#endif /* defined (ML_EXAMPLE_*) || defined (ML_TEST_*) */
 
 
 
@@ -1974,8 +1974,10 @@ main (void)
               if ((f = fopen (yytext, "r")))
                 {
                   yy_restart( f );
-                  while ((ret = yylex()) != -1)
-                    printf ("  \\->{%s}\n", yytext);
+                  while ( (ret = yylex() ) != -1)
+                    printf ("-- token[%.*s]: {%s}\n",
+                            3, ml_token_type_cstr[ret],
+                            yytext);
                   fclose (f);
                 }
               else
@@ -1999,6 +2001,7 @@ main (void)
 
 /**
  **  Example 1 program
+ **  By only using milexer, no flex API
  **/
 #ifdef ML_EXAMPLE_1
 static const char *exp_cstr[] = {
