@@ -616,10 +616,9 @@ typedef struct
 typedef struct
 {
   /* lazy mode */
-  int lazy;
-
+  bool lazy;
   /* End of lazy loading */
-  int eof_lazy;
+  bool eof_lazy;
 
   /* Internal state of the buffer, SYN_xxx */
   enum __buffer_state_t state, prev_state;
@@ -1002,8 +1001,7 @@ __detect_puncs (const Milexer *ml,
       size_t len = punc->len.begin;
       if (res->__idx < len)
         continue;
-      char *p = res->cstr + res->__idx - len;
-      if (strncmp (punc->begin, p, len) == 0)
+      if (strstr (res->cstr, punc->begin) != NULL)
         {
           if (len >= longest_match_len)
             {
@@ -1341,7 +1339,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
           LD_STATE (src);
           break;
 
-        case SYN_COMM:
+        case SYN_COMM: {
           if (*p == '\n')
             TK_MARK_NEWLINE (src, tk);
           if (*p == '\n' || *p == '\r')
@@ -1360,9 +1358,9 @@ ml_next (Milexer *ml, Milexer_Slice *src,
                   *tk->cstr = '\0';
                 }
             }
-          break;
+        } break;
 
-          case SYN_ML_COMM:
+        case SYN_ML_COMM: {
           if (*p == '\n')
             TK_MARK_NEWLINE (src, tk);
           if ((__ptr = __is_mline_commented_suff (ml, src, tk)))
@@ -1376,9 +1374,9 @@ ml_next (Milexer *ml, Milexer_Slice *src,
                   return NEXT_MATCH;
                 }
             }
-          break;
-          
-        case SYN_DUMMY:
+        } break;
+
+        case SYN_DUMMY: {
           if ((__ptr = __is_sline_commented_pref (ml, src, tk)))
             {
               tk->type = TK_COMMENT;
@@ -1430,9 +1428,9 @@ ml_next (Milexer *ml, Milexer_Slice *src,
               TK_MARK_COLUMN (src, tk);
               TOKEN_FINISH (tk);
             }
-          break;
+        } break;
 
-        case SYN_MIDDLE:
+        case SYN_MIDDLE: {
           if ((__ptr = __is_sline_commented_pref (ml, src, tk)))
             {
               ST_STATE (src, SYN_COMM);
@@ -1525,9 +1523,9 @@ ml_next (Milexer *ml, Milexer_Slice *src,
                   ST_STATE (src, SYN_NO_DUMMY);
                 }
             }
-          break;
+        } break;
 
-        case SYN_NO_DUMMY:
+        case SYN_NO_DUMMY: {
           if ((__ptr = __is_expression_suff (ml, src, tk)))
             {
               tk->type = TK_EXPRESSION;
@@ -1537,7 +1535,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
               TOKEN_FINISH (tk);
               return NEXT_MATCH;
             }
-          break;
+        } break;
 
         default:
           break;
