@@ -1847,7 +1847,7 @@ yylex (void)
   yy_set_global (b);
 
  beginning_of_lex:
-  b->ret = ml_next (yyml, &b->src, &b->tk, 0);
+  b->ret = ml_next (yyml, &b->src, &b->tk, PFLAG_INEXP);
   switch (b->ret)
     {
     case NEXT_MATCH:
