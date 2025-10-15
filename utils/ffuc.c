@@ -223,6 +223,10 @@ const struct option lopts[] =
     {"all",                 no_argument,       NULL, 'A'},
     {"no-filter",           no_argument,       NULL, 'A'},
     {"filter-no",           no_argument,       NULL, 'A'},
+    /* Auto filter discovery mode */
+    {"auto-filter",         no_argument,       NULL, '*'},
+    {"af",                  no_argument,       NULL, '*'},
+    {"AI",                  no_argument,       NULL, '*'},
 
     /* Common options */
     {"mode",                required_argument, NULL, 'm'},
@@ -679,6 +683,7 @@ struct Opt
   int ttl; /* Timeout in milliseconds */
   bool verbose;
   bool color_enabled;
+  bool AI; /* AI mode! (auto filter mode) */
   uint max_rate; /* Max request rate (req/sec) */
   char *verb; /* HTTP verb */
   FILE *streamout;
@@ -1545,7 +1550,7 @@ init_opt ()
   /* Set the default filters if not disabled */
   if (NO_FILTER == opt.filters)
     opt.filters = NULL;
-  else if (NULL == opt.filters)
+  else if (NULL == opt.filters && !opt.AI)
     da_appd (opt.filters, default_filter);
 
   if (!opt.verb || Strcmp (opt.verb, "GET"))
@@ -1789,6 +1794,8 @@ HTTP_OPTIONS:\n\
 \n\
 OPTIONS:\n\
     -R, --rate      maximum request rate (req/second)\n\
+  --auto-filter     apply filters automatically\n\
+                    it's recommended to use this instead of default settings\n\
   --fc, --mc        filter and match HTTP response code\n\
                       e.g.  [--fc 429]  or  [--fc 400-500]\n\
   --fs, --ms        filter and match size of response\n\
@@ -1940,6 +1947,9 @@ parse_args (int argc, char **argv)
         case '6':
           AddFilter (MATCH_LCOUNT);
           break;
+        case '*':
+          opt.AI = true;
+          break;
         case 'A':
           if (opt.filters && NO_FILTER != opt.filters)
             warnln ("disable filters along with filter options.");
@@ -2061,6 +2071,14 @@ main (int argc, char **argv)
   size_t rate=0, avg_rate=0;
   int numfds, res, still_running;
 
+  if (opt.AI)
+    {
+      /* Start sending discovery requests, to find a
+         proper filter for the current endpoint */
+      warnln ("sending discovery requests");
+      if ((ret = do_filter_discovery ()))
+        Return (ret);
+    }
 
   log_current_config ();
   init_progress (&opt.progress);
