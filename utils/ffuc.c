@@ -420,6 +420,7 @@ typedef struct
 
   struct request_t
   {
+    char *URL;
     char *body;
     struct curl_slist *headers;
   } request;
@@ -625,13 +626,25 @@ set_template_wlist (FuzzTemplate *t, enum template_op op, void *param);
  **/
 
 /**
- *  To prevent memory leaks, DO *NOT* use
- *  `ffuc_free` or `safe_free` here, as Strrealloc is used for
- *  reading from word-lists, and may be called thousands of time!
+ *  Returns a malloc pointer which contains @src
+ *  If @malloced is not null, uses realloc instead
  */
-#define Strrealloc(dst, src) do {               \
+void * strrealloc (void *malloced, const char *src);
+
+/**
+ *  After running these macros, @dst will contain a copy
+ *  of @src, Estrrealloc also URL encodes the result.
+ *  If @dst is not NULL, it will get reallocated.
+ *
+ *  To prevent memory leaks, DO *NOT* use
+ *  ffuc_free or safe_free here, as Strrealloc is used for
+ *  reading from word-lists,   and Estrrealloc is used for
+ *  generating requests, so they may by called thousands of times!
+ */
+#define Strrealloc(dst, src) (dst = strrealloc (dst, src))
+#define Estrrealloc(dst, src) do {              \
     if (dst) free (dst);                        \
-    dst = strdup (src);                         \
+    dst = curl_escape (src, 0);                 \
   } while (0)
 
 #define Realloc(ptr, len) \
@@ -936,7 +949,7 @@ __next_fuzz_singular (RequestContext *ctx)
 {
   Fword *fw = opt.words[0];
   snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
-  Strrealloc (ctx->FUZZ[0], tmp);
+  Estrrealloc (ctx->FUZZ[0], tmp);
 
   da_idx i=1, N = opt.words_len;
   for (; i < N; ++i)
@@ -973,7 +986,7 @@ __next_fuzz_pitchfork (RequestContext *ctx)
     {
       fw = opt.words[i];
       snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
-      Strrealloc (ctx->FUZZ[i], tmp);
+      Estrrealloc (ctx->FUZZ[i], tmp);
       fprintd ("[%d]->`%s`\t", fw->index, tmp);
       fw_next (fw);
     }
@@ -996,7 +1009,7 @@ __next_fuzz_clusterbomb (RequestContext *ctx)
     {
       fw = opt.words[i];
       snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
-      Strrealloc (ctx->FUZZ[i], tmp);
+      Estrrealloc (ctx->FUZZ[i], tmp);
       fprintd ("[%d]->`%s`\t", fw->index, tmp);
 
       if (go_next)
@@ -1208,10 +1221,11 @@ __register_context (RequestContext *dst)
   if (opt.fuzz_flag & URL_HASFUZZ)
     {
       FUZZ += fuzz_snprintf (tmp, TMP_CAP, template.URL, FUZZ);
-      curl_setopt (dst->easy_handle, CURLOPT_URL, tmp);
+      Strrealloc (dst->request.URL, tmp);
     }
-  else
-    curl_setopt (dst->easy_handle, CURLOPT_URL, template.URL);
+  else if (! dst->request.URL)
+    Strrealloc (dst->request.URL, template.URL);
+  curl_setopt (dst->easy_handle, CURLOPT_URL, dst->request.URL);
 
   /**
    *  Generating POST body
@@ -1223,10 +1237,10 @@ __register_context (RequestContext *dst)
         {
           FUZZ += fuzz_snprintf (tmp, TMP_CAP, template.body, FUZZ);
           Strrealloc (dst->request.body, tmp);
-          curl_setopt (dst->easy_handle, CURLOPT_POSTFIELDS, dst->request.body);
         }
-      else
-        curl_setopt (dst->easy_handle, CURLOPT_POSTFIELDS, template.body);
+      else if (! dst->request.body)
+        Strrealloc (dst->request.body, template.body);
+      curl_setopt (dst->easy_handle, CURLOPT_POSTFIELDS, dst->request.body);
     }
 
   /**
@@ -1363,6 +1377,17 @@ tick_progress (Progress *prog)
 }
 
 //-- Utility functions --//
+void *
+strrealloc (void *malloced, const char *src)
+{
+  void *res;
+  size_t n = strlen (src);
+  if (! malloced)
+    res = malloc (n+1);
+  else
+    res = realloc (malloced, n+1);
+  return memcpy (res, src, n+1);
+}
 
 int
 common_val (int *arr, int len)
