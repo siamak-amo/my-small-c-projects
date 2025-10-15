@@ -282,7 +282,8 @@ enum ffuc_flag_t
     SHOULD_EXIT       = -1,
   };
 
-/* Output filter & match, fits in `unsigned char` */
+/* Output filter & match, Fits in unsigned char,
+   Positive values are filter, negatives are match */
 enum filter_flag_t
   {
     FILTER_CODE       = 1,
@@ -291,12 +292,24 @@ enum filter_flag_t
     FILTER_SIZE       = 4,
     FILTER_TIME       = 5,
 
-    MATCH_CODE        = 127,
-    MATCH_WCOUNT      = 126,
-    MATCH_LCOUNT      = 125,
-    MATCH_SIZE        = 124,
-    MATCH_TIME        = 123,
+    MATCH_CODE        = 255,
+    MATCH_WCOUNT      = 254,
+    MATCH_LCOUNT      = 253,
+    MATCH_SIZE        = 252,
+    MATCH_TIME        = 251,
   };
+#define FILTER_T_CSTR(fft) (((char)(fft) < 0) ? "Match" : "Filter")
+#define __ABS__(x) ((x > 0) ? (x) : -1 * (x))
+#define FILTER_CSTR(fft) __filter_cstr[ __ABS__((char) fft) ]
+const char *__filter_cstr[] =
+  {
+    [FILTER_CODE]     = "status code",
+    [FILTER_WCOUNT]   = "word count",
+    [FILTER_LCOUNT]   = "line count",
+    [FILTER_SIZE]     = "size",
+    [FILTER_TIME]     = "time",
+  };
+
 
 enum template_op
   {
@@ -368,7 +381,7 @@ typedef struct progress_t
 
 struct res_filter_t
 {
-  char type; /* FILTER_XXX  or  MATCH_XXX */
+  enum filter_flag_t type; /* FILTER_XXX  or  MATCH_XXX */
   struct
   {
     int start, end;
@@ -818,6 +831,40 @@ fw_next (Fword *fw)
   if (fw->index == fw->total_count)
     fw->index = 0;
   return p;
+}
+
+//-- Logger functions --//
+void
+log_current_config (void)
+{
+  if (! isatty (fileno (stderr)))
+    return;
+  fprintf (stderr, "------------ FFUC Configuration ------------\n");
+  {
+    fprintf (stderr, "- URL: %s\n", opt.fuzz_template.URL);
+    if (opt.fuzz_template.body)
+      fprintf (stderr, "- Body: %s\n", opt.fuzz_template.body);
+    for (struct curl_slist *h = opt.fuzz_template.headers;
+         NULL != h; h = h->next)
+      {
+        fprintf (stderr, "- Header: [%s]\n", h->data);
+      }
+    da_foreach (opt.filters, i)
+      {
+        struct res_filter_t *fl = &opt.filters[i];
+        if (fl->range.start != fl->range.end)
+          fprintf (stderr, "- %s: %s in range [%d, %d]\n",
+                   FILTER_T_CSTR(fl->type),
+                   FILTER_CSTR(fl->type),
+                   fl->range.start, fl->range.end);
+        else
+          fprintf (stderr, "- %s: %s == %d\n",
+                   FILTER_T_CSTR(fl->type),
+                   FILTER_CSTR(fl->type),
+                   fl->range.start);
+      }
+  }
+  fprintf (stderr, "--------------------------------------------\n\n");
 }
 
 /**
@@ -1901,6 +1948,8 @@ main (int argc, char **argv)
   size_t rate=0, avg_rate=0;
   int numfds, res, still_running;
 
+
+  log_current_config ();
   init_progress (&opt.progress);
   do {
     /* Find a free context (If there is any) and register it */
