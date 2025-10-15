@@ -695,7 +695,7 @@ struct Opt
     bool color; /* Color enabled */
   } Printf;
 
-  /* Next FUZZ loader and */
+  /* Next word loader */
   void (*load_next_fuzz) (RequestContext *ctx);
   bool eofuzz; /* End of load_next_fuzz */
 };
@@ -1042,7 +1042,7 @@ context_reset (RequestContext *ctx)
 {
   ctx->flag = CTX_FREE;
   curl_multi_remove_handle (opt.multi_handle, ctx->easy_handle);
-  memset (&ctx->stat, 0, sizeof (struct req_stat_t));
+  // STAT_RESET (&ctx->stat);
 }
 
 static inline const char *
@@ -1065,7 +1065,7 @@ print_stats_fuzz (RequestContext *ctx)
   if (1 >= opt.words_len)
     {
       int m, n, margin;
-#ifndef __ANDROID__ /* Android does not implement %n printf */
+#ifndef __ANDROID__ /* Android has disabled %n in printf */
       #define __FMT__ "%n%s%n"
       #define __ARG__ &m, ctx->FUZZ[0], &n
 #else
@@ -1178,11 +1178,6 @@ handle_response_context (RequestContext *ctx)
     {
       curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &result);
       stat->code = (int) result;
-      if (stat->size_bytes)
-        { /* Starting from 1 */
-          stat->lcount++;
-          stat->wcount++;
-        }
     }
   else
     prog->err_count++;
@@ -1198,7 +1193,7 @@ handle_response_context (RequestContext *ctx)
 }
 
 static inline void
-__register_contex (RequestContext *dst)
+__register_context (RequestContext *dst)
 {
   char **FUZZ = dst->FUZZ;
   FuzzTemplate template = opt.fuzz_template;
@@ -2048,14 +2043,14 @@ main (int argc, char **argv)
     /* Find a free context (If there is any) and register it */
     while (!opt.eofuzz && opt.Rqueue.waiting < opt.Rqueue.len)
       {
-        rate = req_rate (&opt.progress);
+        rate = update_req_rate (&opt.progress);
         if (opt.max_rate <= rate)
           break;
 
         if ((ctx = lookup_free_handle (opt.Rqueue.ctxs, opt.Rqueue.len)))
           { /* Registering the context */
             opt.Rqueue.waiting++;
-            register_contex (ctx);
+            register_context (ctx, false);
             range_usleep (opt.Rqueue.delay_us);
           }
       }
