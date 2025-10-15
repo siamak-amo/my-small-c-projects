@@ -521,6 +521,17 @@ Fword *fw_dup (const Fword *src);
 char *fw_next (Fword *fw);
 
 /**
+ *  FUZZ sprintf function
+ *  substitutes the FUZZ keyword of @format
+ *  with the appropriate value from the @FUZZ array.
+ * Return:
+ *  The number of elements consumed from @FUZZ.
+ *  @FUZZ must have enough element(s).
+ */
+int fuzz_snprintf (char *restrict dst, size_t dst_cap,
+               const char *restrict format, char **FUZZ);
+
+/**
  *  Strline and StrlineNull Functions
  *
  *  These functions return a pointer to the first character
@@ -894,46 +905,72 @@ log_current_config (void)
   fprintf (stderr, "--------------------------------------------\n\n");
 }
 
-/**
- *  FUZZ sprintf substitutes the FUZZ keyword of @format
- *  with the appropriate value from the @FUZZ array
- *  The last element of @FUZZ MUST be NULL.
- * Return:
- *  The number of elements consumed from @FUZZ.
- */
-int
-fuzz_snprintf (char *restrict dst, size_t dst_cap,
-              const char *restrict format, char **FUZZ)
+static inline void
+print_stats_fuzz (RequestContext *ctx)
 {
-  int fuzz_used = 0;
-  const char *start = format;
+  /* Wiping the line out of the progress-bar stuff */
+  if (opt.Printf.lineclear)
+    fprintf (opt.streamout, CLEAN_LINE ());
 
-  for (const char *end = start, *__dst = dst;
-       NULL != end && (size_t)(dst - __dst) < dst_cap; )
+  if (1 >= opt.words_len)
     {
-      if ((end = strstr (start, "FUZZ")))
-        {
-          if (end != start)
-            dst = mempcpy (dst, start, (size_t)(end - start));
-          start = end + 4;
+      int m, n, margin;
+#ifndef __ANDROID__ /* Android has disabled %n in printf */
+      #define __FMT__ "%n%s%n"
+      #define __ARG__ &m, ctx->FUZZ[0], &n
+#else
+      #define __FMT__ "%s"
+      #define __ARG__ ctx->FUZZ[0]
+      m = 0, n = PRINT_MARGIN; /* forces newline */
+#endif /* __ANDROID__ */
 
-          if (opt.mode == MODE_SINGULAR)
-            dst = stpcpy (dst, *FUZZ); // replacing all FUZZs with FUZZ[0]
-          else if (*FUZZ)
-            {
-              dst = stpcpy (dst, *FUZZ);
-              FUZZ++, fuzz_used++;
-            }
-          else
-            dst = stpcpy (dst, "FUZZ");
-        }
+      if (opt.Printf.color)
+        fprintf (opt.streamout,
+                 COLOR_FMT( __FMT__ ),
+                 COLOR_ARG( colorof_ctx(ctx), __ARG__ ));
+      else
+        fprintf ( opt.streamout, __FMT__, __ARG__ );
+
+#undef __FMT__
+#undef __ARG__
+      if ((margin = PRINT_MARGIN - n + m) > 0)
+        fprintf (opt.streamout, "%*s", margin, "");
+      else
+        fprintf (opt.streamout, "\n%*s", PRINT_MARGIN, "");
+    }
+  else /* Multiple FUZZ keywords provided */
+    {
+      if (opt.Printf.color)
+        fprintf (opt.streamout, "\n " COLOR_FMT("* FUZZ") " = [",
+                 COLOR_ARG(colorof_ctx (ctx)));
+      else
+        fprintf (opt.streamout, "\n * FUZZ = [");
+      Fprintarr (opt.streamout, "'%s'", ctx->FUZZ, opt.words_len);
+      fprintf (opt.streamout, "]:\n");
+    }
+}
+
+static inline void
+print_stats_context (RequestContext *ctx)
+{
+  if (CURLE_OK != ctx->stat.ccode)
+    {
+      print_stats_fuzz (ctx);
+      fprintf (opt.streamout, "[Error: %s, Duration: %dms]\n",
+               curl_easy_strerror (ctx->stat.ccode),
+               ctx->stat.duration);
+      return;
     }
 
-  if ('\0' != *start)
-    strcpy (dst, start);
-  else
-    *dst = '\0';
-  return fuzz_used;
+  print_stats_fuzz (ctx);
+  fprintf (opt.streamout, "\
+[Status: %-3d,  Size: %d,  Words: %d,  Lines: %d,  Duration: %dms]\n",
+           ctx->stat.code,
+           ctx->stat.size_bytes,
+           ctx->stat.wcount,
+           ctx->stat.lcount,
+           ctx->stat.duration
+           );
 }
 
 //-- Load next FUZZ functions --//
@@ -1071,74 +1108,6 @@ http_pallet_of (int resp_code)
       return HttpPallet[ HTTP_ERR ];
   else
     return HttpPallet[ resp_code ];
-}
-
-static inline void
-print_stats_fuzz (RequestContext *ctx)
-{
-  /* Wiping the line out of the progress-bar stuff */
-  if (opt.Printf.lineclear)
-    fprintf (opt.streamout, CLEAN_LINE ());
-
-  if (1 >= opt.words_len)
-    {
-      int m, n, margin;
-#ifndef __ANDROID__ /* Android has disabled %n in printf */
-      #define __FMT__ "%n%s%n"
-      #define __ARG__ &m, ctx->FUZZ[0], &n
-#else
-      #define __FMT__ "%s"
-      #define __ARG__ ctx->FUZZ[0]
-      m = 0, n = PRINT_MARGIN; /* forces newline */
-#endif /* __ANDROID__ */
-
-      if (opt.Printf.color)
-        fprintf (opt.streamout,
-                 COLOR_FMT( __FMT__ ),
-                 COLOR_ARG( colorof_ctx(ctx), __ARG__ ));
-      else
-        fprintf ( opt.streamout, __FMT__, __ARG__ );
-
-#undef __FMT__
-#undef __ARG__
-      if ((margin = PRINT_MARGIN - n + m) > 0)
-        fprintf (opt.streamout, "%*s", margin, "");
-      else
-        fprintf (opt.streamout, "\n%*s", PRINT_MARGIN, "");
-    }
-  else /* Multiple FUZZ keywords provided */
-    {
-      if (opt.Printf.color)
-        fprintf (opt.streamout, "\n " COLOR_FMT("* FUZZ") " = [",
-                 COLOR_ARG(colorof_ctx (ctx)));
-      else
-        fprintf (opt.streamout, "\n * FUZZ = [");
-      Fprintarr (opt.streamout, "'%s'", ctx->FUZZ, opt.words_len);
-      fprintf (opt.streamout, "]:\n");
-    }
-}
-
-static inline void
-print_stats_context (RequestContext *ctx)
-{
-  if (CURLE_OK != ctx->stat.ccode)
-    {
-      print_stats_fuzz (ctx);
-      fprintf (opt.streamout, "[Error: %s, Duration: %dms]\n",
-               curl_easy_strerror (ctx->stat.ccode),
-               ctx->stat.duration);
-      return;
-    }
-
-  print_stats_fuzz (ctx);
-  fprintf (opt.streamout, "\
-[Status: %-3d,  Size: %d,  Words: %d,  Lines: %d,  Duration: %dms]\n",
-           ctx->stat.code,
-           ctx->stat.size_bytes,
-           ctx->stat.wcount,
-           ctx->stat.lcount,
-           ctx->stat.duration
-           );
 }
 
 static inline bool
@@ -1392,6 +1361,41 @@ strrealloc (void *malloced, const char *src)
   else
     res = realloc (malloced, n+1);
   return memcpy (res, src, n+1);
+}
+
+int
+fuzz_snprintf (char *restrict dst, size_t dst_cap,
+              const char *restrict format, char **FUZZ)
+{
+  int fuzz_used = 0;
+  const char *start = format;
+
+  for (const char *end = start, *__dst = dst;
+       NULL != end && (size_t)(dst - __dst) < dst_cap; )
+    {
+      if ((end = strstr (start, "FUZZ")))
+        {
+          if (end != start)
+            dst = mempcpy (dst, start, (size_t)(end - start));
+          start = end + 4;
+
+          if (opt.mode == MODE_SINGULAR)
+            dst = stpcpy (dst, *FUZZ); // replacing all FUZZs with FUZZ[0]
+          else if (*FUZZ)
+            {
+              dst = stpcpy (dst, *FUZZ);
+              FUZZ++, fuzz_used++;
+            }
+          else
+            dst = stpcpy (dst, "FUZZ");
+        }
+    }
+
+  if ('\0' != *start)
+    strcpy (dst, start);
+  else
+    *dst = '\0';
+  return fuzz_used;
 }
 
 int
