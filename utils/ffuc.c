@@ -1882,9 +1882,7 @@ parse_args (int argc, char **argv)
                 warnln ("invalid delay interval was ignored.");
                 break;
               }
-            if (0 != d2)
-              srand (time (NULL)); /* random delay */
-            else
+            if (0 == d2)
               d2 = d1; /* constant delay */
 
             if (strstr (optarg, "ms"))
@@ -2047,6 +2045,7 @@ main (int argc, char **argv)
   int ret;
   set_program_name (PROG_NAME);
   on_exit (cleanup, NULL);
+  srand (time (NULL));
 
   opt = (struct Opt) {
     .ttl = DEFAULT_TTL_MS,
