@@ -155,6 +155,10 @@ static char tmp[TMP_CAP];
 # endif
 #endif
 
+#ifndef DISCOVERY_REQ_COUNT
+#define DISCOVERY_REQ_COUNT 4
+#endif
+
 #define NOP ((void) NULL)
 #define UNUSED(x) (void)(x)
 #define MIN(a,b) ((a < b) ? (a) : (b))
@@ -357,6 +361,11 @@ struct req_stat_t
   uint duration; /* total time to response */
   CURLcode ccode;
 };
+#define STAT_RESET(r_stat)                               \
+  (*(r_stat) = (struct req_stat_t){                      \
+    .wcount=1,   .lcount=1,  .size_bytes=0,              \
+    .code=0,   .duration=0,       .ccode=0,              \
+  })
 
 typedef struct progress_t
 {
@@ -911,6 +920,18 @@ fuzz_snprintf (char *restrict dst, size_t dst_cap,
 
 //-- Load next FUZZ functions --//
 static void
+__next_fuzz_rand (RequestContext *ctx)
+{
+  char randstr[] = "aaaaaaaaaaaa";
+  for (ssize_t i = 0; i < opt.words_len; ++i)
+    {
+      for (size_t j=0; j < sizeof (randstr) - 1; ++j)
+        randstr[j] = (rand () % 26) + 'a';
+      Strrealloc (ctx->FUZZ[i], randstr);
+    }
+}
+
+static void
 __next_fuzz_singular (RequestContext *ctx)
 {
   Fword *fw = opt.words[0];
@@ -1240,8 +1261,8 @@ __register_contex (RequestContext *dst)
     }
 }
 
-void
-register_contex (RequestContext *ctx)
+int
+register_context (RequestContext *ctx, bool sync)
 {
   CURL *curl = ctx->easy_handle;
   opt.load_next_fuzz (ctx);
@@ -1264,8 +1285,14 @@ register_contex (RequestContext *ctx)
     if (opt.proxy)
       curl_setopt (curl, CURLOPT_PROXY, opt.proxy);
   }
-  __register_contex (ctx);
-  curl_multi_add_handle (opt.multi_handle, curl);
+  STAT_RESET (&ctx->stat);
+  __register_context (ctx);
+
+  if (sync) /* synchronous */
+      return curl_easy_perform (curl);
+  else /* asynchronous */
+    curl_multi_add_handle (opt.multi_handle, curl);
+  return 0;
 }
 
 //-- Progress statistics functions --//
@@ -1341,6 +1368,21 @@ tick_progress (Progress *prog)
 }
 
 //-- Utility functions --//
+
+int
+common_val (int *arr, int len)
+{
+  if (len <= 0)
+    return 0;
+  int common = arr[0];
+  for (int i=1; i<len; ++i)
+    {
+      if (arr[i] != common)
+        return -1;
+    }
+  return common;
+}
+
 static inline int
 da_locate_str (char **haystack, const char *needle)
 {
@@ -1393,6 +1435,16 @@ fuzz_count (const char *s)
   while ((s = strstr (s, "FUZZ")))
     n++, s += 4;
   return n;
+}
+
+static inline void
+opt_filter (int type, int start, int end)
+{
+  struct res_filter_t fl = {
+    .type  = type,
+    .range = {start, end},
+  };
+  da_appd (opt.filters, fl);
 }
 
 static inline void
@@ -1911,6 +1963,47 @@ no FUZZ keyword found, fuzzing tail of URL (with %s).", last_wlist);
   return EXIT_SUCCESS;
 }
 
+/* Sets filters automatically based on endpoint's behavior */
+int
+do_filter_discovery (void)
+{
+#define N DISCOVERY_REQ_COUNT
+  void *prev_wloader = opt.load_next_fuzz;
+  opt.load_next_fuzz = __next_fuzz_rand;
+  int codes[N], words[N], sizes[N];
+  {
+    for (int i=0; i<N; ++i)
+      {
+        RequestContext *ctx = opt.Rqueue.ctxs;
+        int ret = register_context (ctx, true);
+        if (ret != CURLE_OK)
+          {
+            warnln ("discovery request failed, %s",
+                    curl_easy_strerror(ret));
+            context_reset (ctx);
+            return 1;
+          }
+        curl_easy_getinfo (ctx->easy_handle,
+                           CURLINFO_HTTP_CODE, &codes[i]);
+        words[i] = ctx->stat.wcount;
+        sizes[i] = ctx->stat.size_bytes;
+        context_reset (ctx);
+      }
+
+    int common;
+    if ((common = common_val (words, N)) != -1)
+      opt_filter (FILTER_WCOUNT, common, common);
+    else if ((common = common_val (codes, N)) != -1)
+      opt_filter (FILTER_CODE, common, common);
+    else if ((common = common_val (sizes, N)) != -1)
+      opt_filter (FILTER_SIZE, common, common);
+    else
+      warnln ("automatic filtering failed!!");
+  }
+  opt.load_next_fuzz = prev_wloader;
+  return 0;
+#undef N
+}
 
 int
 main (int argc, char **argv)
