@@ -73,6 +73,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
+#include <termios.h>
 
 #include <errno.h>
 #include <string.h>
@@ -83,6 +84,10 @@
 #include <sys/stat.h>
 
 #include <curl/curl.h>
+
+/* Only used in interactive mode */
+#include <pthread.h>
+#include <signal.h>
 
 #define DYNA_IMPLEMENTATION
 #include "dyna.h"
@@ -174,7 +179,7 @@ static char tmp[TMP_CAP];
     fprintf (stream, element_format, (arr)[__idx]);         \
   } while (0)
 
-const char *lopt_str = "m:w:" "T:R:t:p:A" "u:H:d:X:x:" "vhc";
+const char *lopt_str = "m:w:" "T:R:t:p:A" "u:H:d:X:x:" "ivhc";
 const struct option lopts[] =
   {
     /* We call it `thread` (-t) for compatibility with ffuf,
@@ -241,6 +246,8 @@ const struct option lopts[] =
     {"delay",               required_argument, NULL, 'p'},
     {"verbose",             no_argument,       NULL, 'v'},
     {"color",               no_argument,       NULL, 'c'},
+    {"it",                  no_argument,       NULL, 'i'},
+    {"interactive",         no_argument,       NULL, 'i'},
     {"proxy",               required_argument, NULL, 'x'},
     {"http-proxy",          required_argument, NULL, 'x'},
     {"help",                no_argument,       NULL, 'h'},
@@ -588,6 +595,17 @@ static void __update_progress_bar (const Progress *prog);
   if ((prog)->progbar_enabled) fprintf (stderr, "\n");
 
 /**
+ *  Interactive mode functions
+ * interact:
+ *   This function reads user input, from another thread,
+ *   and prints appropriate response.
+ */
+void goto_raw_mode (struct termios *original);
+#define disable_raw_mode(original) \
+  tcsetattr (STDIN_FILENO, TCSANOW, original)
+void * interact (void *);
+
+/**
  *  Sleeps for a random duration in microseconds
  *  within the specified range @range
  *
@@ -695,6 +713,7 @@ struct Opt
   bool verbose;
   bool color_enabled;
   bool AI; /* AI mode! (auto filter mode) */
+  bool interactive;
   uint max_rate; /* Max request rate (req/sec) */
   char *verb; /* HTTP verb */
   FILE *streamout;
@@ -706,6 +725,7 @@ struct Opt
   int fuzz_flag;
   CURLM *multi_handle;
   struct progress_t progress;
+  pthread_t interact_th; /* interactive mode thread */
 
   Fword **words; /* Dynamic array */
   int words_len; /* Length of @words */
@@ -723,6 +743,7 @@ struct Opt
     bool lineclear; /* Should clear terminal */
     bool color; /* Color enabled */
   } Printf;
+  struct termios orig_termios; /* original setup of terminal */
 
   /* Next word loader */
   void (*load_next_fuzz) (RequestContext *ctx);
@@ -1351,6 +1372,19 @@ tick_progress (Progress *prog)
 }
 
 //-- Utility functions --//
+void
+goto_raw_mode (struct termios *original)
+{
+  struct termios raw;
+  tcgetattr (STDIN_FILENO, original);
+  raw = *original;
+
+  raw.c_lflag &= ~(ICANON | ECHO); /* Disable canonical mode and echo */
+  raw.c_iflag &= ~(IXON);          /* Disable software flow control */
+
+  tcsetattr (STDIN_FILENO, TCSANOW, &raw);
+}
+
 void *
 strrealloc (void *malloced, const char *src)
 {
@@ -1517,6 +1551,31 @@ make_fw_from_path (const char *path)
       return NULL;
     }
 
+  return NULL;
+}
+
+/* In interactive mode, this runs in a separate thread */
+void *
+interact (void *__ptr)
+{
+  int c;
+  struct Opt *opt = (struct Opt *)__ptr;
+  while ((c = getchar ()))
+    {
+      switch (c)
+        {
+        case '\n':
+          if (opt->Rqueue.waiting)
+            update_progress_bar (&opt->progress);
+          break;
+
+        case EOF:
+        case CEOT:
+          goto end_of_interactive;
+        }
+    }
+ end_of_interactive:
+  disable_raw_mode (&opt->orig_termios);
   return NULL;
 }
 
@@ -1756,6 +1815,17 @@ void
 cleanup (int c, void *p)
 {
   UNUSED (c), UNUSED (p);
+
+  if (opt.interactive)
+    {
+      if (pthread_kill (opt.interact_th, 0) == 0)
+        {
+          pthread_cancel (opt.interact_th);
+          disable_raw_mode (&opt.orig_termios);
+          end_progress_bar (&opt.progress);
+        }
+    }
+
 #ifndef SKIP_FREE
   /* Libcurl cleanup */
   if (NULL != opt.Rqueue.ctxs)
@@ -1952,6 +2022,9 @@ parse_args (int argc, char **argv)
         case '*':
           opt.AI = true;
           break;
+        case 'i':
+          opt.interactive = true;
+          break;
         case 'A':
           if (opt.filters && NO_FILTER != opt.filters)
             warnln ("disable filters along with filter options.");
@@ -2037,6 +2110,16 @@ do_filter_discovery (void)
 #undef N
 }
 
+void
+on_sigint (int signo)
+{
+  if (SIGINT != signo)
+    return;
+  /* This will trigger cleanup function
+     It's important to disable terminal raw mode */
+  exit (0);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -2081,6 +2164,13 @@ main (int argc, char **argv)
       warnln ("sending discovery requests");
       if ((ret = do_filter_discovery ()))
         Return (ret);
+    }
+  /* Interactive mode */
+  if (opt.interactive)
+    {
+      goto_raw_mode (&opt.orig_termios);
+      pthread_create (&opt.interact_th, NULL, interact, &opt);
+      signal (SIGINT, on_sigint); /* to disable raw mode on SIGINT */
     }
 
   log_current_config ();
