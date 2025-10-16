@@ -97,7 +97,7 @@
 #include <getopt.h>
 
 #define PROG_NAME "FFuc"
-#define PROG_VERSION "2.0"
+#define PROG_VERSION "2.2"
 
 #define SLIST_APPEND(list, val) \
   list = curl_slist_append (list, val)
@@ -444,7 +444,7 @@ typedef struct
   char *body;
   struct curl_slist *headers;
 
-  char **wlists;
+  char **wlists; /* word-list(s) file path */
 } FuzzTemplate;
 
 /**
@@ -672,7 +672,7 @@ void * strrealloc (void *malloced, const char *src);
  *  To prevent memory leaks, DO *NOT* use
  *  ffuc_free or safe_free here, as Strrealloc is used for
  *  reading from word-lists,   and Estrrealloc is used for
- *  generating requests, so they may by called thousands of times!
+ *  generating requests, so they may be called thousands of times!
  */
 #define Strrealloc(dst, src) (dst = strrealloc (dst, src))
 #define Estrrealloc(dst, src) do {              \
@@ -1446,8 +1446,8 @@ common_val (int *arr, int len)
   return common;
 }
 
-static inline int
-da_locate_str (char **haystack, const char *needle)
+static int
+da_strstr (char **haystack, const char *needle)
 {
   if (! needle)
     return -1;
@@ -1462,14 +1462,16 @@ da_locate_str (char **haystack, const char *needle)
 static int
 register_wlist (const char *path)
 {
+  int idx;
   Fword *fw = make_fw_from_path (path);
   if (! fw)
     fw = fw_dup (&dummy_fword);
-  int idx = da_locate_str (opt.fuzz_template.wlists, path);
-  if (-1 == idx)
+
+  if (-1 == (idx = da_strstr (opt.fuzz_template.wlists, path)))
     da_appd (opt.words, fw);
   else /* We have already opened this file */
     da_appd (opt.words, fw_dup (opt.words[idx]));
+
   return 0;
 }
 
@@ -1662,7 +1664,8 @@ init_opt ()
       if (opt.progress.progbar_enabled)
         opt.Printf.lineclear = true;
     }
-
+  if (! isatty (STDIN_FILENO))
+    opt.interactive = false;
   return EXIT_SUCCESS;
 }
 
@@ -2074,7 +2077,7 @@ do_filter_discovery (void)
 {
 #define N DISCOVERY_REQ_COUNT
   void *prev_wloader = opt.load_next_fuzz;
-  opt.load_next_fuzz = __next_fuzz_rand;
+  opt.load_next_fuzz = __next_fuzz_rand; /* random string generator */
   int codes[N], words[N], sizes[N];
   {
     for (int i=0; i<N; ++i)
@@ -2105,7 +2108,7 @@ do_filter_discovery (void)
     else
       warnln ("automatic filtering failed!!");
   }
-  opt.load_next_fuzz = prev_wloader;
+  opt.load_next_fuzz = prev_wloader; /* Undo random string generator */
   return 0;
 #undef N
 }
@@ -2149,18 +2152,8 @@ main (int argc, char **argv)
   if ((ret = init_opt ()))
     Return (ret);
 
-  /**
-   *  Main Loop
-   */
-  CURLMsg *msg;
-  RequestContext *ctx;
-  size_t rate=0, avg_rate=0;
-  int numfds, res, still_running;
-
   if (opt.AI)
     {
-      /* Start sending discovery requests, to find a
-         proper filter for the current endpoint */
       warnln ("sending discovery requests");
       if ((ret = do_filter_discovery ()))
         Return (ret);
@@ -2173,6 +2166,13 @@ main (int argc, char **argv)
       signal (SIGINT, on_sigint); /* to disable raw mode on SIGINT */
     }
 
+  /**
+   *  Main Loop
+   */
+  CURLMsg *msg;
+  RequestContext *ctx;
+  size_t rate=0, avg_rate=0;
+  int numfds, res, still_running;
   log_current_config ();
   init_progress (&opt.progress);
   do {
@@ -2186,8 +2186,8 @@ main (int argc, char **argv)
         if ((ctx = lookup_free_handle (opt.Rqueue.ctxs, opt.Rqueue.len)))
           { /* Registering the context */
             opt.Rqueue.waiting++;
-            register_context (ctx, false);
             range_usleep (opt.Rqueue.delay_us);
+            register_context (ctx, false);
           }
       }
 
