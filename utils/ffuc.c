@@ -1316,7 +1316,7 @@ static void
 __update_progress_bar (const Progress *prog)
 {
   fprintf (stderr, CLEAN_LINE ("\
-::.   Progress: %d%% [%d/%d]  ::  %d req/sec  ::   Errors: %d   .::"),
+::.   Progress: %d%% [%d/%d]  ::  %-3d req/sec  ::   Errors: %d   .::"),
            REQ_PERC (prog),
            prog->req_count, prog->req_total,
            prog->rate,
@@ -1885,8 +1885,13 @@ OPTIONS:\n\
 \n\
 MODE:\n\
   -m, --mode        when more than one FUZZ keyword is provided\n\
-     clusterbomb  (default),  pitchfork,  singular\n\
-     see the documentation for more details.\n\
+     Clusterbomb (default):\n\
+       All combinations of word-lists\n\
+     Pitchfork:\n\
+       Picks up words from word-lists one by one, until longest one ends\n\
+     Singular:\n\
+       Accepts only one word-list and uses it for all FUZZ keywords\n\
+       It's equivalent to clusterbomb for only one FUZZ keyword\n\
 ", PROG_NAME, PROG_VERSION);
 }
 
@@ -2075,13 +2080,13 @@ int __attribute__((optimize("O0")))
 do_filter_discovery (void)
 {
 #define N DISCOVERY_REQ_COUNT
-  int codes[N], words[N], sizes[N];
+  int codes[N], words[N], sizes[N], ret;
   {
     for (int i=0; i<N; ++i)
       {
         RequestContext *ctx = opt.Rqueue.ctxs;
-        int ret = register_context (ctx, true);
         __next_fuzz_rand (ctx); /* loading a random FUZZ string */
+        ret = register_context (ctx, true);
         if (ret != CURLE_OK)
           {
             warnln ("discovery request failed, %s",
