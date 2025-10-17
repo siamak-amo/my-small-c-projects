@@ -1269,7 +1269,6 @@ int
 register_context (RequestContext *ctx, bool sync)
 {
   CURL *curl = ctx->easy_handle;
-  opt.load_next_fuzz (ctx);
   curl_easy_reset (ctx->easy_handle);
   {
     FLG_SET (ctx->flag, CTX_INUSE);
@@ -2076,14 +2075,13 @@ int
 do_filter_discovery (void)
 {
 #define N DISCOVERY_REQ_COUNT
-  void *prev_wloader = opt.load_next_fuzz;
-  opt.load_next_fuzz = __next_fuzz_rand; /* random string generator */
   int codes[N], words[N], sizes[N];
   {
     for (int i=0; i<N; ++i)
       {
         RequestContext *ctx = opt.Rqueue.ctxs;
         int ret = register_context (ctx, true);
+        __next_fuzz_rand (ctx); /* loading a random FUZZ string */
         if (ret != CURLE_OK)
           {
             warnln ("discovery request failed, %s",
@@ -2108,7 +2106,6 @@ do_filter_discovery (void)
     else
       warnln ("automatic filtering failed!!");
   }
-  opt.load_next_fuzz = prev_wloader; /* Undo random string generator */
   return 0;
 #undef N
 }
@@ -2187,6 +2184,7 @@ main (int argc, char **argv)
           { /* Registering the context */
             opt.Rqueue.waiting++;
             range_usleep (opt.Rqueue.delay_us);
+            opt.load_next_fuzz (ctx);
             register_context (ctx, false);
           }
       }
