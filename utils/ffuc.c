@@ -2071,7 +2071,7 @@ no FUZZ keyword found, fuzzing tail of URL (with %s).", last_wlist);
 }
 
 /* Sets filters automatically based on endpoint's behavior */
-int
+int __attribute__((optimize("O0")))
 do_filter_discovery (void)
 {
 #define N DISCOVERY_REQ_COUNT
