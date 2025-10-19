@@ -115,12 +115,11 @@ static inline int __scanoct (const char *restrict ptr,
                           unsigned char *restrict result);
 
 /* internal macros */
-#define __next_eq(ptr, val) *((ptr)++) = val
-#define __next_eqn(ptr, val, n) *((ptr) += n) = val
+#define __next_eq(ptr, val) (*((ptr)++) = val)
 
-#define nextw_b(val) {                                          \
+#define nextw_b(w_ptr, val) {                                   \
     if (val) __next_eq (w_ptr, val);                            \
-    else *w_ptr = val;                                          \
+    else *(w_ptr) = val;                                        \
     break;                                                      \
   }
 
@@ -149,18 +148,18 @@ static inline int __scanoct (const char *restrict ptr,
     case '\0':                                                  \
       goto reterr; /* invalid string */                         \
       /* case of `\\x` --> `\\` and `x` */                      \
-    case '\\': nextw_b ('\\');                                  \
+    case '\\': nextw_b (w_ptr, '\\');                           \
       /* simple escapes */                                      \
-    case 'a': nextw_b ('\a');                                   \
-    case 'b': nextw_b ('\b');                                   \
-    case 'e': nextw_b (0x1B);                                   \
-    case 't': nextw_b ('\t');                                   \
-    case 'n': nextw_b ('\n');                                   \
-    case 'v': nextw_b ('\v');                                   \
-    case 'f': nextw_b ('\f');                                   \
-    case 'r': nextw_b ('\r');                                   \
-    case '\'': nextw_b ('\'');                                  \
-    case '\"': nextw_b ('\"');                                  \
+    case 'a':  nextw_b (w_ptr, '\a');                           \
+    case 'b':  nextw_b (w_ptr, '\b');                           \
+    case 'e':  nextw_b (w_ptr, 0x1B);                           \
+    case 't':  nextw_b (w_ptr, '\t');                           \
+    case 'n':  nextw_b (w_ptr, '\n');                           \
+    case 'v':  nextw_b (w_ptr, '\v');                           \
+    case 'f':  nextw_b (w_ptr, '\f');                           \
+    case 'r':  nextw_b (w_ptr, '\r');                           \
+    case '\'': nextw_b (w_ptr, '\'');                           \
+    case '\"': nextw_b (w_ptr, '\"');                           \
       /* advanced escapes */                                    \
     case 'x': /* HEX \xHH */                                    \
       {                                                         \
@@ -169,7 +168,7 @@ static inline int __scanoct (const char *restrict ptr,
         if ((hex_len = __scanhex ((r_ptr) + 1, &x)) != 0)       \
           {                                                     \
             (r_ptr) += hex_len;                                 \
-            nextw_b (x);                                        \
+            nextw_b (w_ptr, x);                                 \
           }                                                     \
         break;                                                  \
       }                                                         \
@@ -180,12 +179,12 @@ static inline int __scanoct (const char *restrict ptr,
         if ((oct_len = __scanoct ((r_ptr) + 1, &x)) != 0)       \
           {                                                     \
             (r_ptr) += oct_len;                                 \
-            nextw_b (x);                                        \
+            nextw_b (w_ptr, x);                                 \
           }                                                     \
         break;                                                  \
       }                                                         \
     default:                                                    \
-      nextw_b (*r_ptr);                                         \
+      nextw_b (w_ptr, *(r_ptr));                                \
       break;                                                    \
     }                                                           \
   }
@@ -197,12 +196,15 @@ static inline int __scanoct (const char *restrict ptr,
       break;                                                    \
     }                                                           \
     if (*(r_ptr) == '%') {                                      \
+      int hex_len;                                              \
       unsigned char x;                                          \
-      int hex_len = __scanhex ((r_ptr) + 1, &x);                \
-      r_ptr += hex_len;                                         \
-      __next_eq ((w_ptr), x);                                   \
+      if ((hex_len = __scanhex ((r_ptr) + 1, &x)) != 0) {       \
+        r_ptr += hex_len;                                       \
+        *((w_ptr)++) = x;                                       \
+      }                                                         \
     } else {                                                    \
       __next_eq ((w_ptr), *(r_ptr));                            \
+      continue;                                                 \
     }                                                           \
   }
 
