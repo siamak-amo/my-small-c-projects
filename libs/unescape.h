@@ -20,20 +20,25 @@
     Interpretation of backslash escapes
     shell `echo` command compatible
     see `ascii` and `echo` manual pages for more information
-  
+
+    Also provides a minimal unescape URL encoding functionality
+
     Features :
-      backslash itself:
+      Backslash:
         '\\'
-      elementary escapes:
+      Elementary escapes:
         '\a', '\b', '\e', '\t', '\n', '\v', '\f', '\r'
-      hex:
+      Hex:
         '\xHH'  ->  0xHH   where: HH is 1 or 2 hexadecimal value
                                   from 00 to FF (or ff)
-      octal:
+      Octal:
         '\0NNN' ->  0oNNN  where: NNN is 1 or 2 or 3 octal value
                                   from 000 to 777
-  
-  
+
+      URL decoder:
+        '%HH'  ->  0xHH   in URL encoded strings, like: '\xHH'
+
+
     Usage:
     ```c
       #define UNESCAPE_IMPLEMENTATION
@@ -84,7 +89,10 @@
  *    as `\0` character but NOT INVALID
  */
 ssize_t unescape (char *buff);
-/* The same as `unescape` */
+/**
+ *  Equivalent to unescape, but in a different buffer
+ *  Allocating @dest same size as @src is enough
+ */
 ssize_t unescape2 (char *restrict dest, const char *restrict src);
 
 /**
