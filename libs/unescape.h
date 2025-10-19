@@ -87,6 +87,14 @@ ssize_t unescape (char *buff);
 /* The same as `unescape` */
 ssize_t unescape2 (char *restrict dest, const char *restrict src);
 
+/**
+ *  URL decoder, decodes C string at @buff in-place
+ *  @return:  @buff
+ **/
+char *url_unescape (char *buff);
+/* separate buffer */
+char *url_unescape2 (char *restrict dst, const char *restrict src);
+
 
 #ifdef UNESCAPE_IMPLEMENTATION
 
@@ -174,6 +182,22 @@ static inline int __scanoct (const char *restrict ptr,
     }                                                           \
   }
 
+#define __URL_DECODE__(w_ptr, r_ptr)                            \
+  for ( ;; ++(r_ptr)) {                                         \
+    if (*(r_ptr) == '\0') {                                     \
+      *(w_ptr) = '\0';                                          \
+      break;                                                    \
+    }                                                           \
+    if (*(r_ptr) == '%') {                                      \
+      unsigned char x;                                          \
+      int hex_len = __scanhex ((r_ptr) + 1, &x);                \
+      r_ptr += hex_len;                                         \
+      __next_eq ((w_ptr), x);                                   \
+    } else {                                                    \
+      __next_eq ((w_ptr), *(r_ptr));                            \
+    }                                                           \
+  }
+
 /**
  *  Internal functions to read hex and octal
  *  values from @ptr and store it into @result
@@ -254,6 +278,24 @@ unescape (char *buff)
  reterr:
   *w_ptr = '\0';
   return (ssize_t)(buff - w_ptr);
+}
+
+
+char *
+url_unescape (char *buff)
+{
+  char *__dst, *__res;
+  __dst = __res = buff;
+  __URL_DECODE__ (__res, buff);
+  return __dst;
+}
+
+char *
+url_unescape2 (char *restrict dst, const char *restrict src)
+{
+  char *__dst = dst;
+  __URL_DECODE__ (dst, src);
+  return __dst;
 }
 
 #endif /* UNESCAPE_IMPLEMENTATION */
