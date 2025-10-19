@@ -65,6 +65,17 @@
         ...
         free (dest);
       }
+
+      // to unescape (URL decode) URL's
+      {
+        // in-place decoding
+        url_unescape (buffer);
+        printf ("%s\n", buffer);
+
+        // or use a separate buffer
+        char *dest = malloc (strlen (buffer));
+        url_unescape2 (dst, buffer);
+      }
     ```
  **/
 #ifndef UNESCAPE__H__
