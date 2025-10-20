@@ -316,7 +316,9 @@ enum filter_flag_t
     MATCH_SIZE        = 252,
     MATCH_TIME        = 251,
   };
-#define FILTER_T_CSTR(fft) (((char)(fft) < 0) ? "Match" : "Filter")
+#define IS_FILTER(fft) ((char)(fft) > 0)
+#define IS_MATCH(fft) (! IS_FILTER (fft))
+#define FILTER_T_CSTR(fft) (IS_FILTER (fft) ? "Filter" : "Match")
 #define __ABS__(x) ((x > 0) ? (x) : -1 * (x))
 #define FILTER_CSTR(fft) __filter_cstr[ __ABS__((char) fft) ]
 const char *__filter_cstr[] =
@@ -897,6 +899,18 @@ fw_next (Fword *fw)
 
 //-- Logger functions --//
 void
+log_filter (const struct res_filter_t *fl)
+{
+  fprintf (stderr, "- %s: %s ",
+           FILTER_T_CSTR (fl->type),
+           FILTER_CSTR (fl->type));
+  if (fl->range.start != fl->range.end)
+    fprintf (stderr, "%d-%d\n", fl->range.start, fl->range.end);
+  else
+    fprintf (stderr, "%d\n", fl->range.start);
+}
+
+void
 log_current_config (void)
 {
   if (! isatty (fileno (stderr)))
@@ -911,19 +925,15 @@ log_current_config (void)
       {
         fprintf (stderr, "- Header: [%s]\n", h->data);
       }
-    da_foreach (opt.filters, i)
+    if (opt.max_rate != MAX_REQ_RATE)
+      fprintf (stderr, "- Request rate: %d\n", opt.max_rate);
+    fprintf (stderr, "- Threads: %ld\n", opt.Rqueue.len);
+    if (opt.filters)
       {
-        struct res_filter_t *fl = &opt.filters[i];
-        if (fl->range.start != fl->range.end)
-          fprintf (stderr, "- %s: %s in range [%d, %d]\n",
-                   FILTER_T_CSTR(fl->type),
-                   FILTER_CSTR(fl->type),
-                   fl->range.start, fl->range.end);
-        else
-          fprintf (stderr, "- %s: %s == %d\n",
-                   FILTER_T_CSTR(fl->type),
-                   FILTER_CSTR(fl->type),
-                   fl->range.start);
+        da_foreach (opt.filters, i)
+          {
+            log_filter (&opt.filters[i]);
+          }
       }
   }
   fprintf (stderr, "--------------------------------------------\n\n");
