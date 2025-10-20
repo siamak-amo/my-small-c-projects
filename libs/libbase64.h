@@ -54,6 +54,10 @@
 #define EOBUFFER_B64 -1 // end of buffer
 #define INVALID_B64 -2 // invalid base64
 
+/* Bse64 decode/encode block */
+#define B64_DECODE_B 3
+#define B64_ENCODE_B 4
+
 /* encode table */
 #define MAX_B64 64
 static const char b64[MAX_B64] =
@@ -233,12 +237,13 @@ b64_decode (const void *restrict src_v, int srclen,
   return rw;
 }
 
+
 #ifndef B64_NO_STREAM
 int
 b64_stream_decode (int ifd, int ofd, int *error)
 {
   int r = 0, w = 0; // read and write bytes
-  char in[4], tmp[3];
+  char in[4], tmp[B64_DECODE_B + 1];
 
   while (read (ifd, in + r, 1) == 1)
     {
@@ -263,7 +268,7 @@ B64DEFF int
 b64_stream_encode (int ifd, int ofd, int *error)
 {
   int r, w = 0; // read & write bytes
-  char in[3], tmp[4];
+  char in[3], tmp[B64_ENCODE_B + 1];
 
   while ((r = read (ifd, in, 3)) > 0)
     {
