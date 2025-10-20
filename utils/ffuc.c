@@ -92,6 +92,9 @@
 #define DYNA_IMPLEMENTATION
 #include "dyna.h"
 
+#define UNESCAPE_IMPLEMENTATION
+#include "unescape.h"
+
 #define CLI_IMPLEMENTATION
 #include "clistd.h"
 #include <getopt.h>
@@ -927,11 +930,23 @@ log_current_config (void)
 }
 
 static inline void
+url_decode_arr (char **arr, int len)
+{
+  for (int i=0; i<len; ++i)
+    {
+      if (arr)
+        url_unescape (arr[i]);
+    }
+}
+
+static inline void
 print_stats_fuzz (RequestContext *ctx)
 {
   /* Wiping the line out of the progress-bar stuff */
   if (opt.Printf.lineclear)
     fprintf (opt.streamout, CLEAN_LINE ());
+  /* Undo URL encoding */
+  url_decode_arr (ctx->FUZZ, opt.words_len);
 
   if (1 >= opt.words_len)
     {
