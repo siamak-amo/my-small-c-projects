@@ -88,7 +88,7 @@ static const char _dec64[] = {
  */
 B64DEFF int b64_encode (const void *restrict src_v, int srclen,
                 void *restrict dst_v, int dstlen, int *error);
-B64DEFF int b64_encode (const void *restrict src_v, int srclen,
+B64DEFF int b64_decode (const void *restrict src_v, int srclen,
                 void *restrict dst_v, int dstlen, int *error);
 
 /**
