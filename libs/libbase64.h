@@ -60,10 +60,8 @@
 
 /* encode table */
 #define MAX_B64 64
-static const char b64[MAX_B64] =
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  "abcdefghijklmnopqrstuvwxyz"
-  "0123456789+/";
+static const char b64[] =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 #define B64_MASK 0x3F // max b64 index 63
 
 /* decode table */
