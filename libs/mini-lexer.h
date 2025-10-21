@@ -778,7 +778,7 @@ typedef struct yy_buffer_state
  *  Stack of input buffers (Internal)
  *  Must be allocated and freed using `yyensure_buffer_stack`
  */
-static YY_BUFFER_STATE * yy_buffer_stack = NULL;   /* Stack as an array  */
+static YY_BUFFER_STATE **yy_buffer_stack = NULL;   /* Stack as an array  */
 static size_t            yy_buffer_stack_top = 0;  /* index of top of stack */
 static size_t            yy_buffer_stack_max = 0;  /* capacity of stack */
 
@@ -1637,7 +1637,7 @@ yyensure_buffer_stack (void)
       yy_buffer_stack_max = entry2alloc;
       new_size_b = entry2alloc * sizeof (YY_BUFFER_STATE *);
 
-      yy_buffer_stack = (YY_BUFFER_STATE *) yy_malloc (new_size_b);
+      yy_buffer_stack = (YY_BUFFER_STATE **) yy_malloc (new_size_b);
       memset (yy_buffer_stack, 0, new_size_b);
       return;
     }
@@ -1646,7 +1646,7 @@ yyensure_buffer_stack (void)
       int grow = 8;
       entry2alloc = yy_buffer_stack_max + grow;
       new_size_b = entry2alloc * sizeof (YY_BUFFER_STATE *);
-      yy_buffer_stack = (YY_BUFFER_STATE *)
+      yy_buffer_stack = (YY_BUFFER_STATE **)
         yy_realloc (yy_buffer_stack, new_size_b);
       memset (yy_buffer_stack + yy_buffer_stack_max, 0,
               grow * sizeof (YY_BUFFER_STATE *));
