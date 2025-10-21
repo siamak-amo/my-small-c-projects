@@ -280,6 +280,11 @@ const struct option lopts[] =
     /* Regular mode */
     {"regular",          no_argument,       NULL, 'r'},
     /* CLI */
+    {"format-getline",   no_argument,       NULL, '9'},
+    {"fgetline",         no_argument,       NULL, '9'},
+    {"ignore-comments",  no_argument,       NULL, '8'},
+    {"ignore-comment",   no_argument,       NULL, '8'},
+    {"no-comment",       no_argument,       NULL, '8'},
     {"version",          no_argument,       NULL, 'v'},
     {"help",             no_argument,       NULL, 'h'},
     /* End of Options */
@@ -346,6 +351,13 @@ enum mode
     REGULAR_MODE,
   };
 
+enum getline_flag_t
+  {
+    GETLINE_FMT        = 1 << 1,
+    GETLINE_NO_COMMENT = 1 << 2,
+  };
+bool getline_isvalid (const char *buff, int getline_flgs);
+
 /* Permugen's main configuration */
 struct Opt
 {
@@ -353,6 +365,7 @@ struct Opt
   int mode;
   int escape_disabled; /* to disable backslash interpretation */
   int using_default_seed;
+  int getline_flags;
   struct
   {
     int min, max;
@@ -999,6 +1012,48 @@ wseed_uniappd (const struct Opt *opt,
   return 0;
 }
 
+bool
+getline_isvalid (const char *buff, int getline_flgs)
+{
+  if (buff[0] < MIN_ASCII_PR)
+    return false;
+  if (getline_flgs & GETLINE_NO_COMMENT)
+    {
+      if ('#' == buff[0])
+        return false;
+    }
+  return true;
+}
+
+/**
+ * Return:  zero on success
+ *  Negative to stop reading
+ *  Positive to ignore the buffer
+ */
+static inline int
+getwseed_line (FILE *fin, char *buff, int getline_flags)
+{
+  if (feof (fin))
+    return -1;
+  if (getline_flags & GETLINE_FMT)
+    {
+      if (fscanf (fin, "%" STR(WSEED_MAXLEN) "s", buff) < 0)
+        return 1;
+    }
+  else /* simple getline */
+    {
+      if (! fgets (buff, WSEED_MAXLEN, fin))
+        return 1;
+      char *p = strpbrk (buff, "\r\n");
+      if (! p)
+        return 1; /* invalid */
+      *p = '\0';
+    }
+  if (! getline_isvalid (buff, getline_flags))
+    return 1;
+  return 0;
+}
+
 void
 wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
 {
@@ -1038,17 +1093,11 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
   char *line = malloc (WSEED_MAXLEN + 1);
   while (1)
     {
-#ifndef ONLY_FSCANF_STREAMS
-      if (! fgets (line, WSEED_MAXLEN, f))
+      int ret = getwseed_line (f, line, opt->getline_flags);
+      if (ret < 0)
         break;
-      line[strcspn (line, "\n")] = '\0';
-#else /* Treat space as delimiter */
-      if (fscanf (f, "%" STR (WSEED_MAXLEN) "s",  line) < 0)
-        break;
-#endif
-      /* Ignore empty and comment lines */
-      if (MIN_ASCII_PR > line[0] || '#' == line[0])
-        break;
+      if (ret > 0)
+        continue;
       if (wseed_uniappd (opt, s, line) < 0)
         break;
     }
@@ -1225,6 +1274,13 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
                   }
               }
           }
+          break;
+
+        case '9':
+          opt->getline_flags |= GETLINE_FMT;
+          break;
+        case '8':
+          opt->getline_flags |= GETLINE_NO_COMMENT;
           break;
 
         default:
