@@ -100,11 +100,13 @@
        - Not suitable to be used with depth (-d) in regular mode
        - Using other prefix/suffix options along with format,
          will override this option
+
+       - using `--` for prefix  and  `==` for suffix:
        $ permugen -s "[ab]"  --format "--FUZZ=="
-       - uses `--` for prefix and `==` for suffix
-       $ permugen -r "{A}"  "{B,C}"  -f "((FUZZ)) , [[FUZZ]]"
-       - uses double parenthesis for the first seed, and
-         double square brackets for the second seed
+
+       - using double parenthesis for the first seed, and
+         double square brackets and comma for the second seed:
+       $ permugen -r "{A}" "{B,C}"  -f "((FUZZ)) , [[FUZZ]]"
 
 
    Compilation:
@@ -112,6 +114,8 @@
         -o permugen permugen.c
 
    Options:
+    - To skip uniqueness of word seeds
+       define `_SKIP_UNIQUE`
     - To skip freeing allocated memory before quitting
        define `_CLEANUP_NO_FREE`
     - To enable printing of debug information
@@ -119,9 +123,6 @@
     - To use buffered IO library (deprecated)
        define `_USE_BIO`
        define `_BMAX="(1024 * 1)"` (=1024 bytes)
-    - Use fscanf to read from streams
-      If enabled, files will split by space characters
-       define ONLY_FSCANF_STREAMS
  **/
 #undef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -134,7 +135,7 @@
 #include <errno.h>
 
 #define PROGRAM_NAME "permugen"
-#define Version "2.14"
+#define Version "2.18"
 
 #define CLI_IMPLEMENTATION
 #include "clistd.h"
@@ -164,6 +165,10 @@
 # define DEFAULT_REPSTR "FUZZ"
 #endif
 
+#ifndef IS_LINE_COMMENT
+#define IS_LINE_COMMENT(line) (line[0] == '#')
+#endif
+
 /**
  **  The following files are available in `../libs`:
  **
@@ -186,12 +191,8 @@
 #define DYNA_IMPLEMENTATION
 #include "dyna.h"
 
-/**
- *  To prevent wseed fragmentation, this should be
- *  bigger than wseed max length
- */
-#define TOKEN_MAX_BUF_LEN (WSEED_MAXLEN + 1)
 #define ML_FLEX
+#define YY_TOKEN_CAP 512  /* lexer token capacity */
 #define ML_IMPLEMENTATION
 #include "mini-lexer.h"
 
@@ -356,7 +357,7 @@ enum getline_flag_t
     GETLINE_FMT        = 1 << 1,
     GETLINE_NO_COMMENT = 1 << 2,
   };
-bool getline_isvalid (const char *buff, int getline_flgs);
+static inline bool getline_isvalid (const char *buff, int getline_flgs);
 
 /* Permugen's main configuration */
 struct Opt
@@ -610,8 +611,11 @@ OPTIONS:\n\
           --suffix            output suffix\n\
       -f, --format            output format\n\
       -I, --replace-str       to change FUZZ keyword in format\n\
+          --no-comment        ignore commented lines  while reading from file\n\
+          --format-getline    separate words by space while reading from file\n\
       -h, --help              print help and exit\n\
-      -v, --version           print version and exit\n\n\
+      -v, --version           print version and exit\n\
+\n\
   Depth settings:\n\
       -d, --depth             specify depth\n\
                               strict: '-d N' where N is a number\n\
@@ -1000,6 +1004,7 @@ wseed_uniappd (const struct Opt *opt,
   size_t len = da_sizeof (s->wseed);
   if (len >= WSEED_MAXCNT)
     return -1;
+#ifndef _SKIP_UNIQUE
   for (size_t i=0; i < len; ++i)
     {
       if (Strcmp (s->wseed[i], word))
@@ -1008,18 +1013,19 @@ wseed_uniappd (const struct Opt *opt,
           return 1;
         }
     }
+#endif /* _SKIP_UNIQUE */
   da_appd (s->wseed, word);
   return 0;
 }
 
-bool
+static inline bool
 getline_isvalid (const char *buff, int getline_flgs)
 {
   if (buff[0] < MIN_ASCII_PR)
     return false;
   if (getline_flgs & GETLINE_NO_COMMENT)
     {
-      if ('#' == buff[0])
+      if (IS_LINE_COMMENT (buff))
         return false;
     }
   return true;
@@ -1796,14 +1802,9 @@ parse_seed_regex (struct Opt *opt,
         {
         case TK_KEYWORD:
           {
-            /**
-             *  These tokens may represent a file path
-             *  or `-`, which indicates reading from stdin.
-             *  We assume that file paths do not start with `-`.
-             */
             if ('-' == *yytext)  /* Read from stdin */
               wseed_file_uniappd (opt, dst_seed, stdin);
-            else
+            else /* Read from file */
               pparse_keys_regex (opt, dst_seed, yytext);
             break;
           }
