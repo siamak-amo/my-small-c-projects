@@ -17,9 +17,8 @@
 /** file: permugen.c
     created on: 4 Sep 2024
 
-    Permugen
-    Permutation generator utility
-    Generates customizable permutations from specified seeds
+    Permugen - Permutation generator utility
+    For generating customizable permutations from specified seeds
 
     Usage
       For more details, use the `-h` option:
@@ -77,10 +76,10 @@
        $ permugen -r  "{dev,prod}"  "[2-3]"  "\2"
 
      * Depth in regular mode (count of output components)
-       - To get '<S_i><S_j><S_k>' where i,j,k in [1 to N]:
-       $ permugen -r [S_1]... [S_N] -d3
-       - To also get '<S_i><S_j>':
-       $ permugen -r [S_1]... [S_N] -d2-3
+       - To get permutations with exactly 3 components:
+       $ permugen -r [INPUT_SEED]... -d3
+       - With 2 and 3 components:
+       $ permugen -r [INPUT_SEED]... -d 2-3
 
        - To read from stdin:
        $ permugen -r -- "{dev,prod}"  "-"
@@ -91,15 +90,15 @@
        - The first component has `xxx` as suffix and
          the second component has `yyy` as prefix
        $ permugen -r  "() {One} (xxx)"  "(yyy) {Two} ()"
+
        - The first component uses {} and the second one uses ()
        $ permugen -r  "({) {One} (})"  "(\() {Two} (\))"
 
      * Custom format
        - This configures prefix and suffix of seeds
          based on a format string, by default FUZZ keyword (see -I)
-       - Not suitable to be used with depth (-d) in regular mode
-       - Using other prefix/suffix options along with format,
-         will override this option
+       - Not suitable to be used along with depth (-d) in regular mode
+       - Other prefix/suffix options, have higher priority
 
        - using `--` for prefix  and  `==` for suffix:
        $ permugen -s "[ab]"  --format "--FUZZ=="
@@ -319,10 +318,8 @@ static inline void free_seed (struct Seed *s);
  */
 enum LANG
   {
-    /* General parser */
     PUNC_COMMA = 0,
 
-    /* Special parser */
     EXP_PAREN = 0,     /* (xxx) */
     EXP_CBRACE,        /* {xxx} */
     EXP_SBRACKET,      /* [xxx] */
@@ -362,7 +359,6 @@ static inline bool getline_isvalid (const char *buff, int getline_flgs);
 /* Permugen's main configuration */
 struct Opt
 {
-  /* General */
   int mode;
   int escape_disabled; /* to disable backslash interpretation */
   int using_default_seed;
@@ -397,11 +393,9 @@ struct Opt
 #define MIN(x, y) ((x < y) ? x : y)
 #define MAX(x, y) ((x < y) ? y : x)
 
-#undef IS_DIGIT
-#define IS_DIGIT(c) (c >= '0' && c <= '9')
-
 /* To check @c belongs to the closed interval [a,b] */
 #define IN_RANGE(c, a,b) ((c) >= (a) && (c) <= (b))
+#define IS_DIGIT(c) IN_RANGE(c, '0', '9')
 
 /**
  *  ASCII-printable character range
@@ -417,7 +411,7 @@ struct Opt
   ((s1) != NULL && (s2) != NULL &&              \
    strcmp ((s1), (s2)) == 0)
 
-#define UNESCAPE(cstr) _Nullable do {           \
+#define UNESCAPE(cstr) do {                     \
     if (NULL != cstr)                           \
       unescape (cstr);                          \
   } while (0)
@@ -433,12 +427,12 @@ struct Opt
 
 
 static inline void
-safe_fclose (FILE *_Nullable f)
+safe_fclose (FILE *_Nullable file)
 {
-  if (f)
+  if (file)
     {
-      fflush (f);
-      fclose (f);
+      fflush (file);
+      fclose (file);
     }
 }
 
@@ -461,7 +455,7 @@ safe_fopen (const char *restrict pathname,
 
 /**
  *  Frees all allocated memory and closes all open files
- *  This function should be called by `on_exit`
+ *  This function should be used in `on_exit`
  */
 void
 cleanup (int code, void *__opt)
@@ -513,77 +507,73 @@ cleanup (int code, void *__opt)
 }
 
 /**
- *  Appends characters from @src to @s->cseed, until \0
+ *  Appends characters from @src to @dst->cseed, until \0
  *  or !IS_CSEED_RANGE, returns the number of bytes written
- *  @s->cseed will have unique chars after this call, if it did before
- *  Pass `len = -1` to stop only at the null byte
+ *  @dst->cseed will have unique chars after this call, if it did before
+ *  Pass @len -1 to stop only at the null bytes
  *
  *  Returns the index of the last non-zero byte in @src
  */
-int cseed_uniappd (struct Seed *s, const char *src, int len);
+int cseed_uniappd (struct Seed *dst, const char *src, int len);
 
 /**
  *  Appends a copy of @str_word (using strdup malloc)
- *  to @s->wseed after unescaping it (if not disabled)
- *  @s->wseed will have unique words after this call, if it did before
- *
- *  Returns -1 on error, 1 on match found, 0 on a successful appending
+ *  to @dst->wseed after unescaping it (if not disabled)
+ *  @dst->wseed will have unique words after this call, if it did before
+ *  Uniqueness checking can be disabled via `_SKIP_UNIQUE` macro
+ * Return:
+ *   -1 on error, 1 on match found, 0 on a successful appending
  */
-int wseed_uniappd (const struct Opt *, struct Seed *s,
-                   const char *str_word);
+int wseed_uniappd (const struct Opt *opt,
+                   struct Seed *dst, const char *str_word);
 /**
- *  Using wseed_uniappd function, appends words from @f
- *  to the seed @s, line by line, and ignores commented lines by `#`
+ *  Using wseed_uniappd function, appends words from @stream
+ *  to the seed @dst, line by line, and ignores commented lines by `#`
  */
-void
-wseed_file_uniappd (const struct Opt *, struct Seed *s, FILE *f);
+void wseed_file_uniappd (const struct Opt *opt,
+                         struct Seed *dst, FILE *stream);
 
 /**
- *  Parses the @input regex and stores the result in @dst
+ *  Parses the @input regex and stores the result into @dst
  *  @input: "(prefix) [Cseed] {Wseed} /path/to/file (suffix)"
- *  If `prefix` and `suffix` are not NULL, they are allocated using
- *  `strdup`, and `wseed` is appended using `wseed_uniappd` function
  */
-void parse_seed_regex (struct Opt *opt, struct Seed *dst,
-                       const char *input);
+void parse_seed_regex (struct Opt *opt,
+                       struct Seed *dst, char *input);
 
 /**
  *  Word Seed regex parser
- *  inside `{...}`  -  comma-separated words form @input
- *  wseed_uniappd call will backslash interpret the result
- *  This function uses special_tk and special_src for parsing
+ *  @input: `{...}`  -  comma-separated words
+ *  Using wseed_uniappd, appends the result to @dst (with unescape)
  */
 static inline void
 pparse_wseed_regex (struct Opt *opt,
-                    struct Seed *dst_seed, char *input);
+                    struct Seed *dst, char *input);
 
 /**
  *  Character Seed regex parser
- *  inside: `[...]`  -  minimal character range(s) from @input
- *  It backslash interprets the result if not disabled
+ *  @input: `[...]`  -  minimal character range(s) (with unescape)
  */
 static inline void
 pparse_cseed_regex (struct Opt *opt,
-                    struct Seed *dst_seed, char *input);
+                    struct Seed *dst, char *input);
 
 /**
  *  Detects file paths, previous seed indexes (\N)
- *  and other shortcuts like \d, \u, and \U
- *  This function uses special_tk and special_src for parsing
+ *  and other shortcuts like: '\d', '\u' and '\1'
  */
 static inline void
-pparse_keys_regex (struct Opt *opt, struct Seed *dst_seed,
-                   const char *input);
+pparse_keys_regex (struct Opt *opt,
+                   struct Seed *dst, const char *input);
 
 /**
- *  Provides prefix and suffix of @dst_seed using strdup,
- *  inside: `(...)` (only in regular mode)
- *  The first call sets @dst_seed->pref (prefix) and
- *  the second call sets @dst_seed->suff (suffix)
+ *  Initializes @dst->prefix/suffix (if NULL), via malloc
+ *  @input: `(...)` (only in regular mode)
+ *  First call provides prefix, second call suffix,
+ *  other calls will be ignored
  */
 static inline void
 pparse_format_regex (struct Opt *opt,
-                     struct Seed *dst_seed, char *input);
+                     struct Seed *dst, char *input);
 
 
 void
@@ -708,8 +698,7 @@ ARGUMENTS:\n\
 
 /**
  *  The main logic of normal mode
- *  It should be called it in a loop from
- *  depth=min_depth to depth=max_depth
+ *  It should be called in a loop with @depth [min_depth... max_depth]
  */
 int
 __perm (const struct Opt *opt, const char *sep, const int depth)
@@ -1061,11 +1050,12 @@ getwseed_line (FILE *fin, char *buff, int getline_flags)
 }
 
 void
-wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
+wseed_file_uniappd (const struct Opt *opt,
+                    struct Seed *dst, FILE *stream)
 {
-  if (!f || feof (f))
+  if (!stream || feof (stream))
     {
-      if (f == stdin)
+      if (stream == stdin)
         {
           if (freopen ("/dev/tty", "r", stdin) == NULL)
             {
@@ -1080,7 +1070,7 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
         }
     }
 
-  if (f == stdin && isatty (fileno (f)))
+  if (stream == stdin && isatty (fileno (stream)))
     {
       switch (opt->mode)
         {
@@ -1099,12 +1089,12 @@ wseed_file_uniappd (const struct Opt *opt, struct Seed *s, FILE *f)
   char *line = malloc (WSEED_MAXLEN + 1);
   while (1)
     {
-      int ret = getwseed_line (f, line, opt->getline_flags);
+      int ret = getwseed_line (stream, line, opt->getline_flags);
       if (ret < 0)
         break;
       if (ret > 0)
         continue;
-      if (wseed_uniappd (opt, s, line) < 0)
+      if (wseed_uniappd (opt, dst, line) < 0)
         break;
     }
   safe_free (line);
@@ -1608,31 +1598,31 @@ path_resolution (const char *path_cstr)
  **/
 static inline void
 pparse_cseed_regex (struct Opt *opt,
-                    struct Seed *dst_seed, char *token)
+                    struct Seed *dst, char *input)
 {
   if (! opt->escape_disabled)
-    UNESCAPE (token);
+    UNESCAPE (input);
 
   char lastc = 0;
-  for (; '\0' != *token; ++token)
+  for (; '\0' != *input; ++input)
     {
-      if ('-' != *token || 0 == lastc)
+      if ('-' != *input || 0 == lastc)
         {
-          lastc = *token;
-          cseed_uniappd (dst_seed, token, 1);
+          lastc = *input;
+          cseed_uniappd (dst, input, 1);
           continue;
         }
-      if ('\0' == *(token++)) /* skipping `-` */
+      if ('\0' == *(input++)) /* skipping `-` */
         {
-          cseed_uniappd (dst_seed, "-", 1);
+          cseed_uniappd (dst, "-", 1);
           break;
         }
 
-      int range_len = *token - lastc + 1;
+      int range_len = *input - lastc + 1;
       const char *range = NULL; /* NULL means custom range */
 
 #define MK_RANGE(charseed) do {                             \
-        if (! IN_RANGE (*token, (charseed).c[0],            \
+        if (! IN_RANGE (*input, (charseed).c[0],            \
                        (charseed).c[(charseed).len - 1]))   \
           range_len = 1;                                    \
         range = charseed.c + (lastc - charseed.c[0]);       \
@@ -1646,11 +1636,11 @@ pparse_cseed_regex (struct Opt *opt,
         MK_RANGE (charseed_09);
 
       if (range)
-        cseed_uniappd (dst_seed, range, range_len);
+        cseed_uniappd (dst, range, range_len);
       else
         {
           for (int i=0; i < range_len; ++i, ++lastc)
-            cseed_uniappd (dst_seed, &lastc, 1);
+            cseed_uniappd (dst, &lastc, 1);
         }
       lastc = 0;
     }
@@ -1659,40 +1649,45 @@ pparse_cseed_regex (struct Opt *opt,
 
 static inline void
 pparse_wseed_regex (struct Opt *opt,
-                    struct Seed *dst_seed, char *input)
+                    struct Seed *dst, char *input)
 {
   int type;
   YY_BUFFER_STATE *buffer = yy_scan_string (input);
-  while ( (type = yylex()) != -1 )
-    {
-      if (TK_KEYWORD == type)
-        {
-          wseed_uniappd (opt, dst_seed, yytext);
-        }
-    }
+  /* We only need to parse comma in this case: {xx,yy,...} */
+  ML_ENABLE (&Puncs[PUNC_COMMA]);
+  {
+    while ( (type = yylex()) != -1 )
+      {
+        if (TK_KEYWORD == type)
+          {
+            wseed_uniappd (opt, dst, yytext);
+          }
+      }
+  }
+  ML_DISABLE (&Puncs[PUNC_COMMA]); /* Undo PUNC_COMMA enabled */
   yy_delete_buffer( buffer );
 }
 
 static inline void
 pparse_format_regex (struct Opt *opt,
-                     struct Seed *dst_seed, char *input)
+                     struct Seed *dst, char *input)
 {
   if (!input)
     return;
   if (! opt->escape_disabled)
     UNESCAPE (input);
 
-  if (dst_seed->pref == NULL)
-    dst_seed->pref = strdup (input);
-  else if (dst_seed->suff == NULL)
-    dst_seed->suff = strdup (input);
+  if (dst->pref == NULL)
+    dst->pref = strdup (input);
+  else if (dst->suff == NULL)
+    dst->suff = strdup (input);
   else
     warnln ("extra format was ignored");
 }
 
 static inline void
 pparse_keys_regex (struct Opt *opt,
-                   struct Seed *dst_seed, const char *input)
+                   struct Seed *dst, const char *input)
 {
   char *path;
 
@@ -1729,10 +1724,10 @@ pparse_keys_regex (struct Opt *opt,
           else /* valid index */
             {
               struct Seed *src = opt->reg_seeds[n];
-              cseed_uniappd (dst_seed, src->cseed, src->cseed_len);
+              cseed_uniappd (dst, src->cseed, src->cseed_len);
               da_foreach (src->wseed, i)
                 {
-                  wseed_uniappd (opt, dst_seed, src->wseed[i]);
+                  wseed_uniappd (opt, dst, src->wseed[i]);
                 }
             }
           continue;
@@ -1742,21 +1737,18 @@ pparse_keys_regex (struct Opt *opt,
       switch (*input)
         {
         case 'd': /* Digits 0-9 */
-          cseed_uniappd (dst_seed,
-                         charseed_09.c, charseed_09.len);
+          cseed_uniappd (dst, charseed_09.c, charseed_09.len);
           break;
 
         case 'l': /* Lowercase letters */
         case 'a':
-          cseed_uniappd (dst_seed,
-                         charseed_az.c, charseed_az.len);
+          cseed_uniappd (dst, charseed_az.c, charseed_az.len);
           break;
 
         case 'U': /* Uppercase letters */
         case 'u':
         case 'A':
-          cseed_uniappd (dst_seed,
-                         charseed_AZ.c, charseed_AZ.len);
+          cseed_uniappd (dst, charseed_AZ.c, charseed_AZ.len);
           break;
 
         default:
@@ -1775,12 +1767,12 @@ pparse_keys_regex (struct Opt *opt,
     case '~':
       if ((path = path_resolution (input)))
         {
-          FILE *f = safe_fopen (path, "r");
-          if (f)
+          FILE *stream = safe_fopen (path, "r");
+          if (stream)
             {
-              wseed_file_uniappd (opt, dst_seed, f);
-              if (f != stdin)
-                safe_fclose (f);
+              wseed_file_uniappd (opt, dst, stream);
+              if (stream != stdin)
+                safe_fclose (stream);
             }
         }
       break;
@@ -1792,10 +1784,10 @@ pparse_keys_regex (struct Opt *opt,
 
 void
 parse_seed_regex (struct Opt *opt,
-                  struct Seed *dst_seed, const char *input)
+                  struct Seed *dst, char *input)
 {
   int type = 0;
-  YY_BUFFER_STATE *buffer = yy_scan_string (input);
+  YY_BUFFER_STATE *buffer = yy_scan_buffer (input, strlen (input));
   while ( (type = yylex()) != -1 )
     {
       switch (type)
@@ -1803,9 +1795,9 @@ parse_seed_regex (struct Opt *opt,
         case TK_KEYWORD:
           {
             if ('-' == *yytext)  /* Read from stdin */
-              wseed_file_uniappd (opt, dst_seed, stdin);
-            else /* Read from file */
-              pparse_keys_regex (opt, dst_seed, yytext);
+              wseed_file_uniappd (opt, dst, stdin);
+            else /* Shortcut or Read from file path */
+              pparse_keys_regex (opt, dst, yytext);
             break;
           }
 
@@ -1813,20 +1805,15 @@ parse_seed_regex (struct Opt *opt,
           switch (yyid)
             {
             case EXP_SBRACKET:
-              pparse_cseed_regex (opt, dst_seed, yytext);
+              pparse_cseed_regex (opt, dst, yytext);
               break;
 
             case EXP_CBRACE:
-              /* We only need to parse comma in this case: {xx,yy,...} */
-              ML_ENABLE (&Puncs[PUNC_COMMA]);
-              {
-                pparse_wseed_regex (opt, dst_seed, yytext);
-              }
-              ML_DISABLE (&Puncs[PUNC_COMMA]);
+              pparse_wseed_regex (opt, dst, yytext);
               break;
 
             case EXP_PAREN:
-              pparse_format_regex (opt, dst_seed, yytext);
+              pparse_format_regex (opt, dst, yytext);
               break;
 
             default:
