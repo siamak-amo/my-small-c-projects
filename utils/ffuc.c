@@ -24,33 +24,58 @@
       Provide HTTP component option, with or without FUZZ keyword,
       then provide enough word-list file path for it.
 
-    Examples:
+    Recommendation:  using the `--auto-filter` option
+      The `--auto-filter` option (AI mode!) detects a proper response
+      filtering by sending a few discovery requests.
+
+      Some endpoints, respond with unexpected HTTP error codes when encountering
+      any unexpcted or absent parameter in the requests; As a result,
+      users using the default setup of FFuc, might *miss* some valid URLs.
+      (the default setup only shows responses with:  200 <= status codes < 400)
+
+      The auto-filter mode can be reproduced manually as follows:
+        1. Use '-A' to ignore all filters, with a small word-list.
+        2. Identify a common response hook to filter (or match).
+           FFuc starts by, at first, common word count, then status code
+           and then response size, and otherwise returns failure.
+
+    Examples of using FUZZ keywords and word-lists:
       $ ffuc -u https://x.com/FUZZ.FUZZ -w /tmp/wl1 -w /tmp/wl2
-      (wl1 gets used for the first FUZZ keyword, and wl2 for the second one)
+      (the first FUZZ uses: /tmp/wl1  and  the second FUZZ uses /tmp/wl2)
 
       $ ffuc -u http://x.com/FUZZ -w /tmp/wl1  -H 'X-test: FUZZ' -w /tmp/wl2
+      (using /tmp/wl1 for URL  and  /tmp/wl2 for the X-test header)
 
       $ ffuc -u https://x.com -w /tmp/words
       (It assumes you want to fuzz the end of the URL -> https://z.com/FUZZ)
 
-      $ ffux -XPOST -u https://x.com  -d 'username=FUZZ' -w /tmp/words \
+      $ ffux -XPOST -u https://x.com  -d 'username=FUZZ' -w /tmp/usernames \
                                       -d 'password=FUZZ' -w /tmp/rockyou.txt
 
+    Filter & Match:
+      To filter responses (to excluding if satisfied):
+          --fs (filter size),        --fc (filter status code)
+          --fw (filter word count),  --fl (filter line count)
+
+        Ex.  '--fs 1024  --fc 400-500':
+               filters out responses with a size of 1024,
+               AND those with status codes in the range of [400 to 500]
+
+      To match responses (to include only if satisfied):
+          --ms (match size),         --mc (match code)
+          --mw (match word count),   --ml (match line count)
+
+        Ex.  The default setup is equivalent to  '--mc 200-399'
+        Ex.  '--fs 0  --mc 300':
+               first excludes all responses of zero length,
+               then only shows those with a status code of 300.
+
     Modes:
-      This concept only matters if you provide more than one word-list;
-      As in this case, we have more than one way to iterate over lists.
-
       FFuc implements three different methods:
-        cluster-bomb (default):   [--mode c],[--mode clusterbomb]
-          Cartesian product of all word-lists.
-
-        pitchfork:  [--mode p],[--mode pitchfork]
-          Treats word-lists as circular lists, and picks words
-          one by one, until the longest word-list reaches the end.
-
-        singular:  [--mode s],[--mode singular]
-          Only accepts ONE word-list and use it for all FUZZ keywords.
-
+        Cluster-bomb (default):  cartesian product of all word-lists
+        Pitchfork:  pick one by one until the longest one ends
+        Singular:  one word-list for all FUZZ keywords
+      See the usage help for more details.
 
     Compilation:
       cc -ggdb -O3 -Wall -Wextra -Werror \
@@ -1116,13 +1141,13 @@ __next_fuzz_clusterbomb (RequestContext *ctx)
 
 //-- RequestContext functions --//
 RequestContext *
-lookup_handle (CURL *handle,
-               RequestContext *ctxs, size_t len)
+lookup_handle (CURL *needle,
+               RequestContext *haystack, size_t len)
 {
   for (size_t i=0; i < len; ++i)
     {
-      if (ctxs[i].easy_handle == handle)
-        return &ctxs[i];
+      if (haystack[i].easy_handle == needle)
+        return &haystack[i];
     }
   return NULL;
 }
@@ -2206,13 +2231,13 @@ main (int argc, char **argv)
     /* Find a free context (If there is any) and register it */
     while (!opt.eofuzz && opt.Rqueue.waiting < opt.Rqueue.len)
       {
-        rate = update_req_rate (&opt.progress);
         if (opt.max_rate <= rate)
           break;
 
         if ((ctx = lookup_free_handle (opt.Rqueue.ctxs, opt.Rqueue.len)))
           { /* Registering the context */
             opt.Rqueue.waiting++;
+            rate = update_req_rate (&opt.progress);
             range_usleep (opt.Rqueue.delay_us);
             opt.load_next_fuzz (ctx);
             register_context (ctx, false);
@@ -2227,17 +2252,16 @@ main (int argc, char **argv)
         CURL *completed_handle = msg->easy_handle;
         RequestContext *ctx = lookup_handle (completed_handle,
                                              opt.Rqueue.ctxs, opt.Rqueue.len);
-        assert (NULL != ctx && "Broken Logic!!\n\
+        assert (NULL != ctx && "Broken Logic!!  -  \
 Completed easy_handle doesn't have request context.\n");
-
         if (CURLMSG_DONE == msg->msg)
           {
             ctx->stat.ccode = msg->data.result;
-            rate = update_req_rate (&opt.progress);
             handle_response_context (ctx);
             /* Release the completed context */
             context_reset (ctx);
             opt.Rqueue.waiting--;
+            rate = update_req_rate (&opt.progress);
             if (opt.verbose)
               {
                 avg_rate += rate;
