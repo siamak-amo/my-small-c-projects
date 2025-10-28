@@ -298,12 +298,8 @@
 
 
  -- Known Issues ----------------------------------------------------
-    1. If you define `/` as a punctuation, then
-       comments like `//` will NOT work.
-    2. If you define `=` as a punctuation, you cannot define any
-       other punctuation with `=` prefix (e.g. `==`, `=xxx`).
-    3. Unicode/UTF8 is NOT supported.
-    4. Token fragmentation (when the buffer overflows) breaks
+    1. Unicode/UTF8 is NOT supported.
+    2. Token fragmentation (when the buffer overflows) breaks
        the logic of punctuation and expression detection.
 
  -- Compilation -----------------------------------------------------
@@ -984,6 +980,51 @@ __detect_delim (const Milexer *ml, unsigned char p, int flags)
   return 0;
 }
 
+/** Expensive internal function: O(#expression + #a_comment + #b_comment)
+ *  This function detects whether @cstr is a:
+ *   expression prefix  OR  a multi-line/simple-line comment prefix or not
+ *  It should be only used if it's necessary to distinguish between
+ *  a punctuation and the rest of the language.
+ */
+static int
+__is_exp_or_comment (const Milexer *ml, Milexer_Slice *src,
+                     const char *cstr)
+{
+  for (int i=0; i < ml->expression.len; ++i)
+    {
+      _exp_t *e = ml->expression.exp + i;
+      if (e->disabled)
+        continue;
+      if (strncmp (cstr, e->begin, e->len.begin) == 0)
+        {
+          src->__last_exp_idx = i;
+          return 1;
+        }
+    }
+ for (int i=0; i < ml->a_comment.len; ++i)
+    {
+      _exp_t *e = &ml->a_comment.exp[i];
+      if (e->disabled)
+        continue;
+      if (strncmp (cstr, e->begin, e->len.begin) == 0)
+        {
+          src->__last_comm = e->begin;
+          return 1;
+        }
+    }
+ for (int i=0; i < ml->b_comment.len; ++i)
+    {
+      const char *pref = ml->b_comment.exp[i];
+      size_t len = strlen (pref);
+      if (strncmp (pref, cstr, len) == 0)
+        {
+          src->__last_comm = pref;
+          return 1;
+        }
+    }
+ return 0;
+}
+
 static inline char *
 __detect_puncs (const Milexer *ml,
                 Milexer_Slice *src, Milexer_Token *res)
@@ -1013,6 +1054,11 @@ __detect_puncs (const Milexer *ml,
 
   if (longest_match_idx != -1)
     {
+      const char *punc_start = &src->buffer[src->idx - longest_match_len];
+      if (__is_exp_or_comment (ml, src, punc_start))
+        {
+          return NULL;
+        }
       src->__last_punc_idx = longest_match_idx;
       res->id = longest_match_idx;
       return res->cstr + (res->__idx - longest_match_len);
@@ -1904,7 +1950,7 @@ enum LANG
     PUNC_PLUS = 0,
     PUNC_MINUS,
     PUNC_MULT,
-    // PUNC_DIV,
+    PUNC_DIV,
     PUNC_COMMA,
     PUNC_EQUAL,
     PUNC_NEQUAL,
@@ -1930,7 +1976,7 @@ static struct Milexer_exp_ Puncs[] = {
   [PUNC_PLUS]       = {"+"},
   [PUNC_MINUS]      = {"-"},
   [PUNC_MULT]       = {"*"},
-  // [PUNC_DIV]        = "/", otherwise we cannot have /*comment*/
+  [PUNC_DIV]        = {"/"},
   [PUNC_COMMA]      = {","},
   [PUNC_EQUAL]      = {"="}, /* you cannot have "==" */
   [PUNC_NEQUAL]     = {"!="}, /* also "!===" */
