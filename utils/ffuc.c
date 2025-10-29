@@ -20,9 +20,9 @@
     FFuc  -  ffuf program written in C
 
     Usage:
-      $ ffuc [OPTIONS] [[HTTP OPTION] [-w /path/to/wordlist]...]...
-      Provide HTTP component option, with or without FUZZ keyword,
-      then provide enough word-list file path for it.
+      Provide HTTP request options followed by the word-list file paths,
+      corresponding to the FUZZ keywords for the HTTP options:
+      $ ffuc  [OPTIONS]  [[HTTP OPTION] [-w /path/to/wordlist]...]...
 
     Recommendation:  using the `--auto-filter` option
       The `--auto-filter` option (AI mode!) detects a proper response
@@ -46,9 +46,6 @@
       $ ffuc -u http://x.com/FUZZ -w /tmp/wl1  -H 'X-test: FUZZ' -w /tmp/wl2
       (using /tmp/wl1 for URL  and  /tmp/wl2 for the X-test header)
 
-      $ ffuc -u https://x.com -w /tmp/words
-      (It assumes you want to fuzz the end of the URL -> https://z.com/FUZZ)
-
       $ ffux -XPOST -u https://x.com  -d 'username=FUZZ' -w /tmp/usernames \
                                       -d 'password=FUZZ' -w /tmp/rockyou.txt
 
@@ -62,7 +59,7 @@
                AND those with status codes in the range of [400 to 500]
 
       To match responses (to include only if satisfied):
-          --ms (match size),         --mc (match code)
+          --ms (match size),         --mc (match status code)
           --mw (match word count),   --ml (match line count)
 
         Ex.  The default setup is equivalent to  '--mc 200-399'
@@ -135,9 +132,9 @@
 #endif
 static char tmp[TMP_CAP];
 
-/* Maximum concurrent requests */
+/* Default concurrent requests count */
 #ifndef DEFAULT_REQ_COUNT
-# define DEFAULT_REQ_COUNT 10
+# define DEFAULT_REQ_COUNT 40
 #endif
 
 /* Maximum request rate (req/sec) */
@@ -195,6 +192,7 @@ static char tmp[TMP_CAP];
 #define NOP ((void) NULL)
 #define UNUSED(x) (void)(x)
 #define MIN(a,b) ((a < b) ? (a) : (b))
+#define MAX(a,b) ((a > b) ? (a) : (b))
 
 #define FLG_SET(dst, flg) (dst |= flg)
 #define HAS_FLAG(val, flg) (val & flg)
@@ -343,8 +341,9 @@ enum filter_flag_t
   };
 #define IS_FILTER(fft) ((char)(fft) > 0)
 #define IS_MATCH(fft) (! IS_FILTER (fft))
-#define FILTER_T_CSTR(fft) (IS_FILTER (fft) ? "Filter" : "Match")
 #define __ABS__(x) ((x > 0) ? (x) : -1 * (x))
+
+#define FILTER_T_CSTR(fft) (IS_FILTER (fft) ? "Filter" : "Match")
 #define FILTER_CSTR(fft) __filter_cstr[ __ABS__((char) fft) ]
 const char *__filter_cstr[] =
   {
@@ -411,7 +410,7 @@ struct req_stat_t
 typedef struct progress_t
 {
   uint req_total;
-  uint req_count; /* count of sent requests */
+  uint req_sent; /* count of sent requests */
   uint err_count; /* count of errors */
 
   bool progbar_enabled;
@@ -423,11 +422,11 @@ typedef struct progress_t
   struct timeval __t0; /* internal */
 } Progress;
 
-#define MAX(x,y) (((x) > (y)) ? (x) : (y))
 /* Percentage of progress */
-#define REQ_PERC(prog) ((prog)->req_count * 100 / (prog)->req_total)
+#define REQ_PERC(prog) ((prog)->req_sent * 100 / (prog)->req_total)
 /* Convert timeval struct to milliseconds */
-#define TV2MS(tv) (tv.tv_sec * 1000LL  +  tv.tv_usec / 1000)
+#define TV2MS(tv) ((tv).tv_sec * 1000LL  +  (tv).tv_usec / 1000)
+
 
 struct res_filter_t
 {
@@ -1243,11 +1242,14 @@ handle_response_context (RequestContext *ctx)
   curl_easy_getinfo (ctx->easy_handle, CURLINFO_TOTAL_TIME, &duration);
   stat->duration = (uint) (duration * 1000.f);
 
+  /* Print stats and progress-bar if necessary */
   if (CURLE_OK != ctx->stat.ccode || filter_pass (stat, opt.filters))
     {
       print_stats_context (ctx);
       update_progress_bar (prog);
     }
+  else if (prog->req_sent % prog->progbar_refrate == 0)
+    update_progress_bar (prog);
 }
 
 static inline void
@@ -1368,7 +1370,7 @@ __update_progress_bar (const Progress *prog)
   fprintf (stderr, CLEAN_LINE ("\
 ::.   Progress: %d%% [%d/%d]  ::  %-3d req/sec  ::   Errors: %d   .::"),
            REQ_PERC (prog),
-           prog->req_count, prog->req_total,
+           prog->req_sent, prog->req_total,
            prog->rate,
            prog->err_count
   );
@@ -2159,7 +2161,10 @@ do_filter_discovery (void)
     else if ((common = common_val (sizes, N)) != -1)
       opt_filter (FILTER_SIZE, common, common);
     else
-      warnln ("automatic filtering failed!!");
+      warnln ("auto-filter failed - \
+the endpoint, with the current setup is not");
+  }
+  {
   }
   return 0;
 #undef N
