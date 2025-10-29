@@ -418,6 +418,7 @@ typedef struct progress_t
   uint rate;
 
   uint req_count_dt; /* requests in delta time */
+  uint __req_count_dt; /* internal req in delta time counter */
   size_t dt; /* delta time in milliseconds */
   struct timeval __t0; /* internal */
 } Progress;
@@ -427,6 +428,12 @@ typedef struct progress_t
 /* Convert timeval struct to milliseconds */
 #define TV2MS(tv) ((tv).tv_sec * 1000LL  +  (tv).tv_usec / 1000)
 
+/* Increment req count on getting a response */
+#define INC_REQ(prog) ((prog)->__req_count_dt++, (prog)->req_sent++)
+/* Copy & Reset the internal req in delta time counter */
+#define RESET_REQ_DT(prog)                          \
+  ((prog)->req_count_dt = (prog)->__req_count_dt,   \
+   (prog)->__req_count_dt = 0)
 
 struct res_filter_t
 {
@@ -600,8 +607,8 @@ lookup_free_handle (RequestContext *ctxs, size_t len);
  *   Initializes the progress struct, sets the current time t0
  *
  * tick_progress:
- *   Advances the timer and resets the progress if needed
- *   It MUST be called at the end of the main loop
+ *   Advances the timer, and updates req_count_dt based on the
+ *   internal counter if delta time exceeds the maximum threshold
  *
  * update_progress_bar:
  *   Prints a simple progress-bar if is not disabled,
@@ -1226,11 +1233,6 @@ handle_response_context (RequestContext *ctx)
   struct req_stat_t *stat = &ctx->stat;
   struct progress_t *prog = &opt.progress;
 
-  prog->req_count++;
-  prog->req_count_dt++;
-  if (0 == prog->req_count % prog->progbar_refrate)
-    update_progress_bar (prog);
-
   if (CURLE_OK == ctx->stat.ccode)
     {
       curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &result);
@@ -1357,7 +1359,7 @@ req_rate (const Progress *prog)
   static size_t rate = 0;
   if (0 == prog->dt)
     return rate;
-  rate = prog->req_count_dt * 1000 / prog->dt;
+  rate = (prog->req_count_dt * 1000) / prog->dt;
 
   if (0 == rate && prog->req_count_dt)
     return (rate = 1);
@@ -1379,7 +1381,7 @@ __update_progress_bar (const Progress *prog)
 static void
 init_progress (Progress *prog)
 {
-  prog->req_count = 0;
+  prog->req_sent = 0;
   prog->req_count_dt = 0;
   gettimeofday (&prog->__t0, NULL);
 
@@ -1416,8 +1418,8 @@ tick_progress (Progress *prog)
   prog->dt = DT;
   if (DT > MAX_RATE_MEASURE_DUR)
     {
+      RESET_REQ_DT (prog);
       update_progress_bar (prog);
-      prog->req_count_dt = 0;
       prog->__t0 = t1;
     }
 }
@@ -2242,13 +2244,13 @@ main (int argc, char **argv)
         if ((ctx = lookup_free_handle (opt.Rqueue.ctxs, opt.Rqueue.len)))
           { /* Registering the context */
             opt.Rqueue.waiting++;
-            rate = update_req_rate (&opt.progress);
             range_usleep (opt.Rqueue.delay_us);
             opt.load_next_fuzz (ctx);
             register_context (ctx, false);
           }
       }
 
+    rate = update_req_rate (&opt.progress);
     curl_multi_perform (opt.multi_handle, &still_running);
     curl_multi_wait (opt.multi_handle, NULL, 0, POLL_TTL_MS, &numfds);
 
@@ -2259,6 +2261,7 @@ main (int argc, char **argv)
                                              opt.Rqueue.ctxs, opt.Rqueue.len);
         assert (NULL != ctx && "Broken Logic!!  -  \
 Completed easy_handle doesn't have request context.\n");
+        INC_REQ (&opt.progress);
         if (CURLMSG_DONE == msg->msg)
           {
             ctx->stat.ccode = msg->data.result;
@@ -2266,9 +2269,9 @@ Completed easy_handle doesn't have request context.\n");
             /* Release the completed context */
             context_reset (ctx);
             opt.Rqueue.waiting--;
-            rate = update_req_rate (&opt.progress);
             if (opt.verbose)
               {
+                rate = update_req_rate (&opt.progress);
                 avg_rate += rate;
                 avg_rate /= 2;
               }
