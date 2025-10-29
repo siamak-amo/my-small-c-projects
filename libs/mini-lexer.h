@@ -18,15 +18,20 @@
     created on: 16 Dec 2024
 
     Mini-Lexer
-    A minimal lexical tokenization library.
+    A minimal lexer library.
 
- ** Disclaimer **
-    This library was developed for my personal use and may not be 
-    suitable for tokenizing any arbitrary language or regex.
+  * DISCLAIMER *
+    This library was developed gradually for my personal use,
+    it may not be suitable for general purposes.
 
    This library comes with a self-test program, and two other
    example programs, for further information see ML_EXAMPLE_ macros
-   and compilation sections.
+   and the compilation section.
+
+   For adding new features or fixing bugs, it's more convenient to
+   use a debugger along with the provided test program,
+   as this is how the library was originally developed!
+
 
  -- Usage Example ---------------------------------------------------
     ```{c}
@@ -206,18 +211,22 @@
     ```
 
  -- Disabling some features -----------------------------------------
-    As your parser proceeds, it might be useful to
-    disable/enable some expressions or punctuation's dynamically,
-    ML_DISABLE and ML_ENABLE macros can be used for this purpose:
+    As your parser proceeds, it might be useful to disable/enable
+    some components of the language dynamically; for instance,
+    comma is a separator in lists, but it should be treated as a
+    normal character in file paths or strings.
+    ML_DISABLE and ML_ENABLE macros can be used for this purpose.
+
+    Disabling the whole feature:
       {
         ML_DISABLE( &ml.puncs );        // Disbale all punctuation's
         ML_DISABLE( &ml.expression );   // Disable all expressions
       }
 
-    Disabling string expression and comma in this example:
+    Disabling features more specifically:
       {
-        ML_DISABLE( Expressions[EXP_STR] );
-        ML_DISABLE( Puncs[EXP_STR] );
+        ML_DISABLE( Expressions[EXP_STR] );   // Disable strings
+        ML_DISABLE( Puncs[PUNC_COMMA] );      // Disable comma
       }
 
  -- Changing the language -------------------------------------------
@@ -230,11 +239,17 @@
         ml.puncs = GEN_MLCFG (NewPuncs);
       }
 
-    This assignment clears the @clear field of _exp_t struct,
+    This assignment clears the @clean field of _exp_t struct,
     and `ml_next` will update the necessary Milexer internals.
     Changing the language in middle of yielding tokens chunks
     (ret: NEXT_CHUNK) has no effect until the token is ready.
 
+    To manually change the language (without using GEN_MLCFG),
+    users must set the @clean field to false:
+      {
+        ml.puncs.exp[0].begin = "??";     // changing the language
+        ml.puncs[0].clean = false;        // make it dirty
+      }
 
  -- Flex compatibility ----------------------------------------------
     Although Milixer provides low-level access to it's internal
@@ -258,8 +273,7 @@
 
     Example:
       ```{c}
-      // Define the language as before:
-      static Milexer ml = { ... };
+      Milexer ml = { ... }; // The language
 
       int main( void )
       {
@@ -320,7 +334,7 @@
 #include <stdbool.h>
 #include <assert.h>
 
-#define MILEXER_VERSION "2.2"
+#define MILEXER_VERSION "2.3"
 
 #ifdef _ML_DEBUG
 #  include <stdio.h>
@@ -717,7 +731,6 @@ typedef struct Milexer_t
 
 #define __SET_DISABLE(field, v, ...) ((field)->disabled = v)
 
-
 /**
  *  Retrieves the next token
  *
@@ -927,6 +940,16 @@ YY_BUFFER_STATE * yy_restart (FILE *file);
 
 #ifdef ML_IMPLEMENTATION
 
+/** Internal
+ *  Some punctuations may have common prefixes with other
+ *  components of the Milexer language;
+ *  The `ml_next` function sets `_exp_t->end` to this value
+ *  to indicate that the punctuation requires additional checking.
+ *  This helps avoid expensive __is_exp_or_comment call each time
+ *  a punctuation is encountered.
+ */
+#define PUNC_DOUBLE_CHECK ((void *) -1)
+
 /**
  **  Internal functions
  **/
@@ -1025,6 +1048,23 @@ __is_exp_or_comment (const Milexer *ml, Milexer_Slice *src,
  return 0;
 }
 
+static inline bool
+__should_double_check (const Milexer *ml, _exp_t *punc)
+{
+  const char *pref = punc->begin;
+  size_t pref_len = punc->len.begin;
+  for (int i=0; i < ml->expression.len; ++i)
+    if (0 == strncmp (ml->expression.exp[i].begin, pref, pref_len))
+      return true;
+  for (int i=0; i < ml->a_comment.len; ++i)
+    if (0 == strncmp (ml->a_comment.exp[i].begin, pref, pref_len))
+      return true;
+  for (int i=0; i < ml->b_comment.len; ++i)
+    if (0 == strncmp (ml->b_comment.exp[i], pref, pref_len))
+      return true;
+  return false;
+}
+
 static inline char *
 __detect_puncs (const Milexer *ml,
                 Milexer_Slice *src, Milexer_Token *res)
@@ -1054,10 +1094,13 @@ __detect_puncs (const Milexer *ml,
 
   if (longest_match_idx != -1)
     {
-      const char *punc_start = &src->buffer[src->idx - longest_match_len];
-      if (__is_exp_or_comment (ml, src, punc_start))
+      if (PUNC_DOUBLE_CHECK == ml->puncs.exp[longest_match_idx].end)
         {
-          return NULL;
+          const char *punc_start = &src->buffer[src->idx - longest_match_len];
+          if (__is_exp_or_comment (ml, src, punc_start))
+            {
+              return NULL;
+            }
         }
       src->__last_punc_idx = longest_match_idx;
       res->id = longest_match_idx;
@@ -1292,9 +1335,19 @@ ml_next (Milexer *ml, Milexer_Slice *src,
         {
           TK_MARK_NEWLINE (src, tk);
         }
-      UPDATE_STRLEN (&ml->puncs);
       UPDATE_STRLEN (&ml->expression);
       UPDATE_STRLEN (&ml->a_comment);
+      if (! ml->puncs.clean)
+        { /* Update puncs strlens and double check */
+          for (int i=0; i < ml->puncs.len; ++i)
+            {
+              _exp_t *punc = &ml->puncs.exp[i];
+              EXP_SET_STRLEN (punc);
+              if (__should_double_check (ml, punc))
+                punc->end = PUNC_DOUBLE_CHECK;
+            }
+          ml->puncs.clean = true;
+        }
       break;
 
     default:
