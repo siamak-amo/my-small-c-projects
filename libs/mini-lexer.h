@@ -268,6 +268,8 @@
       yytext:   C string of the current token
       yyleng:   strlen of yytext
       yyin:     the current input FILE pointer
+      yyline:   line number of the current token
+      yycolumn: column number of the current token
       yyid:     equivalent to Milexer_Token->id      (Not standard)
       yyml:     to set the global Milexer language   (Not standard)
 
@@ -760,6 +762,9 @@ static FILE    *yyin    __UNUSED__;     /* stream input file */
 
 static Milexer *yyml    __UNUSED__;     /* Milexer Language */
 static int      yyid    __UNUSED__;     /* Milexer_Token->id */
+
+static int    yyline    __UNUSED__;     /* Milexer_Token->line */
+static int    yycolumn  __UNUSED__;     /* Milexer_Token->col */
 
 enum yy_memflag
   {
@@ -1785,10 +1790,13 @@ yy_set_global (YY_BUFFER_STATE *b)
       yyin = NULL, yytext = NULL;
       yyleng = 0;
       yyid = TK_NOT_SET;
+      yyline = 1, yycolumn = 0;
       return;
     }
   yyin = b->yy_input_file;
   yyid = b->tk.id;
+  yyline = b->tk.line;
+  yycolumn = b->tk.col;
   if (TK_NOT_SET == b->tk.type)
     {
       yytext = NULL, yyleng = 0;
