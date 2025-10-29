@@ -2812,10 +2812,14 @@ main (int argc, char **argv)
   {
     t = (test_t) {
       .parsing_flags = PFLAG_DEFAULT,
-      .input = "/*t e \n s t*/ XXX/*t e \n s t*/YYY ",
+      .input = "/*t e \n s t*/ XXX num/ /666/*t e \n s t*/YYY ",
       .etk = (Milexer_Token []){
-        {.type = TK_KEYWORD, .cstr = "XXX", .col=7, .line=2},
-        {.type = TK_KEYWORD, .cstr = "YYY", .col=6, .line=3},
+        {.type = TK_KEYWORD, .cstr = "XXX", .col=7,  .line=2},
+        {.type = TK_KEYWORD, .cstr = "num", .col=11, .line=2},
+        {.type = TK_PUNCS,   .cstr = "/",   .col=14, .line=2},
+        {.type = TK_PUNCS,   .cstr = "/",   .col=16, .line=2},
+        {.type = TK_KEYWORD, .cstr = "666", .col=17, .line=2},
+        {.type = TK_KEYWORD, .cstr = "YYY", .col=6,  .line=3},
         {0}
       }};
     DO_TEST (&t, "basic multi-line comment");
