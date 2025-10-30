@@ -21,16 +21,16 @@
     A minimal lexer library.
 
   * DISCLAIMER *
-    This library was developed gradually for my personal use,
+    This library was developed for my personal use,
     it may not be suitable for general purposes.
 
-   This library comes with a self-test program, and two other
-   example programs, for further information see ML_EXAMPLE_ macros
-   and the compilation section.
+    This library comes with a self-test program, and two other
+    example programs, for further information see ML_EXAMPLE_ macros
+    and the compilation section.
 
-   For adding new features or fixing bugs, it's more convenient to
-   use a debugger along with the provided test program,
-   as this is how the library was originally developed!
+    For adding new features or fixing bugs, it's more convenient to
+    use a debugger along with the provided test program,
+    as this is how the library was originally developed!
 
 
  -- Usage Example ---------------------------------------------------
@@ -148,9 +148,10 @@
       TOKEN_FREE (&tk);
       ```
 
- -- Paser in Parser -------------------------------------------------
-      Parsing the contents of Expression tokens again
-      For a complete example, see the `ML_EXAMPLE_1`
+ -- Lexer in Lexer --------------------------------------------------
+      Tokenizing contents of a token again; for instance, lexing an
+      expression token to get it's comma separated values.
+      For a complete example, see: ML_EXAMPLE_1
 
       ```{c}
       // You *MUST* pass the INEXP flag to the parser; Otherwise,
