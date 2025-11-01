@@ -295,7 +295,7 @@ enum ffuc_flag_t
     HEADER_HASFUZZ    = (1 << 3),
 
     /**
-     *  Request context in use flag
+     *  Request context flags
      *  Used in RequestContext.flag
      */
     CTX_FREE          = 0,
@@ -582,22 +582,20 @@ lookup_free_handle (RequestContext *ctxs, size_t len);
  *   Initializes the progress struct, sets the current time t0
  *
  * tick_progress:
- *   Advances the timer, and updates req_count_dt based on the
- *   internal counter if delta time exceeds the maximum threshold
+ *   It should be called with appropriate @tick_type value
+ *   from `enum tick_t`, on sending and receiving requests
+ *   to collect samples for measuring request rate
  *
  * update_progress_bar:
  *   Prints a simple progress-bar if is not disabled,
  *   It needs a newline at the end, use end_progress_bar()
  *
- * req_rate and update_req_rate:
- *   Both return the current request rate
- *   update_req_rate also updates prog->rate
+ * update_req_rate:
+ *   Returns the current request rate and updates @prog->rate
  */
 static void init_progress (Progress *prog);
 static inline void tick_progress (Progress *prog);
-
-static inline size_t req_rate (const Progress *prog);
-#define update_req_rate(prog) ((prog)->rate = req_rate (prog))
+static inline size_t update_req_rate (Progress *prog);
 
 static void __update_progress_bar (const Progress *prog);
 #define update_progress_bar(prog) \
@@ -1320,9 +1318,9 @@ register_context (RequestContext *ctx, bool sync)
   STAT_RESET (&ctx->stat);
   __register_context (ctx);
 
-  if (sync) /* synchronous */
+  if (sync) /* blocking */
       return curl_easy_perform (curl);
-  else /* asynchronous */
+  else /* none blocking */
     curl_multi_add_handle (opt.multi_handle, curl);
   return 0;
 }
@@ -2098,7 +2096,7 @@ do_filter_discovery (void)
       {
         RequestContext *ctx = opt.Rqueue.ctxs;
         __next_fuzz_rand (ctx); /* loading a random FUZZ string */
-        ret = register_context (ctx, true);
+        ret = register_context (ctx, true); /* blocking */
         if (ret != CURLE_OK)
           {
             warnln ("discovery request failed, %s",
@@ -2204,7 +2202,7 @@ main (int argc, char **argv)
             opt.Rqueue.waiting++;
             range_usleep (opt.Rqueue.delay_us);
             opt.load_next_fuzz (ctx);
-            register_context (ctx, false);
+            register_context (ctx, false); /* none blocking */
             tick_progress (&opt.progress);
           }
       }
