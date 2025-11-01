@@ -142,26 +142,9 @@ static char tmp[TMP_CAP];
 # define MAX_REQ_RATE 1000
 #endif
 
-/* Request rate measure interval (ms) - Not accurate */
-#ifndef MAX_RATE_MEASURE_DUR
-# define MAX_RATE_MEASURE_DUR 1000
-#endif
-#ifndef MIN_RATE_MEASURE_DUR
-# define MIN_RATE_MEASURE_DUR 200
-#endif
-
-/**
- *  Minimum deltatime to call gettimeofday again.
- *  In some systems, calling gettimeofday might introduce
- *  overhead; when LIMIT_TIMEOFDAY_CALLS macro is defined,
- *  we skip this calls SKIP_TIMEOFDAY_N times if encounter
- *  any measured delta time less then MIN_TIMEOFDAY_DUR.
- */
-#ifndef MIN_TIMEOFDAY_DUR
-# define MIN_TIMEOFDAY_DUR 10 // 10 ms
-#endif
-#ifndef SKIP_TIMEOFDAY_N
-# define SKIP_TIMEOFDAY_N 2  // 2 times skipping
+/* Count of samples to calculate request rate */
+#ifndef RATE_SAMPLE_COUNT
+# define RATE_SAMPLE_COUNT 4
 #endif
 
 /* Default connection/read timeuot */
@@ -417,23 +400,15 @@ typedef struct progress_t
   uint progbar_refrate; /* progress bar refresh rate */
   uint rate;
 
-  uint req_count_dt; /* requests in delta time */
-  uint __req_count_dt; /* internal req in delta time counter */
-  size_t dt; /* delta time in milliseconds */
-  struct timeval __t0; /* internal */
+  /* Internals (to calculate request rate) */
+  size_t queue_time_us; /* time to send a hole queue */
 } Progress;
 
 /* Percentage of progress */
 #define REQ_PERC(prog) ((prog)->req_sent * 100 / (prog)->req_total)
 /* Convert timeval struct to milliseconds */
 #define TV2MS(tv) ((tv).tv_sec * 1000LL  +  (tv).tv_usec / 1000)
-
-/* Increment req count on getting a response */
-#define INC_REQ(prog) ((prog)->__req_count_dt++, (prog)->req_sent++)
-/* Copy & Reset the internal req in delta time counter */
-#define RESET_REQ_DT(prog)                          \
-  ((prog)->req_count_dt = (prog)->__req_count_dt,   \
-   (prog)->__req_count_dt = 0)
+#define TV2US(tv) ((tv).tv_sec * 1000000LL + (tv).tv_usec)
 
 struct res_filter_t
 {
@@ -1354,16 +1329,13 @@ register_context (RequestContext *ctx, bool sync)
 
 //-- Progress statistics functions --//
 static inline size_t
-req_rate (const Progress *prog)
+update_req_rate (Progress *prog)
 {
-  static size_t rate = 0;
-  if (0 == prog->dt)
-    return rate;
-  rate = (prog->req_count_dt * 1000) / prog->dt;
-
-  if (0 == rate && prog->req_count_dt)
-    return (rate = 1);
-  return rate;
+  size_t q_dt = prog->queue_time_us;
+  size_t q_len = opt.Rqueue.len;
+  if (q_dt < 1)
+    return prog->rate;
+  return prog->rate = (q_len * 1000000LL) / q_dt;
 }
 
 static void
@@ -1382,9 +1354,6 @@ static void
 init_progress (Progress *prog)
 {
   prog->req_sent = 0;
-  prog->req_count_dt = 0;
-  gettimeofday (&prog->__t0, NULL);
-
   /* This makes progress-bar refresh at every 1% of progress */
   prog->progbar_refrate = MAX (1, prog->req_total / 100);
   update_progress_bar (prog);
@@ -1393,34 +1362,23 @@ init_progress (Progress *prog)
 static inline void
 tick_progress (Progress *prog)
 {
-#ifdef LIMIT_TIMEOFDAY_CALLS
-  static int n = 0;
-  if (0 != n) {
-    --n;
-    return;
-  }
-#endif /* LIMIT_TIMEOFDAY_CALLS */
+  struct timeval tv = {0};
+  static size_t recv_count=0, t0=0;  // NO thread
 
-  struct timeval t1 = {0};
-  gettimeofday (&t1, NULL);
-
-  size_t DT = TV2MS (t1) - TV2MS (prog->__t0);
-  if (DT < MIN_RATE_MEASURE_DUR)
-    return;
-
-#ifdef LIMIT_TIMEOFDAY_CALLS
-  if (DT < MIN_TIMEOFDAY_DUR) {
-    n += SKIP_TIMEOFDAY_N;
-    return;
-  }
-#endif /* LIMIT_TIMEOFDAY_CALLS */
-
-  prog->dt = DT;
-  if (DT > MAX_RATE_MEASURE_DUR)
+  if (0 == recv_count)
     {
-      RESET_REQ_DT (prog);
-      update_progress_bar (prog);
-      prog->__t0 = t1;
+      gettimeofday (&tv, NULL);
+      t0 = TV2US (tv);
+    }
+ 
+  if (recv_count < opt.Rqueue.len)
+    ++recv_count;
+  else if (recv_count == opt.Rqueue.len)
+    {
+      gettimeofday (&tv, NULL);
+      prog->queue_time_us = TV2US (tv) - t0;
+      warnln (" - qu %ld\n", prog->queue_time_us);
+      recv_count = 0;
     }
 }
 
@@ -2247,10 +2205,10 @@ main (int argc, char **argv)
             range_usleep (opt.Rqueue.delay_us);
             opt.load_next_fuzz (ctx);
             register_context (ctx, false);
+            tick_progress (&opt.progress);
           }
       }
 
-    rate = update_req_rate (&opt.progress);
     curl_multi_perform (opt.multi_handle, &still_running);
     curl_multi_wait (opt.multi_handle, NULL, 0, POLL_TTL_MS, &numfds);
 
@@ -2261,7 +2219,8 @@ main (int argc, char **argv)
                                              opt.Rqueue.ctxs, opt.Rqueue.len);
         assert (NULL != ctx && "Broken Logic!!  -  \
 Completed easy_handle doesn't have request context.\n");
-        INC_REQ (&opt.progress);
+        opt.progress.req_sent++;
+        rate = update_req_rate (&opt.progress);
         if (CURLMSG_DONE == msg->msg)
           {
             ctx->stat.ccode = msg->data.result;
@@ -2271,14 +2230,11 @@ Completed easy_handle doesn't have request context.\n");
             opt.Rqueue.waiting--;
             if (opt.verbose)
               {
-                rate = update_req_rate (&opt.progress);
                 avg_rate += rate;
                 avg_rate /= 2;
               }
           }
       }
-
-    tick_progress (&opt.progress);
   }
   while (still_running > 0 || !opt.eofuzz);
 
