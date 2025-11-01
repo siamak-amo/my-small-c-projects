@@ -122,10 +122,7 @@
 #include <getopt.h>
 
 #define PROG_NAME "FFuc"
-#define PROG_VERSION "2.2"
-
-#define SLIST_APPEND(list, val) \
-  list = curl_slist_append (list, val)
+#define PROG_VERSION "2.4"
 
 #ifndef TMP_CAP
 #  define TMP_CAP 1024 /* bytes */
@@ -637,6 +634,7 @@ int set_template (FuzzTemplate *t, enum template_op op, void *param);
 static inline int
 set_template_wlist (FuzzTemplate *t, enum template_op op, void *param);
 
+#define curl_setopt(...) curl_easy_setopt (__VA_ARGS__)
 
 #ifndef ffuc_malloc
 #define ffuc_malloc(len) malloc (len)
@@ -648,7 +646,6 @@ set_template_wlist (FuzzTemplate *t, enum template_op op, void *param);
 #define ffuc_mmap(addr, len, prot, flg, fd, off) \
   mmap (addr, len, prot, flg, fd, off)
 #endif
-#define curl_setopt(...) curl_easy_setopt (__VA_ARGS__)
 
 #undef ffuc_free
 #ifndef SKIP_FREE
@@ -1375,7 +1372,6 @@ tick_progress (Progress *prog)
     {
       gettimeofday (&tv, NULL);
       prog->queue_time_us = TV2US (tv) - t0;
-      warnln (" - qu %ld\n", prog->queue_time_us);
       recv_count = 0;
     }
 }
@@ -1750,7 +1746,7 @@ set_template (FuzzTemplate *t, enum template_op op, void *_param)
     case HEADER_TEMPLATE:
       {
         prev_op = HEADER_TEMPLATE;
-        SLIST_APPEND (t->headers, param);
+        curl_slist_append (t->headers, param);
         local_fuzz_count = fuzz_count (param);
         if (local_fuzz_count)
           FLG_SET (opt.fuzz_flag, HEADER_HASFUZZ);
@@ -2122,10 +2118,26 @@ do_filter_discovery (void)
       warnln ("auto-filter failed - \
 the endpoint, with the current setup is not");
   }
-  {
-  }
   return 0;
 #undef N
+}
+
+static inline RequestContext *
+handle_response_curl (const CURLMsg *msg)
+{
+  RequestContext *ctx;
+  CURL *curl = msg->easy_handle;
+
+  ctx = lookup_handle (curl, opt.Rqueue.ctxs, opt.Rqueue.len);
+  assert (NULL != ctx && "Broken Logic!!  -  \
+Completed easy_handle doesn't have request context.\n");
+
+  if (CURLMSG_DONE == msg->msg)
+    {
+      ctx->stat.ccode = msg->data.result;
+      handle_response_context (ctx);
+    }
+  return ctx;
 }
 
 void
@@ -2180,21 +2192,21 @@ main (int argc, char **argv)
       pthread_create (&opt.interact_th, NULL, interact, &opt);
       signal (SIGINT, on_sigint); /* to disable raw mode on SIGINT */
     }
+  log_current_config ();
+  init_progress (&opt.progress);
 
   /**
    *  Main Loop
    */
   CURLMsg *msg;
-  RequestContext *ctx;
-  size_t rate=0, avg_rate=0;
+  size_t avg_rate=0;
+  RequestContext *ctx = NULL;
   int numfds, res, still_running;
-  log_current_config ();
-  init_progress (&opt.progress);
   do {
     /* Find a free context (If there is any) and register it */
     while (!opt.eofuzz && opt.Rqueue.waiting < opt.Rqueue.len)
       {
-        if (opt.max_rate <= rate)
+        if (opt.max_rate <= opt.progress.rate)
           break;
 
         if ((ctx = lookup_free_handle (opt.Rqueue.ctxs, opt.Rqueue.len)))
@@ -2209,29 +2221,19 @@ main (int argc, char **argv)
 
     curl_multi_perform (opt.multi_handle, &still_running);
     curl_multi_wait (opt.multi_handle, NULL, 0, POLL_TTL_MS, &numfds);
-
     while ((msg = curl_multi_info_read (opt.multi_handle, &res)))
       {
-        CURL *completed_handle = msg->easy_handle;
-        RequestContext *ctx = lookup_handle (completed_handle,
-                                             opt.Rqueue.ctxs, opt.Rqueue.len);
-        assert (NULL != ctx && "Broken Logic!!  -  \
-Completed easy_handle doesn't have request context.\n");
+        RequestContext *completed = handle_response_curl (msg);
         opt.progress.req_sent++;
-        rate = update_req_rate (&opt.progress);
-        if (CURLMSG_DONE == msg->msg)
-          {
-            ctx->stat.ccode = msg->data.result;
-            handle_response_context (ctx);
-            /* Release the completed context */
-            context_reset (ctx);
-            opt.Rqueue.waiting--;
-            if (opt.verbose)
-              {
-                avg_rate += rate;
-                avg_rate /= 2;
-              }
-          }
+        opt.Rqueue.waiting--;
+        context_reset (completed);
+      }
+
+    update_req_rate (&opt.progress);
+    if (opt.verbose)
+      { /* update average request rate */
+        avg_rate += opt.progress.rate;
+        avg_rate /= 2;
       }
   }
   while (still_running > 0 || !opt.eofuzz);
