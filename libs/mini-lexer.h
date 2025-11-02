@@ -21,15 +21,15 @@
     A minimal lexer library.
 
   * DISCLAIMER *
-    This library was developed for my personal use,
-    it may not be suitable for general purposes.
+    This library was originally developed for my-small-c-projects.
+    It may not be suitable for general purposes.
 
-    This library comes with a self-test program, and two other
-    example programs, for further information see ML_EXAMPLE_ macros
-    and the compilation section.
+    This file includes a self-test program, and two other
+    example programs, for further information see the
+    ML_EXAMPLE_ macros and the compilation section.
 
-    For adding new features or fixing bugs, it's more convenient to
-    use a debugger along with the provided test program,
+    For adding new features or fixing bugs, it is recommended to
+    use a debugger along with the provided self test program,
     as this is how the library was originally developed!
 
 
@@ -135,9 +135,11 @@
                 // some other else if ...
 
                 if ( tk.id == TK_NOT_SET ) {
-                    printf ("[Unrecognized] `%s` of type %s\n",
+                    printf ("[Unrecognized] `%s` of type %s "
+                            "at line %d, column %d\n",
                             tk.cstr,
-                            milexer_token_type_cstr[tk.type]);
+                            milexer_token_type_cstr[tk.type]
+                            tk.line, tk.col);
                 }
               }
               break;
@@ -152,6 +154,7 @@
       Tokenizing contents of a token again; for instance, lexing an
       expression token to get it's comma separated values.
       For a complete example, see: ML_EXAMPLE_1
+      To use a higher level API, see the Flex API section.
 
       ```{c}
       // You *MUST* pass the INEXP flag to the parser; Otherwise,
@@ -163,8 +166,8 @@
       {
         int _ret;
         Milexer_Slice new_src = {0};
-  
         SET_ML_SLICE (&new_src, tk.cstr, strlen (tk.cstr));
+
         // As we are using @tk.cstr in new_src, we cannot also
         // store the result data into the @tk itself, so
         // you *MUST* also allocate a new token, @new_token
@@ -211,14 +214,15 @@
         }
     ```
 
- -- Disabling some features -----------------------------------------
+ -- Toggle language rules -------------------------------------------
     As your parser proceeds, it might be useful to disable/enable
-    some components of the language dynamically; for instance,
+    some rules of the language dynamically; for instance,
     comma is a separator in lists, but it should be treated as a
-    normal character in file paths or strings.
+    normal character in file paths, therefore comma should be
+    enabled only when your parser encounters a list.
     ML_DISABLE and ML_ENABLE macros can be used for this purpose.
 
-    Disabling the whole feature:
+    Disabling the whole rule:
       {
         ML_DISABLE( &ml.puncs );        // Disbale all punctuation's
         ML_DISABLE( &ml.expression );   // Disable all expressions
@@ -258,21 +262,21 @@
     a higher level API like Flex.
     see the Example_2 for a quick example.
 
-    Milixer implements a subset of Flex API which can be enabled,
-    using ML_FLEX macro:
+    Milixer implements a subset of Flex API which can be enabled
+    using the ML_FLEX macro:
       ```
       #define ML_FLEX
       #define ML_IMPLEMENTATION
       #include "mini-lexer.h"
       ```
-    After include, you have access to these global variables:
+    If Flex is enabled, these global variables are available:
       yytext:   C string of the current token
       yyleng:   strlen of yytext
-      yyin:     the current input FILE pointer
       yyline:   line number of the current token
       yycolumn: column number of the current token
       yyid:     equivalent to Milexer_Token->id      (Not standard)
       yyml:     to set the global Milexer language   (Not standard)
+      yyin:     the current input FILE pointer
 
     Example:
       ```{c}
@@ -310,8 +314,7 @@
         yy_delete_buffer( b );
         fclose (f);
       }
-      yylex_destroy call's steal required to free global memories.
-      see headers for more information.
+      yylex_destroy call is required to free the internal stack.
 
 
  -- Known Issues ----------------------------------------------------
@@ -933,8 +936,8 @@ int yylex_destroy (void);
 
 
 /**
- **  No `yy_delete_buffer` needed functions
- **  These functions return value should NOT
+ **  No `yy_delete_buffer` required functions
+ **  These function's return value, should NOT
  **  be freed by the users
  **/
 /* Switch to reading from @file */
@@ -951,15 +954,15 @@ YY_BUFFER_STATE * yy_restart (FILE *file);
  *  components of the Milexer language;
  *  The `ml_next` function sets `_exp_t->end` to this value
  *  to indicate that the punctuation requires additional checking.
- *  This helps avoid expensive __is_exp_or_comment call each time
- *  a punctuation is encountered.
+ *  This helps to avoid expensive __is_exp_or_comment() call
+ *  each time a punctuation is encountered.
  */
 #define PUNC_DOUBLE_CHECK ((void *) -1)
 
 /**
  **  Internal functions
  **/
-static void
+static inline void
 __set_strlens (Milexer_AEXP *adv_exp)
 {
   for (int i=0; i < adv_exp->len; ++i)
@@ -1954,7 +1957,7 @@ yylex (void)
     b = yy_restart (stdin);
   yy_set_global (b);
 
- beginning_of_lex:
+ lex_loop:
   b->ret = ml_next (yyml, &b->src, &b->tk, PFLAG_INEXP);
   switch (b->ret)
     {
@@ -1965,15 +1968,15 @@ yylex (void)
 
     case NEXT_CHUNK:
       TOKEN_EXTEND (&b->tk, YY_TOKEN_GROW);
-      goto beginning_of_lex;
+      goto lex_loop;
 
     case NEXT_NEED_LOAD:
       if (yy_get_next_input (b))
-        goto next_end;
-      goto beginning_of_lex;
+        goto lex_end;
+      goto lex_loop;
 
     case NEXT_END:
-    next_end:
+    lex_end:
       if (b->memflgs & ITS_OUR_STATE_BUF)
         yy_delete_buffer (b);
       yypop_buffer_state ();
@@ -1990,8 +1993,7 @@ yylex (void)
 
 
 /**
- **  Common headers for both
- **  example_n and test_1 programs
+ **  Common headers for example and test programs
  **/
 #if defined (ML_EXAMPLE_1) || \
     defined (ML_EXAMPLE_2) || \
@@ -2418,7 +2420,8 @@ do_test (test_t *t, const char *msg, Milexer_Slice *src, int line_n)
 
   ++test_number;
 #ifdef _ML_DEBUG
-  printf ("Test #%d: %s\n", test_number, msg);
+  printf ("%s:%d:  Test #%d: %s... ",
+          __FILE__, line_n, test_number, msg);
 #else
   printf ("Test #%d: %s... ", test_number, msg);
 #endif
