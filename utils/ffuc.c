@@ -122,7 +122,7 @@
 #include <getopt.h>
 
 #define PROG_NAME "FFuc"
-#define PROG_VERSION "2.4"
+#define PROG_VERSION "2.5"
 
 #ifndef TMP_CAP
 #  define TMP_CAP 1024 /* bytes */
@@ -150,6 +150,10 @@ static char tmp[TMP_CAP];
 #endif
 #ifndef DEFAULT_TTL_MS
 # define DEFAULT_TTL_MS 10000
+#endif
+
+#ifndef MIN_DT_US
+# define MIN_DT_US 100
 #endif
 
 /* Poll timeout */
@@ -392,20 +396,24 @@ typedef struct progress_t
   uint req_total;
   uint req_sent; /* count of sent requests */
   uint err_count; /* count of errors */
+  uint req_dt; /* requests in delta time (real time) */
 
   bool progbar_enabled;
   uint progbar_refrate; /* progress bar refresh rate */
   uint rate;
 
   /* Internals (to calculate request rate) */
-  size_t queue_time_us; /* time to send a hole queue */
+  size_t dt_us; /* delta time */
+  uint __req_dt; /* stabilized req_dt */
 } Progress;
 
 /* Percentage of progress */
 #define REQ_PERC(prog) ((prog)->req_sent * 100 / (prog)->req_total)
-/* Convert timeval struct to milliseconds */
-#define TV2MS(tv) ((tv).tv_sec * 1000LL  +  (tv).tv_usec / 1000)
-#define TV2US(tv) ((tv).tv_sec * 1000000LL + (tv).tv_usec)
+/* Convert timespec to microseconds */
+#define TS2US(tv) ((tv).tv_sec * 1000000LL + (tv).tv_sec)
+/* Request rate and real time rate */
+#define REQ_RATE(prog) (((prog)->__req_dt * 1000000) / (prog)->dt_us)
+#define RT_REQ_RATE(prog) (((prog)->req_dt * 1000000) / (prog)->dt_us)
 
 struct res_filter_t
 {
@@ -579,20 +587,22 @@ lookup_free_handle (RequestContext *ctxs, size_t len);
  *   Initializes the progress struct, sets the current time t0
  *
  * tick_progress:
- *   It should be called with appropriate @tick_type value
- *   from `enum tick_t`, on sending and receiving requests
- *   to collect samples for measuring request rate
+ *   It should be called in the main loop to update @prog fields:
+ *   delta time (dt_us) and stable request in delta time (req_dt)
  *
  * update_progress_bar:
  *   Prints a simple progress-bar if is not disabled,
- *   It needs a newline at the end, use end_progress_bar()
+ *   a newline is needed at the end by end_progress_bar()
  *
  * update_req_rate:
  *   Returns the current request rate and updates @prog->rate
+ * rt_req_rate:
+ *   Real time request rate
  */
 static void init_progress (Progress *prog);
-static inline void tick_progress (Progress *prog);
+static void tick_progress (Progress *prog);
 static inline size_t update_req_rate (Progress *prog);
+static inline size_t rt_req_rate (Progress *prog);
 
 static void __update_progress_bar (const Progress *prog);
 #define update_progress_bar(prog) \
@@ -1164,7 +1174,7 @@ filter_pass (struct req_stat_t *stat, struct res_filter_t *filters)
 #define EXCLUDE(cond) if (cond) return false; break;
   da_foreach (filters, i)
     {
-      struct res_filter_t *filter = filters + i;
+      struct res_filter_t *filter = &filters[i];
       switch (filter->type)
         {
         case FILTER_CODE:
@@ -1326,11 +1336,18 @@ register_context (RequestContext *ctx, bool sync)
 static inline size_t
 update_req_rate (Progress *prog)
 {
-  size_t q_dt = prog->queue_time_us;
-  size_t q_len = opt.Rqueue.len;
-  if (q_dt < 1)
+  if (prog->dt_us < MIN_DT_US)
     return prog->rate;
-  return prog->rate = (q_len * 1000000LL) / q_dt;
+  size_t rate = REQ_RATE (prog);
+  return prog->rate = rate;
+}
+
+static inline size_t
+rt_req_rate (Progress *prog)
+{
+  if (prog->dt_us < MIN_DT_US)
+    return prog->rate;
+  return RT_REQ_RATE (prog);
 }
 
 static void
@@ -1350,30 +1367,29 @@ init_progress (Progress *prog)
 {
   prog->req_sent = 0;
   /* This makes progress-bar refresh at every 1% of progress */
-  prog->progbar_refrate = MAX (1, prog->req_total / 100);
+  prog->progbar_refrate = MAX(1, prog->req_total / 100);
   update_progress_bar (prog);
 }
 
-static inline void
+static void
 tick_progress (Progress *prog)
 {
-  struct timeval tv = {0};
-  static size_t recv_count=0, t0=0;  // NO thread
+  static size_t t0=0;  // NO thread
+  struct timespec ts;
 
-  if (0 == recv_count)
+  clock_gettime (CLOCK_MONOTONIC, &ts);
+  size_t t = TS2US (ts);
+  size_t dt = t-t0;
+
+  if (dt > MIN_DT_US)
     {
-      gettimeofday (&tv, NULL);
-      t0 = TV2US (tv);
+      prog->__req_dt = prog->req_dt; /* stable req_dt */
+      prog->req_dt = 0;
+      prog->dt_us = dt; /* update delta time */
+      t0 = t;
     }
- 
-  if (recv_count < opt.Rqueue.len)
-    ++recv_count;
-  else if (recv_count == opt.Rqueue.len)
-    {
-      gettimeofday (&tv, NULL);
-      prog->queue_time_us = TV2US (tv) - t0;
-      recv_count = 0;
-    }
+  else
+    usleep (MIN_DT_US);
 }
 
 //-- Utility functions --//
@@ -1757,9 +1773,7 @@ set_template (FuzzTemplate *t, enum template_op op, void *_param)
       {
         prev_op = BODY_TEMPLATE;
         if (NULL == t->body)
-          {
-            t->body = strdup (param);
-          }
+          t->body = strdup (param);
         else
           {
             size_t len = Strlen (t->body);
@@ -2206,29 +2220,30 @@ main (int argc, char **argv)
     /* Find a free context (If there is any) and register it */
     while (!opt.eofuzz && opt.Rqueue.waiting < opt.Rqueue.len)
       {
-        if (opt.max_rate <= opt.progress.rate)
+        if (opt.max_rate <= rt_req_rate (&opt.progress))
           break;
 
         if ((ctx = lookup_free_handle (opt.Rqueue.ctxs, opt.Rqueue.len)))
           { /* Registering the context */
-            opt.Rqueue.waiting++;
-            range_usleep (opt.Rqueue.delay_us);
             opt.load_next_fuzz (ctx);
             register_context (ctx, false); /* none blocking */
-            tick_progress (&opt.progress);
+            opt.Rqueue.waiting++;
+            opt.progress.req_dt++;
           }
       }
 
+    range_usleep (opt.Rqueue.delay_us);
     curl_multi_perform (opt.multi_handle, &still_running);
     curl_multi_wait (opt.multi_handle, NULL, 0, POLL_TTL_MS, &numfds);
     while ((msg = curl_multi_info_read (opt.multi_handle, &res)))
       {
         RequestContext *completed = handle_response_curl (msg);
+        context_reset (completed);
         opt.progress.req_sent++;
         opt.Rqueue.waiting--;
-        context_reset (completed);
       }
 
+    tick_progress (&opt.progress);
     update_req_rate (&opt.progress);
     if (opt.verbose)
       { /* update average request rate */
