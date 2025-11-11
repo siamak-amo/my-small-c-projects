@@ -204,12 +204,12 @@ parse_std_options_only (int argc, char **argv,
        FCOLOR macro, create strings with appropriate color code
        which will get concatenated by the compiler:
          FCOLOR("Test: %s", F_RED())  generates:
-         "[RED FG COLOR CODE]"  "Test: %s"  "[RESET COLOR]"
+         "[RED FOREGROUND]"  "Test: %s"  "[RESET COLOR]"
 
     2. Using COLOR_FMT and COLOR_ARG macros:
        COLOR_FMT("(%d)")  create  "%s(%d)%s"  and,
        COLOR_ARG(B_RED(), 123)  generates 3 arguments:
-         "[RED BG COLOR CODE]",  123,  "[RESET COLOR]"
+         "[RED BACKGROUND]",  123,  "[RESET COLOR]"
 
     For background color, B_xxx() and for foreground color F_xxx()
     macro can be used, these macros accept at most one argument:
@@ -288,7 +288,7 @@ parse_std_options_only (int argc, char **argv,
 
 /**  Minimal ANSI terminal control support
 
-     Example #1:  Using CURSAFE along with CUR_UP/DOWN
+     Example #1:  Using CURSAFE and CUR_UP/DOWN
      ```{c}
        printf ("\n\n\n\n\n" // allocating 5 lines
                CURSAFE (
@@ -301,15 +301,12 @@ parse_std_options_only (int argc, char **argv,
 
      Example #2:  A minimal progress-bar
      ```{c}
-       // Using printf along with the progress function:
-       //   printf( LINESAFE("format"), ...params );
-
        void
        progress (int percentage)
        {
          fprintf (stderr,
-                  LINESAFE ("::  Progress %02d%%  ::"),
-                  percentage
+             CLEAN_LINE(":: Progress %02d%% ::"),
+             percentage
          );
        }
      ```
@@ -317,8 +314,8 @@ parse_std_options_only (int argc, char **argv,
 /* Clear the terminal */
 #define CLR_SCREEN  __ESC__ "2J"
 #define __CLR__(N)  __ESC__ #N "K"  // Internal
-#define CLR_RIGHT   __CLR__()       // Clear from the cursor to the end
-#define CLR_LEFT    __CLR__(1)      // Clear from the cursor to the start
+#define CLR_RIGHT   __CLR__()       // Clear to the end of line
+#define CLR_LEFT    __CLR__(1)      // Clear to the beginning of line
 #define CLR_LINE    __CLR__(2)      // Clear the entire line
 
 /* Cursor enabled */
