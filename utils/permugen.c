@@ -321,8 +321,8 @@ enum LANG
     PUNC_COMMA = 0,
 
     EXP_PAREN = 0,     /* (xxx) */
-    EXP_CBRACE,        /* {xxx} */
-    EXP_SBRACKET,      /* [xxx] */
+    EXP_CURLY,         /* {xxx} */
+    EXP_BRACKET,       /* [xxx] */
   };
 
 static struct Milexer_exp_ Puncs[] =
@@ -333,8 +333,8 @@ static struct Milexer_exp_ Puncs[] =
 static struct Milexer_exp_ Expressions[] =
   {
     [EXP_PAREN]          = {"(", ")"},
-    [EXP_CBRACE]         = {"{", "}"},
-    [EXP_SBRACKET]       = {"[", "]"},
+    [EXP_CURLY]          = {"{", "}"},
+    [EXP_BRACKET]        = {"[", "]"},
   };
 
 static Milexer ML =
@@ -1021,30 +1021,60 @@ getline_isvalid (const char *buff, int getline_flgs)
 }
 
 /**
- * Return:  zero on success
- *  Negative to stop reading
- *  Positive to ignore the buffer
+ *  similar to fnprint, with format="%s"
+ *  reads in at most @len-1 characters from stream
+ */
+int
+fnscans (char *buff, int len, FILE *stream)
+{
+  int idx = 0;
+  for (int c=0; idx < len-1; ++idx)
+    {
+      c = getc (stream);
+      if (EOF == c)
+        {
+          if (0 == idx)
+            return EOF;
+          else
+            break;
+        }
+      if (c <= ' ')
+        break;
+      buff[idx] = c;
+    }
+  buff[idx] = '\0';
+  return 1;
+}
+
+/**
+ *  Reads in at most @len-1 characters from stream
+ * Return:
+ *  on success:  0
+ *  if the end of input is reached:  EOF
+ *  when line is commented/invalid:  positive value
  */
 static inline int
-getwseed_line (FILE *fin, char *buff, int getline_flags)
+wseed_getline (char *buff, int len, FILE *stream, int flags)
+  
 {
-  if (feof (fin))
-    return -1;
-  if (getline_flags & GETLINE_FMT)
+  if (feof (stream))
+    return EOF;
+
+  if (HAS_FLAG (flags, GETLINE_FMT))
     {
-      if (fscanf (fin, "%" STR(WSEED_MAXLEN) "s", buff) < 0)
-        return 1;
+      if (fnscans (buff, len, stream) < 0)
+        return EOF;
     }
   else /* simple getline */
     {
-      if (! fgets (buff, WSEED_MAXLEN, fin))
+      if (! fgets (buff, len, stream))
         return 1;
       char *p = strpbrk (buff, "\r\n");
       if (! p)
         return 1; /* invalid */
       *p = '\0';
     }
-  if (! getline_isvalid (buff, getline_flags))
+  if (! getline_isvalid (buff, flags))
     return 1;
   return 0;
 }
@@ -1086,10 +1116,12 @@ wseed_file_uniappd (const struct Opt *opt,
         }
     }
 
-  char *line = malloc (WSEED_MAXLEN + 1);
+  const int line_cap = WSEED_MAXLEN + 1;
+  char *line = malloc (line_cap);
   while (1)
     {
-      int ret = getwseed_line (stream, line, opt->getline_flags);
+      int ret = wseed_getline (line, line_cap,
+                               stream, opt->getline_flags);
       if (ret < 0)
         break;
       if (ret > 0)
@@ -1594,7 +1626,7 @@ path_resolution (const char *path_cstr)
 
 
 /**
-   Internal regex parser (permugex) functions
+ **  Regex parser functions
  **/
 static inline void
 pparse_cseed_regex (struct Opt *opt,
@@ -1652,7 +1684,7 @@ pparse_wseed_regex (struct Opt *opt,
                     struct Seed *dst, char *input)
 {
   int type;
-  YY_BUFFER_STATE *buffer = yy_scan_string (input);
+  YY_BUFFER_STATE *buffer = yy_scan_string( input );
   /* We only need to parse comma in this case: {xx,yy,...} */
   ML_ENABLE (&Puncs[PUNC_COMMA]);
   {
@@ -1693,10 +1725,7 @@ pparse_keys_regex (struct Opt *opt,
 
   for (; '\\' == *input; ++input)
     {
-      /**
-       *  Handle '\N' where N represents the index of a
-       *  previously provided seed
-       */
+      /* Handle '\N' where N is index of a seed */
       input++;
       if (REGULAR_MODE != opt->mode && IS_DIGIT (*input))
         {
@@ -1761,8 +1790,7 @@ pparse_keys_regex (struct Opt *opt,
     case '\0':
       break;
 
-      /* File path */
-    case '.':
+    case '.': /* File path */
     case '/':
     case '~':
       if ((path = path_resolution (input)))
@@ -1787,7 +1815,7 @@ parse_seed_regex (struct Opt *opt,
                   struct Seed *dst, char *input)
 {
   int type = 0;
-  YY_BUFFER_STATE *buffer = yy_scan_buffer (input, strlen (input));
+  YY_BUFFER_STATE *buffer = yy_scan_buffer( input, strlen (input) );
   while ( (type = yylex()) != -1 )
     {
       switch (type)
@@ -1796,7 +1824,7 @@ parse_seed_regex (struct Opt *opt,
           {
             if ('-' == *yytext)  /* Read from stdin */
               wseed_file_uniappd (opt, dst, stdin);
-            else /* Shortcut or Read from file path */
+            else /* Shortcut or read from file path */
               pparse_keys_regex (opt, dst, yytext);
             break;
           }
@@ -1804,11 +1832,11 @@ parse_seed_regex (struct Opt *opt,
         case TK_EXPRESSION:
           switch (yyid)
             {
-            case EXP_SBRACKET:
+            case EXP_BRACKET:
               pparse_cseed_regex (opt, dst, yytext);
               break;
 
-            case EXP_CBRACE:
+            case EXP_CURLY:
               pparse_wseed_regex (opt, dst, yytext);
               break;
 

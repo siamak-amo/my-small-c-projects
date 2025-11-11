@@ -195,7 +195,6 @@ const struct option lopts[] =
     /* We call it `thread` (-t) for compatibility with ffuf,
        even though we don't use threads */
     {"thread",              required_argument, NULL, 't'},
-    {"concurrent",          required_argument, NULL, 't'},
 
     /* HTTP options */
     {"url",                 required_argument, NULL, 'u'},
@@ -429,6 +428,13 @@ const struct res_filter_t default_filter = {MATCH_CODE, {200, 399}};
 /* To disable the default filter */
 #define NO_FILTER ((void *) -1)
 
+struct request_t
+{
+  char *URL;
+  char *body;
+  struct curl_slist *headers;
+};
+
 typedef struct
 {
   int flag;
@@ -436,6 +442,7 @@ typedef struct
 
   /* Statistics of the request */
   struct req_stat_t stat;
+  struct request_t request;
   
   /**
    *  All 'FUZZ' keywords within @opt.fuzz_template
@@ -444,14 +451,6 @@ typedef struct
    *  It must contain opt.words_len elements.
    */
   char **FUZZ;
-
-  struct request_t
-  {
-    char *URL;
-    char *body;
-    struct curl_slist *headers;
-  } request;
-
 } RequestContext;
 
 typedef struct
@@ -644,7 +643,15 @@ int set_template (FuzzTemplate *t, enum template_op op, void *param);
 static inline int
 set_template_wlist (FuzzTemplate *t, enum template_op op, void *param);
 
+/* curl helper macros */
 #define curl_setopt(...) curl_easy_setopt (__VA_ARGS__)
+#define curl_slist_appd(list, element) \
+  (list = curl_slist_append (list, element))
+#define curl_slist_foreach(list, element)                       \
+  for (struct curl_slist *element = list;                       \
+       NULL != element; element = element->next)
+#define curl_slist_safe_free(ptr)                               \
+  if (NULL != ptr) { curl_slist_free_all (ptr);  ptr = NULL; }
 
 #ifndef ffuc_malloc
 #define ffuc_malloc(len) malloc (len)
@@ -931,14 +938,22 @@ log_current_config (void)
     fprintf (stderr, "- URL: %s\n", opt.fuzz_template.URL);
     if (opt.fuzz_template.body)
       fprintf (stderr, "- Body: %s\n", opt.fuzz_template.body);
-    for (struct curl_slist *h = opt.fuzz_template.headers;
-         NULL != h; h = h->next)
-      {
-        fprintf (stderr, "- Header: [%s]\n", h->data);
-      }
+    curl_slist_foreach (opt.fuzz_template.headers, header)
+      fprintf (stderr, "- Header: [%s]\n", header->data);
+
     if (opt.max_rate != MAX_REQ_RATE)
-      fprintf (stderr, "- Request rate: %d\n", opt.max_rate);
-    fprintf (stderr, "- Threads: %ld\n", opt.Rqueue.len);
+      fprintf (stderr, "- Request rate: %d req/sec\n", opt.max_rate);
+    fprintf (stderr, "- Concurrency: %ld req\n", opt.Rqueue.len);
+    if (opt.Rqueue.delay_us[0])
+      {
+        fprintf (stderr, "- Delay: ");
+        if (opt.Rqueue.delay_us[0] != opt.Rqueue.delay_us[1])
+          fprintf (stderr, "%d-%d (ms)\n",
+                   opt.Rqueue.delay_us[0] / 1000,
+                   opt.Rqueue.delay_us[1] / 1000);
+        else
+          fprintf (stderr, "%d (ms)\n", opt.Rqueue.delay_us[0]/1000);
+      }
     if (opt.filters)
       {
         da_foreach (opt.filters, i)
@@ -1154,7 +1169,7 @@ context_reset (RequestContext *ctx)
 {
   ctx->flag = CTX_FREE;
   curl_multi_remove_handle (opt.multi_handle, ctx->easy_handle);
-  // STAT_RESET (&ctx->stat);
+  STAT_RESET (&ctx->stat);
 }
 
 static inline const char *
@@ -1239,6 +1254,7 @@ __register_context (RequestContext *dst)
 {
   char **FUZZ = dst->FUZZ;
   FuzzTemplate template = opt.fuzz_template;
+  struct request_t *req = &dst->request;
 
   /**
    *  Generating URL
@@ -1250,11 +1266,11 @@ __register_context (RequestContext *dst)
   if (opt.fuzz_flag & URL_HASFUZZ)
     {
       FUZZ += fuzz_snprintf (tmp, TMP_CAP, template.URL, FUZZ);
-      Strrealloc (dst->request.URL, tmp);
+      Strrealloc (req->URL, tmp);
     }
   else if (! dst->request.URL)
-    Strrealloc (dst->request.URL, template.URL);
-  curl_setopt (dst->easy_handle, CURLOPT_URL, dst->request.URL);
+    Strrealloc (req->URL, template.URL);
+  curl_setopt (dst->easy_handle, CURLOPT_URL, req->URL);
 
   /**
    *  Generating POST body
@@ -1265,11 +1281,11 @@ __register_context (RequestContext *dst)
       if (opt.fuzz_flag & BODY_HASFUZZ)
         {
           FUZZ += fuzz_snprintf (tmp, TMP_CAP, template.body, FUZZ);
-          Strrealloc (dst->request.body, tmp);
+          Strrealloc (req->body, tmp);
         }
-      else if (! dst->request.body)
-        Strrealloc (dst->request.body, template.body);
-      curl_setopt (dst->easy_handle, CURLOPT_POSTFIELDS, dst->request.body);
+      else if (! req->body)
+        Strrealloc (req->body, template.body);
+      curl_setopt (dst->easy_handle, CURLOPT_POSTFIELDS, req->body);
     }
 
   /**
@@ -1280,19 +1296,13 @@ __register_context (RequestContext *dst)
     {
       if (opt.fuzz_flag & HEADER_HASFUZZ)
         {
-          struct curl_slist **headers = &dst->request.headers;
-          if (*headers)
-            {
-              curl_slist_free_all (*headers);
-              *headers = NULL;
-            }
-          for (struct curl_slist *h = template.headers;
-               NULL != h; h = h->next)
+          curl_slist_safe_free (req->headers);
+          curl_slist_foreach (template.headers, h)
             {
               FUZZ += fuzz_snprintf (tmp, TMP_CAP, h->data, FUZZ);
-              *headers = curl_slist_append (*headers, tmp);
+              curl_slist_appd (req->headers, tmp);
             }
-          curl_setopt (dst->easy_handle, CURLOPT_HTTPHEADER, *headers);
+          curl_setopt (dst->easy_handle, CURLOPT_HTTPHEADER, req->headers);
         }
       else
         curl_setopt (dst->easy_handle, CURLOPT_HTTPHEADER, template.headers);
@@ -1322,7 +1332,6 @@ register_context (RequestContext *ctx, bool sync)
     if (opt.proxy)
       curl_setopt (curl, CURLOPT_PROXY, opt.proxy);
   }
-  STAT_RESET (&ctx->stat);
   __register_context (ctx);
 
   if (sync) /* blocking */
@@ -1762,7 +1771,7 @@ set_template (FuzzTemplate *t, enum template_op op, void *_param)
     case HEADER_TEMPLATE:
       {
         prev_op = HEADER_TEMPLATE;
-        curl_slist_append (t->headers, param);
+        curl_slist_appd (t->headers, param);
         local_fuzz_count = fuzz_count (param);
         if (local_fuzz_count)
           FLG_SET (opt.fuzz_flag, HEADER_HASFUZZ);
@@ -1805,8 +1814,8 @@ set_template (FuzzTemplate *t, enum template_op op, void *_param)
               register_wlist (param);
             else
               {
-                warnln ("word-list (%s) was ignored -- \
-singular mode, only accepts one word-list", param);
+                warnln ("word-list (%s) was ignored -- "
+                        "singular mode, only accepts one word-list", param);
                 return -1;
               }
           }
@@ -2129,8 +2138,7 @@ do_filter_discovery (void)
     else if ((common = common_val (sizes, N)) != -1)
       opt_filter (FILTER_SIZE, common, common);
     else
-      warnln ("auto-filter failed - \
-the endpoint, with the current setup is not");
+      warnln ("auto-filter failed - endpoint is not stable");
   }
   return 0;
 #undef N
@@ -2210,7 +2218,7 @@ main (int argc, char **argv)
   init_progress (&opt.progress);
 
   /**
-   *  Main Loop
+   *  The main Loop
    */
   CURLMsg *msg;
   size_t avg_rate=0;
