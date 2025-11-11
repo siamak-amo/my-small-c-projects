@@ -247,7 +247,6 @@ const struct option lopts[] =
     {"word",                required_argument, NULL, 'w'},
     {"wordlist",            required_argument, NULL, 'w'},
     {"word-list",           required_argument, NULL, 'w'},
-    {"mode",                required_argument, NULL, 'm'},
     {"rate",                required_argument, NULL, 'R'},
     {"max_rate",            required_argument, NULL, 'R'},
     {"timeout",             required_argument, NULL, 'T'},
@@ -1931,14 +1930,14 @@ parse_args (int argc, char **argv)
   char *last_wlist = NULL;
 
   idx = 0, optind = 1;
-  while ((flag = getopt_long (argc,argv, lopt_str, lopts, &idx)) != -1)
+  for (int i=1; i<argc; ++i)
     {
-      switch (flag)
+      char *arg = argv[i];
+      if ('-' != *arg)
+        continue;
+      if (Strcmp (arg, "-m") || Strcmp (arg, "--mode")) /* -m, --mode */
         {
-        case 'h':
-          help ();
-          return SHOULD_EXIT;
-        case 'm':
+          optarg = argv[i+1];
           if (strcasestr ("pitchfork", optarg))
             opt.mode = MODE_PITCHFORK;
           else if (strcasestr ("singular", optarg))
@@ -1947,7 +1946,6 @@ parse_args (int argc, char **argv)
             opt.mode = MODE_CLUSTERBOMB;
           else
             warnln ("invalid mode `%s` was ignored", optarg);
-          break;
         }
     }
 
@@ -1956,6 +1954,9 @@ parse_args (int argc, char **argv)
     {
       switch (flag)
         {
+        case 'h':
+          help ();
+          return SHOULD_EXIT;
         case 'v':
           opt.verbose = true;
           break;
