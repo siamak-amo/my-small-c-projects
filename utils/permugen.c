@@ -698,14 +698,15 @@ ARGUMENTS:\n\
 
 /**
  *  The main logic of normal mode
- *  It should be called in a loop with @depth [min_depth... max_depth]
+ *  It should be called in a loop with @depth in [min_depth, max_depth]
+ *  @idxs: a temporary buffer with capacity of @depth
  */
 int
-__perm (const struct Opt *opt, const char *sep, const int depth)
+__perm (const struct Opt *opt, const char *sep,
+        int *idxs, int depth)
 {
   int _max_depth = opt->global_seeds->cseed_len - 1 +
     (int) da_sizeof (opt->global_seeds->wseed);
-  int idxs[depth];
   memset (idxs, 0, depth * sizeof (int));
 
   int i;
@@ -779,16 +780,18 @@ int
 perm (const struct Opt *opt)
 {
   ssize_t seps_len = da_sizeof (opt->seps);
+  int *tmp = (int *) calloc (opt->depth.max, sizeof (int));
 
   for (int dep = opt->depth.min, ret = 0;
        dep <= opt->depth.max; ++dep)
     {
       for (ssize_t i=0; i < seps_len; ++i)
         {
-          if (0 != (ret = __perm (opt, opt->seps[i], dep)))
+          if (0 != (ret = __perm (opt, opt->seps[i], tmp, dep)))
             return ret;
         }
     }
+  safe_free (tmp);
   return 0;
 }
 
@@ -796,9 +799,10 @@ perm (const struct Opt *opt)
  *  The main logic of regular mode
  *  It should be called by the `regular_perm` function
  *
+ *  @size and @offset are used for handling depth
  *  @lens and @idxs both have size @size
- *  @idxs: temporary array for internal use of this function
- *  @lens: total length of each **s = opt->reg_seeds:
+ *  @idxs: temporary buffer for internal use of this function
+ *  @lens: total length of each regular seed:
  *         lens[i] = len(s[i]->cssed) + len(s[i]->wseed)
  */
 int
