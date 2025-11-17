@@ -72,6 +72,31 @@ parse_std_options_only (int argc, char **argv,
 
 #endif /* CLI_DEFAULT_GETOPT */
 
+/**
+ *  Debugger break point macro
+ *  Only use it for testing or check is there
+ *  a parent debugger, see PTRACE_TRACEME in ptrace
+ */
+#define SET_BREAKPOINT() do {                   \
+    __BREAKPOINT                                \
+  } while (0)
+
+#if defined(__x86_64__) || defined(__i386__)       /* x86 */
+#  undef  __BREAKPOINT
+#  define __BREAKPOINT asm volatile("int $3");
+#elif defined(__arm__) || defined(__aarch64__)     /* arm */
+   /* we typically use gcc or clang for arm */
+#  if defined(__GNUC__) || defined(__clang__)
+#    undef  __BREAKPOINT
+#    define __BREAKPOINT __builtin_trap();
+#  elif !defined(__BREAKPOINT)
+#    define __BREAKPOINT
+#    warning "SET_BREAKPOINT: unsupported compiler"
+#  endif
+#elif !defined(__BREAKPOINT)
+#  define __BREAKPOINT
+#  warning "SET_BREAKPOINT is not supported in this architecture"
+#endif
 
 /**
  *  In Android (Termux), the `on_exit` function, does not exist;
