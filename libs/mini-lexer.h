@@ -270,7 +270,7 @@
       #include "mini-lexer.h"
       ```
     If Flex is enabled, these global variables are available:
-      yytext:   C string of the current token
+      yytext:   string of the current token
       yyleng:   strlen of yytext
       yyline:   line number of the current token
       yycolumn: column number of the current token
@@ -279,7 +279,7 @@
       yyin:     the current input FILE pointer
 
     Example:
-      ```{c}
+    ```{c}
       Milexer ml = { ... }; // The language
 
       int main( void )
@@ -299,10 +299,10 @@
          yy_delete_buffer( buffer );
          yylex_destroy(); // global destroy
       }
-      ```
+    ```
 
-      There are other variants of yy functions which make memory
-      managements automatic:
+    There are other variants of yy functions which make memory
+    managements automatic:
       {
         // yy_restart return pointers, do not need to be freed
         FILE *f = fopen( "/path/to/file", "r" );
@@ -314,13 +314,31 @@
         yy_delete_buffer( b );
         fclose (f);
       }
-      yylex_destroy call is required to free the internal stack.
+    yylex_destroy call is required to free the internal stack.
+
+    The yylex() function uses the internal getline function
+    yy_getline to read interactively from yyin. To use a custom
+    getline function, the YY_CUSTOM_GETLINE macro can be used.
+    See the EXAMPLE_2 program for a readline example.
+    ```{c}
+      #define YY_CUSTOM_GETLINE  // before include "mini-lexer.h"
+
+      size_t yy_getline( FILE *stream, char *buffer, size_t size )
+      {
+        // read from @stream until newline or EOF, into @buffer
+        // @buffer has capacity of @size.
+        // @buffer must have a newline character at the end
+        //     ==> store at most @size-1 bytes into @buffer
+
+        // maybe pint a prompt, and newline on Ctrl-D
+      }
+    ```
 
 
  -- Known Issues ----------------------------------------------------
     1. Unicode/UTF8 is NOT supported.
-    2. Token fragmentation (when the buffer overflows) breaks
-       the logic of punctuation and expression detection.
+    2. Token fragmentation (token buffer overflows),
+       breaks the logic of punctuation and expression detection.
 
  -- Compilation -----------------------------------------------------
     The test program:
@@ -489,7 +507,6 @@ const char *milexer_next_cstr[] =
     [NEXT_ERR]                     = "Error"
   };
 
-#define __flag__(n) (1 << (n))
 #define HAS_FLAG(n, flag) (n & (flag))
 enum milexer_parsing_flag_t
   {
@@ -500,27 +517,27 @@ enum milexer_parsing_flag_t
      *  To Retrieve the contents of expressions 
      *  without their prefix and suffix.
      */
-    PFLAG_INEXP =      __flag__ (0),
+    PFLAG_INEXP = 1 << 0,
 
     /**
      *  To allow space(s) in tokens
      *  The whitespace (0x20) character is no longer
      *  treated as a delimiter while using this flag
      */
-    PFLAG_IGSPACE =    __flag__ (1),
+    PFLAG_IGSPACE = 1 << 1,
 
     /**
      *  When `delim_ranges` is available, it will overwrite 
      *  the default delimiters (range 0, 0x20)
      *  To include them as well, use this flag
      */
-    PFLAG_ALLDELIMS =  __flag__ (2),
+    PFLAG_ALLDELIMS = 1 << 2,
 
     /**
      *  To retrive tokens of commented sections
      *  which are ignored by default
      */
-    PFLAG_INCOMMENT =  __flag__ (3),
+    PFLAG_INCOMMENT = 1 << 3,
   };
 
 enum milexer_token_t
@@ -536,7 +553,7 @@ enum milexer_token_t
 
 const char *milexer_token_type_cstr[] =
   {
-    [TK_NOT_SET]         = "NAN",
+    [TK_NOT_SET]         = "None",
     [TK_PUNCS]           = "Punctuation",
     [TK_KEYWORD]         = "Keyword",
     [TK_EXPRESSION]      = "Expression",
@@ -563,7 +580,7 @@ typedef struct
    *  The `TOKEN_ALLOC` macro allocates a token using malloc
    */
   char *cstr;
-  size_t cap, occ;  /* capacity and occupied (=strlen) */
+  size_t cap, size;  /* capacity and size (=strlen) */
 
   /* line/column number of the token in the input */
   size_t line, col;
@@ -598,19 +615,19 @@ typedef struct
   TOKEN_EXTEND2(tk, ml_realloc((tk)->cstr, (tk)->cap + grow +1), grow)
 /* To extend tokens manually */
 #define TOKEN_EXTEND2(tk, new_mem, delta_size)  \
-  ((tk)->__idx = (tk)->occ,                     \
+  ((tk)->__idx = (tk)->size,                    \
    (tk)->cap  += delta_size,                    \
    (tk)->cstr  = new_mem)
 
 /* strlen and free space of tokens */
-#define TOKEN_STRLEN(tk) ((tk)->occ)
-#define TOKEN_LEFT_CAP(tk) ((tk)->cap - ((tk)->occ))
+#define TOKEN_STRLEN(tk) ((tk)->size)
+#define TOKEN_LEFT_CAP(tk) ((tk)->cap - ((tk)->size))
 #define TOKEN_FREE_SPCAE TOKEN_LEFT_CAP
 
 /* Internal macros */
 #define TOKEN_IS_KNOWN(t) ((t)->id >= 0)
 #define TOKEN_FINISH(t) \
-  ((t)->cstr[(t)->__idx] = 0 , (t)->occ=(t)->__idx, (t)->__idx=0)
+  ((t)->cstr[(t)->__idx] = 0 , (t)->size=(t)->__idx, (t)->__idx=0)
 /* realloc token buffer */
 #define _REALLOC(ptr, len) ptr = ml_realloc(ptr, len)
 #define TOKEN_REALLOC(tk, new_cap) \
@@ -644,7 +661,6 @@ typedef struct
   size_t cap, idx;
 
   /* Internal */
-  /* TODO: for nesting, these should be arrays */
   int __last_exp_idx;
   int __last_punc_idx;
   int __last_newline;
@@ -760,8 +776,8 @@ int ml_next (Milexer *ml, Milexer_Slice *src,
 #define __UNUSED__ __attribute__((unused))
 #endif /* __UNUSED__ */
 
-static char    *yytext  __UNUSED__;   /* Milexer_Token->cstr */
-static size_t   yyleng  __UNUSED__;   /* strlen of Milexer_Token->cstr */
+static char    *yytext  __UNUSED__;     /* Milexer_Token->cstr */
+static size_t   yyleng  __UNUSED__;     /* strlen of Milexer_Token->cstr */
 static FILE    *yyin    __UNUSED__;     /* stream input file */
 
 static Milexer *yyml    __UNUSED__;     /* Milexer Language */
@@ -803,7 +819,7 @@ static size_t            yy_buffer_stack_max = 0;  /* capacity of stack */
 /* To retrieve the top of the stack */
 #define YY_CURRENT_BUFFER \
   ((yy_buffer_stack) ? *YY_CURRENT_BUFFER_LVALUE : NULL)
-/* top of the stack without NULL check */
+/* Top of the stack without NULL check */
 #define YY_CURRENT_BUFFER_LVALUE \
   ((YY_BUFFER_STATE **)(yy_buffer_stack + yy_buffer_stack_top))
 
@@ -814,7 +830,7 @@ static size_t            yy_buffer_stack_max = 0;  /* capacity of stack */
 #define YY_TOKEN_CAP 512
 #endif
 #ifndef YY_TOKEN_GROW
-#define YY_TOKEN_GROW 128  /* token realloc grow factor */
+#define YY_TOKEN_GROW 128  /* token realloc grow bytes */
 #endif
 
 #ifdef ML_DEBUG
@@ -897,7 +913,7 @@ int yylex (void);
  *  Minilexer has implemented a minimal getline function,
  *  and it can be overridden using YY_CUSTOM_GETLINE macro
  */
-size_t yy_getline (FILE *stream, char *buffer, size_t len);
+size_t yy_getline (FILE *stream, char *buffer, size_t size);
 
 /**
  *  To delete a buffer from the stack
@@ -1808,7 +1824,7 @@ yy_set_global (YY_BUFFER_STATE *b)
   else
     {
       yytext = b->tk.cstr;
-      yyleng = b->tk.occ;
+      yyleng = b->tk.size;
     }
 }
 
@@ -1889,10 +1905,10 @@ yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer)
 
 #ifndef YY_CUSTOM_GETLINE
 size_t
-yy_getline (FILE *stream, char *buffer, size_t len)
+yy_getline (FILE *stream, char *buffer, size_t size)
 {
   size_t rw = 0;
-  for (int c = '*'; c >= ' ' && rw < len-1; ++rw)
+  for (int c = '*'; c >= ' ' && rw < size-1; ++rw)
     {
       c = getc (stream);
       buffer[rw] = (char) c;
