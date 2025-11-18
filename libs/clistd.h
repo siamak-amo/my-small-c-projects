@@ -13,7 +13,7 @@
 # define CLI_DEF static inline
 #endif
 
-const char *program_name = NULL;
+extern const char *program_name;
 
 #define UNUSED(x) (void)(x)
 
@@ -46,7 +46,7 @@ typedef void (*usage_fun) (int ecode);
  *  From: 'gnulib/lib/progname.c':set_program_name
  *  Sets the program_name pointer
  */
-CLI_DEF void
+extern void
 set_program_name (const char *argv0);
 
 
@@ -137,17 +137,15 @@ on_exit (void (*function)(int, void *), void *arg)
 }
 #endif /* __ANDROID__ */
 
+#ifdef CLI_IMPLEMENTATION
+
+const char *program_name = NULL;
 
 /**
- *  From: 'gnulib/lib/version-etc.c':version_etc_arn
- *  Prints version
+ *  From: 'gnulib/lib/progname.c':set_program_name
+ *  Sets the program_name pointer
  */
-CLI_DEF void
-version_etc (FILE *stream,
-             const char *command_name, const char *version);
-
-#ifdef CLI_IMPLEMENTATION
-CLI_DEF void
+void
 set_program_name (const char *argv0)
 {
   if (argv0 == NULL)
@@ -169,6 +167,10 @@ set_program_name (const char *argv0)
     goto null_argv0;
 }
 
+/**
+ *  From: 'gnulib/lib/version-etc.c':version_etc_arn
+ *  Prints version
+ */
 CLI_DEF void
 version_etc (FILE *stream, const char *command_name, const char *version)
 {
