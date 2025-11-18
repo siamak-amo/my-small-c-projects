@@ -2320,6 +2320,7 @@ outside of these expressions.\n\n\
  **/
 #ifdef ML_TEST_1
 #include <stdarg.h>
+#include "clistd.h"
 
 typedef struct
 {
@@ -2367,12 +2368,11 @@ do_test__H (test_t *t, Milexer_Slice *src,
   for (const Milexer_Token *tcase = t->etk;
        tcase != NULL && tcase->cstr != NULL; ++tcase, ++counter)
     {
-      /* This only works on x86!! */
       if (test_number == breakp_test && counter == breakp_subtest)
         {
           printf ("\n\n***  Debugging Test %d:%d  ***\n\n",
                   test_number, counter);
-          asm ("int3");
+         SET_BREAKPOINT (); /* debugger breakpoint */
         }
 
       /* Retrieve the next token */
