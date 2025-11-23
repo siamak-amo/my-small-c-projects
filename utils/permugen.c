@@ -168,6 +168,18 @@
 #define IS_LINE_COMMENT(line) (line[0] == '#')
 #endif
 
+/* Using nonlocking stdio functions */
+#ifndef fast_fwrite /* equivalent to fwirte */
+#define fast_fwrite fwrite_unlocked
+#endif
+#ifndef fast_putc /* equivalent to putc */
+#define fast_putc putc_unlocked
+#endif
+
+/* Space padding */
+const char *sp_padding = "                                ";
+const int sp_padding_len = 32;
+
 /**
  **  The following files are available in `../libs`:
  **
@@ -301,9 +313,8 @@ struct Seed
   /* Word seeds, (Dynamic array) */
   char **wseed;
 
-  /* Only in regular mode */
-  char *pref;
-  char *suff;
+  char *pref, *suff;
+  int adjust;
 };
 
 /* To make new seed and dynamic seed array */
@@ -675,24 +686,102 @@ ARGUMENTS:\n\
     exit (ecode);
 }
 
+/** __fputs(), __fputc()
+ *  fputs,fputc similar functions
+ *  With newline and left/right adjustment support
+ *  Only use Fprints and Fprintc macros
+ *
+ *  This function ensures @str has length of ABS(@adjust)
+ *  for @adjust < 0 puts enough space before, and
+ *  for @adjust > 0 puts enough space after @str
+ */
+#define __fput_handle_adjust(len, adjust, action) do {  \
+    if (adjust + len < 0) /* left padding */            \
+      fprintf_space_pad (-adjust-len, stream);          \
+    action;                                             \
+    if (adjust - len > 0) /* right padding */           \
+      fprintf_space_pad (adjust-len, stream);           \
+  } while (0)
+
+#ifndef _USE_BIO
+#define fprintf_space_pad(count, stream)                \
+  for (int n=count, to_fill=0; n > 0; n -= to_fill) {   \
+    to_fill = MIN (sp_padding_len, n);                  \
+    fast_fwrite (sp_padding, to_fill, 1, stream);       \
+  }
+
+static inline void
+__fputs (const char *str, FILE *stream, int adjust, char newline)
+{
+  /**
+   *  Unfortunately, we don't have access to _IO_sputn
+   *  form glibc, but this should be fast as the real fputs
+   */
+  int len = strlen (str);
+  __fput_handle_adjust (len, adjust, {
+      fast_fwrite (str, len, 1, stream);
+      if (newline)
+        fast_putc (newline, stream);
+    });
+}
+static inline void
+__fputc (char c, FILE *stream, int adjust)
+{
+  __fput_handle_adjust (1, adjust, {
+      fast_putc (c, stream);
+    });
+}
+
+#else /* _USE_BIO */
+#define fprintf_space_pad(count, bio)                   \
+  for (int n=count, to_fill=0; n > 0; n -= to_fill) {   \
+    to_fill = MIN (sp_padding_len, n);                  \
+    bio_put (bio, sp_padding, to_fill);                 \
+  }
+
+static inline void
+__fputs (BIO_t *bio, const char *str, int adjust, char newline)
+{
+  size_t len = strlen (str);
+  __fput_handle_adjust (len, adjust, {
+    bio_put (bio, str, len);
+    if (newline)
+      bio_putc (bio, newline);
+  });
+}
+static inline void
+__fputc (BIO_t *bio, char c, int adjust)
+{
+  __fput_handle_adjust (1, adjust, {
+      bio_putc (bio, c);
+    });
+}
+#endif /* _USE_BIO */
+
 /**
- *  Output of characters and strings
- *  These macros write @str on @opt->outf
+ *  Output of characters and strings macros
  *
  *  Fputs:  writes @str without its terminating null byte
  *  Puts:   writes @str like @Fputs and a trailing newline
  *  Putc:   writes a character @c (as unsigned char)
  *  Putln:  writes a newline
+ *
+ *  Fprints and Fprintc: fput with left/right adjustment
+ *  similar to "%5s" and "%5c", but dynamic.
  */
 #ifndef _USE_BIO
-#  define Fputs(str, opt) fputs (str, opt->outf)
-#  define Putc(c, opt) putc (c, opt->outf)
-#  define Puts(str, opt) fprintf (opt->outf, "%s\n", str)
+#  define Fprints(str, n, opt) __fputs (str, opt->outf, n, '\0')
+#  define Fprintc(c,   n, opt) __fputc (c,   opt->outf, n)
+#  define Fputs(str, opt)      __fputs (str, opt->outf, 0, '\0')
+#  define Puts(str, opt)       __fputs (str, opt->outf, 0, '\n')
+#  define Putc(c, opt) fast_putc (c, opt->outf)
 #  define Putln(opt) Putc ('\n', opt);
 #else
-#  define Fputs(str, opt) bio_fputs (opt->bio, str)
+#  define Fprints(str, n, opt) __fputs (str, opt->bio, n, '\0')
+#  define Fprintc(c,   n, opt) __fputc (  c, opt->bio, n)
+#  define Fputs(str, opt)      __fputs (str, opt->bio, 0, '\0')
+#  define Puts(str, opt)       __fputs (str, opt->bio, 0, '\n')
 #  define Putc(c, opt) bio_putc (opt->bio, c)
-#  define Puts(str, opt) bio_puts (opt->bio, str)
 #  define Putln(opt) Putc ('\n', opt);
 #endif /* _USE_BIO */
 
@@ -717,19 +806,20 @@ __perm (const struct Opt *opt, const char *sep,
   if (opt->global_seeds->pref)
     Fputs (opt->global_seeds->pref, opt);
 
+  struct Seed *s = opt->global_seeds;
  Print_Loop: /* O(depth) */
   {
     int idx = idxs[i];
     if (idx < opt->global_seeds->cseed_len)
       {
         /* range of character seeds */
-        Putc (opt->global_seeds->cseed[idx], opt);
+        Fprintc (s->cseed[idx], s->adjust, opt);
       }
     else
       {
         /* range of word seeds */
         idx -= opt->global_seeds->cseed_len;
-        Fputs (opt->global_seeds->wseed[idx], opt);
+        Fprints (s->wseed[idx], s->adjust, opt);
       }
     i++;
   }
@@ -802,7 +892,7 @@ perm (const struct Opt *opt)
  *  @size and @offset are used for handling depth
  *  @lens and @idxs both have size @size
  *  @idxs: temporary buffer for internal use of this function
- *  @lens: total length of each regular seed:
+ *  @lens: total length of ea                ch regular seed:
  *         lens[i] = len(s[i]->cssed) + len(s[i]->wseed)
  */
 int
@@ -840,13 +930,13 @@ __regular_perm (struct Opt *opt,
     if (idx < current_seed->cseed_len)
       {
         /* Range of character seeds */
-        Putc (current_seed->cseed[idx], opt);
+        Fprintc (current_seed->cseed[idx], current_seed->adjust, opt);
       }
     else
       {
         /* Range of word seeds */
         idx -= current_seed->cseed_len;
-        Fputs (current_seed->wseed[idx], opt);
+        Fprints (current_seed->wseed[idx], current_seed->adjust, opt);
       }
     i++;
   }
