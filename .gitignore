@@ -4,6 +4,7 @@
 !*/
 
 bak
+bin
 build
 **/a.out
 **/*.out
