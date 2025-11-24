@@ -159,11 +159,6 @@
 # define WSEED_MAXCNT 8192
 #endif
 
-/* Format replace string placeholder */
-#ifndef DEFAULT_REPSTR
-# define DEFAULT_REPSTR "FUZZ"
-#endif
-
 #ifndef IS_LINE_COMMENT
 #define IS_LINE_COMMENT(line) (line[0] == '#')
 #endif
@@ -253,7 +248,7 @@ const struct char_seed charseed_AZ = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26};
 const struct char_seed charseed_09 = {"0123456789", 10};
 
 /* getopt */
-const char *lopt_cstr = "s:S:o:a:p:d:D:f:I:0:1:2:3:4:5:vhrEe";
+const char *lopt_cstr = "s:S:o:a:p:d:D:f:0:1:2:3:4:5:vhrEe";
 const struct option lopts[] =
   {
     /* Seeds */
@@ -284,7 +279,6 @@ const struct option lopts[] =
     /* Format */
     {"format",           required_argument, NULL, 'f'},
     {"fmt",              required_argument, NULL, 'f'},
-    {"replace-str",      required_argument, NULL, 'I'},
     {"pref",             required_argument, NULL, '3'},
     {"prefix",           required_argument, NULL, '3'},
     {"suff",             required_argument, NULL, '4'},
@@ -314,7 +308,7 @@ struct Seed
   char **wseed;
 
   char *pref, *suff;
-  int adjust;
+  int padding;
 };
 
 /* To make new seed and dynamic seed array */
@@ -331,8 +325,8 @@ enum LANG
   {
     PUNC_COMMA = 0,
 
-    EXP_PAREN = 0,     /* (xxx) */
-    EXP_CURLY,         /* {xxx} */
+    EXP_CURLY = 0,     /* {xxx} */
+    EXP_PAREN,         /* (xxx) */
     EXP_BRACKET,       /* [xxx] */
   };
 
@@ -343,15 +337,25 @@ static struct Milexer_exp_ Puncs[] =
 
 static struct Milexer_exp_ Expressions[] =
   {
-    [EXP_PAREN]          = {"(", ")"},
     [EXP_CURLY]          = {"{", "}"},
+    [EXP_PAREN]          = {"(", ")"},
     [EXP_BRACKET]        = {"[", "]"},
   };
+static struct Milexer_exp_ FormatExpressions[] =
+  {
+    [EXP_CURLY]          = {"{", "}"},
+  };
 
-static Milexer ML =
+/* Mini-Lexer seed option language */
+static Milexer SeedML =
   {
     .expression = GEN_MLCFG (Expressions),
     .puncs      = GEN_MLCFG (Puncs),
+  };
+/* Mini-Lexer format option language */
+static Milexer FormatML =
+  {
+    .expression = GEN_MLCFG (FormatExpressions),
   };
 
 enum mode
@@ -390,7 +394,7 @@ struct Opt
   FILE *outf;
   char *prefix, *suffix; /* by malloc */
   char **seps; /* component separator(s) (Dynamic array) */
-  char *format, *replace_str;
+  char *format;
 
   /* Output stream buffer */
 #ifdef _USE_BIO
@@ -586,6 +590,15 @@ static inline void
 pparse_format_regex (struct Opt *opt,
                      struct Seed *dst, char *input);
 
+/**
+ *  This function sets appropriate prefix/suffix
+ *  and adjustment value of all seeds, based on
+ *  @input: `xxx{}yyy` or like rust/python format string
+ *        `xxx{:<5}yyy`  and  `xxx{:-5}yyy`
+ */
+static void
+pparse_format_option (const struct Opt *opt,
+                      struct Seed **dst, int dst_len, char *input);
 
 void
 usage (int ecode)
@@ -608,10 +621,9 @@ OPTIONS:\n\
       -o, --output            output file\n\
       -a, --oA --append       append to file\n\
       -p, --delimiter         permutations component separator\n\
-          --prefix            output prefix\n\
-          --suffix            output suffix\n\
+          --prefix            global output prefix\n\
+          --suffix            global output suffix\n\
       -f, --format            output format\n\
-      -I, --replace-str       to change FUZZ keyword in format\n\
           --no-comment        ignore commented lines  while reading from file\n\
           --format-getline    separate words by space while reading from file\n\
       -h, --help              print help and exit\n\
@@ -666,11 +678,12 @@ ARGUMENTS:\n\
       to also read from stdin:\n\
        '- [ab0-9] {foo,bar} ~/wordlist.txt'\n\
 \n\
-  Format: output format string\n\
-    The `FUZZ' keyword can be replaced using `-I, --replace-str'\n\
-    Ex:  --format \" 1 FUZZ 2 FUZZ ... FUZZ N \"\n\
-      sets prefix of seed #1 to ` 1 '\n\
-      sets suffix of seed #N to ` N '  for 1 to N\n\
+  Output formating (-f, --format): \n\
+    similar to Python's f-strings:  -f \"Name: {name} - Key={value} ...\"\n\
+       it substitutes `{}` with the appropriate permutation component\n\
+    also supports left/right paddings:\n\
+       `{:7}`, `{:>7}`:  means left padding up to 7 characters\n\
+      `{:-7}`, `{:<7}`:  means right padding\n\
 \n\
   Raw: backslash interpretation usage\n\
        \\\\:  to pass a single '\\'\n\
@@ -1311,9 +1324,6 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
         case 'f':
           opt->format = optarg;
           break;
-        case 'I':
-          opt->replace_str = optarg;
-          break;
 
           /* Only in normal mode */
         case 'S': /* wseed from file or stdin */
@@ -1481,34 +1491,9 @@ opt_init (struct Opt *opt)
         }
     }
 
-  /* Init output format */
+  /* Output format */
   if (opt->format)
-    {
-      if (! opt->escape_disabled)
-        UNESCAPE (opt->format);
-
-      int repstr_len = strlen (opt->replace_str);
-      char *start=opt->format, *end=start;
-      for (int i=0; NULL != end && i < max_depth+1;
-           ++i, start = end + repstr_len)
-        {
-          end = strstr (start, opt->replace_str);
-          if (start == end && *start == '\0')
-            break;
-          if (NULL != end && i < max_depth)
-            start[(int) (end - start)] = '\0';
-          if (i == 0)
-            {
-              if (! current_seed[0]->pref)
-                current_seed[0]->pref = strdup (start);
-            }
-          else
-            {
-              if (! current_seed[i-1]->suff)
-                current_seed[i-1]->suff = strdup (start);
-            }
-        }
-    }
+    pparse_format_option (opt, current_seed, max_depth, opt->format);
 
   /* Initializing the output stream buffer */
 #ifndef _USE_BIO
@@ -1564,7 +1549,6 @@ mk_opt (void)
   da_appd (opt.seps, NULL);
 
   opt.outf = stdout;
-  opt.replace_str = DEFAULT_REPSTR;
   opt.mode = NORMAL_MODE;
   opt.escape_disabled = false;
 
@@ -1577,7 +1561,6 @@ main (int argc, char **argv)
   struct Opt *opt;
   set_program_name (*argv);
 
-  yyml = &ML; /* mini-lexer language */
   opt = mk_opt ();
   on_exit (cleanup, opt);
 
@@ -1795,6 +1778,61 @@ pparse_wseed_regex (struct Opt *opt,
 }
 
 static inline void
+pparse_format_padding (struct Seed *dst, char *input)
+{
+  int padd = 0;
+  if ((input = strchr (input, ':')))
+    {
+      switch (*(++input))
+        {
+        case '-': /* right padding */
+        case '<':
+          padd = atoi (input + 1);
+          break;
+        case '+': /* left padding */
+        case '>':
+          padd = (-1) * atoi (input + 1);
+          break;
+        default:
+          padd = (-1) * atoi (input);
+        }
+      if (padd)
+        dst->padding = padd;
+    }
+}
+
+static void
+pparse_format_option (const struct Opt *opt,
+                      struct Seed **dst, int dst_len, char *input)
+{
+  yyml = &FormatML;
+  YY_BUFFER_STATE *buffer = yy_scan_buffer( input, strlen (input) );
+
+  char *prev_curly = input;
+  for (int i=0, type=0; i<dst_len && type != -1; type = yylex())
+    {
+      if (TK_EXPRESSION == type)
+        {
+          /* Handling left/right padding adjustment */
+          pparse_format_padding (dst[i], yytext);
+
+          /* Setting prefix and suffix */
+          input[yycolumn-1] = '\0';
+          if (!opt->escape_disabled)
+            UNESCAPE (prev_curly);
+          dst[i]->pref = strdup (prev_curly);
+          prev_curly = input + (yycolumn + yyleng);
+          i++;
+        }
+    }
+  if (!opt->escape_disabled)
+    UNESCAPE (prev_curly);
+  dst[dst_len - 1]->suff = strdup (prev_curly);
+
+  yy_delete_buffer( buffer );
+}
+
+static inline void
 pparse_format_regex (struct Opt *opt,
                      struct Seed *dst, char *input)
 {
@@ -1909,6 +1947,7 @@ parse_seed_regex (struct Opt *opt,
                   struct Seed *dst, char *input)
 {
   int type = 0;
+  yyml = &SeedML;
   YY_BUFFER_STATE *buffer = yy_scan_buffer( input, strlen (input) );
   while ( (type = yylex()) != -1 )
     {
