@@ -1748,6 +1748,7 @@ void yy_delete_buffer (YY_BUFFER_STATE *b)
   if (b->memflgs & ITS_OUR_BASE_BUF)
     yy_free (b->base);
   yy_free (b);
+  yypop_buffer_state ();
 }
 
 static void
@@ -1995,7 +1996,6 @@ yylex (void)
     lex_end:
       if (b->memflgs & ITS_OUR_STATE_BUF)
         yy_delete_buffer (b);
-      yypop_buffer_state ();
       return -1;
     }
   return -1;
