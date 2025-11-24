@@ -86,26 +86,31 @@
          or equivalently, avoid using end-of-options:
        $ permugen -r  "{dev,prod}"  " -"
 
-     * Custom prefix and suffix:
-       - The first component has `xxx` as suffix and
-         the second component has `yyy` as prefix
+     * Output formatting:
+       Permugen supports format string similar to Python's f-strings
+       - Note: using this option in normal mode  or  using manual
+         prefix and suffix along with this option, is Undefined.
+
+       - This substitutes the first `{}` in the format option
+         with dev,prod  and  the second one with 0..5
+       $ permugen -r "{dev,prod}"  "[0-5]" \
+                 --format "https://{}.api.com/file_{}.txt"
+
+       - This option, also supports left and right paddings
+         like "%4s" and "%-5s" in C
+       $ permugen -r "{A, AA, AAA}"  "{BBB, BBBB, B}" \
+                 --format "{:4}, {:-5}"
+
+     * Manual output formatting:
+       - Using global prefix and suffix:
+       $ permugen -s "[0-2]"  --prefix '('  --suffix ')'
+
+       - The first component has `xxx` as a suffix,
+         while the second component has `yyy` as a prefix
        $ permugen -r  "() {One} (xxx)"  "(yyy) {Two} ()"
 
        - The first component uses {} and the second one uses ()
        $ permugen -r  "({) {One} (})"  "(\() {Two} (\))"
-
-     * Custom format
-       - This configures prefix and suffix of seeds
-         based on a format string, by default FUZZ keyword (see -I)
-       - Not suitable to be used along with depth (-d) in regular mode
-       - Other prefix/suffix options, have higher priority
-
-       - using `--` for prefix  and  `==` for suffix:
-       $ permugen -s "[ab]"  --format "--FUZZ=="
-
-       - using double parenthesis for the first seed, and
-         double square brackets and comma for the second seed:
-       $ permugen -r "{A}" "{B,C}"  -f "((FUZZ)) , [[FUZZ]]"
 
 
    Compilation:
@@ -134,7 +139,7 @@
 #include <errno.h>
 
 #define PROGRAM_NAME "permugen"
-#define Version "2.18"
+#define Version "2.20"
 
 #define CLI_IMPLEMENTATION
 #include "clistd.h"
