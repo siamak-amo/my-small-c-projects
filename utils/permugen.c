@@ -605,6 +605,27 @@ static void
 pparse_format_option (const struct Opt *opt,
                       struct Seed **dst, int dst_len, char *input);
 
+struct print_info
+{
+  int adjust; /* left (positive) and right (negative) padding */
+  char newline; /* zero means no newline */
+};
+
+/** __fputs(), __fputc()
+ *  fputs,fputc similar functions
+ *  With newline and left/right adjustment support
+ *  Only use Fprints and Fprintc macros
+ *
+ *  This function ensures @str has length of ABS(@adjust)
+ *  for @adjust < 0 puts enough space before, and
+ *  for @adjust > 0 puts enough space after @str
+ */
+static inline void
+__fputs (const char *str, struct Opt *, const struct print_info *info);
+static inline void
+__fputc (char c, struct Opt *, const struct print_info *info);
+
+
 void
 usage (int ecode)
 {
@@ -704,104 +725,72 @@ ARGUMENTS:\n\
     exit (ecode);
 }
 
-#define __fput_handle_padding(len, adjust, action) do { \
-    if (adjust + len < 0) /* left padding */            \
-      fprintf_space_pad (-adjust-len, stream);          \
-    action;                                             \
-    if (adjust - len > 0) /* right padding */           \
-      fprintf_space_pad (adjust-len, stream);           \
-  } while (0)
-
-
-/** __fputs(), __fputc()
- *  fputs,fputc similar functions
- *  With newline and left/right adjustment support
- *  Only use Fprints and Fprintc macros
- *
- *  This function ensures @str has length of ABS(@adjust)
- *  for @adjust < 0 puts enough space before, and
- *  for @adjust > 0 puts enough space after @str
- */
 #ifndef _USE_BIO
-#define fprintf_space_pad(count, stream)                \
-  for (int n=count, to_fill=0; n > 0; n -= to_fill) {   \
-    to_fill = MIN (sp_padding_len, n);                  \
-    fast_fwrite (sp_padding, to_fill, 1, stream);       \
-  }
-
-static inline void
-__fputs (const char *str, FILE *stream, int adjust, char newline)
-{
-  /**
-   *  Unfortunately, we don't have access to _IO_sputn
-   *  form glibc, but this should be fast as the real fputs
-   */
-  int len = strlen (str);
-  __fput_handle_padding (len, adjust, {
-      fast_fwrite (str, len, 1, stream);
-      if (newline)
-        fast_putc (newline, stream);
-    });
-}
-static inline void
-__fputc (char c, FILE *stream, int adjust)
-{
-  __fput_handle_padding (1, adjust, {
-      fast_putc (c, stream);
-    });
-}
-
-#else /* _USE_BIO */
-#define fprintf_space_pad(count, bio)                   \
-  for (int n=count, to_fill=0; n > 0; n -= to_fill) {   \
-    to_fill = MIN (sp_padding_len, n);                  \
-    bio_put (bio, sp_padding, to_fill);                 \
-  }
-
-static inline void
-__fputs (BIO_t *bio, const char *str, int adjust, char newline)
-{
-  size_t len = strlen (str);
-  __fput_handle_padding (len, adjust, {
-    bio_put (bio, str, len);
-    if (newline)
-      bio_putc (bio, newline);
-  });
-}
-static inline void
-__fputc (BIO_t *bio, char c, int adjust)
-{
-  __fput_handle_padding (1, adjust, {
-      bio_putc (bio, c);
-    });
-}
+# define Fwrite(str, n, opt) fast_fwrite (str, n, 1, opt->outf)
+# define Putc(c, opt) fast_putc (c, opt->outf)
+#else
+# define Fwrite(str,  n, opt) bio_put (opt->bio, str, n)
+# define Putc(c, opt) bio_putc (opt->bio, c)
 #endif /* _USE_BIO */
 
 /**
  *  Output of characters and strings macros
  *
  *  Fputs:  writes @str without its terminating null byte
+ *  FPutc:  writes a character @c (as unsigned char)
  *  Puts:   writes @str like @Fputs and a trailing newline
- *  Putc:   writes a character @c (as unsigned char)
  *  Putln:  writes a newline
  *
  *  Fprints and Fprintc: fput with left/right adjustment
- *  similar to "%5s" and "%5c", but dynamic.
+ *  similar to "%5s" and "%-5c", but dynamic (use 5 or -5 in @n)
  */
-#ifndef _USE_BIO
-#  define Fprints(str, n, opt) __fputs (str, opt->outf, n, '\0')
-#  define Fprintc(c,   n, opt) __fputc (c,   opt->outf, n)
-#  define Fputs(str, opt)  fast_fwrite (str, strlen (str), 1, opt->outf)
-#  define Putc(c, opt) fast_putc (c, opt->outf)
-#else
-#  define Fprints(str, n, opt) __fputs (str, opt->bio, n, '\0')
-#  define Fprintc(c,   n, opt) __fputc (  c, opt->bio, n)
-#  define Fputs(str, opt) bio_put (opt->bio, str, strlen (str))
-#  define Putc(c, opt) bio_putc (opt->bio, c)
-#endif /* _USE_BIO */
+#define Fputs(str, opt) Fwrite (str, strlen (str), opt)
+#define Fputc(c, opt) Putc (c, opt)
+#define Putln(opt) Fputc ('\n', opt)
+#define Puts(str, opt) do { Fputs (str, opt); Putln (opt); } while (0)
+#define Fprints(str, n, opt) \
+  __fputs (str, opt, &(struct print_info){ .adjust=n, .newline=0 })
+#define Fprintc(c, n, opt) \
+  __fputc (c, opt, &(struct print_info){ .adjust=n })
 
-#define Puts(str, opt) (Fputs (str, opt), Putc ('\n', opt))
-#define Putln(opt) Putc ('\n', opt);
+/* Internal print padding macros */
+#define __fput_handle_padding(len, adjust, action, opt) do {    \
+    if (adjust + len < 0) /* left padding */                    \
+      fwrite_space_pad (-adjust-len, opt);                      \
+    action;                                                     \
+    if (adjust - len > 0) /* right padding */                   \
+      fwrite_space_pad (adjust-len, opt);                       \
+  } while (0)
+
+#define fwrite_space_pad(count, opt)                    \
+  for (int n=count, to_fill=0; n > 0; n -= to_fill) {   \
+    to_fill = MIN (sp_padding_len, n);                  \
+    Fwrite (sp_padding, to_fill, opt);                  \
+  }
+
+static inline void
+__fputs (const char *str, struct Opt *opt,
+         const struct print_info *info)
+{
+  /**
+   *  Unfortunately, we don't have access to _IO_sputn
+   *  form glibc, but this should be fast as the real fputs
+   */
+  int len = strlen (str);
+  __fput_handle_padding (len, info->adjust, {
+      Fwrite (str, len, opt);
+      if (info->newline)
+        Putc (info->newline, opt);
+    }, opt);
+}
+
+static inline void
+__fputc (char c, struct Opt *opt, const struct print_info *info)
+{
+  __fput_handle_padding (1, info->adjust, {
+      Putc (c, opt);
+    }, opt);
+}
 
 /**
  *  The main logic of normal mode
