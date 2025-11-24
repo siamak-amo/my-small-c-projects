@@ -686,6 +686,15 @@ ARGUMENTS:\n\
     exit (ecode);
 }
 
+#define __fput_handle_padding(len, adjust, action) do { \
+    if (adjust + len < 0) /* left padding */            \
+      fprintf_space_pad (-adjust-len, stream);          \
+    action;                                             \
+    if (adjust - len > 0) /* right padding */           \
+      fprintf_space_pad (adjust-len, stream);           \
+  } while (0)
+
+
 /** __fputs(), __fputc()
  *  fputs,fputc similar functions
  *  With newline and left/right adjustment support
@@ -695,14 +704,6 @@ ARGUMENTS:\n\
  *  for @adjust < 0 puts enough space before, and
  *  for @adjust > 0 puts enough space after @str
  */
-#define __fput_handle_adjust(len, adjust, action) do {  \
-    if (adjust + len < 0) /* left padding */            \
-      fprintf_space_pad (-adjust-len, stream);          \
-    action;                                             \
-    if (adjust - len > 0) /* right padding */           \
-      fprintf_space_pad (adjust-len, stream);           \
-  } while (0)
-
 #ifndef _USE_BIO
 #define fprintf_space_pad(count, stream)                \
   for (int n=count, to_fill=0; n > 0; n -= to_fill) {   \
@@ -718,7 +719,7 @@ __fputs (const char *str, FILE *stream, int adjust, char newline)
    *  form glibc, but this should be fast as the real fputs
    */
   int len = strlen (str);
-  __fput_handle_adjust (len, adjust, {
+  __fput_handle_padding (len, adjust, {
       fast_fwrite (str, len, 1, stream);
       if (newline)
         fast_putc (newline, stream);
@@ -727,7 +728,7 @@ __fputs (const char *str, FILE *stream, int adjust, char newline)
 static inline void
 __fputc (char c, FILE *stream, int adjust)
 {
-  __fput_handle_adjust (1, adjust, {
+  __fput_handle_padding (1, adjust, {
       fast_putc (c, stream);
     });
 }
@@ -743,7 +744,7 @@ static inline void
 __fputs (BIO_t *bio, const char *str, int adjust, char newline)
 {
   size_t len = strlen (str);
-  __fput_handle_adjust (len, adjust, {
+  __fput_handle_padding (len, adjust, {
     bio_put (bio, str, len);
     if (newline)
       bio_putc (bio, newline);
@@ -752,7 +753,7 @@ __fputs (BIO_t *bio, const char *str, int adjust, char newline)
 static inline void
 __fputc (BIO_t *bio, char c, int adjust)
 {
-  __fput_handle_adjust (1, adjust, {
+  __fput_handle_padding (1, adjust, {
       bio_putc (bio, c);
     });
 }
@@ -772,18 +773,17 @@ __fputc (BIO_t *bio, char c, int adjust)
 #ifndef _USE_BIO
 #  define Fprints(str, n, opt) __fputs (str, opt->outf, n, '\0')
 #  define Fprintc(c,   n, opt) __fputc (c,   opt->outf, n)
-#  define Fputs(str, opt)      __fputs (str, opt->outf, 0, '\0')
-#  define Puts(str, opt)       __fputs (str, opt->outf, 0, '\n')
+#  define Fputs(str, opt)  fast_fwrite (str, strlen (str), 1, opt->outf)
 #  define Putc(c, opt) fast_putc (c, opt->outf)
-#  define Putln(opt) Putc ('\n', opt);
 #else
 #  define Fprints(str, n, opt) __fputs (str, opt->bio, n, '\0')
 #  define Fprintc(c,   n, opt) __fputc (  c, opt->bio, n)
-#  define Fputs(str, opt)      __fputs (str, opt->bio, 0, '\0')
-#  define Puts(str, opt)       __fputs (str, opt->bio, 0, '\n')
+#  define Fputs(str, opt) bio_put (opt->bio, str, strlen (str))
 #  define Putc(c, opt) bio_putc (opt->bio, c)
-#  define Putln(opt) Putc ('\n', opt);
 #endif /* _USE_BIO */
+
+#define Puts(str, opt) (Fputs (str, opt), Putc ('\n', opt))
+#define Putln(opt) Putc ('\n', opt);
 
 /**
  *  The main logic of normal mode
@@ -813,13 +813,13 @@ __perm (const struct Opt *opt, const char *sep,
     if (idx < opt->global_seeds->cseed_len)
       {
         /* range of character seeds */
-        Fprintc (s->cseed[idx], s->adjust, opt);
+        Putc (s->cseed[idx], opt);
       }
     else
       {
         /* range of word seeds */
         idx -= opt->global_seeds->cseed_len;
-        Fprints (s->wseed[idx], s->adjust, opt);
+        Fputs (s->wseed[idx], opt);
       }
     i++;
   }
@@ -930,13 +930,13 @@ __regular_perm (struct Opt *opt,
     if (idx < current_seed->cseed_len)
       {
         /* Range of character seeds */
-        Fprintc (current_seed->cseed[idx], current_seed->adjust, opt);
+        Fprintc (current_seed->cseed[idx], current_seed->padding, opt);
       }
     else
       {
         /* Range of word seeds */
         idx -= current_seed->cseed_len;
-        Fprints (current_seed->wseed[idx], current_seed->adjust, opt);
+        Fprints (current_seed->wseed[idx], current_seed->padding, opt);
       }
     i++;
   }
