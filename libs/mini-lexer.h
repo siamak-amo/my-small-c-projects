@@ -2152,8 +2152,8 @@ main (void)
           case LANG_FILE:
             {
               puts("-- lexing file ------------------------------");
-              /* filepath might contain comma! */
-              ML_DISABLE( &Puncs[PUNC_COMMA] );
+              ML_DISABLE( &Puncs[PUNC_COMMA] ); // file paths may contain comma
+              ML_DISABLE( &Puncs[PUNC_DIV] );   // and also slash characters
 
               ret = yylex(); /* get the next token as filepath */
               if (-1 == ret)
@@ -2175,6 +2175,7 @@ main (void)
                 }
 
               ML_ENABLE( &Puncs[PUNC_COMMA] ); /* undo ML_DISABLE */
+              ML_ENABLE( &Puncs[PUNC_DIV] );
               puts ("-- EOF --------------------------------------");
             }
             break;
