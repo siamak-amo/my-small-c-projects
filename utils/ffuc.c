@@ -1491,15 +1491,20 @@ da_strstr (char **haystack, const char *needle)
 static int
 register_wlist (const char *path)
 {
-  int idx;
-  Fword *fw = make_fw_from_path (path);
-  if (! fw)
-    fw = fw_dup (&dummy_fword);
-
-  if (-1 == (idx = da_strstr (opt.fuzz_template.wlists, path)))
-    da_appd (opt.words, fw);
+  Fword *fw;
+  int idx = da_strstr (opt.fuzz_template.wlists, path);
+  if (-1 == idx) /* New file */
+    {
+      fw = make_fw_from_path (path);
+      if (! fw)
+        fw = fw_dup (&dummy_fword);
+      da_appd (opt.words, fw);
+    }
   else /* We have already opened this file */
-    da_appd (opt.words, fw_dup (opt.words[idx]));
+    {
+      fw = fw_dup (opt.words[idx]);
+      da_appd (opt.words, fw);
+    }
 
   return 0;
 }
