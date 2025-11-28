@@ -20,11 +20,13 @@
     Permugen - Permutation generator utility
     For generating customizable permutations from specified seeds
 
-    Usage
+    Usage Examples
       For more details, use the `-h` option:
       $ permugen --help
 
-    Normal mode:  permugen [OPTIONS] -s [SEED_CONFIG]
+
+    Normal Mode:
+      $ permugen [OPTIONS] -s [SEED_CONFIG]
       Cartesian product of the input with a certain depth
       {INPUT_SEED}x{INPUT_SEED}x...  (depth times)
 
@@ -58,7 +60,8 @@
        $ permugen --pref "www." --suff ".com"
 
 
-    Regular Mode:  permugen [OPTIONS] -r [SEED_CONFIG]...
+    Regular Mode:
+      $ permugen [OPTIONS] -r [SEED_CONFIG]...
       To manually specify components of the permutations
       {INPUT_SEED_1}x{INPUT_SEED_2}x...x{INPUT_SEED_N}
 
@@ -565,7 +568,7 @@ void parse_seed_regex (struct Opt *opt,
  *  @input: `{...}`  -  comma-separated words
  *  Using wseed_uniappd, appends the result to @dst (with unescape)
  */
-static inline void
+static void
 pparse_wseed_regex (struct Opt *opt,
                     struct Seed *dst, char *input);
 
@@ -573,7 +576,7 @@ pparse_wseed_regex (struct Opt *opt,
  *  Character Seed regex parser
  *  @input: `[...]`  -  minimal character range(s) (with unescape)
  */
-static inline void
+static void
 pparse_cseed_regex (struct Opt *opt,
                     struct Seed *dst, char *input);
 
@@ -581,7 +584,7 @@ pparse_cseed_regex (struct Opt *opt,
  *  Detects file paths, previous seed indexes (\N)
  *  and other shortcuts like: '\d', '\u' and '\1'
  */
-static inline void
+static void
 pparse_keys_regex (struct Opt *opt,
                    struct Seed *dst, const char *input);
 
@@ -591,7 +594,7 @@ pparse_keys_regex (struct Opt *opt,
  *  First call provides prefix, second call suffix,
  *  other calls will be ignored
  */
-static inline void
+static void
 pparse_format_regex (struct Opt *opt,
                      struct Seed *dst, char *input);
 
@@ -611,14 +614,11 @@ struct print_info
   char newline; /* zero means no newline */
 };
 
-/** __fputs(), __fputc()
- *  fputs,fputc similar functions
- *  With newline and left/right adjustment support
- *  Only use Fprints and Fprintc macros
+/**
+ *  __fputs(), __fputc(), fputs, fputc similar functions
+ *  With newline and left/right padding adjustment support
  *
- *  This function ensures @str has length of ABS(@adjust)
- *  for @adjust < 0 puts enough space before, and
- *  for @adjust > 0 puts enough space after @str
+ *  Use Fprints and Fprintc macros
  */
 static inline void
 __fputs (const char *str, struct Opt *, const struct print_info *info);
@@ -1695,11 +1695,10 @@ path_resolution (const char *path_cstr)
   return PATH;
 }
 
-
 /**
  **  Regex parser functions
  **/
-static inline void
+static void
 pparse_cseed_regex (struct Opt *opt,
                     struct Seed *dst, char *input)
 {
@@ -1750,7 +1749,7 @@ pparse_cseed_regex (struct Opt *opt,
 #undef MK_RANGE
 }
 
-static inline void
+static void
 pparse_wseed_regex (struct Opt *opt,
                     struct Seed *dst, char *input)
 {
@@ -1826,7 +1825,7 @@ pparse_format_option (const struct Opt *opt,
   yy_delete_buffer( buffer );
 }
 
-static inline void
+static void
 pparse_format_regex (struct Opt *opt,
                      struct Seed *dst, char *input)
 {
@@ -1843,7 +1842,7 @@ pparse_format_regex (struct Opt *opt,
     warnln ("extra format was ignored");
 }
 
-static inline void
+static void
 pparse_keys_regex (struct Opt *opt,
                    struct Seed *dst, const char *input)
 {
