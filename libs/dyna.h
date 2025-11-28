@@ -19,7 +19,9 @@
   
     Dynamic Array (generic) implementation
     Based on `templates/slice.c` within this repository
-    * Macros in this library may evaluate parameters multiple times *
+
+    ** Macros in this library may evaluate parameters multiple times **
+    **   Do NOT use function calls in argument(s) of da_xxx macros   **
 
     Usage:
     ```c
@@ -52,7 +54,7 @@
       da_free (carr);
   
   
-      // C string array
+      // const C string array
       char **cstr = NULL;
   
       da_appd (cstr, "string0");
@@ -60,12 +62,12 @@
       da_appd (cstr, "string2");
 
 
-      // Generic struct array
+      // Struct array
       struct data {
         int index;
       };
-      struct data *arr = da_new (struct data);
-      // Copying local structs to @arr
+      struct data *arr = NULL;
+
       for (int i=0; i<7; ++i)
         {
           struct data tmp = {.index=i};
@@ -110,12 +112,14 @@
       `DA_INICAP`:  the default initial capacity of arrays
       `DA_DO_GRO`:  to define how arrays grow
       `DA_GFACT`:   growth factor (see the source code)
+      `DA_FORCE_MEMCPY`:
+                    to force using memcpy for assignments
   
     WARNING:
-     You should not attempt to append via `da_appd` macro
-     to pointers to a dynamic array, NOR use `da_appd`
-     from a different scope (e.g. another function);
-     as the reallocation of the primary array WILL fail.
+     The append macros should NOT be used to append to
+     pointers from a different scope (e.g. in a function)
+     as the reallocation of that pointer, will not update
+     the primary pointer (so make it dangling pointer).
 
      Solutions:
       * Using a wrapper struct
@@ -316,8 +320,8 @@ DYNADEF da_sidx __da_allocate (void **, int, int);
 
 /**
  *  Append to array macro
- *  @arr: the pointer that da_new has provided
- *  @val: value of type T, type of the array
+ *  @arr: pointer to the dynamic array
+ *  @val: value of type T, to be appended to @arr
  */
 #define da_appd(arr, val) do {                          \
     if (NULL == arr) arr = da_new (typeof (*(arr)));    \
