@@ -2103,7 +2103,7 @@ static Milexer ml = {
 size_t
 yy_getline (FILE *stream, char *buffer, size_t len)
 {
-  (void) stream;
+  (void) stream; /* interactive stream is most likely stdin */
   static char *tmp = NULL;
   if (tmp)
     free (tmp);

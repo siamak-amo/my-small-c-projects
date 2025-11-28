@@ -1258,9 +1258,6 @@ __register_context (RequestContext *dst)
   /**
    *  Generating URL
    *  based on opt.fuzz_template.URL
-   *
-   *  Libcurl automatically copies the URL (on CURLOPT_URL),
-   *  so we don't need to duplicate @tmp
    */
   if (opt.fuzz_flag & URL_HASFUZZ)
     {
