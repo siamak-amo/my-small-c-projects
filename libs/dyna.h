@@ -254,6 +254,20 @@ DYNADEF da_sidx __da_allocate (void **, int, int);
 
 #define DA_NNULL(arr) (NULL != arr)
 
+/**
+ *  If DA_FORCE_MEMCPY is defined, the da_xxx macros,
+ *  do NOT accept literals (e.g. da_appd(arr, 5) causes error)
+ */
+#ifndef DA_FORCE_MEMCPY
+   /* compilers should optimize this, for large @rval */
+#  define DA_ASSIGN(lptr, rval) (*(lptr) = (rval))
+#else
+#  define DA_ASSIGN(lptr, rval) do {                   \
+    if (sizeof (rval) <= sizeof (void *))              \
+      *(lptr) = rval;                                  \
+    else memcpy (lptr, &(rval), sizeof (rval));        \
+  } while (0)
+#endif
 
 /**
  **  External macros
@@ -329,11 +343,11 @@ DYNADEF da_sidx __da_allocate (void **, int, int);
   } while (0)
 
 /* _da_appd is not NULL safe */
-#define _da_appd(arr, val) do {                             \
-    da_sidx __da_idx__;                                     \
-    if ((__da_idx__ = __da_appd ((void **)&(arr))) != -1) { \
-      arr[__da_idx__] = (val);                              \
-    }} while (0)
+#define _da_appd(arr, val) do {                         \
+    da_sidx __da_idx__ = __da_appd ((void **)&(arr));   \
+    if (__da_idx__ != -1)                               \
+      DA_ASSIGN (arr + __da_idx__, val);                \
+  } while (0)
 
 /**
  *  Appends a C array to a dynamic array
