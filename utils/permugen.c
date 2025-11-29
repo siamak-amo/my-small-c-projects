@@ -391,7 +391,7 @@ struct Opt
   FILE *outf;
   char *prefix, *suffix; /* by malloc */
   char **seps; /* component separator(s) (Dynamic array) */
-  char *format;
+  char **formats; /* output format (Dynamic array) */
 
   /* Output stream buffer */
 #ifdef _USE_BIO
@@ -511,9 +511,9 @@ cleanup (int code, void *__opt)
     }
 
   if (opt->seps)
-    {
-      da_free (opt->seps);
-    }
+    da_free (opt->seps);
+  if (opt->formats)
+    da_free (opt->formats);
 
 #endif /* _CLEANUP_NO_FREE */
 }
@@ -996,15 +996,15 @@ static int
 regular_perm (struct Opt *opt)
 {
   int ret = 0;
-  int seeds_len = (int) da_sizeof (opt->reg_seeds);
+  struct Seed **seeds = opt->reg_seeds;
+  int seeds_len = (int) da_sizeof (seeds);
   int idxs_len_bytes = seeds_len * sizeof (int);
   int *tmp = malloc (idxs_len_bytes),
     *lengths = malloc (idxs_len_bytes);
 
   /* Initialize @lengths by length of each seed array */
   struct Seed *s = NULL;
-  for (int i=0; i < seeds_len &&
-         NULL != (s = opt->reg_seeds[i]); ++i)
+  for (int i=0; i < seeds_len && NULL != (s = seeds[i]); ++i)
     {
       int total = s->cseed_len + da_sizeof (s->wseed) - 1;
       if (total < 0)
@@ -1012,26 +1012,35 @@ regular_perm (struct Opt *opt)
       lengths[i] = total;
     }
 
-  /* Handle the output depth */
+  /* Handling output depth and format */
   int start = opt->depth.min;
   int end = opt->depth.max;
   ssize_t seps_len = da_sizeof (opt->seps);
+  ssize_t fmt_len = da_sizeof (opt->formats);
+  size_t  max_depth = da_sizeof (seeds);
 
-  for (int window = start; window <= end; ++window)
+  for (char **fmt = opt->formats; fmt_len != 0; ++fmt, --fmt_len)
     {
-      if (0 == window)
-        continue;
-      for (int offset = 0; offset + window <= seeds_len; ++offset)
+      if (*fmt)
+        pparse_format_option (opt, seeds, max_depth, *fmt);
+      for (int window = start; window <= end; ++window)
         {
-          for (ssize_t i=0; i < seps_len; ++i)
+          for (int offset = 0; offset + window <= seeds_len; ++offset)
             {
-              ret = __regular_perm (opt,
-                                    lengths, tmp,
-                                    window, offset,
-                                    opt->seps[i]);
-              if (0 != ret)
-                break;
+              for (ssize_t i=0; i < seps_len && 0 == ret; ++i)
+                {
+                  ret = __regular_perm (opt, lengths, tmp,
+                                        window, offset,
+                                        opt->seps[i]);
+                }
             }
+        }
+
+      /* Drop prefix, suffix of all seeds for the next iteration */
+      da_foreach (seeds, i)
+        {
+          safe_free (seeds[i]->pref); seeds[i]->pref = NULL;
+          safe_free (seeds[i]->suff); seeds[i]->suff = NULL;
         }
     }
 
@@ -1305,7 +1314,7 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
           opt->depth.max = atoi (optarg);
           break;
         case 'f':
-          opt->format = optarg;
+          da_appd (opt->formats, optarg);
           break;
 
           /* Only in normal mode */
@@ -1474,9 +1483,9 @@ opt_init (struct Opt *opt)
         }
     }
 
-  /* Output format */
-  if (opt->format)
-    pparse_format_option (opt, current_seed, max_depth, opt->format);
+  /* Default format, is empty */
+  if (! opt->formats)
+    da_appd (opt->formats, NULL);
 
   /* Initializing the output stream buffer */
 #ifndef _USE_BIO
