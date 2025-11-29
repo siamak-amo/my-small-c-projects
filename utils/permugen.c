@@ -90,9 +90,7 @@
        $ permugen -r  "{dev,prod}"  " -"
 
      * Output formatting:
-       Permugen supports format string similar to Python's f-strings
-       - Note: using this option in normal mode  or  using manual
-         prefix and suffix along with this option, is Undefined.
+       Permugen supports format strings similar to Python's f-strings
 
        - This substitutes the first `{}` in the format option
          with dev,prod  and  the second one with 0..5
@@ -103,6 +101,9 @@
          like "%4s" and "%-5s" in C
        $ permugen -r "{A, AA, AAA}"  "{BBB, BBBB, B}" \
                  --format "{:4}, {:-5}"
+
+       - Note: Using this option with depth (-d, --depth),
+         also along with custom prefix and suffix, is Undefined.
 
      * Manual output formatting:
        - Using global prefix and suffix:
@@ -352,18 +353,6 @@ static struct Milexer_exp_ Expressions[] =
 static struct Milexer_exp_ FormatExpressions[] =
   {
     [EXP_CURLY]          = {"{", "}"},
-  };
-
-/* Mini-Lexer seed option language */
-static Milexer SeedML =
-  {
-    .expression = GEN_MLCFG (Expressions),
-    .puncs      = GEN_MLCFG (Puncs),
-  };
-/* Mini-Lexer format option language */
-static Milexer FormatML =
-  {
-    .expression = GEN_MLCFG (FormatExpressions),
   };
 
 enum mode
@@ -1798,10 +1787,14 @@ static void
 pparse_format_option (const struct Opt *opt,
                       struct Seed **dst, int dst_len, char *input)
 {
+  /* Mini-Lexer format option language */
+  static Milexer FormatML = {
+    .expression = GEN_MLCFG (FormatExpressions),
+  };
   yyml = &FormatML;
-  YY_BUFFER_STATE *buffer = yy_scan_buffer( input, strlen (input) );
 
   char *prev_curly = input;
+  YY_BUFFER_STATE *buffer = yy_scan_buffer( input, strlen (input) );
   for (int i=0, type=0; i<dst_len && type != -1; type = yylex())
     {
       if (TK_EXPRESSION == type)
@@ -1939,8 +1932,14 @@ void
 parse_seed_regex (struct Opt *opt,
                   struct Seed *dst, char *input)
 {
-  int type = 0;
+  /* Mini-Lexer seed option language */
+  static Milexer SeedML = {
+    .expression = GEN_MLCFG (Expressions),
+    .puncs      = GEN_MLCFG (Puncs),
+  };
   yyml = &SeedML;
+
+  int type = 0;
   YY_BUFFER_STATE *buffer = yy_scan_buffer( input, strlen (input) );
   while ( (type = yylex()) != -1 )
     {
