@@ -238,22 +238,22 @@
     Milexer supports changing language dynamically at runtime,
     users can simply assign new item to the main struct:
       {
+        // Reset the entire punctuation's of the language
         static struct Milexer_exp_ NewPuncs[] = {
            [xxx] = {"x"}, ...
         };
-        ml.puncs = GEN_MLCFG (NewPuncs);
+        ML_SET (ml->puncs, NewPuncs);
+
+        // Eliminate the entire keywords from the language
+        ML_UNSET (ml->keywords);
       }
 
-    This assignment clears the @clean field of _exp_t struct,
-    and `ml_next` will update the necessary Milexer internals.
-    Changing the language in middle of yielding tokens chunks
-    (ret: NEXT_CHUNK) has no effect until the token is ready.
-
-    To manually change the language (without using GEN_MLCFG),
-    users must set the @clean field to false:
+     To manually change the language, the ML_MUTATE macro
+     should be used to mark the component, ensuring that
+     the next `ml_next` updates the necessary internals:
       {
-        ml.puncs.exp[0].begin = "??";     // changing the language
-        ml.puncs[0].clean = false;        // make it dirty
+        ml.puncs.exp[0].begin = "<";      // changing the language
+        ML_MUTATE (&ml.puncs[0]);         // force update
       }
 
  -- Flex compatibility ----------------------------------------------
@@ -381,6 +381,7 @@
 #define ml_free free
 #endif
 
+#define ML_LENOF(arr) (sizeof (arr) / sizeof ((arr)[0]))
 #define ML_STRLEN(cstr) ((cstr) ? strlen (cstr) : 0)
 
 typedef struct Milexer_exp_
@@ -719,25 +720,21 @@ typedef struct Milexer_t
 
 } Milexer;
 
-#define GEN_LENOF(arr) (sizeof (arr) / sizeof ((arr)[0]))
-#define GEN_MLCFG(exp_ptr) {.exp = exp_ptr, .len = GEN_LENOF (exp_ptr)}
-
-#define MLCFG_A_(s) (Milexer_AEXP) GEN_MLCFG (s)
-#define MLCFG_B_(s) (Milexer_BEXP) GEN_MLCFG (s)
+/**
+ *  To initialize Milexer struct fields
+ *  Ex:  `Milexer ml = { .punc = GEN_MLCFG (Puncs) };`
+ */
+#define GEN_MLCFG(exp_ptr) {.exp = exp_ptr, .len = ML_LENOF (exp_ptr)}
 
 /**
- *  To simply initialize Milexer internals, outside
- *  of the body of the struct, for example:
- *    ML.expression = MKEXP (Expressions);
- *    ML.punctuation = MKPUNC (Punctuations);
+ *  To change (set / unset) Milexer struct fields
+ *  Ex:  `ML_SET (ml.keywords, Keywords);`
  */
-#define MKEXP(exp) MLCFG_A_ (exp)
-#define MKPUNC(pun) MLCFG_B_ (pun)
-#define MKKEYWORD(keyw) MLCFG_B_ (key)
-#define MKCOMMENT_SL(c) MLCFG_B_ (c)
-#define MKCOMMENT_ML(c) MLCFG_A_ (c)
-
+#define ML_SET(field, val) (field = (typeof (field)) GEN_MLCFG (val))
 #define ML_UNSET(field) (field = (typeof (field)) {0})
+
+/* To force update internals of @ml_exp */
+#define ML_MUTATE(ml_exp) ((ml_exp)->clean = false)
 
 /**
  *  Disable/Enable feature macros
