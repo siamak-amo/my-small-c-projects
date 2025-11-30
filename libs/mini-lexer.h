@@ -53,7 +53,7 @@
           EXP_STR = 0,
           ...
           // single-line & multi-line comment
-          SL_SL_COMM_1 = 0,
+          COMM_SL_1 = 0,
           ...
           ML_SL_COMM_1 = 0,
           ...
@@ -64,7 +64,7 @@
         ...
       };
       static const char *SL_Comments[] = {
-        [SL_SL_COMM_1] = "#",
+        [COMM_SL_1] = "#",
         ...
       };
   
@@ -256,6 +256,9 @@
         ML_MUTATE (&ml.puncs[0]);         // force update
       }
 
+    Changing the language in the middle of yielding token chunks
+    (while getting NEXT_CHUNK), may lead to Undefined behavior.
+
  -- Flex compatibility ----------------------------------------------
     Although Milixer provides low-level access to it's internal
     tokens and configurations, some users might prefer to use
@@ -264,11 +267,11 @@
 
     Milixer implements a subset of Flex API which can be enabled
     using the ML_FLEX macro:
-      ```
+    ```
       #define ML_FLEX
       #define ML_IMPLEMENTATION
       #include "mini-lexer.h"
-      ```
+    ```
     If Flex is enabled, these global variables are available:
       yytext:   string of the current token
       yyleng:   strlen of yytext
@@ -317,8 +320,9 @@
     yylex_destroy call is required to free the internal stack.
 
     The yylex() function uses the internal getline function
-    yy_getline to read interactively from yyin. To use a custom
-    getline function, the YY_CUSTOM_GETLINE macro can be used.
+    `yy_getline` to read interactively from yyin.
+    To use a custom getline function, the YY_CUSTOM_GETLINE
+    macro can be used to redefine the getline function.
     See the EXAMPLE_2 program for a readline example.
     ```{c}
       #define YY_CUSTOM_GETLINE  // before include "mini-lexer.h"
@@ -333,7 +337,6 @@
         // maybe pint a prompt, and newline on Ctrl-D
       }
     ```
-
 
  -- Known Issues ----------------------------------------------------
     1. Unicode/UTF8 is NOT supported.
@@ -358,7 +361,7 @@
 #include <stdbool.h>
 #include <assert.h>
 
-#define MILEXER_VERSION "2.3"
+#define MILEXER_VERSION "2.4"
 
 #ifdef _ML_DEBUG
 #  include <stdio.h>
