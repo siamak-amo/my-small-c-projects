@@ -2018,12 +2018,12 @@ yylex (void)
 //-- The language ----------------------//
 enum LANG
   {
-    /* keywords */
-    LANG_IF = 0,
-    LANG_ELSE,
-    LANG_FI,
-    LANG_FILE,
-    /* punctuations */
+    /* Keywords */
+    KEY_IF = 0,
+    KEY_ELSE,
+    KEY_FI,
+    KEY_FILE,
+    /* Punctuations */
     PUNC_PLUS = 0,
     PUNC_MINUS,
     PUNC_MULT,
@@ -2031,23 +2031,23 @@ enum LANG
     PUNC_COMMA,
     PUNC_EQUAL,
     PUNC_NEQUAL,
-    /* expressions */
+    /* Expressions */
     EXP_PAREN = 0,
     EXP_CURLY,
     EXP_STR,
     EXP_STR2,
     EXP_LONG,
-    /* single-line comments */
-    SL_COMM_1 = 0,
-    SL_COMM_2,
-    /* multi-line comments */
-    ML_COMM_1 = 0,
+    /* Single-line comments */
+    COMM_S1 = 0,
+    COMM_S2,
+    /* Multi-line comments */
+    COMM_M1 = 0,
   };
 static const char *Keywords[] = {
-  [LANG_IF]         = "if",
-  [LANG_ELSE]       = "else",
-  [LANG_FI]         = "fi",
-  [LANG_FILE]       = "file",
+  [KEY_IF]         = "if",
+  [KEY_ELSE]       = "else",
+  [KEY_FI]         = "fi",
+  [KEY_FILE]       = "file",
 };
 static struct Milexer_exp_ Puncs[] = {
   [PUNC_PLUS]       = {"+"},
@@ -2066,11 +2066,11 @@ static struct Milexer_exp_ Expressions[] = {
   [EXP_LONG]        = {"<<", ">>"},
 };
 static const char *SL_Comments[] = {
-  [SL_COMM_1]          = "#",
-  [SL_COMM_2]          = "//",
+  [COMM_S1]         = "#",
+  [COMM_S2]         = "//",
 };
 static struct Milexer_exp_ ML_Comments[] = {
-  [ML_COMM_1]         = {"/*", "*/"},
+  [COMM_M1]         = {"/*", "*/"},
 };
 //-- Milexer main configuration --------//
 static Milexer ml = {
@@ -2127,26 +2127,21 @@ yy_getline (FILE *stream, char *buffer, size_t len)
 int
 main (void)
 {
-  FILE *f;
   int ret;
-
+  FILE *rd_file;
   /* Set the language */
   yyml = &ml;
-
   /* Read tokens from stdin */
   while ( (ret = yylex() ) != -1)
     {
-      printf ("Token[%.*s]: '%s'\n",
-              3, ml_token_type_cstr[ret],
-              yytext);
-
+      printf ("Token[%.*s]:  ", 3, ml_token_type_cstr[ret]);
       if ( TK_KEYWORD == ret )
         switch (yyid)
           {
-          case LANG_IF:    puts ("[IF]");   break;
-          case LANG_ELSE:  puts ("[ELSE]"); break;
-          case LANG_FI:    puts ("[FI]");   break;
-          case LANG_FILE:
+          case KEY_IF:    puts ("[IF]");   break;
+          case KEY_ELSE:  puts ("[ELSE]"); break;
+          case KEY_FI:    puts ("[FI]");   break;
+          case KEY_FILE:
             {
               puts("-- lexing file ------------------------------");
               ML_DISABLE( &Puncs[PUNC_COMMA] ); // file paths may contain comma
@@ -2155,16 +2150,16 @@ main (void)
               ret = yylex(); /* get the next token as filepath */
               if (-1 == ret)
                 break;
-              if ((f = fopen (yytext, "r")))
+              if ((rd_file = fopen (yytext, "r")))
                 {
-                  yy_restart( f );
+                  yy_restart( rd_file );
                   while ( (ret = yylex() ) != -1)
                     {
-                      printf ("-- token[%.*s]: {%s}\n",
+                      printf ("-  token[%.*s]: %s\n",
                               3, ml_token_type_cstr[ret],
                               yytext);
                     }
-                  fclose (f);
+                  fclose (rd_file);
                 }
               else
                 {
@@ -2176,7 +2171,12 @@ main (void)
               puts ("-- EOF --------------------------------------");
             }
             break;
+
+          default:
+            printf ("%s\n", yytext); break;
           }
+      else
+        printf ("%s\n", yytext);
     }
 
   yylex_destroy ();
