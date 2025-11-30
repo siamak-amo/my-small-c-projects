@@ -739,16 +739,16 @@ typedef struct Milexer_t
 /**
  *  Disable/Enable feature macros
  *    for basic expressions:
- *      ML_DISABLE(ml.keywords)
+ *      ML_DISABLE (ml.keywords)
  *    for advanced expressions:
- *      ML_DISABLE(ml.expressions.exp[.n])
+ *      ML_DISABLE (ml.expressions.exp[.n])
  *    Or disable all of them at once:
- *      ML_DISABLE(ml.expressions)
+ *      ML_DISABLE (ml.expressions)
  */
-#define ML_DISABLE(field, ...) __SET_DISABLE (field, true)
-#define ML_ENABLE(field, ...) __SET_DISABLE (field, false)
+#define ML_DISABLE(field) __ML_SET_DEACTIVATE (field, true)
+#define ML_ENABLE(field) __ML_SET_DEACTIVATE (field, false)
 
-#define __SET_DISABLE(field, v, ...) ((field)->disabled = v)
+#define __ML_SET_DEACTIVATE(field, v) ((field)->disabled = v)
 
 /**
  *  Retrieves the next token
