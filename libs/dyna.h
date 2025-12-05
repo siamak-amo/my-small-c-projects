@@ -163,6 +163,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <assert.h>
 
 #define DynaVersion "2.1"
 
@@ -186,7 +187,10 @@ typedef struct
   da_idx cell_bytes; /* size of each cell */
 
   /* Actual bytes of array */
-  char arr[] __attribute__((aligned(8)));
+  union {
+    char arr[];
+    void *__dummy; /* alignment */
+  } x;
 } dyna_t;
 
 #ifdef _DA_DEBUG
@@ -238,8 +242,8 @@ typedef struct
  *  This macro, gives a pointer to the 'parent'
  *  struct of @arr the array pointer
  */
-# define DA_CONTAINEROF(ptr) \
-  ((dyna_t *)((char *)(ptr) - DA_OFFSETOF (arr)))
+# define DA_CONTAINEROF(da_ptr) \
+  ((dyna_t *)((char *)(da_ptr) - DA_OFFSETOF (x.arr)))
 
 /**
  *  Users normally don't use these functions
@@ -303,7 +307,7 @@ DYNADEF da_sidx __da_allocate (void **, int, int);
  */
 #define da_new(T) da_newn (T, DA_INICAP)
 #define da_newn(T, n) \
-  ((T *)( ( (dyna_t *) __mk_da (sizeof (T), n) )->arr ))
+  ((T *)( ( (dyna_t *) __mk_da (sizeof (T), n) )->x.arr ))
 
 /**
  *  Duplicate a dynamic array
@@ -439,6 +443,9 @@ __mk_da(da_sidx cell_size, da_sidx n)
               (size_t) sizeof (dyna_t),
               (size_t) (cell_size * n),
               da);
+
+  assert (0 == ((uintptr_t) da->x.arr % (sizeof (void *))) &&
+          "Broken alignment!"); /* this should be unreachable */
   return da;
 }
 
@@ -451,7 +458,7 @@ __da_allocate (void **arr, int n, int cell_bytes)
   if (! *arr)
     {
       da = __mk_da (cell_bytes, n);
-      *arr = da->arr;
+      *arr = da->x.arr;
     }
   else if (!(da = DA_CONTAINEROF (*arr)))
     return -1;
@@ -469,7 +476,7 @@ __da_allocate (void **arr, int n, int cell_bytes)
         da = dyna_realloc (da, new_size);
         if (!da)
           return -1;
-        *arr = da->arr;
+        *arr = da->x.arr;
       }
       da_dprintf ("Reallocated, new capacity: %lu\n",
                   (size_t) da->cap);
@@ -498,7 +505,7 @@ __da_appd (void **arr)
         da = dyna_realloc (da, new_size);
         if (!da)
           return -1;
-        *arr = da->arr;
+        *arr = da->x.arr;
       }
       da_dprintf ("Reallocated, new capacity: %lu\n",
                   (size_t) da->cap);
@@ -524,7 +531,7 @@ __da_dup (void **arr)
   size_t lenof_da = da->size * da->cell_bytes + sizeof (dyna_t);
   dyna_t *new_da = malloc (lenof_da);
   memcpy (new_da, da, lenof_da);
-  return &new_da->arr;
+  return &new_da->x.arr;
 }
 
 #endif /* DYNA_IMPLEMENTATION */
