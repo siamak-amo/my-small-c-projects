@@ -256,7 +256,6 @@ DYNADEF void * __da_aappd (void **, da_sidx);
 DYNADEF void * __da_dup (void **);
 DYNADEF da_sidx __da_allocate (void **, int, int);
 
-#define DA_NNULL(arr) (NULL != arr)
 
 /**
  *  If DA_FORCE_MEMCPY is defined, the da_xxx macros,
@@ -281,7 +280,7 @@ DYNADEF da_sidx __da_allocate (void **, int, int);
 
 // To free dynamic array @arr
 #define da_free(arr) do {                           \
-    if (DA_NNULL (arr)) {                           \
+    if (NULL != arr) {                              \
       dyna_t *__da__ = DA_CONTAINEROF (arr);        \
       da_dprintf ("Destroying dyna @%p\n", __da__); \
       dyna_free (__da__);                           \
@@ -289,13 +288,13 @@ DYNADEF da_sidx __da_allocate (void **, int, int);
 
 // To get length and capacity of @arr
 #define da_sizeof(arr) \
-  (DA_NNULL (arr) ? DA_CONTAINEROF (arr)->size : 0)
+  ((NULL != arr) ? DA_CONTAINEROF (arr)->size : 0)
 #define da_capof(arr) \
-  (DA_NNULL (arr) ? DA_CONTAINEROF (arr)->cap : 0)
+  ((NULL != arr) ? DA_CONTAINEROF (arr)->cap : 0)
 
 // Gives how many cells left until the next reallocation (at overflow)
 #define da_leftof(arr) \
-  (DA_NNULL (arr) ? (da_sidx)da_capof (arr) - (da_sidx)da_sizeof (arr) : 0)
+  ((NULL != arr) ? (da_sidx) da_capof (arr) - (da_sidx) da_sizeof (arr) : 0)
 
 /**
  *  Create a new dynamic array
@@ -315,18 +314,7 @@ DYNADEF da_sidx __da_allocate (void **, int, int);
  *  which is a duplicate of @arr
  *  this also must be freed via `da_free`
  */
-#define da_dup(arr) (DA_NNULL (arr) ? __da_dup ((void **)&arr) : NULL)
-
-/**
- *  For loop macro
- *  usage:
- *    `da_for (arr, index, 0, index++) { arr[index]; }`
- */
-#define da_for(__DA__, __IDX_NAME__, __IDX_START__, __IDX_NEXT__)   \
-  for (da_idx __IDX_NAME__ = __IDX_START__,                         \
-         __max_idx__ = da_sizeof (__DA__);                          \
-       __IDX_NAME__ < __max_idx__;                                  \
-       __IDX_NEXT__)
+#define da_dup(arr) ((NULL != arr) ? __da_dup ((void **)&(arr)) : NULL)
 
 /**
  *  For each macro
@@ -334,7 +322,13 @@ DYNADEF da_sidx __da_allocate (void **, int, int);
  *  It translates to a simple `for` statement
  */
 #define da_foreach(__DA__, __IDX_NAME__) \
-  da_for (__DA__, __IDX_NAME__, 0, ++(__IDX_NAME__))
+  _da_for (__DA__, __IDX_NAME__, ++(__IDX_NAME__))
+
+#define _da_for(__DA__, __IDX_NAME__, __IDX_NEXT__)                 \
+  for (da_idx __IDX_NAME__ = 0,                                     \
+         __max_idx__ = da_sizeof (__DA__);                          \
+       __IDX_NAME__ < __max_idx__;                                  \
+       __IDX_NEXT__)
 
 /**
  *  Append to array macro
@@ -397,7 +391,7 @@ DYNADEF da_sidx __da_allocate (void **, int, int);
  *  but will not free it's memory
  */
 #define da_drop(arr) do {                           \
-    if (DA_NNULL (arr)) {                           \
+    if (NULL != arr) {                              \
       dyna_t *__da__ = DA_CONTAINEROF (arr);        \
       __da__->size = 0;                             \
     }} while (0)
@@ -575,7 +569,6 @@ get_user_input (Opt *opt)
 int
 main (void)
 {
-  /* As inputs is NULL, we don't need da_new */
   Opt opt = {0};
 
   get_user_input (&opt);
