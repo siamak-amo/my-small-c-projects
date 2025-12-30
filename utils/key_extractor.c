@@ -407,9 +407,9 @@ kinit (void)
 {
   /* Initialize ML expressions */
   if (HAS_FLG (kflags, C_JAVASCRIPT))
-    ML.expression = MKEXP (Expressions_JS);
+	ML_SET (ML.expression, Expressions_JS);
   else
-    ML.expression = MKEXP (Expressions);
+	ML_SET (ML.expression, Expressions);
 
   /* Default output configuration */
   if (! HAS_FLG (kflags, O_PROVIDED))
@@ -433,7 +433,7 @@ kinit (void)
     }
   else
     {
-      for (size_t i=0; i < GEN_LENOF (Delimiters); ++i)
+      for (size_t i=0; i < ML_LENOF (Delimiters); ++i)
         da_appd (Extra_Delims, Delimiters[i]);
       ML.delim_ranges.exp = Extra_Delims;
     }
@@ -452,7 +452,7 @@ kinit (void)
        *  Append string all prefixes to Milexer delimiters
        *  so, they will no appear in the output
        */
-      for (size_t i=0; i < GEN_LENOF (Expressions); ++i)
+      for (size_t i=0; i < ML_LENOF (Expressions); ++i)
         da_appd (Extra_Delims, Expressions[i].begin);
     }
 
