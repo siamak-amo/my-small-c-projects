@@ -105,6 +105,20 @@
        - Note: Using this option with depth (-d, --depth),
          also along with custom prefix and suffix, is Undefined.
 
+     * Shallow Seeds (Seed Pointer):
+       A shallow seed is a pointer to another seed or a null seed,
+       which can be defined using `*`.
+       - To define the second seed as null:
+       $ permugen -r "{A,B}" "*" "[a-b]"
+
+       When `*` is used, all given seed configurations will be skipped,
+       except for the `\N` shortcut, which has a different meaning.
+
+       - In the following example, the second component of the output
+         is always the same as the first component:
+       $ permugen -r "{user,admin}"   "* \1"   "{asp,php}" \
+                  -f "https://x.com/{}/{}_portal.{}"
+
      * Manual output formatting:
        - Using global prefix and suffix:
        $ permugen -s "[0-2]"  --prefix '('  --suffix ')'
@@ -143,7 +157,7 @@
 #include <errno.h>
 
 #define PROGRAM_NAME "permugen"
-#define Version "2.20"
+#define Version "2.21"
 
 #define CLI_IMPLEMENTATION
 #include "clistd.h"
@@ -324,10 +338,9 @@ struct Seed
   int padding;
 };
 
-/* To make new seed and dynamic seed array */
+/* To allocate and free seed and seed array */
 static inline struct Seed * mk_seed (int c_len, int w_len);
 #define mk_seed_arr(n) da_newn (struct Seed *, n)
-/* To free the seed @s, allocated by the mk_seed function */
 static inline void free_seed (struct Seed *s);
 
 /**
@@ -1172,7 +1185,6 @@ fnscans (char *buff, int len, FILE *stream)
  */
 static inline int
 wseed_getline (char *buff, int len, FILE *stream, int flags)
-  
 {
   if (feof (stream))
     return EOF;
