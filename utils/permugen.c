@@ -309,6 +309,10 @@ const struct option lopts[] =
 /* Seed container */
 struct Seed
 {
+  /* Positive seed_type, indicates shallow seed number (1+index)
+     Negative value indicates null shallow seed */
+  int seed_type;
+
   /* Character seeds */
   char *cseed;
   int cseed_len;
@@ -900,10 +904,9 @@ __regular_perm (struct Opt *opt,
   int ret;
   /* permutation indexes */
   memset (idxs, 0, size * sizeof (int));
-
   /* Offset of @depths also must apply to seeds */
   lens += offset;
-  struct Seed **s = opt->reg_seeds + offset;
+  struct Seed **reg_seeds = opt->reg_seeds + offset;
 
   /**
    *  O(S_m * ... * S_n)
@@ -919,38 +922,51 @@ __regular_perm (struct Opt *opt,
 
  Print_Loop: /* O(S_i) */
   {
-    int idx = idxs[i];
-    current_seed = s[i];
+    int idx;
+    current_seed = reg_seeds[i];
+    const struct Seed *s = current_seed;
+    if (current_seed->seed_type > 0)
+      {
+        int __i = current_seed->seed_type - 1;
+        idx = idxs[__i];
+        s = reg_seeds[__i];
+      }
+    else if (s->seed_type < 0)
+      goto after_print_internal; /* Null shallow seed */
+    else
+      idx = idxs[i];
+
     if (current_seed->pref)
       Fputs (current_seed->pref, opt);
-    if (idx < current_seed->cseed_len)
+    if (idx < s->cseed_len)
       {
         /* Range of character seeds */
-        Fprintc (current_seed->cseed[idx], current_seed->padding, opt);
+        Fprintc (s->cseed[idx], s->padding, opt);
       }
     else
       {
         /* Range of word seeds */
-        idx -= current_seed->cseed_len;
-        Fprints (current_seed->wseed[idx], current_seed->padding, opt);
+        idx -= s->cseed_len;
+        Fprints (s->wseed[idx], s->padding, opt);
       }
+  after_print_internal:
     i++;
+    if (current_seed->suff)
+      Fputs (current_seed->suff, opt);
+    if (i < size)
+      {
+        if (sep)
+          {
+            /**
+             *  Print the separator only when the current seed
+             *  has no suffix (suffix must overwrite the separator)
+             */
+            if (!current_seed->suff || *current_seed->suff == '\0')
+              Fputs (sep, opt);
+          }
+        goto Print_Loop;
+      }
   }
-  if (current_seed->suff)
-    Fputs (current_seed->suff, opt);
-  if (i < size)
-    {
-      if (sep)
-        {
-          /**
-           *  Print the separator only when the current seed
-           *  has no suffix (suffix must overwrite the separator)
-           */
-          if (!current_seed->suff || *current_seed->suff == '\0')
-            Fputs (sep, opt);
-        }
-      goto Print_Loop;
-    }
   /* End of Printing of the current permutation */
   if (opt->suffix)
     Puts (opt->suffix, opt);
@@ -1006,10 +1022,13 @@ regular_perm (struct Opt *opt)
   struct Seed *s = NULL;
   for (int i=0; i < seeds_len && NULL != (s = seeds[i]); ++i)
     {
-      int total = s->cseed_len + da_sizeof (s->wseed) - 1;
-      if (total < 0)
-        goto _return; /* Unreachable */
-      lengths[i] = total;
+      if (0 != s->seed_type)
+        lengths[i] = 0;
+      else
+        {
+          int total = s->cseed_len + da_sizeof (s->wseed) - 1;
+          lengths[i] = MAX (total, 0);
+        }
     }
 
   /* Handling output depth and format */
@@ -1044,7 +1063,6 @@ regular_perm (struct Opt *opt)
         }
     }
 
- _return:
   safe_free (tmp);
   safe_free (lengths);
   return ret;
@@ -1385,7 +1403,7 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
                     optind++;
                     struct Seed *tmp = mk_seed (CSEED_MAXLEN, 1);
                     parse_seed_regex (opt, tmp, argv[i]);
-                    if (tmp->cseed_len == 0 && da_sizeof (tmp->wseed) == 0)
+                    if (tmp->seed_type == 0 && tmp->cseed_len == 0 && da_sizeof (tmp->wseed) == 0)
                       {
                         warnln ("empty regular seed configuration was ignored");
                         free_seed (tmp);
@@ -1849,11 +1867,14 @@ pparse_keys_regex (struct Opt *opt,
                    struct Seed *dst, const char *input)
 {
   char *path;
+  if ('*' == *input) /* Shallow seed */
+    dst->seed_type = -1, ++input;
 
   for (; '\\' == *input; ++input)
     {
+      if ('\0' == *(++input))
+        break;
       /* Handle '\N' where N is index of a seed */
-      input++;
       if (REGULAR_MODE != opt->mode && IS_DIGIT (*input))
         {
           warnln ("regular mode specific shortcut \\%c was ignored", *input);
@@ -1864,7 +1885,7 @@ pparse_keys_regex (struct Opt *opt,
           int n = strtol (input, NULL, 10) - 1;
           if (n == opt->reg_seeds_len)
             {
-              warnln ("circular append was ignored");
+              warnln ("circular reference to seed #%d was ignored", n+1);
               continue;
             }
           else if (n >= opt->reg_seeds_len)
@@ -1879,6 +1900,11 @@ pparse_keys_regex (struct Opt *opt,
             }
           else /* valid index */
             {
+              if (0 != dst->seed_type)
+                { /* shallow seed */
+                  dst->seed_type = n+1;
+                  continue;
+                }
               struct Seed *src = opt->reg_seeds[n];
               cseed_uniappd (dst, src->cseed, src->cseed_len);
               da_foreach (src->wseed, i)
