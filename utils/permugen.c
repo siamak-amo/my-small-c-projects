@@ -24,7 +24,6 @@
       For more details, use the `-h` option:
       $ permugen --help
 
-
     Normal Mode:
       $ permugen [OPTIONS] -s [SEED_CONFIG]
       Cartesian product of the input with a certain depth
@@ -98,9 +97,9 @@
                  --format "https://{}.api.com/file_{}.txt"
 
        - This option, also supports left and right paddings
-         like "%4s" and "%-5s" in C
+         like "%4s" and "%-5s" in C:
        $ permugen -r "{A, AA, AAA}"  "{BBB, BBBB, B}" \
-                 --format "{:4}, {:-5}"
+                 --format "|{:4} | {:-5}|"
 
        - Note: Using this option with depth (-d, --depth),
          also along with custom prefix and suffix, is Undefined.
@@ -108,7 +107,7 @@
      * Shallow Seeds (Seed Pointer):
        A shallow seed is a pointer to another seed or a null seed,
        which can be defined using `*`.
-       - To define the second seed as null:
+       - To define the second seed as null seed:
        $ permugen -r "{A,B}" "*" "[a-b]"
 
        When `*` is used, all given seed configurations will be skipped,
@@ -157,7 +156,7 @@
 #include <errno.h>
 
 #define PROGRAM_NAME "permugen"
-#define Version "2.21"
+#define Version "2.22"
 
 #define CLI_IMPLEMENTATION
 #include "clistd.h"
@@ -342,11 +341,12 @@ struct Seed
 static inline struct Seed * mk_seed (int c_len, int w_len);
 #define mk_seed_arr(n) da_newn (struct Seed *, n)
 static inline void free_seed (struct Seed *s);
+/* Is seed reference to another seed */
+#define IS_REF_SEED(s) ((s)->seed_type != 0)
+/* NULL seed reference */
+#define NULL_REF_SEED (-1)
 
-/**
- *  Mini-Lexer language
- *  Introduce argument regex parser
- */
+/* Mini-Lexer languag */
 enum LANG
   {
     PUNC_COMMA = 0,
@@ -358,18 +358,18 @@ enum LANG
 
 static struct Milexer_exp_ Puncs[] =
   {
-    [PUNC_COMMA]         = {",", .disabled=true},
+    [PUNC_COMMA]         = {.begin=",", .disabled=true},
   };
 
 static struct Milexer_exp_ Expressions[] =
   {
-    [EXP_CURLY]          = {"{", "}"},
-    [EXP_PAREN]          = {"(", ")"},
-    [EXP_BRACKET]        = {"[", "]"},
+    [EXP_CURLY]          = {.begin="{", .end="}"},
+    [EXP_PAREN]          = {.begin="(", .end=")"},
+    [EXP_BRACKET]        = {.begin="[", .end="]"},
   };
 static struct Milexer_exp_ FormatExpressions[] =
   {
-    [EXP_CURLY]          = {"{", "}"},
+    [EXP_CURLY]          = {.begin="{", .end="}"},
   };
 
 enum mode
@@ -640,7 +640,7 @@ __fputc (char c, struct Opt *, const struct print_info *info);
 void
 usage (int ecode)
 {
-  fprintf (stdout,"\
+  fprintf (stderr,"\
 %s %s, permutation generator utility\n\n\
 Usage:\n\
   normal mode: any possible permutation of given seed(s)\n\
@@ -680,7 +680,8 @@ OPTIONS:\n\
       -s, --seed              to configure global seeds (see ARGUMENTS)\n\
           --raw-seed          to configure character seeds\n\
           --raw-wseed         to add a single word to global seeds\n\
-\n\
+\n", program_name, Version); // ISO C99 compilers are required to support strlen 4095
+  fprintf (stderr,"\
 ARGUMENTS:\n\
   All argument values will be backslash-interpreted by default\n\
   disable this feature with `-E'\n\
@@ -729,8 +730,7 @@ ARGUMENTS:\n\
        \\x:  for \\t, \\v, \\r, \\a, \\b, \\f, \\n \n\
      \\xHH:  byte with hexadecimal value HH (1 to 2 digits)\n\
     \\0NNN:  byte with octal value NNN (1 to 3 digits)\n\
-"
-           , program_name, Version);
+");
 
   if (ecode >= 0)
     exit (ecode);
@@ -949,7 +949,7 @@ __regular_perm (struct Opt *opt,
         idx = idxs[__i];
         s = reg_seeds[__i];
       }
-    else if (s->seed_type < 0)
+    else if (NULL_REF_SEED == s->seed_type)
       goto after_print_internal; /* Null shallow seed */
     else
       idx = idxs[i];
@@ -1040,7 +1040,7 @@ regular_perm (struct Opt *opt)
   struct Seed *s = NULL;
   for (int i=0; i < seeds_len && NULL != (s = seeds[i]); ++i)
     {
-      if (0 != s->seed_type)
+      if (IS_REF_SEED(s))
         lengths[i] = 0;
       else
         {
@@ -1303,10 +1303,10 @@ opt_regular_getopt (int argc, char **argv, struct Opt *opt)
         }
 
       struct Seed *s = opt->reg_seeds[i];
-      if (0 == s->seed_type && 0 == s->cseed_len && 0 == da_sizeof (s->wseed))
+      if (!IS_REF_SEED(s) && 0 == s->cseed_len && 0 == da_sizeof (s->wseed))
         {
           warnln("empty regular seed #%d was set to NULL seed", i+1);
-          s->seed_type = -1;
+          s->seed_type = NULL_REF_SEED;
         }
     }
   return 0;
@@ -1925,20 +1925,20 @@ pparse_reference_regex (struct Opt *opt, int dst_idx, const char *input)
             }
           else /* valid index */
             {
-              if (0 != dst->seed_type)
+              if (IS_REF_SEED(dst))
                 { /* shallow seed */
-                  if (0 == opt->reg_seeds[n]->seed_type)
-                    dst->seed_type = n+1;
-                  else
+                  if (IS_REF_SEED (opt->reg_seeds[n]))
                     {
                       warnln ("invalid reference, seed #%d itself is shallow", n+1);
-                      dst->seed_type = -1;
+                      dst->seed_type = NULL_REF_SEED;
                     }
+                  else
+                    dst->seed_type = n+1;
                 }
               else
                 {
                   struct Seed *src = opt->reg_seeds[n];
-                  if (0 != src->seed_type)
+                  if (IS_REF_SEED (src))
                     warnln ("cannot append from shallow seed #%d", n+1);
                   else
                     {
@@ -2027,7 +2027,7 @@ parse_seed_regex (struct Opt *opt,
         case TK_KEYWORD:
           {
             if ('*' == *input) /* shallow seed */
-              dst->seed_type = -1;
+              dst->seed_type = NULL_REF_SEED;
             else if ('-' == *yytext)  /* read from stdin */
               wseed_file_uniappd (opt, dst, stdin);
             else /* file path or shortcut */
