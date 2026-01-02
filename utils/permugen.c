@@ -586,13 +586,18 @@ static void
 pparse_cseed_regex (struct Opt *opt,
                     struct Seed *dst, char *input);
 
-/**
- *  Detects file paths, previous seed indexes (\N)
- *  and other shortcuts like: '\d', '\u' and '\1'
+/** pparse_keys_regex:
+ *    Detects file paths and other shortcuts like: '\d', '\u'
+ *  pparse_reference_regex:
+ *    Detects references to other seeds like \N (starting from 1)
+ *    It should be called at the end of parsing, when all seeds
+ *    are available and initialized.
  */
 static void
 pparse_keys_regex (struct Opt *opt,
                    struct Seed *dst, const char *input);
+static void
+pparse_reference_regex (struct Opt *opt, int dst_idx, const char *input);
 
 /**
  *  Initializes @dst->prefix/suffix (if NULL), via malloc
@@ -1262,6 +1267,52 @@ wseed_file_uniappd (const struct Opt *opt,
 }
 
 static int
+opt_regular_getopt (int argc, char **argv, struct Opt *opt)
+{
+  int end_of_options = 0, last_reg_arg = 0;
+  for (int i=0; i < argc; ++i, ++last_reg_arg)
+    {
+      if (*argv[i] == '-' && !end_of_options)
+        {
+          if (Strcmp (argv[i], "-"))
+            {
+              optind++;
+              end_of_options = true;
+            }
+          else /* End of `-r` arguments */
+            break;
+        }
+      else
+        {
+          optind++;
+          struct Seed *tmp = mk_seed (CSEED_MAXLEN, 1);
+          parse_seed_regex (opt, tmp, argv[i]);
+          opt->reg_seeds_len++;
+          da_appd (opt->reg_seeds, tmp);
+        }
+    }
+
+  /* parsing again to handle references */
+  for (int i=0; i < last_reg_arg; ++i)
+    {
+      for (char *p = argv[i], *ref = NULL; NULL != p; p = ref + 1)
+        {
+          if (!(ref = strchr (p, '\\')))
+            break;
+          pparse_reference_regex (opt, i, ref);
+        }
+
+      struct Seed *s = opt->reg_seeds[i];
+      if (0 == s->seed_type && 0 == s->cseed_len && 0 == da_sizeof (s->wseed))
+        {
+          warnln("empty regular seed #%d was set to NULL seed", i+1);
+          s->seed_type = -1;
+        }
+    }
+  return 0;
+}
+
+static int
 opt_getopt (int argc, char **argv, struct Opt *opt)
 {
   int idx = 0;
@@ -1388,45 +1439,12 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
         case 'r':
           NOT_IN_REGULAR_MODE ();
           {
-            int end_of_options = 0;
             opt->using_default_seed = 0;
             opt->mode = REGULAR_MODE;
             if (opt->reg_seeds)
               break;
             opt->reg_seeds = mk_seed_arr (1);
-
-            for (int i=optind; i < argc; ++i)
-              {
-                if (*argv[i] == '-' && !end_of_options)
-                  {
-                    if (argv[i][1] == '-' && argv[i][2] == '\0')
-                      {
-                        optind++;
-                        end_of_options = 1;
-                      }
-                    else
-                      {
-                        /* End of `-r` arguments */
-                        break;
-                      }
-                  }
-                else
-                  {
-                    optind++;
-                    struct Seed *tmp = mk_seed (CSEED_MAXLEN, 1);
-                    parse_seed_regex (opt, tmp, argv[i]);
-                    if (tmp->seed_type == 0 && tmp->cseed_len == 0 && da_sizeof (tmp->wseed) == 0)
-                      {
-                        warnln ("empty regular seed configuration was ignored");
-                        free_seed (tmp);
-                      }
-                    else
-                      {
-                        opt->reg_seeds_len++;
-                        da_appd (opt->reg_seeds, tmp);
-                      }
-                  }
-              }
+            opt_regular_getopt (argc - optind, argv + optind, opt);
           }
           break;
 
@@ -1875,18 +1893,13 @@ pparse_format_regex (struct Opt *opt,
 }
 
 static void
-pparse_keys_regex (struct Opt *opt,
-                   struct Seed *dst, const char *input)
+pparse_reference_regex (struct Opt *opt, int dst_idx, const char *input)
 {
-  char *path;
-  if ('*' == *input) /* Shallow seed */
-    dst->seed_type = -1, ++input;
-
+  struct Seed *dst = opt->reg_seeds[dst_idx];
   for (; '\\' == *input; ++input)
     {
       if ('\0' == *(++input))
         break;
-      /* Handle '\N' where N is index of a seed */
       if (REGULAR_MODE != opt->mode && IS_DIGIT (*input))
         {
           warnln ("regular mode specific shortcut \\%c was ignored", *input);
@@ -1895,7 +1908,7 @@ pparse_keys_regex (struct Opt *opt,
       if (REGULAR_MODE == opt->mode && IS_DIGIT (*input))
         {
           int n = strtol (input, NULL, 10) - 1;
-          if (n == opt->reg_seeds_len)
+          if (n == dst_idx)
             {
               warnln ("circular reference to seed #%d was ignored", n+1);
               continue;
@@ -1914,14 +1927,26 @@ pparse_keys_regex (struct Opt *opt,
             {
               if (0 != dst->seed_type)
                 { /* shallow seed */
-                  dst->seed_type = n+1;
-                  continue;
+                  if (0 == opt->reg_seeds[n]->seed_type)
+                    dst->seed_type = n+1;
+                  else
+                    {
+                      warnln ("invalid reference, seed #%d itself is shallow", n+1);
+                      dst->seed_type = -1;
+                    }
                 }
-              struct Seed *src = opt->reg_seeds[n];
-              cseed_uniappd (dst, src->cseed, src->cseed_len);
-              da_foreach (src->wseed, i)
+              else
                 {
-                  wseed_uniappd (opt, dst, src->wseed[i]);
+                  struct Seed *src = opt->reg_seeds[n];
+                  if (0 != src->seed_type)
+                    warnln ("cannot append from shallow seed #%d", n+1);
+                  else
+                    {
+                      cseed_uniappd (dst, src->cseed, src->cseed_len);
+                      da_foreach (src->wseed, i) {
+                        wseed_uniappd (opt, dst, src->wseed[i]);
+                      }
+                    }
                 }
             }
           continue;
@@ -1949,7 +1974,14 @@ pparse_keys_regex (struct Opt *opt,
           warnln ("invalid shortcut \\%c was ignored", *input);
         }
     }
+}
 
+static void
+pparse_keys_regex (struct Opt *opt,
+                   struct Seed *dst, const char *input)
+{
+  char *path;
+  while ('\\' == *input) input++;
   switch (*input)
     {
     case '\0':
@@ -1994,9 +2026,11 @@ parse_seed_regex (struct Opt *opt,
         {
         case TK_KEYWORD:
           {
-            if ('-' == *yytext)  /* Read from stdin */
+            if ('*' == *input) /* shallow seed */
+              dst->seed_type = -1;
+            else if ('-' == *yytext)  /* read from stdin */
               wseed_file_uniappd (opt, dst, stdin);
-            else /* Shortcut or read from file path */
+            else /* file path or shortcut */
               pparse_keys_regex (opt, dst, yytext);
             break;
           }
