@@ -1829,7 +1829,7 @@ yy_set_global (YY_BUFFER_STATE *b)
     }
 }
 
-inline YY_BUFFER_STATE *
+YY_BUFFER_STATE *
 yy_scan_buffer (char *base, size_t size)
 {
   YY_BUFFER_STATE *b = yy_alloc_buffer ();

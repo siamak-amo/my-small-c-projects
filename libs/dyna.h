@@ -187,10 +187,13 @@ typedef struct
   da_idx cell_bytes; /* size of each cell */
 
   /* Actual bytes of array */
-  union {
-    char arr[];
-    void *__dummy; /* alignment */
-  } x;
+#if defined(__GNUC__) || defined(__clang__)
+  char arr[] __attribute__((aligned(8)));
+#else
+  void *__dummy; /* for alignment */
+  char arr[];
+#endif
+
 } dyna_t;
 
 #ifdef _DA_DEBUG
@@ -243,7 +246,7 @@ typedef struct
  *  struct of @arr the array pointer
  */
 # define DA_CONTAINEROF(da_ptr) \
-  ((dyna_t *)((char *)(da_ptr) - DA_OFFSETOF (x.arr)))
+  ((dyna_t *)((char *)(da_ptr) - DA_OFFSETOF (arr)))
 
 /**
  *  Users normally don't use these functions
@@ -306,7 +309,7 @@ DYNADEF da_sidx __da_allocate (void **, int, int);
  */
 #define da_new(T) da_newn (T, DA_INICAP)
 #define da_newn(T, n) \
-  ((T *)( ( (dyna_t *) __mk_da (sizeof (T), n) )->x.arr ))
+  ((T *)( ( (dyna_t *) __mk_da (sizeof (T), n) )->arr ))
 
 /**
  *  Duplicate a dynamic array
@@ -319,13 +322,13 @@ DYNADEF da_sidx __da_allocate (void **, int, int);
 /**
  *  For each macro
  *  To iterate over all elements of a dynamic array
- *  It translates to a simple `for` statement
+ *  It gets expanded to a simple `for` statement
  */
 #define da_foreach(__DA__, __IDX_NAME__) \
-  _da_for (__DA__, __IDX_NAME__, ++(__IDX_NAME__))
+  da_for (__DA__, __IDX_NAME__, 0, ++(__IDX_NAME__))
 
-#define _da_for(__DA__, __IDX_NAME__, __IDX_NEXT__)                 \
-  for (da_idx __IDX_NAME__ = 0,                                     \
+#define da_for(__DA__, __IDX_NAME__, __IDX_START__, __IDX_NEXT__)   \
+  for (da_idx __IDX_NAME__ = __IDX_START__,                         \
          __max_idx__ = da_sizeof (__DA__);                          \
        __IDX_NAME__ < __max_idx__;                                  \
        __IDX_NEXT__)
@@ -438,7 +441,7 @@ __mk_da(da_sidx cell_size, da_sidx n)
               (size_t) (cell_size * n),
               da);
 
-  assert (0 == ((uintptr_t) da->x.arr % (sizeof (void *))) &&
+  assert (0 == ((uintptr_t) da->arr % (sizeof (void *))) &&
           "Broken alignment!"); /* this should be unreachable */
   return da;
 }
@@ -452,7 +455,7 @@ __da_allocate (void **arr, int n, int cell_bytes)
   if (! *arr)
     {
       da = __mk_da (cell_bytes, n);
-      *arr = da->x.arr;
+      *arr = da->arr;
     }
   else if (!(da = DA_CONTAINEROF (*arr)))
     return -1;
@@ -470,7 +473,7 @@ __da_allocate (void **arr, int n, int cell_bytes)
         da = dyna_realloc (da, new_size);
         if (!da)
           return -1;
-        *arr = da->x.arr;
+        *arr = da->arr;
       }
       da_dprintf ("Reallocated, new capacity: %lu\n",
                   (size_t) da->cap);
@@ -499,7 +502,7 @@ __da_appd (void **arr)
         da = dyna_realloc (da, new_size);
         if (!da)
           return -1;
-        *arr = da->x.arr;
+        *arr = da->arr;
       }
       da_dprintf ("Reallocated, new capacity: %lu\n",
                   (size_t) da->cap);
@@ -525,7 +528,7 @@ __da_dup (void **arr)
   size_t lenof_da = da->size * da->cell_bytes + sizeof (dyna_t);
   dyna_t *new_da = malloc (lenof_da);
   memcpy (new_da, da, lenof_da);
-  return &new_da->x.arr;
+  return &new_da->arr;
 }
 
 #endif /* DYNA_IMPLEMENTATION */
