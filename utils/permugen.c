@@ -858,21 +858,14 @@ __perm (const struct Opt *opt, const char *sep,
 
 
   int pos;
-  for (pos = depth - 1;
-       pos >= 0 && idxs[pos] == _max_depth;
-       pos--)
-    {
-      idxs[pos] = 0;
-    }
+  for (pos = depth - 1; pos >= 0 && idxs[pos] == _max_depth; pos--)
+    idxs[pos] = 0;
 
   if (pos < 0) /* End of Permutations */
     {
 #ifdef _USE_BIO
-      if (bio_err (opt->bio))
-        {
-          /* buffered_io write error */
-          return bio_errno (opt->bio);
-        }
+      if (bio_err (opt->bio)) /* buffered_io write error */
+        return bio_errno (opt->bio);
       else
         return 0;
 #else
@@ -916,8 +909,7 @@ perm (const struct Opt *opt)
 int
 __regular_perm (struct Opt *opt,
                 const int *lens, int *idxs,
-                int size, int offset,
-                const char *sep)
+                int size, int offset, const char *sep)
 {
   int ret;
   /* permutation indexes */
@@ -992,12 +984,8 @@ __regular_perm (struct Opt *opt,
     Putln (opt);
 
   int pos;
-  for (pos = size - 1;
-       pos >= 0 && idxs[pos] == lens[pos];
-       --pos)
-    {
-      idxs[pos] = 0;
-    }
+  for (pos = size - 1; pos >= 0 && idxs[pos] == lens[pos]; --pos)
+    idxs[pos] = 0;
 
   if (pos < 0) /* End of Permutations */
     {
@@ -2041,15 +2029,12 @@ parse_seed_regex (struct Opt *opt,
             case EXP_BRACKET:
               pparse_cseed_regex (opt, dst, yytext);
               break;
-
             case EXP_CURLY:
               pparse_wseed_regex (opt, dst, yytext);
               break;
-
             case EXP_PAREN:
               pparse_format_regex (opt, dst, yytext);
               break;
-
             default:
               break;
             }
