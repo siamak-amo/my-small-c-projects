@@ -1820,12 +1820,11 @@ pparse_format_padding (struct Seed *dst, char *input)
         case '>':
           padd = (-1) * atoi (input + 1);
           break;
-        default:
+        default: /* left padding */
           padd = (-1) * atoi (input);
         }
-      if (padd)
-        dst->padding = padd;
     }
+  dst->padding = padd;
 }
 
 static void
