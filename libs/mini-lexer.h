@@ -261,7 +261,7 @@
 
  -- Flex compatibility ----------------------------------------------
     Although Milixer provides low-level access to it's internal
-    tokens and configurations, some users might prefer to use
+    tokens and configurations, some users may prefer to use
     a higher level API like Flex.
     see the Example_2 for a quick example.
 
@@ -342,6 +342,7 @@
     1. Unicode/UTF8 is NOT supported.
     2. Token fragmentation (token buffer overflows),
        breaks the logic of punctuation and expression detection.
+       It only happens for longer than one character expressions.
 
  -- Compilation -----------------------------------------------------
     The test program:
@@ -974,21 +975,31 @@ YY_BUFFER_STATE * yy_restart (FILE *file);
  *  each time a punctuation is encountered.
  */
 #define PUNC_DOUBLE_CHECK ((void *) -1)
+#define NEEDS_DOUBLE_CHECK(exp) (PUNC_DOUBLE_CHECK == (exp)->end)
+
+/* Do the @action if @component is not clean (needs update) */
+#define __ML_UPDATE(component, action) \
+  if (! (component)->clean) { action; (component)->clean=true; }
+
+/* Update str lengths of Milexer_AEXP */
+#define UPDATE_EXP(aexp) __ML_UPDATE (aexp, do {    \
+      for (int i=0; i < (aexp)->len; ++i) {         \
+        _exp_t *e = (aexp)->exp + i;                \
+        EXP_SET_STRLEN (e);                         \
+      }} while (0))
+/* Update strlens & should double-check for puncs (Milexer_AEXP) */
+#define UPDATE_PUNC(puncs) __ML_UPDATE (puncs, do { \
+      for (int i=0; i < (puncs)->len; ++i) {        \
+        _exp_t *punc = (puncs)->exp + i;            \
+        EXP_SET_STRLEN (punc);                      \
+        if (__should_double_check (ml, punc))       \
+          punc->end = PUNC_DOUBLE_CHECK;            \
+      }} while (0)) 
+
 
 /**
  **  Internal functions
  **/
-static inline void
-__set_strlens (Milexer_AEXP *adv_exp)
-{
-  for (int i=0; i < adv_exp->len; ++i)
-    {
-      EXP_SET_STRLEN (&adv_exp->exp[i]);
-    }
-}
-/* update strlen of Milexer_AEXP if needed */
-#define UPDATE_STRLEN(exp) \
-  if (! (exp)->clean) { __set_strlens (exp); (exp)->clean = true; }
 
 /**
  *  To set the ID of keyword tokens
@@ -1094,11 +1105,12 @@ static inline char *
 __detect_puncs (const Milexer *ml,
                 Milexer_Slice *src, Milexer_Token *res)
 {
-  int longest_match_idx = -1;
-  size_t longest_match_len = 0;
+  int l_match_idx = -1;   // longest match index
+  size_t l_match_len = 0; // longest match length
   res->cstr[res->__idx] = '\0';
   if (ml->puncs.disabled)
     return NULL;
+
   for (int i=0; i < ml->puncs.len; ++i)
     {
       _exp_t *punc = &ml->puncs.exp[i];
@@ -1109,27 +1121,25 @@ __detect_puncs (const Milexer *ml,
         continue;
       if (strstr (res->cstr, punc->begin) != NULL)
         {
-          if (len >= longest_match_len)
+          if (len >= l_match_len)
             {
-              longest_match_len = len;
-              longest_match_idx = i;
+              l_match_len = len;
+              l_match_idx = i;
             }
         }
     }
 
-  if (longest_match_idx != -1)
+  if (l_match_idx != -1)
     {
-      if (PUNC_DOUBLE_CHECK == ml->puncs.exp[longest_match_idx].end)
+      if (NEEDS_DOUBLE_CHECK (&ml->puncs.exp[l_match_idx]))
         {
-          const char *punc_start = &src->buffer[src->idx - longest_match_len];
+          const char *punc_start = &src->buffer[src->idx - l_match_len];
           if (__is_exp_or_comment (ml, src, punc_start))
-            {
-              return NULL;
-            }
+            return NULL;
         }
-      src->__last_punc_idx = longest_match_idx;
-      res->id = longest_match_idx;
-      return res->cstr + (res->__idx - longest_match_len);
+      src->__last_punc_idx = l_match_idx;
+      res->id = l_match_idx;
+      return res->cstr + (res->__idx - l_match_len);
     }
   return NULL;
 }
@@ -1357,22 +1367,12 @@ ml_next (Milexer *ml, Milexer_Slice *src,
     case SYN_DONE:
       TK_MARK_COLUMN (src, tk);
       if (src->__last_newline)
-        {
-          TK_MARK_NEWLINE (src, tk);
-        }
-      UPDATE_STRLEN (&ml->expression);
-      UPDATE_STRLEN (&ml->a_comment);
-      if (! ml->puncs.clean)
-        { /* Update puncs strlens and double check */
-          for (int i=0; i < ml->puncs.len; ++i)
-            {
-              _exp_t *punc = &ml->puncs.exp[i];
-              EXP_SET_STRLEN (punc);
-              if (__should_double_check (ml, punc))
-                punc->end = PUNC_DOUBLE_CHECK;
-            }
-          ml->puncs.clean = true;
-        }
+        TK_MARK_NEWLINE (src, tk);
+
+      /* Update language internals if necessary */
+      UPDATE_EXP (&ml->expression);
+      UPDATE_EXP (&ml->a_comment);
+      UPDATE_PUNC (&ml->puncs);
       break;
 
     default:
