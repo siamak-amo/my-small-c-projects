@@ -272,14 +272,14 @@
       #define ML_IMPLEMENTATION
       #include "mini-lexer.h"
     ```
-    If Flex is enabled, these global variables are available:
+    With ML_FLEX macro defined, these global variables are provided:
+      yyin:     the current input FILE pointer
       yytext:   string of the current token
       yyleng:   strlen of yytext
       yyline:   line number of the current token
       yycolumn: column number of the current token
       yyid:     equivalent to Milexer_Token->id      (Not standard)
       yyml:     to set the global Milexer language   (Not standard)
-      yyin:     the current input FILE pointer
 
     Example:
     ```{c}

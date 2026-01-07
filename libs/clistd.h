@@ -99,7 +99,7 @@ parse_std_options_only (int argc, char **argv,
 #endif
 
 /**
- *  In Android (Termux), the `on_exit` function, does not exist;
+ *  On Android (Termux), the `on_exit` function, does not exist;
  *  but they usually have `atexit` function.
  *
  *  This implements `on_exit` function, but with these limitations:
