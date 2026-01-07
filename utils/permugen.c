@@ -17,133 +17,132 @@
 /** file: permugen.c
     created on: 4 Sep 2024
 
-    Permugen - Permutation generator utility
-    For generating customizable permutations from specified seeds
+  Permugen - Permutation generator utility
+  For generating customizable permutations from specified seeds
 
-    Usage Examples
-      For more details, use the `-h` option:
-      $ permugen --help
+  Usage Examples
+    For more details, use the `-h` option:
+    $ permugen --help
 
-    Normal Mode:
-      $ permugen [OPTIONS] -s [SEED_CONFIG]
-      Cartesian product of the input with a certain depth
-      {INPUT_SEED}x{INPUT_SEED}x...  (depth times)
+  Normal Mode:
+    $ permugen [OPTIONS] -s [SEED_CONFIG]
+    Cartesian product of the input with a certain depth
+    {INPUT_SEED}x{INPUT_SEED}x...  (depth times)
 
-     * Alphanumeric characters:
-       $ permugen                                  # a-z and 0-9 of depth 3
-       $ permugen -s "\d"                          # only digits 0-9
-       $ permugen -s "\d \u"                       # 0-9 and A-Z
-       $ permugen -s "\d \u \l"                    # 0-9 and A-Z and a-z
+    * Alphanumeric characters:
+      $ permugen                                  # a-z and 0-9 of depth 3
+      $ permugen -s "\d"                          # only digits 0-9
+      $ permugen -s "\d \u"                       # 0-9 and A-Z
+      $ permugen -s "\d \u \l"                    # 0-9 and A-Z and a-z
 
-     * The set {XY, a,...,f}:
-       $ permugen -s "[XY] [a-f]" -d2              # depth=2 (strict)
-       $ permugen -s "[XYa-f]" -D4                 # depth range [1 to 4]
-       $ permugen -s "[XYa-f]" -d 3-5              # depth range [3 to 5]
+    * The set {XY, a,...,f}:
+      $ permugen -s "[XY] [a-f]" -d2              # depth=2 (strict)
+      $ permugen -s "[XYa-f]" -D4                 # depth range [1 to 4]
+      $ permugen -s "[XYa-f]" -d 3-5              # depth range [3 to 5]
 
-     * To include words:
-       $ permugen -s "{foo,bar}"
-       $ permugen -s "/path/to/wlist.txt ./wlist2.txt"
-       $ permugen -s "-"                           # read from stdin
+    * To include words:
+      $ permugen -s "{foo,bar}"
+      $ permugen -s "/path/to/wlist.txt ./wlist2.txt"
+      $ permugen -s "-"                           # read from stdin
 
-     * Combined Examples:
-       $ permugen -s "{foo,bar} [x-z0-3]"          # foo,bar,x,y,z,0,1,2,3
-       $ permugen -s "{foo,bar} [x-z0-3] ~/word_list.txt"
+    * Combined Examples:
+      $ permugen -s "{foo,bar} [x-z0-3]"          # foo,bar,x,y,z,0,1,2,3
+      $ permugen -s "{foo,bar} [x-z0-3] ~/word_list.txt"
 
-     * Output Format:
-       - Permutation components separator (-p, --delim)
-       $ permugen -p ", "                          # comma separated
-       $ permugen -p "\t"                          # tab separated
-       $ permugen -p ", "  -p "\t"                 # to get both of them
+    * Output Format:
+      - Permutation components separator (-p, --delim)
+      $ permugen -p ", "                          # comma separated
+      $ permugen -p "\t"                          # tab separated
+      $ permugen -p ", "  -p "\t"                 # to get both of them
 
-       - Global suffix and prefix
-       $ permugen --pref "www." --suff ".com"
-
-
-    Regular Mode:
-      $ permugen [OPTIONS] -r [SEED_CONFIG]...
-      To manually specify components of the permutations
-      {INPUT_SEED_1}x{INPUT_SEED_2}x...x{INPUT_SEED_N}
-
-     * Basic Examples:
-       - Cartesian product of {0,1,2}x{AA,BB}
-       $ permugen -r  "[0-2]"  "{AA,BB}"
-
-       - {dev,prod}x{admin,<wordlist.txt>}
-       $ permugen -r  "{dev,prod}"  "{admin} /path/to/wordlist.txt"
-
-       - To reuse previously provided seeds (\N starting from 1)
-         {dev,prod}x{www,dev,prod}
-       $ permugen -p. -r  "{dev,prod}"  "{www} \1"
-         {dev,prod}x{2,3}x{2,3}
-       $ permugen -r  "{dev,prod}"  "[2-3]"  "\2"
-
-     * Depth in regular mode (count of output components)
-       - To get permutations with exactly 3 components:
-       $ permugen -r [INPUT_SEED]... -d3
-       - With 2 and 3 components:
-       $ permugen -r [INPUT_SEED]... -d 2-3
-
-       - To read from stdin:
-       $ permugen -r -- "{dev,prod}"  "-"
-         or equivalently, avoid using end-of-options:
-       $ permugen -r  "{dev,prod}"  " -"
-
-     * Output formatting:
-       Permugen supports format strings similar to Python's f-strings
-
-       - This substitutes the first `{}` in the format option
-         with dev,prod  and  the second one with 0..5
-       $ permugen -r "{dev,prod}"  "[0-5]" \
-                 --format "https://{}.api.com/file_{}.txt"
-
-       - This option, also supports left and right paddings
-         like "%4s" and "%-5s" in C:
-       $ permugen -r "{A, AA, AAA}"  "{BBB, BBBB, B}" \
-                 --format "|{:4} | {:-5}|"
-
-       - Note: Using this option with depth (-d, --depth),
-         also along with custom prefix and suffix, is Undefined.
-
-     * Shallow Seeds (Seed Pointer):
-       A shallow seed is a pointer to another seed or a null seed,
-       which can be defined using `*`.
-       - To define the second seed as null seed:
-       $ permugen -r "{A,B}" "*" "[a-b]"
-
-       When `*` is used, all given seed configurations will be skipped,
-       except for the `\N` shortcut, which has a different meaning.
-
-       - In the following example, the second component of the output
-         is always the same as the first component:
-       $ permugen -r "{user,admin}"   "* \1"   "{asp,php}" \
-                  -f "https://x.com/{}/{}_portal.{}"
-
-     * Manual output formatting:
-       - Using global prefix and suffix:
-       $ permugen -s "[0-2]"  --prefix '('  --suffix ')'
-
-       - The first component has `xxx` as a suffix,
-         while the second component has `yyy` as a prefix
-       $ permugen -r  "() {One} (xxx)"  "(yyy) {Two} ()"
-
-       - The first component uses {} and the second one uses ()
-       $ permugen -r  "({) {One} (})"  "(\() {Two} (\))"
+      - Global suffix and prefix
+      $ permugen --pref "www." --suff ".com"
 
 
-   Compilation:
-     cc -ggdb -O3 -Wall -Wextra -Werror -I../libs \
-        -o permugen permugen.c
+  Regular Mode:
+    $ permugen [OPTIONS] -r [SEED_CONFIG]...
+    To manually specify components of the permutations
+    {INPUT_SEED_1}x{INPUT_SEED_2}x...x{INPUT_SEED_N}
 
-   Options:
+    * Basic Examples:
+      - Cartesian product of {0,1,2}x{AA,BB}
+      $ permugen -r  "[0-2]"  "{AA,BB}"
+
+      - {dev,prod}x{admin,<wordlist.txt>}
+      $ permugen -r  "{dev,prod}"  "{admin} /path/to/wordlist.txt"
+
+      - To reuse previously provided seeds (\N starting from 1)
+        {dev,prod}x{www,dev,prod}
+      $ permugen -p. -r  "{dev,prod}"  "{www} \1"
+        {dev,prod}x{2,3}x{2,3}
+      $ permugen -r  "{dev,prod}"  "[2-3]"  "\2"
+
+    * Depth in regular mode (count of output components)
+      - To get permutations with exactly 3 components:
+      $ permugen -r [INPUT_SEED]... -d3
+      - With 2 and 3 components:
+      $ permugen -r [INPUT_SEED]... -d 2-3
+
+      - To read from stdin:
+      $ permugen -r -- "{dev,prod}"  "-"
+        or equivalently, avoid using end-of-options:
+      $ permugen -r  "{dev,prod}"  " -"
+
+    * Output formatting:
+      Permugen supports format strings similar to Python's f-strings
+
+      - This substitutes the first `{}` in the format option
+        with dev,prod  and  the second one with 0..5
+      $ permugen -r "{dev,prod}"  "[0-5]" \
+                --format "https://{}.api.com/file_{}.txt"
+
+      - This option, also supports left and right paddings
+        like "%4s" and "%-5s" in C:
+      $ permugen -r "{A, AA, AAA}"  "{BBB, BBBB, B}" \
+                --format "|{:4} | {:-5}|"
+
+      - Note: Using this option with depth (-d, --depth),
+        also along with custom prefix and suffix, is Undefined.
+
+    * Shallow Seeds (Seed Pointer):
+      A shallow seed is a pointer to another seed or a null seed,
+      which can be defined using `*`.
+      - To define the second seed as null seed:
+      $ permugen -r "{A,B}"  "*"  "[a-b]"
+
+      When `*` is used, all given seed configurations will be ignored,
+      except for the `\N` shortcut, which has a different meaning:
+      - In the following example, the second component of the output
+        is always the same as the first component:
+      $ permugen -r "{user,admin}"   "* \1"   "{asp,php}" \
+                 -f "https://x.com/{}/{}_portal.{}"
+
+    * Manual output formatting:
+      - Using global prefix and suffix:
+      $ permugen -s "[0-2]"  --prefix '('  --suffix ')'
+
+      - The first component has `xxx` as a suffix,
+        while the second component has `yyy` as a prefix
+      $ permugen -r  "() {One} (xxx)"  "(yyy) {Two} ()"
+
+      - The first component uses {} and the second one uses ()
+      $ permugen -r  "({) {One} (})"  "(\() {Two} (\))"
+
+
+  Compilation:
+    cc -ggdb -O3 -Wall -Wextra -Werror -I../libs \
+       -o permugen permugen.c
+
+  Options:
     - To skip uniqueness of word seeds
-       define `_SKIP_UNIQUE`
+      define `_SKIP_UNIQUE`
     - To skip freeing allocated memory before quitting
-       define `_CLEANUP_NO_FREE`
+      define `_CLEANUP_NO_FREE`
     - To enable printing of debug information
-       define `_DEBUG`
+      define `_DEBUG`
     - To use buffered IO library (deprecated)
-       define `_USE_BIO`
-       define `_BMAX="(1024 * 1)"` (=1024 bytes)
+      define `_USE_BIO`
+      define `_BMAX="(1024 * 1)"` (=1024 bytes)
  **/
 #undef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -1996,8 +1995,7 @@ pparse_keys_regex (struct Opt *opt,
 }
 
 void
-parse_seed_regex (struct Opt *opt,
-                  struct Seed *dst, char *input)
+parse_seed_regex (struct Opt *opt, struct Seed *dst, char *input)
 {
   /* Mini-Lexer seed option language */
   static Milexer SeedML = {
@@ -2024,6 +2022,8 @@ parse_seed_regex (struct Opt *opt,
           }
 
         case TK_EXPRESSION:
+          if (IS_REF_SEED (dst)) /* Ignore shallow seeds */
+            break;
           switch (yyid)
             {
             case EXP_BRACKET:
