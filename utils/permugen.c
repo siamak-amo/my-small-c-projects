@@ -1283,19 +1283,20 @@ opt_regular_getopt (int argc, char **argv, struct Opt *opt)
   /* parsing again to handle references */
   for (int i=0; i < last_reg_arg; ++i)
     {
-      for (char *p = argv[i], *ref = NULL; NULL != p; p = ref + 1)
-        {
-          if (!(ref = strchr (p, '\\')))
-            break;
-          pparse_reference_regex (opt, i, ref);
-        }
-
       struct Seed *s = opt->reg_seeds[i];
+      /* Using yylex to distinguish \X from escape backslash's */
+      YY_BUFFER_STATE *buffer = yy_scan_string( argv[i] );
+      for (int type=0; type != -1; type = yylex())
+        {
+          if (TK_KEYWORD == type  &&  '\\' == *yytext)
+            pparse_reference_regex (opt, i, yytext);
+        }
       if (!IS_REF_SEED(s) && 0 == s->cseed_len && 0 == da_sizeof (s->wseed))
         {
           warnln("empty regular seed #%d was set to NULL seed", i+1);
           s->seed_type = NULL_REF_SEED;
         }
+      yy_delete_buffer( buffer );
     }
   return 0;
 }
