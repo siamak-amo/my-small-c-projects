@@ -585,12 +585,13 @@ static void
 pparse_cseed_regex (struct Opt *opt,
                     struct Seed *dst, char *input);
 
-/** pparse_keys_regex:
- *    Detects file paths and other shortcuts like: '\d', '\u'
- *  pparse_reference_regex:
+/**
+ * pparse_keys_regex:
+ *    Detects file paths (e.g. ~/file.txt) and shortcuts (e.g. \d \u \l)
+ * pparse_reference_regex:
  *    Detects references to other seeds like \N (starting from 1)
- *    It should be called at the end of parsing, when all seeds
- *    are available and initialized.
+ *    It should be used at the end of parsing, when all seeds
+ *    are fully initialized.
  */
 static void
 pparse_keys_regex (struct Opt *opt,
@@ -1287,7 +1288,7 @@ opt_regular_getopt (int argc, char **argv, struct Opt *opt)
       YY_BUFFER_STATE *buffer = yy_scan_string( argv[i] );
       for (int type=0; type != -1; type = yylex())
         {
-          if (TK_KEYWORD == type  &&  '\\' == *yytext)
+          if (TK_KEYWORD == type)
             pparse_reference_regex (opt, i, yytext);
         }
       if (!IS_REF_SEED(s) && 0 == s->cseed_len && 0 == da_sizeof (s->wseed))
@@ -1880,36 +1881,28 @@ pparse_format_regex (struct Opt *opt,
 }
 
 static void
-pparse_reference_regex (struct Opt *opt, int dst_idx, const char *input)
+pparse_reference_regex (struct Opt *opt, int dst_idx, const char *token)
 {
   struct Seed *dst = opt->reg_seeds[dst_idx];
-  for (; '\\' == *input; ++input)
+  if ('*' != *token  &&  '\\' != *token)
+    return; /* this token does not need reference parsing */
+  if (!(token = strchr (token, '\\')))
+    return; /* no reference */
+  for (; token && '\\' == *token; token = strchr (token, '\\'))
     {
-      if ('\0' == *(++input))
+      if ('\0' == *(++token))
         break;
-      if (REGULAR_MODE != opt->mode && IS_DIGIT (*input))
+      if (IS_DIGIT (*token))
         {
-          warnln ("regular mode specific shortcut \\%c was ignored", *input);
-          continue;
-        }
-      if (REGULAR_MODE == opt->mode && IS_DIGIT (*input))
-        {
-          int n = strtol (input, NULL, 10) - 1;
-          if (n == dst_idx)
-            {
-              warnln ("circular reference to seed #%d was ignored", n+1);
-              continue;
-            }
+          int n = strtol (token, NULL, 10) - 1;
+          if (REGULAR_MODE != opt->mode)
+            warnln ("regular mode specific shortcut \\%d was ignored", n+1);
+          else if (n == dst_idx)
+            warnln ("circular reference to seed #%d was ignored", n+1);
           else if (n >= opt->reg_seeds_len)
-            {
-              warnln ("seed index %d is out of bound", n+1);
-              continue;
-            }
+            warnln ("seed index %d is out of bound", n+1);
           else if (n < 0)
-            {
-              warnln ("invalid seed index");
-              continue;
-            }
+            warnln ("invalid seed index");
           else /* valid index */
             {
               if (IS_REF_SEED(dst))
@@ -1918,29 +1911,55 @@ pparse_reference_regex (struct Opt *opt, int dst_idx, const char *input)
                     {
                       warnln ("invalid reference, seed #%d itself is shallow", n+1);
                       dst->seed_type = NULL_REF_SEED;
+                      continue;
                     }
-                  else
-                    dst->seed_type = n+1;
+                  dst->seed_type = n+1;
                 }
               else
                 {
                   struct Seed *src = opt->reg_seeds[n];
                   if (IS_REF_SEED (src))
-                    warnln ("cannot append from shallow seed #%d", n+1);
-                  else
                     {
-                      cseed_uniappd (dst, src->cseed, src->cseed_len);
-                      da_foreach (src->wseed, i) {
-                        wseed_uniappd (opt, dst, src->wseed[i]);
-                      }
+                      warnln ("cannot append from shallow seed #%d", n+1);
+                      continue;
                     }
+                  cseed_uniappd (dst, src->cseed, src->cseed_len);
+                  da_foreach (src->wseed, i) {
+                    wseed_uniappd (opt, dst, src->wseed[i]);
+                  }
                 }
             }
-          continue;
         }
+    }
+}
 
-      /* Got \N where N is not a digit */
-      switch (*input)
+static void
+pparse_keys_regex (struct Opt *opt, struct Seed *dst, const char *token)
+{
+ if ('/' == *token || '.' == *token || '~' == *token)
+    {
+      char *path;
+      if ((path = path_resolution (token)))
+        {
+          FILE *stream = safe_fopen (path, "r");
+          if (stream)
+            {
+              wseed_file_uniappd (opt, dst, stream);
+              if (stream != stdin)
+                safe_fclose (stream);
+            }
+        }
+      return;
+    }
+
+ for (; token && '\\' == *token; token = strchr (token, '\\'))
+    {
+      if ('\0' == *(++token))
+        break;
+      if (IS_DIGIT (*token))
+        continue; /* we handle references in pparse_reference_regex */
+
+      switch (*token) /* Got \X shortcut */
         {
         case 'd': /* Digits 0-9 */
           cseed_uniappd (dst, charseed_09.c, charseed_09.len);
@@ -1958,41 +1977,10 @@ pparse_reference_regex (struct Opt *opt, int dst_idx, const char *input)
           break;
 
         default:
-          warnln ("invalid shortcut \\%c was ignored", *input);
+          warnln ("invalid shortcut '\\%c' was ignored", *token);
         }
     }
-}
-
-static void
-pparse_keys_regex (struct Opt *opt,
-                   struct Seed *dst, const char *input)
-{
-  char *path;
-  while ('\\' == *input) input++;
-  switch (*input)
-    {
-    case '\0':
-      break;
-
-    case '.': /* File path */
-    case '/':
-    case '~':
-      if ((path = path_resolution (input)))
-        {
-          FILE *stream = safe_fopen (path, "r");
-          if (stream)
-            {
-              wseed_file_uniappd (opt, dst, stream);
-              if (stream != stdin)
-                safe_fclose (stream);
-            }
-        }
-      break;
-
-    default:
-      break;
-    }
-}
+ }
 
 void
 parse_seed_regex (struct Opt *opt, struct Seed *dst, char *input)
