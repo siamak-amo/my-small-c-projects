@@ -155,7 +155,7 @@
 #include <errno.h>
 
 #define PROGRAM_NAME "permugen"
-#define Version "2.22"
+#define Version "2.23"
 
 #define CLI_IMPLEMENTATION
 #include "clistd.h"
@@ -595,9 +595,9 @@ pparse_cseed_regex (struct Opt *opt,
  */
 static void
 pparse_keys_regex (struct Opt *opt,
-                   struct Seed *dst, const char *input);
+                   struct Seed *dst, const char *token);
 static void
-pparse_reference_regex (struct Opt *opt, int dst_idx, const char *input);
+pparse_reference_regex (struct Opt *opt, int dst_idx, const char *token);
 
 /**
  *  Initializes @dst->prefix/suffix (if NULL), via malloc
@@ -817,7 +817,7 @@ __perm (const struct Opt *opt, const char *sep,
   memset (idxs, 0, depth * sizeof (int));
 
   int i;
- Perm_Loop: /* O(seeds^depth) */
+ perm_loop: /* O(seeds^depth) */
   i = 0;
   if (opt->prefix)
     Fputs (opt->prefix, opt);
@@ -825,7 +825,7 @@ __perm (const struct Opt *opt, const char *sep,
     Fputs (opt->global_seeds->pref, opt);
 
   struct Seed *s = opt->global_seeds;
- Print_Loop: /* O(depth) */
+ print_loop: /* O(depth) */
   {
     int idx = idxs[i];
     if (idx < opt->global_seeds->cseed_len)
@@ -845,7 +845,7 @@ __perm (const struct Opt *opt, const char *sep,
     {
       if (sep)
         Fputs (sep, opt);
-      goto Print_Loop;
+      goto print_loop;
     }
 
   /* End of printing of the current permutation */
@@ -874,7 +874,7 @@ __perm (const struct Opt *opt, const char *sep,
     }
 
   idxs[pos]++;
-  goto Perm_Loop;
+  goto perm_loop;
 }
 
 int
@@ -924,13 +924,13 @@ __regular_perm (struct Opt *opt,
    *         m = @offset  and  n = @size + @offset
    */
   int i;
- Reg_Perm_Loop:
+ reg_perm_loop:
   i = 0;
   struct Seed *current_seed;
   if (opt->prefix)
     Fputs (opt->prefix, opt);
 
- Print_Loop: /* O(S_i) */
+ print_loop: /* O(S_i) */
   {
     int idx;
     current_seed = reg_seeds[i];
@@ -974,7 +974,7 @@ __regular_perm (struct Opt *opt,
             if (!current_seed->suff || *current_seed->suff == '\0')
               Fputs (sep, opt);
           }
-        goto Print_Loop;
+        goto print_loop;
       }
   }
   /* End of Printing of the current permutation */
@@ -994,23 +994,23 @@ __regular_perm (struct Opt *opt,
         {
           /* buffered_io write error */
           ret = bio_errno (opt->bio);
-          goto Reg_Return;
+          goto reg_return;
         }
       else
         {
           ret = 0;
-          goto Reg_Return;
+          goto reg_return;
         }
 #else
       ret = 0;
-      goto Reg_Return;
+      goto reg_return;
 #endif /* _USE_BIO */
     }
 
   idxs[pos]++;
-  goto Reg_Perm_Loop;
+  goto reg_perm_loop;
 
- Reg_Return:
+ reg_return:
   return ret;
 }
 
@@ -1083,17 +1083,17 @@ cseed_uniappd (struct Seed *s, const char *src, int len)
       if (*src == '\0')
         break;
       if (!IS_CSEED_RANGE (*src))
-        goto END_OF_LOOP;
+        goto end_of_loop;
 
       for (int idx = s->cseed_len - 1; idx >= 0; idx--)
         {
           if (*src == s->cseed[idx])
-            goto END_OF_LOOP;
+            goto end_of_loop;
         }
       s->cseed[s->cseed_len] = *src;
       s->cseed_len++;
 
-    END_OF_LOOP:
+    end_of_loop:
       src++;
       len--;
       rw++;
