@@ -951,13 +951,13 @@ __regular_perm (struct Opt *opt,
     if (idx < s->cseed_len)
       {
         /* Range of character seeds */
-        Fprintc (s->cseed[idx], s->padding, opt);
+        Fprintc (s->cseed[idx], current_seed->padding, opt);
       }
     else
       {
         /* Range of word seeds */
         idx -= s->cseed_len;
-        Fprints (s->wseed[idx], s->padding, opt);
+        Fprints (s->wseed[idx], current_seed->padding, opt);
       }
   after_print_internal:
     i++;
