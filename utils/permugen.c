@@ -1930,6 +1930,8 @@ pparse_reference_regex (struct Opt *opt, int dst_idx, const char *token)
                 }
             }
         }
+      else if (IS_REF_SEED (dst))
+        warnln ("invalid shortcut '\\%c' for shallow seed", *token);
     }
 }
 
