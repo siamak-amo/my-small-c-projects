@@ -614,8 +614,9 @@ pparse_format_regex (struct Opt *opt,
  *  and adjustment value of all seeds, based on
  *  @input: `xxx{}yyy` or like rust/python format string
  *        `xxx{:<5}yyy`  and  `xxx{:-5}yyy`
+ *  @return: number of `{}` placeholders in @input
  */
-static void
+static int
 pparse_format_option (const struct Opt *opt,
                       struct Seed **dst, int dst_len, char *input);
 
@@ -1044,19 +1045,23 @@ regular_perm (struct Opt *opt)
   ssize_t fmt_len = da_sizeof (opt->formats);
   size_t  max_depth = da_sizeof (seeds);
 
+  int fmt_count = start;
   for (char **fmt = opt->formats; fmt_len != 0; ++fmt, --fmt_len)
     {
       if (*fmt)
-        pparse_format_option (opt, seeds, max_depth, *fmt);
+        fmt_count = pparse_format_option (opt, seeds, max_depth, *fmt);
       for (int window = start; window <= end; ++window)
         {
           for (int offset = 0; offset + window <= seeds_len; ++offset)
             {
               for (ssize_t i=0; i < seps_len && 0 == ret; ++i)
                 {
-                  ret = __regular_perm (opt, lengths, tmp,
-                                        window, offset,
-                                        opt->seps[i]);
+                  int window_len = MIN (fmt_count, window);
+                  if (window_len <= 0)
+                    continue;
+                  ret =
+                    __regular_perm (opt, lengths, tmp,
+                                    window_len, offset, opt->seps[i]);
                 }
             }
         }
@@ -1828,7 +1833,7 @@ pparse_format_padding (struct Seed *dst, char *input)
   dst->padding = padd;
 }
 
-static void
+static int 
 pparse_format_option (const struct Opt *opt,
                       struct Seed **dst, int dst_len, char *input)
 {
@@ -1838,9 +1843,10 @@ pparse_format_option (const struct Opt *opt,
   };
   yyml = &FormatML;
 
+  int i = 0;
   char *prev_curly = input;
   YY_BUFFER_STATE *buffer = yy_scan_buffer( input, strlen (input) );
-  for (int i=0, type=0; i<dst_len && type != -1; type = yylex())
+  for (int type=0; i<dst_len && type != -1; type = yylex())
     {
       if (TK_EXPRESSION == type)
         {
@@ -1856,11 +1862,15 @@ pparse_format_option (const struct Opt *opt,
           i++;
         }
     }
-  if (!opt->escape_disabled)
-    UNESCAPE (prev_curly);
-  dst[dst_len - 1]->suff = strdup (prev_curly);
+  if (i)
+    {
+      if (!opt->escape_disabled)
+        UNESCAPE (prev_curly);
+      dst[i-1]->suff = strdup (prev_curly);
+    }
 
   yy_delete_buffer( buffer );
+  return i;
 }
 
 static void
