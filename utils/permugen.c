@@ -501,7 +501,7 @@ cleanup (int code, void *__opt)
 #endif
 
   safe_fclose (opt->outf);
-  /** Do *NOT* use stdio after this line! **/
+  /** Do *NOT* use stdout after this line! **/
 
 #ifndef _CLEANUP_NO_FREE
 
@@ -914,7 +914,7 @@ __regular_perm (struct Opt *opt,
 {
   int ret;
   /* permutation indexes */
-  memset (idxs, 0, size * sizeof (int));
+  memset (idxs, 0, size * sizeof (typeof (*idxs)));
   /* Offset of @depths also must apply to seeds */
   lens += offset;
   struct Seed **reg_seeds = opt->reg_seeds + offset;
@@ -935,8 +935,10 @@ __regular_perm (struct Opt *opt,
   {
     int idx;
     current_seed = reg_seeds[i];
+    /* Only use @s to print seed contents, as
+       @current_seed may be a reference to another seed */
     const struct Seed *s = current_seed;
-    if (current_seed->seed_type > 0)
+    if (current_seed->seed_type > 0) /* reference handling */
       {
         int __i = current_seed->seed_type - 1;
         idx = idxs[__i];
@@ -1306,17 +1308,17 @@ opt_regular_getopt (int argc, char **argv, struct Opt *opt)
   return 0;
 }
 
+#define CHECK(cond, action) if (cond) {action}
+#define CHECK_AND_BREAK(cond, action) CHECK (cond, {action; break;})
+
 static int
 opt_getopt (int argc, char **argv, struct Opt *opt)
 {
   int idx = 0;
-
-#define NOT_IN_REGULAR_MODE()                                           \
-  if (opt->mode == REGULAR_MODE) {                                      \
-    warnln ("wrong regular mode option (%s) was ignored",               \
-            LASTOPT (argv));                                            \
-    break;                                                              \
-  }
+#define REGULAR_MODE_ONLY() CHECK_AND_BREAK (opt->mode != REGULAR_MODE, \
+  warnln ("regular mode specific option (%s) was ignored", LASTOPT (argv)))
+#define NORMAL_MODE_ONLY() CHECK_AND_BREAK (opt->mode != NORMAL_MODE, \
+  warnln ("normal mode specific option (%s) was ignored", LASTOPT (argv)))
 
   while (1)
     {
@@ -1388,14 +1390,11 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
         case '2': /* max depth */
           opt->depth.max = atoi (optarg);
           break;
-        case 'f':
+        case 'f': REGULAR_MODE_ONLY ();
           da_appd (opt->formats, optarg);
           break;
 
-          /* Only in normal mode */
-        case 'S': /* wseed from file or stdin */
-          NOT_IN_REGULAR_MODE ()
-          {
+        case 'S': NORMAL_MODE_ONLY () { /* wseed from file or stdin */
             FILE *wseed_f = stdin;
             if (!Strcmp (optarg, "-"))
               wseed_f = safe_fopen (optarg, "r");
@@ -1406,17 +1405,13 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
           }
           break;
 
-        case 's': /* seed configuration */
-          NOT_IN_REGULAR_MODE ()
-          {
+        case 's': NORMAL_MODE_ONLY () { /* seed configuration */
             opt->using_default_seed = 0;
             parse_seed_regex (opt, opt->global_seeds, optarg);
           }
           break;
 
-        case '0': /* raw seed */
-          NOT_IN_REGULAR_MODE ()
-          {
+        case '0': NORMAL_MODE_ONLY () { /* raw seed */
             opt->using_default_seed = 0;
             if (!opt->escape_disabled)
               UNESCAPE (optarg);
@@ -1424,14 +1419,12 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
           }
           break;
 
-        case '5': /* raw word seed */
-          NOT_IN_REGULAR_MODE ();
+        case '5': NORMAL_MODE_ONLY (); /* raw word seed */
           wseed_uniappd (opt, opt->global_seeds, optarg);
           break;
 
           /* Regular mode enable */
         case 'r':
-          NOT_IN_REGULAR_MODE ();
           {
             opt->using_default_seed = 0;
             opt->mode = REGULAR_MODE;
