@@ -939,7 +939,7 @@ __regular_perm (struct Opt *opt,
       {
         int __i = current_seed->seed_type - 1;
         idx = idxs[__i];
-        s = reg_seeds[__i];
+        s = opt->reg_seeds[__i];
       }
     else if (NULL_REF_SEED == s->seed_type)
       goto after_print_internal; /* Null shallow seed */
