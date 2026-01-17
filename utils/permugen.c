@@ -101,8 +101,8 @@
       $ permugen -r "{A, AA, AAA}"  "{BBB, BBBB, B}" \
                 --format "|{:4} | {:-5}|"
 
-      - Note: Using this option with depth (-d, --depth),
-        also along with custom prefix and suffix, is Undefined.
+      - Note: Using the format along with depth (-d, --depth)
+        is Undefined, pass multiple format options instead.
 
     * Shallow Seeds (Seed Pointer):
       A shallow seed is a pointer to another seed or a null seed,
@@ -155,7 +155,7 @@
 #include <errno.h>
 
 #define PROGRAM_NAME "permugen"
-#define Version "2.23"
+#define Version "2.24"
 
 #define CLI_IMPLEMENTATION
 #include "clistd.h"
@@ -345,6 +345,15 @@ static inline void free_seed (struct Seed *s);
 /* NULL seed reference */
 #define NULL_REF_SEED (-1)
 
+struct Fmt
+{
+  int padding;
+  char *pref, *suff;
+};
+/* Frees @pref and @suff and sets them to NULL */
+static inline void fmt_free (struct Fmt *fmt);
+static inline struct Fmt * mk_fmt_arr (int n);
+
 /* Mini-Lexer languag */
 enum LANG
   {
@@ -402,6 +411,7 @@ struct Opt
   /* Seed Configuration (Regular mode) */
   struct Seed **reg_seeds; /* Dynamic array */
   int reg_seeds_len;
+  struct Fmt *fmts; /* Format array, length=reg_seeds_len */
 
   /* Output Configuration */
   FILE *outf;
@@ -481,6 +491,23 @@ safe_fopen (const char *restrict pathname,
   return tmp;
 }
 
+static inline void
+fmt_free (struct Fmt *fmt)
+{
+  safe_free (fmt->pref);  fmt->pref = NULL;
+  safe_free (fmt->suff);  fmt->suff = NULL;
+}
+
+static inline struct Fmt *
+mk_fmt_arr (int n)
+{
+  struct Fmt *fmt;
+  int nb = n * sizeof (struct Fmt);
+  fmt = malloc (nb);
+  memset (fmt, 0, nb);
+  return fmt;
+}
+
 /**
  *  Frees all allocated memory and closes all open files
  *  This function should be used in `on_exit`
@@ -501,7 +528,7 @@ cleanup (int code, void *__opt)
 #endif
 
   safe_fclose (opt->outf);
-  /** Do *NOT* use stdio after this line! **/
+  /** Do *NOT* use stdout after this line! **/
 
 #ifndef _CLEANUP_NO_FREE
 
@@ -515,6 +542,13 @@ cleanup (int code, void *__opt)
 
   free_seed (opt->global_seeds);
   safe_free (opt->global_seeds);
+
+  if (opt->fmts)
+    {
+      for (int i=0; i < opt->reg_seeds_len; ++i)
+        fmt_free (&opt->fmts[i]);
+    }
+  safe_free (opt->fmts);
 
   if (opt->reg_seeds)
     {
@@ -614,11 +648,11 @@ pparse_format_regex (struct Opt *opt,
  *  and adjustment value of all seeds, based on
  *  @input: `xxx{}yyy` or like rust/python format string
  *        `xxx{:<5}yyy`  and  `xxx{:-5}yyy`
- *  @return: number of `{}` placeholders in @input
+ *  @return: number of `{}` placeholders of @input
  */
 static int
 pparse_format_option (const struct Opt *opt,
-                      struct Seed **dst, int dst_len, char *input);
+                      struct Fmt *dst, int dst_len, char *input);
 
 struct print_info
 {
@@ -927,6 +961,7 @@ __regular_perm (struct Opt *opt,
   int i;
  reg_perm_loop:
   i = 0;
+  struct Fmt *current_fmt;
   struct Seed *current_seed;
   if (opt->prefix)
     Fputs (opt->prefix, opt);
@@ -935,6 +970,7 @@ __regular_perm (struct Opt *opt,
   {
     int idx;
     current_seed = reg_seeds[i];
+    current_fmt = &opt->fmts[i];
     /* Only use @s to print seed contents, as
        @current_seed may be a reference to another seed */
     const struct Seed *s = current_seed;
@@ -949,23 +985,27 @@ __regular_perm (struct Opt *opt,
     else
       idx = idxs[i];
 
+    if (current_fmt->pref)
+      Fputs (current_fmt->pref, opt);
     if (current_seed->pref)
       Fputs (current_seed->pref, opt);
     if (idx < s->cseed_len)
       {
         /* Range of character seeds */
-        Fprintc (s->cseed[idx], current_seed->padding, opt);
+        Fprintc (s->cseed[idx], current_fmt->padding, opt);
       }
     else
       {
         /* Range of word seeds */
         idx -= s->cseed_len;
-        Fprints (s->wseed[idx], current_seed->padding, opt);
+        Fprints (s->wseed[idx], current_fmt->padding, opt);
       }
   after_print_internal:
     i++;
     if (current_seed->suff)
       Fputs (current_seed->suff, opt);
+    if (current_fmt->suff)
+      Fputs (current_fmt->suff, opt);
     if (i < size)
       {
         if (sep)
@@ -1051,7 +1091,7 @@ regular_perm (struct Opt *opt)
   for (char **fmt = opt->formats; fmt_len != 0; ++fmt, --fmt_len)
     {
       if (*fmt)
-        fmt_count = pparse_format_option (opt, seeds, max_depth, *fmt);
+        fmt_count = pparse_format_option (opt, opt->fmts, max_depth, *fmt);
       for (int window = start; window <= end; ++window)
         {
           for (int offset = 0; offset + window <= seeds_len; ++offset)
@@ -1067,13 +1107,9 @@ regular_perm (struct Opt *opt)
                 }
             }
         }
-
-      /* Drop prefix, suffix of all seeds for the next iteration */
-      da_foreach (seeds, i)
-        {
-          safe_free (seeds[i]->pref); seeds[i]->pref = NULL;
-          safe_free (seeds[i]->suff); seeds[i]->suff = NULL;
-        }
+      /* Free and unset fmts if provided */
+      for (int i=0; i<fmt_count; ++i)
+        fmt_free (&opt->fmts[i]);
     }
 
   safe_free (tmp);
@@ -1432,6 +1468,7 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
               break;
             opt->reg_seeds = mk_seed_arr (1);
             opt_regular_getopt (argc - optind, argv + optind, opt);
+            opt->fmts = mk_fmt_arr (opt->reg_seeds_len);
           }
           break;
 
@@ -1804,7 +1841,7 @@ pparse_wseed_regex (struct Opt *opt,
 }
 
 static inline void
-pparse_format_padding (struct Seed *dst, char *input)
+pparse_format_padding (struct Fmt *dst, char *input)
 {
   int padd = 0;
   if ((input = strchr (input, ':')))
@@ -1828,7 +1865,7 @@ pparse_format_padding (struct Seed *dst, char *input)
 
 static int 
 pparse_format_option (const struct Opt *opt,
-                      struct Seed **dst, int dst_len, char *input)
+                      struct Fmt *dst, int dst_len, char *input)
 {
   /* Mini-Lexer format option language */
   static Milexer FormatML = {
@@ -1844,13 +1881,13 @@ pparse_format_option (const struct Opt *opt,
       if (TK_EXPRESSION == type)
         {
           /* Handling left/right padding adjustment */
-          pparse_format_padding (dst[i], yytext);
+          pparse_format_padding (&dst[i], yytext);
 
           /* Setting prefix and suffix */
           input[yycolumn-1] = '\0';
           if (!opt->escape_disabled)
             UNESCAPE (prev_curly);
-          dst[i]->pref = strdup (prev_curly);
+          dst[i].pref = strdup (prev_curly);
           prev_curly = input + (yycolumn + yyleng);
           i++;
         }
@@ -1859,7 +1896,7 @@ pparse_format_option (const struct Opt *opt,
     {
       if (!opt->escape_disabled)
         UNESCAPE (prev_curly);
-      dst[i-1]->suff = strdup (prev_curly);
+      dst[i-1].suff = strdup (prev_curly);
     }
 
   yy_delete_buffer( buffer );
