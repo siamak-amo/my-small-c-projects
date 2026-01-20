@@ -328,12 +328,10 @@ struct Seed
   /* Character seeds */
   char *cseed;
   int cseed_len;
-
   /* Word seeds, (Dynamic array) */
   char **wseed;
 
   char *pref, *suff;
-  int padding;
 };
 
 /* To allocate and free seed and seed array */
@@ -439,13 +437,13 @@ struct Opt
  *  ASCII-printable character range
  *  Character seeds *MUST* be within this range
  */
-#define MIN_ASCII_PR 0x20
-#define MAX_ASCII_PR 0x7E
-#define IS_CSEED_RANGE(c) (c >= MIN_ASCII_PR && c <= MAX_ASCII_PR)
+#define MIN_ASCII_PR (0x20)
+#define MAX_ASCII_PR (0x7E)
+#define IS_CSEED_RANGE(c) ((c) >= MIN_ASCII_PR && (c) <= MAX_ASCII_PR)
 #define CSEED_MAXLEN (MAX_ASCII_PR - MIN_ASCII_PR + 1)
 
 /* NULL safe strcmp, unescape, free */
-#define Strcmp(s1, s2) _Nullable                \
+#define Strcmp(s1, s2)                          \
   ((s1) != NULL && (s2) != NULL &&              \
    strcmp ((s1), (s2)) == 0)
 
@@ -1137,9 +1135,9 @@ cseed_uniappd (struct Seed *s, const char *src, int len)
       s->cseed_len++;
 
     end_of_loop:
-      src++;
-      len--;
-      rw++;
+      ++src;
+      ++rw;
+      --len;
     }
 
   return (rw > 0) ? rw - 1 : 0;
