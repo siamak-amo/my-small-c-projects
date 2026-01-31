@@ -1727,7 +1727,7 @@ static inline void yy_set_global (YY_BUFFER_STATE *b);
  *  It deletes and pops the previous state buffer,
  *  so it should *NOT* be freed again
  */
-static void yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer);
+static inline void yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer);
 
 /* If FILE is provided, this will read the next chunk */
 static int yy_get_next_input (YY_BUFFER_STATE *b);
@@ -1894,7 +1894,7 @@ yy_restart (FILE *file)
   return b;
 }
 
-static void __unused
+static inline void
 yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer)
 {
   if (! new_buffer)
