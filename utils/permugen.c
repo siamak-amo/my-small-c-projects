@@ -231,6 +231,20 @@ const int sp_padding_len = 32;
 #define _Nullable
 #define NOP() (UNUSED (NULL))
 
+/* __likely macros definition and check for compiler support */
+#if defined(__GNUC__) || defined(__clang__)
+# define __expect(cond, exp) __builtin_expect (cond, exp)
+#else
+# define __expect(cond, exp) (cond)
+#endif
+
+#ifndef __likely
+# define __likely(x) __expect (!!(x), true)
+#endif
+#ifndef  __unlikely
+# define  __unlikely(x) __expect (!!(x), false)
+#endif
+
 #ifdef _DEBUG /* debug macro */
 #  define dprintf(format, ...) \
   fprintf (stderr, format, ##__VA_ARGS__)
@@ -872,7 +886,7 @@ __perm (const struct Opt *opt, const char *sep,
       }
     i++;
   }
-  if (i < depth)
+  if (__likely (i < depth))
     {
       if (sep)
         Fputs (sep, opt);
@@ -892,7 +906,7 @@ __perm (const struct Opt *opt, const char *sep,
   for (pos = depth - 1; pos >= 0 && idxs[pos] == _max_depth; pos--)
     idxs[pos] = 0;
 
-  if (pos < 0) /* End of Permutations */
+  if (__unlikely (pos < 0)) /* End of Permutations */
     {
 #ifdef _USE_BIO
       if (bio_err (opt->bio)) /* buffered_io write error */
@@ -918,7 +932,8 @@ perm (const struct Opt *opt)
     {
       for (ssize_t i=0; i < seps_len; ++i)
         {
-          if (0 != (ret = __perm (opt, opt->seps[i], tmp, dep)))
+          int ret = __perm (opt, opt->seps[i], tmp, dep);
+          if (__unlikely (0 != ret))
             return ret;
         }
     }
@@ -1001,7 +1016,7 @@ __regular_perm (struct Opt *opt,
       Fputs (current_seed->suff, opt);
     if (current_fmt->suff)
       Fputs (current_fmt->suff, opt);
-    if (i < size)
+    if (__likely (i < size))
       {
         if (sep)
           {
@@ -1025,7 +1040,7 @@ __regular_perm (struct Opt *opt,
   for (pos = size - 1; pos >= 0 && idxs[pos] == lens[pos]; --pos)
     idxs[pos] = 0;
 
-  if (pos < 0) /* End of Permutations */
+  if (__unlikely (pos < 0)) /* End of Permutations */
     {
 #ifdef _USE_BIO
       if (bio_err (opt->bio))
@@ -1094,11 +1109,13 @@ regular_perm (struct Opt *opt)
               for (ssize_t i=0; i < seps_len; ++i)
                 {
                   int window_len = MIN (fmt_count, window);
-                  if (window_len <= 0)
+                  if (__unlikely (window_len <= 0))
                     continue;
                   ret =
                     __regular_perm (opt, lengths, tmp,
                                     window_len, offset, opt->seps[i]);
+                  if (__unlikely (ret != 0))
+                    break;
                 }
             }
         }
