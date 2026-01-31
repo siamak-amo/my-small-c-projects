@@ -60,29 +60,21 @@
         };
   
       static const char *Keywords[] = {
-        [KEY_IF] = "if",
-        ...
+        [KEY_IF] = "if",  ...
       };
-      static const char *SL_Comments[] = {
-        [COMM_SL_1] = "#",
-        ...
+      static const char *SL_Comments[] = {  // single-line comments
+        [COMM_SL_1] = "#",  ...
       };
-  
       static struct Milexer_exp_ Puncs[] = {
-        [PUNC_COMMA] = {","},
-        ...
+        [PUNC_COMMA] = {","},  ...
       };
       static struct Milexer_exp_ Expressions[] = {
-        [EXP_STR] = { "'", "'" },
-        ...
+        [EXP_STR] = { "'", "'" },  ...
       };
-      static struct Milexer_exp_ ML_Comments[] = {
-        [ML_SL_COMM_1] = { "-(", ")-" },
-        ...
+      static struct Milexer_exp_ ML_Comments[] = {  // multi-line
+        [ML_SL_COMM_1] = { "-(", ")-" },  ...
       };
-  
-      // Define delimiter ranges if deeded
-      static const char *Delimiters = {
+      static const char *Delimiters = {  // delimiter ranges
         "\x00\x19",  // the range [0x00, 0x19]
         ";",         // the `;` character
         ...
@@ -101,9 +93,10 @@
       const int flg = PFLAG_DEFAULT;
       Milexer_Slice src = {.lazy = true};
 
-      // To allocate tokens on stack use the TOKEN_DECLARE macro,
-      // but here we use TOKEN_ALLOC which works with malloc:
-      Milexer_Token tk = TOKEN_ALLOC (32);
+      // To allocate tokens on stack use the TK_DECLARE macro:
+      // Ex:  TK_DECLARE(tmp, sizeof(tmp) - 1);
+      // but here we use TK_ALLOC which works with malloc:
+      Milexer_Token tk = TK_ALLOC (32);
   
       //-- Actual Parsing --------------//
       for (int ret = 0; !NEXT_SHOULD_END (ret); )
@@ -132,22 +125,18 @@
                 } else if ( tk.type == TK_PUNCS  &&  tk.id == PUNC_COMMA ) {
                     puts ("[Comma]");
                 }
-                // some other else if ...
-
-                if ( tk.id == TK_NOT_SET ) {
-                    printf ("[Unrecognized] `%s` of type %s "
-                            "at line %d, column %d\n",
+                ...
+                else if ( tk.id == TK_NOT_SET ) {
+                    printf ("token: `%s` of type %s at line %d, column %d\n",
                             tk.cstr,
                             milexer_token_type_cstr[tk.type]
                             tk.line, tk.col);
                 }
               }
               break;
-  
-            default: break;
             }
         }
-      TOKEN_FREE (&tk);
+      TK_FREE (&tk);
       ```
 
  -- Lexer in Lexer --------------------------------------------------
@@ -171,7 +160,7 @@
         // As we are using @tk.cstr in new_src, we cannot also
         // store the result data into the @tk itself, so
         // you *MUST* also allocate a new token, @new_token
-        Milexer_Token new_token = TOKEN_ALLOC (32);
+        Milexer_Token new_token = TK_ALLOC (32);
   
         do {
           // Indicates to the parser when it should stop
@@ -186,8 +175,7 @@
               if (NEXT_SHOULD_LOAD (_ret))
                 break;
   
-              // do something here
-              ...
+              // do something here ...
             }
   
           // Load the remaining chunk(s)
@@ -200,16 +188,16 @@
 
  -- Extending chunked tokens ----------------------------------------
     If Milexer_Token->cstr is allocated via malloc, for example:
-    TOKEN_ALLOC macro is used, it can be extended to receive
+    TK_ALLOC macro is used, it can be extended to receive
     the actual intended data when it's chunked.
-    The TOKEN_EXTEND macro can be used to extend the capacity:
+    The TK_EXTEND macro can be used to extend the capacity:
     ```{c}
       while (ret == NEXT_CHUNK)
         {
           // Grow the token @tk, 12 bytes using realloc
-          TOKEN_EXTEND (&tk, 12);
+          TK_EXTEND (&tk, 12);
 
-          // Continue filling the token
+          // Continue fetching the rest of the token
           ret = ml_next (&ml, &src, &tk, ...);
         }
     ```
@@ -582,7 +570,7 @@ typedef struct
    *  The user of this library is responsible for allocating
    *  and freeing the buffer @cstr of length `@cap + 1`
    *
-   *  The `TOKEN_ALLOC` macro allocates a token using malloc
+   *  The `TK_ALLOC` macro allocates a token using malloc
    */
   char *cstr;
   size_t cap, size;  /* capacity and size (=strlen) */
@@ -595,60 +583,62 @@ typedef struct
   size_t __line_idx; /* start of the current line's index */
 } Milexer_Token;
 
-/* Users only use these macros */
-#define TK_DECLARE    TOKEN_DECLARE
-#define TK_ALLOC      TOKEN_ALLOC   /* needs stdlib malloc */
-#define TK_FREE       TOKEN_FREE    /* needs stdlib free */
-#define TK_EXTEND     TOKEN_EXTEND  /* needs stdlib realloc */
-#define TK_EXTEND2    TOKEN_EXTEND2
-#define TK_STRLEN     TOKEN_STRLEN
-#define TK_FREE_SPACE TOKEN_FREE_SPCAE
-
-/* To allocate/free tokens using malloc */
-#define TOKEN_DECLARE(mem, len) (Milexer_Token){.cstr=mem, .cap=len}
-#define TOKEN_ALLOC(n) TOKEN_DECLARE (ml_malloc(n+1), n)
-#define TOKEN_FREE(t) if ((t)->cstr) {ml_free ((t)->cstr);}
-
+/** Token macros, to work with tokens **/
+#define TK_ALLOC(cap)         TOKEN_ALLOC (cap)         /* needs stdlib malloc */
+#define TK_FREE(tk)           TOKEN_FREE (tk)           /* needs stdlib free */
+#define TK_REALLOC(tk, cap)   TOKEN_REALLOC (tk, cap)   /* needs stdlib realloc */
+#define TK_STRLEN(tk)         TOKEN_STRLEN (tk)
+#define TK_FREE_SPACE(tk)     TOKEN_FREE_SPCAE (tk)
+#define TK_IS_KNOWN(tk)       TOKEN_IS_KNOWN (tk)
 /**
- *  Extends a token when it runs out of memory so
- *  ml_next can continue using it.
- *  Only use these macros after ml_next call, and use it
- *  until ml_next returns NEXT_CHUNK.
- * @grow: how many bytes to extend
+ *  Token declaration
+ *  Capacity of @mem *MUST* be @len+1 (an extra byte for null-termination)
  */
-#define TOKEN_EXTEND(tk, grow) \
-  TOKEN_EXTEND2(tk, ml_realloc((tk)->cstr, (tk)->cap + grow +1), grow)
-/* To extend tokens manually */
+#define TK_DECLARE(mem, len) TOKEN_DECLARE (mem, len)
+/**
+ *  Extends a token when it runs out of memory
+ *  Use this macros if ml_next call returns NEXT_CHUNK,
+ *  and use it until ml_next returns NEXT_CHUNK.
+ */
+#define TK_EXTEND(tk, grow_bytes) TOKEN_EXTEND(tk, grow_bytes) /* needs stdlib realloc */
+/**
+ *  To extend tokens manually, use it instead of TK_EXTEND
+ *  @new_mem MUST have capacity of (@tk->cap + 1 + @delta_size)
+ */
+#define TK_EXTEND2(tk, new_mem, delta_size) TOKEN_EXTEND2(tk, new_mem, delta_size)
+
+/** Internal token macros, users do not normally use these macros **/
+#define TOKEN_FREE(tk) ml_free ((tk)->cstr)
+#define TOKEN_STRLEN(tk) ((tk)->size)
+#define TOKEN_IS_KNOWN(tk) ((tk)->id >= 0)
+#define TOKEN_FREE_SPCAE(tk) ((tk)->cap - ((tk)->size))
+
+#define TOKEN_DECLARE(mem, len) (Milexer_Token){.cstr=mem, .cap=len}
+#define TOKEN_ALLOC(cap) TOKEN_DECLARE (ml_malloc(cap+1), cap)
+
 #define TOKEN_EXTEND2(tk, new_mem, delta_size)  \
   ((tk)->__idx = (tk)->size,                    \
-   (tk)->cap  += delta_size,                    \
-   (tk)->cstr  = new_mem)
-
-/* strlen and free space of tokens */
-#define TOKEN_STRLEN(tk) ((tk)->size)
-#define TOKEN_LEFT_CAP(tk) ((tk)->cap - ((tk)->size))
-#define TOKEN_FREE_SPCAE TOKEN_LEFT_CAP
-
-/* Internal macros */
-#define TOKEN_IS_KNOWN(t) ((t)->id >= 0)
-#define TOKEN_FINISH(t) \
-  ((t)->cstr[(t)->__idx] = 0 , (t)->size=(t)->__idx, (t)->__idx=0)
+   (tk)->cap  += delta_size, (tk)->cstr = new_mem)
 /* realloc token buffer */
-#define _REALLOC(ptr, len) ptr = ml_realloc(ptr, len)
+#define _REALLOC(ptr, len) (ptr = ml_realloc (ptr, len))
 #define TOKEN_REALLOC(tk, new_cap) \
-  (_REALLOC( (tk)->cstr, new_cap), (tk)->cap=new_cap)
+  (_REALLOC ( (tk)->cstr, new_cap), (tk)->cap = new_cap)
+#define TOKEN_EXTEND(tk, grow) \
+  TOKEN_EXTEND2(tk, ml_realloc((tk)->cstr, (tk)->cap + 1 + grow), grow)
+
 /* line/column number marker macros */
-#define TK_MARK_COLUMN(src, tk) \
+#define TOKEN_MARK_COL(src, tk) \
   ((tk)->col = (src)->idx - (tk)->__line_idx)
-#define TK_RESET_LINE(tk) ((tk)->line = 1, (tk)->__line_idx = 0)
-#define TK_MARK_NEWLINE(src, tk)                \
-  ((src)->__last_newline = 0,                   \
-   (tk)->line++,                                \
+#define TOKEN_RESET_LINE(tk) ((tk)->line = 1, (tk)->__line_idx = 0)
+#define TOKEN_MARK_NEWLINE(src, tk)                \
+  ((src)->__last_newline = 0, (tk)->line++,     \
    (tk)->__line_idx = (src)->idx)
 /* Reset the token @t, NO free */
-#define TOKEN_RESET(t) \
-  ((t)->__idx = 0, (t)->len = 0, \
+#define TOKEN_RESET(t)                          \
+  ((t)->__idx = 0, (t)->len = 0,                \
    (t)->type = TK_NOT_SET, (t)->cstr[0] = '\0')
+#define TOKEN_FINISH(t) \
+  ((t)->cstr[(t)->__idx] = 0 , (t)->size=(t)->__idx, (t)->__idx=0)
 
 
 typedef struct
@@ -691,7 +681,7 @@ typedef struct
 #define GETLINE_SLICE(src, stream) \
   getline ((char **)&(src)->buffer, &(src)->cap, stream)
 
-/** Internal macros **/
+/** Internal slice macros **/
 /* set new state, load the previous state */
 #define LD_STATE(src) (src)->state = (src)->prev_state
 #define ST_STATE(slice, new_state) \
@@ -773,19 +763,19 @@ int ml_next (Milexer *ml, Milexer_Slice *src,
 #include <stdlib.h>
 #include <unistd.h>
 
-#ifndef __UNUSED__
-#define __UNUSED__ __attribute__((unused))
-#endif /* __UNUSED__ */
+#ifndef __unused
+#define __unused __attribute__((unused))
+#endif
 
-static char    *yytext  __UNUSED__;     /* Milexer_Token->cstr */
-static size_t   yyleng  __UNUSED__;     /* strlen of Milexer_Token->cstr */
-static FILE    *yyin    __UNUSED__;     /* stream input file */
+static char    *yytext  __unused;     /* Milexer_Token->cstr */
+static size_t   yyleng  __unused;     /* strlen of Milexer_Token->cstr */
+static FILE    *yyin    __unused;     /* stream input file */
 
-static Milexer *yyml    __UNUSED__;     /* Milexer Language */
-static int      yyid    __UNUSED__;     /* Milexer_Token->id */
+static Milexer *yyml    __unused;     /* Milexer Language */
+static int      yyid    __unused;     /* Milexer_Token->id */
 
-static int    yyline    __UNUSED__;     /* Milexer_Token->line */
-static int    yycolumn  __UNUSED__;     /* Milexer_Token->col */
+static int    yyline    __unused;     /* Milexer_Token->line */
+static int    yycolumn  __unused;     /* Milexer_Token->col */
 
 enum yy_memflag
   {
@@ -1332,7 +1322,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
     {
     case SYN_NO_DUMMY__:
       if (HAS_FLAG (flags, PFLAG_INEXP))
-        TK_MARK_COLUMN (src, tk);
+        TOKEN_MARK_COL (src, tk);
       if (!HAS_FLAG (flags, PFLAG_INEXP) && src->__last_exp_idx != -1)
         {
           /* certainly the token type is expression */
@@ -1340,14 +1330,14 @@ ml_next (Milexer *ml, Milexer_Slice *src,
           last_exp = __get_last_exp (ml, src);
           char *__p = mempcpy (tk->cstr, last_exp->begin, last_exp->len.begin);
           tk->__idx += __p - tk->cstr;
-          TK_MARK_COLUMN (src, tk);
+          TOKEN_MARK_COL (src, tk);
           tk->col -= last_exp->len.begin;
         }
       src->state = SYN_NO_DUMMY;
       break;
 
     case SYN_PUNC__:
-      TK_MARK_COLUMN (src, tk);
+      TOKEN_MARK_COL (src, tk);
       last_exp = __get_last_punc (ml, src);
       memcpy (tk->cstr, last_exp->begin, last_exp->len.begin);
       LD_STATE (src);
@@ -1365,7 +1355,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
       break;
 
     case SYN_ML_COMM:
-      TK_MARK_COLUMN (src, tk);
+      TOKEN_MARK_COL (src, tk);
       if (src->__last_comm && HAS_FLAG (flags, PFLAG_INCOMMENT))
         {
           tk->type = TK_COMMENT;
@@ -1377,9 +1367,9 @@ ml_next (Milexer *ml, Milexer_Slice *src,
 
     case SYN_DUMMY:
     case SYN_DONE:
-      TK_MARK_COLUMN (src, tk);
+      TOKEN_MARK_COL (src, tk);
       if (src->__last_newline)
-        TK_MARK_NEWLINE (src, tk);
+        TOKEN_MARK_NEWLINE (src, tk);
 
       /* Update language internals if necessary */
       UPDATE_EXP (&ml->expression);
@@ -1388,7 +1378,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
       break;
 
     default:
-      TK_MARK_COLUMN (src, tk);
+      TOKEN_MARK_COL (src, tk);
       break;
     }
 
@@ -1412,7 +1402,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
   const char *p;
   char *dst = tk->cstr;
   if (src->idx == 0)
-    TK_RESET_LINE (tk);
+    TOKEN_RESET_LINE (tk);
   for (; src->idx < src->cap; )
     {
       p = src->buffer + (src->idx++);
@@ -1477,10 +1467,10 @@ ml_next (Milexer *ml, Milexer_Slice *src,
 
         case SYN_COMM: {
           if (*p == '\n')
-            TK_MARK_NEWLINE (src, tk);
+            TOKEN_MARK_NEWLINE (src, tk);
           if (*p == '\n' || *p == '\r')
             {
-              TK_MARK_COLUMN (src, tk);
+              TOKEN_MARK_COL (src, tk);
               ST_STATE (src, SYN_DUMMY);
               tk->type = TK_COMMENT;
               TOKEN_FINISH (tk);
@@ -1498,10 +1488,10 @@ ml_next (Milexer *ml, Milexer_Slice *src,
 
         case SYN_ML_COMM: {
           if (*p == '\n')
-            TK_MARK_NEWLINE (src, tk);
+            TOKEN_MARK_NEWLINE (src, tk);
           if ((__ptr = __is_mline_commented_suff (ml, src, tk)))
             {
-              TK_MARK_COLUMN (src, tk);
+              TOKEN_MARK_COL (src, tk);
               ST_STATE (src, SYN_DUMMY);
               TOKEN_FINISH (tk);
               if (HAS_FLAG (flags, PFLAG_INCOMMENT))
@@ -1531,7 +1521,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
                   ST_STATE (src, SYN_NO_DUMMY);
                   if (HAS_FLAG (flags, PFLAG_INEXP))
                     {
-                      TK_MARK_COLUMN (src, tk);
+                      TOKEN_MARK_COL (src, tk);
                       TOKEN_FINISH (tk);
                     }
                 }
@@ -1560,8 +1550,8 @@ ml_next (Milexer *ml, Milexer_Slice *src,
           else
             {
               if (c == '\n')
-                TK_MARK_NEWLINE (src, tk);
-              TK_MARK_COLUMN (src, tk);
+                TOKEN_MARK_NEWLINE (src, tk);
+              TOKEN_MARK_COL (src, tk);
               TOKEN_FINISH (tk);
             }
         } break;
@@ -1614,7 +1604,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
               else
                 {
                   TOKEN_FINISH (tk);
-                  TK_MARK_COLUMN (src, tk);
+                  TOKEN_MARK_COL (src, tk);
                 }
             }
           else if (__detect_puncs (ml, src, tk))
@@ -1654,7 +1644,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
                   if (HAS_FLAG (flags, PFLAG_INEXP))
                     {
                       TOKEN_FINISH (tk);
-                      TK_MARK_COLUMN (src, tk);
+                      TOKEN_MARK_COL (src, tk);
                     }
                   ST_STATE (src, SYN_NO_DUMMY);
                 }
@@ -1715,7 +1705,6 @@ ml_next (Milexer *ml, Milexer_Slice *src,
 
 /* Flex compatibility implementation */
 #ifdef ML_FLEX
-
 /**
  *  Allocates the stack if it does not exist.
  *  Guarantees space for at least one push.
@@ -1734,10 +1723,10 @@ static YY_BUFFER_STATE * yy_alloc_buffer (void);
 static inline void yy_set_global (YY_BUFFER_STATE *b);
 
 /**
- *  It deletes and pops the previous state buffer, so
- *  it should *NOT* be freed again
+ *  It deletes and pops the previous state buffer,
+ *  so it should *NOT* be freed again
  */
-static void yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer) __UNUSED__;
+static void yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer);
 
 /* If FILE is provided, this will read the next chunk */
 static int yy_get_next_input (YY_BUFFER_STATE *b);
@@ -1755,8 +1744,7 @@ void yy_delete_buffer (YY_BUFFER_STATE *b)
 {
   if (! b)
     return;
-
-  TOKEN_FREE (&b->tk);
+  TK_FREE (&b->tk);
   if (b->memflgs & ITS_OUR_BASE_BUF)
     yy_free (b->base);
   yy_free (b);
@@ -1802,7 +1790,6 @@ yypush_buffer (YY_BUFFER_STATE *new_buffer)
   /* Only push if top exists. Otherwise, replace top. */
   if (YY_CURRENT_BUFFER)
     yy_buffer_stack_top++;
-
   *YY_CURRENT_BUFFER_LVALUE = new_buffer;
 }
 void yypop_buffer_state (void)
@@ -1849,7 +1836,7 @@ yy_scan_buffer (char *base, size_t size)
   b->base = base;
   b->base_cap = size;
   SET_ML_SLICE (&b->src, base, size);
-  b->tk = TOKEN_ALLOC (YY_TOKEN_CAP);
+  b->tk = TK_ALLOC (YY_TOKEN_CAP);
   yy_set_global (b);
   yypush_buffer (b);
   return b;
@@ -1867,6 +1854,8 @@ yy_scan_bytes (const char *bytes, size_t len)
 YY_BUFFER_STATE *
 yy_scan_string (const char *str)
 {
+  if (! str)
+    return NULL;
   return yy_scan_bytes (str, strlen (str));
 }
 
@@ -1878,7 +1867,6 @@ yy_create_buffer (FILE *file, int size)
   yyin = file;
   YY_BUFFER_STATE *b = yy_alloc_buffer ();
   b->yy_input_file = yyin;
-
   b->src.lazy = true;
   int tty = isatty (fileno (yyin));
   b->yy_is_interactive = (tty > 0);
@@ -1887,7 +1875,7 @@ yy_create_buffer (FILE *file, int size)
   b->base = yy_malloc (size);
   b->memflgs |= ITS_OUR_BASE_BUF;
 
-  b->tk = TOKEN_ALLOC (YY_TOKEN_CAP);
+  b->tk = TK_ALLOC (YY_TOKEN_CAP);
   yypush_buffer (b);
   return b;
 }
@@ -1903,7 +1891,7 @@ yy_restart (FILE *file)
   return b;
 }
 
-static void
+static void __unused
 yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer)
 {
   if (! new_buffer)
@@ -1923,9 +1911,9 @@ yy_getline (FILE *stream, char *buffer, size_t size)
   size_t rw = 0;
   for (int c = '*'; c >= ' ' && rw < size-1; ++rw)
     {
-      c = getc (stream);
+      c = fgetc (stream);
       buffer[rw] = (char) c;
-      if (c == EOF)
+      if (c <= EOF)
         return rw;
     }
   return rw;
@@ -1997,8 +1985,8 @@ yylex (void)
       return b->tk.type;
 
     case NEXT_CHUNK:
-      TOKEN_EXTEND (&b->tk, YY_TOKEN_GROW);
       assert (++extend_cnt < EXTEND_GUARD && "Too many token extends");
+      TK_EXTEND (&b->tk, YY_TOKEN_GROW);
       goto lex_loop;
 
     case NEXT_NEED_LOAD:
@@ -2232,7 +2220,7 @@ main (void)
   /* input source */
   Milexer_Slice src = {.lazy = true};
   /* token type */
-  Milexer_Token tk = TOKEN_ALLOC (32);
+  Milexer_Token tk = TK_ALLOC (32);
 
   printf ("\
 Mini-Lexer Example 1\n\n\
@@ -2269,7 +2257,7 @@ outside of these expressions.\n\n\
             switch (tk.type)
               {
               case TK_KEYWORD:
-                printf ("[%c]  `%s`", TOKEN_IS_KNOWN (&tk) ?'*':'-', tk.cstr);
+                printf ("[%c]  `%s`", TK_IS_KNOWN (&tk) ?'*':'-', tk.cstr);
                 break;
               case TK_PUNCS:
                 printf ("[*]   %s", puncs_cstr[tk.id]);
@@ -2290,7 +2278,7 @@ outside of these expressions.\n\n\
                      */
                     puts (":");
                     Milexer_Slice second_src = {0};
-                    Milexer_Token tmp = TOKEN_ALLOC (32);
+                    Milexer_Token tmp = TK_ALLOC (32);
                     do {
                         /**
                          *  When the inner parentheses token is not a chunk,
@@ -2317,7 +2305,7 @@ outside of these expressions.\n\n\
                         ret = ml_next (&ml, &src, &tk, flg);
                       } while (!NEXT_SHOULD_LOAD (ret));
 
-                    TOKEN_FREE (&tmp);
+                    TK_FREE (&tmp);
                   }
                 break;
 
@@ -2335,7 +2323,7 @@ outside of these expressions.\n\n\
         }
     }
 
-  TOKEN_FREE (&tk);
+  TK_FREE (&tk);
   if (line)
     free (line);
   puts ("Bye");
@@ -2375,9 +2363,8 @@ test_vlogf (int n, int _line_, int test_number,
       va_start (ap, format);
       printf ("fail!\n%s:%d:#%d:  ", __FILE__, _line_, n);
       vprintf (format, ap);
-      printf ("\n  |  \
-run it with debugger, and pass the first argument `%d:%d` \
-for more investigating.",
+      printf ("\n--> run it with a debugger, \
+and pass the first argument `%d:%d` for further inspection.\n",
               test_number, n);
       va_end (ap);
     }
@@ -2403,7 +2390,7 @@ do_test__H (test_t *t, Milexer_Slice *src,
         {
           printf ("\n\n***  Debugging Test %d:%d  ***\n\n",
                   test_number, counter);
-         SET_BREAKPOINT (); /* debugger breakpoint */
+          SET_BREAKPOINT (); /* debugger breakpoint */
         }
 
       /* Retrieve the next token */
@@ -2472,10 +2459,9 @@ main (int argc, char **argv)
 
   if (2 == argc)
     {
-      char *p;
       breakp_test = atoi (argv[1]);
-      if ((p = strchr (argv[1], ':')))
-        breakp_subtest = atoi (p+1);
+      if ((argv[1] = strchr (argv[1], ':')))
+        breakp_subtest = atoi (argv[1]+1);
       else
         breakp_subtest = 1;
     }
@@ -2483,7 +2469,7 @@ main (int argc, char **argv)
   static Milexer_Slice src = {.lazy = 1};
   test_t t = {0};
   int ret = 0;
-  tk = TOKEN_ALLOC (16);
+  tk = TK_ALLOC (16);
 
   puts ("-- elementary tests -- ");
   {
@@ -2937,7 +2923,7 @@ main (int argc, char **argv)
 
   printf ("\n ***  All tests passed  ***\n");
  eof_main:
-  TOKEN_FREE (&tk);
+  TK_FREE (&tk);
   return ret;
 }
 #endif /* ML_TEST_1 */
