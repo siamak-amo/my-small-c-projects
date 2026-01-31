@@ -833,6 +833,9 @@ static size_t            yy_buffer_stack_max = 0;  /* capacity of stack */
 #ifndef YY_TOKEN_GROW
 #define YY_TOKEN_GROW 128  /* token realloc grow bytes */
 #endif
+#ifndef EXTEND_GUARD
+#define EXTEND_GUARD 66666  /* maximum allowed token extend calls */
+#endif
 
 #ifdef ML_DEBUG
 # define ml_dprintf(format, ...) \
@@ -1983,6 +1986,7 @@ yylex (void)
     b = yy_restart (stdin);
   yy_set_global (b);
 
+  int extend_cnt = 0;
  lex_loop:
   b->ret = ml_next (yyml, &b->src, &b->tk, PFLAG_INEXP);
   switch (b->ret)
@@ -1994,6 +1998,7 @@ yylex (void)
 
     case NEXT_CHUNK:
       TOKEN_EXTEND (&b->tk, YY_TOKEN_GROW);
+      assert (++extend_cnt < EXTEND_GUARD && "Too many token extends");
       goto lex_loop;
 
     case NEXT_NEED_LOAD:
