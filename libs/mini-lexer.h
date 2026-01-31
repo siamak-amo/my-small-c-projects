@@ -1184,10 +1184,13 @@ __is_mline_commented_suff (const Milexer *ml,
       if (a_comment->disabled)
         continue;
       const char *pref = a_comment->end;
-      size_t len = a_comment->len.end;
-      char *__cstr = tk->cstr + tk->__idx - len;
+      size_t pref_len = a_comment->len.end;
+      int tk_offset = tk->__idx - pref_len;
+      if (tk_offset < 0 || tk_offset >= (int) tk->cap)
+        return NULL;
 
-      if (strncmp (pref, __cstr, len) == 0)
+      char *__cstr = tk->cstr + tk_offset;
+      if (strncmp (pref, __cstr, pref_len) == 0)
         {
           src->__last_comm = pref;
           return __cstr;
@@ -1205,10 +1208,13 @@ __is_sline_commented_pref (const Milexer *ml,
   for (int i=0; i < ml->b_comment.len; ++i)
     {
       const char *pref = ml->b_comment.exp[i];
-      size_t len = strlen (pref);
-      char *__cstr = tk->cstr + tk->__idx - len;
+      size_t pref_len = strlen (pref);
+      int tk_offset = tk->__idx - pref_len;
+      if (tk_offset < 0 || tk_offset >= (int) tk->cap)
+        return NULL;
 
-      if (strncmp (pref, __cstr, len) == 0)
+      char *__cstr = tk->cstr + tk_offset;
+      if (strncmp (pref, __cstr, pref_len) == 0)
         {
           src->__last_comm = pref;
           return __cstr;
@@ -1229,10 +1235,13 @@ __is_mline_commented_pref (const Milexer *ml,
       if (a_comment->disabled)
         continue;
       const char *pref = a_comment->begin;
-      size_t len = a_comment->len.begin;
-      char *__cstr = tk->cstr + tk->__idx - len;
+      size_t pref_len = a_comment->len.begin;
+      int tk_offset = tk->__idx - pref_len;
+      if (tk_offset < 0 || tk_offset >= (int) tk->cap)
+        return NULL;
 
-      if (strncmp (pref, __cstr, len) == 0)
+      char *__cstr = tk->cstr + tk_offset;
+      if (strncmp (pref, __cstr, pref_len) == 0)
         {
           src->__last_comm = pref;
           return __cstr;
