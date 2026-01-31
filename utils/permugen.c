@@ -235,13 +235,6 @@ const int sp_padding_len = 32;
 #  define dprintf(format, ...) \
   fprintf (stderr, format, ##__VA_ARGS__)
 
-/* To print arrays with seperator & end suffix */
-#  define printd_arr__H(arr, fmt, len, sep, end)    \
-  for (ssize_t __idx = 0; __idx < len; __idx++) {   \
-    dprintf (fmt "%s", arr[__idx],                  \
-             (__idx < len-1) ? sep : end);          \
-  }
-
 /**
  *  Debug macro to print arrays
  *  Ex. `int arr[7]`:  `printd_arr (arr, "%d", 7);`
@@ -253,6 +246,11 @@ const int sp_padding_len = 32;
     } else {                                            \
       dprintf (CSTR (arr) " is empty\n");               \
     }} while (0)
+#  define printd_arr__H(arr, fmt, len, sep, end)    \
+  for (ssize_t __idx = 0; __idx < len; __idx++) {   \
+    dprintf (fmt "%s", arr[__idx],                  \
+             (__idx < len-1) ? sep : end);          \
+  }
 
 #else /* _DEBUG */
 #  define dprintf(...) NOP()
@@ -841,7 +839,7 @@ __fputc (char c, struct Opt *opt, const struct print_info *info)
  *  It should be called in a loop with @depth in [min_depth, max_depth]
  *  @idxs: a temporary buffer with capacity of @depth
  */
-int
+static int
 __perm (const struct Opt *opt, const char *sep,
         int *idxs, int depth)
 {
@@ -916,8 +914,7 @@ perm (const struct Opt *opt)
   ssize_t seps_len = da_sizeof (opt->seps);
   int *tmp = (int *) calloc (opt->depth.max, sizeof (int));
 
-  for (int dep = opt->depth.min, ret = 0;
-       dep <= opt->depth.max; ++dep)
+  for (int dep = opt->depth.min; dep <= opt->depth.max; ++dep)
     {
       for (ssize_t i=0; i < seps_len; ++i)
         {
@@ -1055,7 +1052,7 @@ __regular_perm (struct Opt *opt,
   return ret;
 }
 
-static int
+int
 regular_perm (struct Opt *opt)
 {
   int ret = 0;
@@ -1094,7 +1091,7 @@ regular_perm (struct Opt *opt)
         {
           for (int offset = 0; offset + window <= seeds_len; ++offset)
             {
-              for (ssize_t i=0; i < seps_len && 0 == ret; ++i)
+              for (ssize_t i=0; i < seps_len; ++i)
                 {
                   int window_len = MIN (fmt_count, window);
                   if (window_len <= 0)
@@ -1349,9 +1346,9 @@ static int
 opt_getopt (int argc, char **argv, struct Opt *opt)
 {
   int idx = 0;
-#define REGULAR_MODE_ONLY() CHECK_AND_BREAK (opt->mode != REGULAR_MODE, \
+#define REGULAR_MODE_ONLY CHECK_AND_BREAK (opt->mode != REGULAR_MODE, \
   warnln ("regular mode specific option (%s) was ignored", LASTOPT (argv)))
-#define NORMAL_MODE_ONLY() CHECK_AND_BREAK (opt->mode != NORMAL_MODE, \
+#define NORMAL_MODE_ONLY CHECK_AND_BREAK (opt->mode != NORMAL_MODE, \
   warnln ("normal mode specific option (%s) was ignored", LASTOPT (argv)))
 
   while (1)
@@ -1424,11 +1421,11 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
         case '2': /* max depth */
           opt->depth.max = atoi (optarg);
           break;
-        case 'f': REGULAR_MODE_ONLY ();
+        case 'f': REGULAR_MODE_ONLY
           da_appd (opt->formats, optarg);
           break;
 
-        case 'S': NORMAL_MODE_ONLY () { /* wseed from file or stdin */
+        case 'S': NORMAL_MODE_ONLY { /* wseed from file or stdin */
             FILE *wseed_f = stdin;
             if (!Strcmp (optarg, "-"))
               wseed_f = safe_fopen (optarg, "r");
@@ -1439,13 +1436,13 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
           }
           break;
 
-        case 's': NORMAL_MODE_ONLY () { /* seed configuration */
+        case 's': NORMAL_MODE_ONLY { /* seed configuration */
             opt->using_default_seed = 0;
             parse_seed_regex (opt, opt->global_seeds, optarg);
           }
           break;
 
-        case '0': NORMAL_MODE_ONLY () { /* raw seed */
+        case '0': NORMAL_MODE_ONLY { /* raw seed */
             opt->using_default_seed = 0;
             if (!opt->escape_disabled)
               UNESCAPE (optarg);
@@ -1453,7 +1450,7 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
           }
           break;
 
-        case '5': NORMAL_MODE_ONLY (); /* raw word seed */
+        case '5': NORMAL_MODE_ONLY /* raw word seed */
           wseed_uniappd (opt, opt->global_seeds, optarg);
           break;
 
