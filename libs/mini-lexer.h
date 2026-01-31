@@ -363,6 +363,9 @@
 #  define logf(format, ...)
 #endif
 
+#ifndef MLDEF /* definition of Milexer functions */
+#define MLDEF /* Ex: `static` or `static inline` */
+#endif
 #ifndef ml_malloc
 #define ml_malloc malloc
 #endif
@@ -754,7 +757,7 @@ typedef struct Milexer_t
  *  the user of this library
  *  @src and @tk buffers *MUST* be distinct
  */
-int ml_next (Milexer *ml, Milexer_Slice *src,
+MLDEF int ml_next (Milexer *ml, Milexer_Slice *src,
              Milexer_Token *tk, int flg);
 
 
@@ -847,7 +850,7 @@ static size_t            yy_buffer_stack_max = 0;  /* capacity of stack */
 #else /* ML_DEBUG */
 # ifndef yy_free
 # define yy_free(ptr) __yyfree (ptr, __FILE__, __LINE__)
-void
+MLDEF void
 __yyfree (void *ptr, const char *src_name, int _line_)
 {
   ml_dprintf ("%s:%d:  free(%p)\n", src_name, _line_, ptr);
@@ -856,7 +859,7 @@ __yyfree (void *ptr, const char *src_name, int _line_)
 # endif /* yy_free */
 # ifndef yy_malloc
 # define yy_malloc(n) __yymalloc (n, __FILE__, __LINE__)
-void *
+MLDEF void *
 __yymalloc (size_t size, const char *src_name, int _line_)
 {
   void *ptr = malloc (size);
@@ -867,7 +870,7 @@ __yymalloc (size_t size, const char *src_name, int _line_)
 # endif /* yy_alloc */
 # ifndef yy_realloc
 # define yy_realloc(ptr, n) __yyrealloc (ptr, n, __FILE__, __LINE__)
-void *
+MLDEF void *
 __yyrealloc (void *ptr, size_t size, const char *src_name, int _line_)
 {
   intptr_t __ptr = (intptr_t) ptr; // just to shut up the compiler
@@ -896,7 +899,7 @@ __yyrealloc (void *ptr, size_t size, const char *src_name, int _line_)
  *   On the end of tokens:  0  (=TK_NOT_SET)
  *   Successful lex:   Milixer_Token->type
  */
-int yylex (void);
+MLDEF int yylex (void);
 
 /**
  *  Getline function
@@ -907,43 +910,42 @@ int yylex (void);
  *  Minilexer has implemented a minimal getline function,
  *  and it can be overridden using YY_CUSTOM_GETLINE macro
  */
-size_t yy_getline (FILE *stream, char *buffer, size_t size);
+MLDEF size_t yy_getline (FILE *stream, char *buffer, size_t size);
 
 /**
  *  To delete a buffer from the stack
  *  This should be called by the users, if they
  *  are handling the lexer memory themselves
  */
-void yy_delete_buffer (YY_BUFFER_STATE *b);
+MLDEF void yy_delete_buffer (YY_BUFFER_STATE *b);
 
 /**
  *  Allocates new state buffer from @base
  *  It should be freed by `yy_delete_buffer`
  */
-YY_BUFFER_STATE * yy_scan_buffer (char *base, size_t size);
+MLDEF YY_BUFFER_STATE * yy_scan_buffer (char *base, size_t size);
 
 /**
  *  Like yy_scan_buffer, but keep a malloc copy of @bytes
  *  yy_delete_buffer will free it and it's copy of @bytes
  */
-YY_BUFFER_STATE * yy_scan_bytes (const char *bytes, size_t len);
+MLDEF YY_BUFFER_STATE * yy_scan_bytes (const char *bytes, size_t len);
 
 /* C string version of yy_scan_bytes */
-YY_BUFFER_STATE * yy_scan_string (const char *str);
+MLDEF YY_BUFFER_STATE * yy_scan_string (const char *str);
 
 /**
  *  Create state buffer from file
  *  @size is size of the internal buffer to read from @file
  *  If @file is NULL, it read from stdin
  */
-YY_BUFFER_STATE * yy_create_buffer (FILE *file, int size);
+MLDEF YY_BUFFER_STATE * yy_create_buffer (FILE *file, int size);
 
 /**
  *  To ensure all the allocated memory are freed,
  *  call it at the end of parsing
  */
-int yylex_destroy (void);
-
+MLDEF int yylex_destroy (void);
 
 /**
  **  No `yy_delete_buffer` required functions
@@ -951,8 +953,7 @@ int yylex_destroy (void);
  **  be freed by the users
  **/
 /* Switch to reading from @file */
-YY_BUFFER_STATE * yy_restart (FILE *file);
-
+MLDEF YY_BUFFER_STATE * yy_restart (FILE *file);
 
 #endif /* ML_FLEX */
 #endif /* MINI_LEXER__H */
@@ -1740,7 +1741,8 @@ yy_alloc_buffer (void)
   return b;
 }
 
-void yy_delete_buffer (YY_BUFFER_STATE *b)
+MLDEF void
+yy_delete_buffer (YY_BUFFER_STATE *b)
 {
   if (! b)
     return;
@@ -1828,7 +1830,7 @@ yy_set_global (YY_BUFFER_STATE *b)
     }
 }
 
-YY_BUFFER_STATE *
+MLDEF YY_BUFFER_STATE *
 yy_scan_buffer (char *base, size_t size)
 {
   YY_BUFFER_STATE *b = yy_alloc_buffer ();
@@ -1842,7 +1844,7 @@ yy_scan_buffer (char *base, size_t size)
   return b;
 }
 
-YY_BUFFER_STATE *
+MLDEF YY_BUFFER_STATE *
 yy_scan_bytes (const char *bytes, size_t len)
 {
   char *buf = yy_malloc (len + 1);
@@ -1851,7 +1853,8 @@ yy_scan_bytes (const char *bytes, size_t len)
   res->memflgs |= ITS_OUR_BASE_BUF;
   return res;
 }
-YY_BUFFER_STATE *
+
+MLDEF YY_BUFFER_STATE *
 yy_scan_string (const char *str)
 {
   if (! str)
@@ -1859,7 +1862,7 @@ yy_scan_string (const char *str)
   return yy_scan_bytes (str, strlen (str));
 }
 
-YY_BUFFER_STATE *
+MLDEF YY_BUFFER_STATE *
 yy_create_buffer (FILE *file, int size)
 {
   if (! file)
@@ -1880,7 +1883,7 @@ yy_create_buffer (FILE *file, int size)
   return b;
 }
 
-YY_BUFFER_STATE *
+MLDEF YY_BUFFER_STATE *
 yy_restart (FILE *file)
 {
   YY_BUFFER_STATE *b;
@@ -1905,7 +1908,7 @@ yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer)
 }
 
 #ifndef YY_CUSTOM_GETLINE
-size_t
+MLDEF size_t
 yy_getline (FILE *stream, char *buffer, size_t size)
 {
   size_t rw = 0;
@@ -1949,7 +1952,7 @@ yy_get_next_input (YY_BUFFER_STATE *b)
   return 1;
 }
 
-int
+MLDEF int
 yylex_destroy (void)
 {
   while (YY_CURRENT_BUFFER)
@@ -1966,7 +1969,7 @@ yylex_destroy (void)
     return 0;
 }
 
-int
+MLDEF int
 yylex (void)
 {
   YY_BUFFER_STATE *b = YY_CURRENT_BUFFER;
@@ -2087,7 +2090,6 @@ static Milexer ml = {
   };
 //--------------------------------------//
 #endif /* defined (ML_EXAMPLE_*) || defined (ML_TEST_*) */
-
 
 
 /**
