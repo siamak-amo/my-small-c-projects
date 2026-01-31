@@ -990,16 +990,12 @@ MLDEF YY_BUFFER_STATE * yy_restart (FILE *file);
           punc->end = PUNC_DOUBLE_CHECK;            \
       }} while (0)) 
 
-
-/**
- **  Internal functions
- **/
-
+/** Functions without MLDEF are internal functions **/
 /**
  *  To set the ID of keyword tokens
  *  @return 0 on success, -1 if not detected
  */
-int ml_set_keyword_id (const Milexer *ml, Milexer_Token *tk);
+static int ml_set_keyword_id (const Milexer *ml, Milexer_Token *tk);
 
 /* returns @p when @p is a delimiter, and -1 on null-byte */
 static inline int
@@ -1078,7 +1074,7 @@ __is_exp_or_comment (const Milexer *ml, Milexer_Slice *src,
  return 0;
 }
 
-static inline bool
+static bool
 __should_double_check (const Milexer *ml, _exp_t *punc)
 {
   const char *pref = punc->begin;
@@ -1274,7 +1270,7 @@ __is_expression_pref (const Milexer *ml,
   return NULL;
 }
 
-int
+static int
 ml_set_keyword_id (const Milexer *ml, Milexer_Token *res)
 {
   if (res->type != TK_KEYWORD)
@@ -1309,7 +1305,7 @@ tk_set_defaults (const Milexer *ml, Milexer_Token *tk)
   return false;
 }
 
-int
+MLDEF int
 ml_next (Milexer *ml, Milexer_Slice *src,
          Milexer_Token *tk, int flags)
 {
@@ -1704,7 +1700,7 @@ ml_next (Milexer *ml, Milexer_Slice *src,
   return NEXT_NEED_LOAD;
 }
 
-/* Flex compatibility implementation */
+/* Milexer's flex API implementation */
 #ifdef ML_FLEX
 /**
  *  Allocates the stack if it does not exist.
@@ -1732,7 +1728,7 @@ static inline void yy_switch_to_buffer (YY_BUFFER_STATE *new_buffer);
 /* If FILE is provided, this will read the next chunk */
 static int yy_get_next_input (YY_BUFFER_STATE *b);
 
-YY_BUFFER_STATE *
+static YY_BUFFER_STATE *
 yy_alloc_buffer (void)
 {
   YY_BUFFER_STATE *b = (YY_BUFFER_STATE *)
@@ -1782,7 +1778,7 @@ yyensure_buffer_stack (void)
     }
 }
 
-void
+static void
 yypush_buffer (YY_BUFFER_STATE *new_buffer)
 {
   if (new_buffer == NULL)
@@ -1794,7 +1790,9 @@ yypush_buffer (YY_BUFFER_STATE *new_buffer)
     yy_buffer_stack_top++;
   *YY_CURRENT_BUFFER_LVALUE = new_buffer;
 }
-void yypop_buffer_state (void)
+
+static void
+yypop_buffer_state (void)
 {
   if (!YY_CURRENT_BUFFER)
     return;
