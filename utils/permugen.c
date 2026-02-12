@@ -347,8 +347,8 @@ struct Seed
 };
 
 /* To allocate and free seed and seed array */
-static inline struct Seed * mk_seed (int c_len, int w_len);
-#define mk_seed_arr(n) da_newn (struct Seed *, n)
+static inline void mk_seed (struct Seed *dst, int c_len, int w_len);
+#define mk_seed_arr(n) da_newn (struct Seed, n)
 static inline void free_seed (struct Seed *s);
 /* Is seed reference to another seed */
 #define IS_REF_SEED(s) ((s)->seed_type != 0)
@@ -408,20 +408,15 @@ struct Opt
 {
   int mode;
   int escape_disabled; /* to disable backslash interpretation */
-  int using_default_seed;
   int getline_flags;
   struct
   {
     int min, max;
   } depth;
 
-  /* Seed Configuration (Normal mode) */
-  struct Seed *global_seeds;
-
-  /* Seed Configuration (Regular mode) */
-  struct Seed **reg_seeds; /* Dynamic array */
-  int reg_seeds_len;
   struct Fmt *fmts; /* Format array, length=reg_seeds_len */
+  int seeds_len;
+  struct Seed *seeds; /* dynamic array */
 
   /* Output Configuration */
   FILE *outf;
@@ -550,24 +545,19 @@ cleanup (int code, void *__opt)
   safe_free (opt->streamout_buff);
 #endif /* _USE_BIO */
 
-  free_seed (opt->global_seeds);
-  safe_free (opt->global_seeds);
-
   if (opt->fmts)
     {
-      for (int i=0; i < opt->reg_seeds_len; ++i)
+      for (int i=0; i < opt->seeds_len; ++i)
         fmt_free (&opt->fmts[i]);
     }
   safe_free (opt->fmts);
 
-  if (opt->reg_seeds)
+  if (opt->seeds)
     {
-      da_foreach (opt->reg_seeds, i)
-        {
-          free_seed (opt->reg_seeds[i]);
-          safe_free (opt->reg_seeds[i]);
-        }
-      da_free (opt->reg_seeds);
+      da_foreach (opt->seeds, i) {
+        free_seed (&opt->seeds[i]);
+      }
+      da_free (opt->seeds);
     }
 
   if (opt->seps)
@@ -857,8 +847,8 @@ static int
 __perm (const struct Opt *opt, const char *sep,
         int *idxs, int depth)
 {
-  int _max_depth = opt->global_seeds->cseed_len - 1 +
-    (int) da_sizeof (opt->global_seeds->wseed);
+  int _max_depth = opt->seeds->cseed_len - 1 +
+    (int) da_sizeof (opt->seeds->wseed);
   memset (idxs, 0, depth * sizeof (int));
 
   int i;
@@ -866,14 +856,14 @@ __perm (const struct Opt *opt, const char *sep,
   i = 0;
   if (opt->prefix)
     Fputs (opt->prefix, opt);
-  if (opt->global_seeds->pref)
-    Fputs (opt->global_seeds->pref, opt);
+  if (opt->seeds->pref)
+    Fputs (opt->seeds->pref, opt);
 
-  struct Seed *s = opt->global_seeds;
+  struct Seed *s = opt->seeds;
  print_loop: /* O(depth) */
   {
     int idx = idxs[i];
-    if (idx < opt->global_seeds->cseed_len)
+    if (idx < opt->seeds->cseed_len)
       {
         /* range of character seeds */
         Putc (s->cseed[idx], opt);
@@ -881,7 +871,7 @@ __perm (const struct Opt *opt, const char *sep,
     else
       {
         /* range of word seeds */
-        idx -= opt->global_seeds->cseed_len;
+        idx -= opt->seeds->cseed_len;
         Fputs (s->wseed[idx], opt);
       }
     i++;
@@ -894,8 +884,8 @@ __perm (const struct Opt *opt, const char *sep,
     }
 
   /* End of printing of the current permutation */
-  if (opt->global_seeds->suff)
-    Fputs (opt->global_seeds->suff, opt);
+  if (opt->seeds->suff)
+    Fputs (opt->seeds->suff, opt);
   if (opt->suffix)
     Puts (opt->suffix, opt);
   else
@@ -961,7 +951,7 @@ __regular_perm (struct Opt *opt,
   memset (idxs, 0, size * sizeof (typeof (*idxs)));
   /* Offset of @depths also must apply to seeds */
   lens += offset;
-  struct Seed **reg_seeds = opt->reg_seeds + offset;
+  struct Seed *reg_seeds = &opt->seeds[offset];
 
   /**
    *  O(S_m * ... * S_n)
@@ -979,7 +969,7 @@ __regular_perm (struct Opt *opt,
  print_loop: /* O(S_i) */
   {
     int idx;
-    current_seed = reg_seeds[i];
+    current_seed = &reg_seeds[i];
     current_fmt = &opt->fmts[i];
     /* Only use @s to print seed contents, as
        @current_seed may be a reference to another seed */
@@ -988,7 +978,7 @@ __regular_perm (struct Opt *opt,
       {
         int __i = current_seed->seed_type - 1;
         idx = idxs[__i];
-        s = opt->reg_seeds[__i];
+        s = &opt->seeds[__i];
       }
     else if (NULL_REF_SEED == s->seed_type)
       goto after_print_internal; /* Null shallow seed */
@@ -1071,7 +1061,7 @@ int
 regular_perm (struct Opt *opt)
 {
   int ret = 0;
-  struct Seed **seeds = opt->reg_seeds;
+  struct Seed *seeds = opt->seeds;
   int seeds_len = (int) da_sizeof (seeds);
   int idxs_len_bytes = seeds_len * sizeof (int);
   int *tmp = malloc (idxs_len_bytes),
@@ -1079,7 +1069,7 @@ regular_perm (struct Opt *opt)
 
   /* Initialize @lengths by length of each seed array */
   struct Seed *s = NULL;
-  for (int i=0; i < seeds_len && NULL != (s = seeds[i]); ++i)
+  for (int i=0; i < seeds_len && NULL != (s = &seeds[i]); ++i)
     {
       if (IS_REF_SEED(s))
         lengths[i] = 0;
@@ -1284,7 +1274,7 @@ wseed_file_uniappd (const struct Opt *opt,
         case REGULAR_MODE:
           fprintf (stderr,
                    "Reading words for the seed #%d until EOF:\n",
-                   opt->reg_seeds_len + 1);
+                   opt->seeds_len + 1);
           break;
 
         case NORMAL_MODE:
@@ -1328,17 +1318,18 @@ opt_regular_getopt (int argc, char **argv, struct Opt *opt)
       else
         {
           optind++;
-          struct Seed *tmp = mk_seed (CSEED_MAXLEN, 1);
-          parse_seed_regex (opt, tmp, argv[i]);
-          opt->reg_seeds_len++;
-          da_appd (opt->reg_seeds, tmp);
+          struct Seed tmp;
+          mk_seed (&tmp, CSEED_MAXLEN, 1);
+          parse_seed_regex (opt, &tmp, argv[i]);
+          opt->seeds_len++;
+          da_appd (opt->seeds, tmp);
         }
     }
 
   /* parsing again to handle references */
   for (int i=0; i < last_reg_arg; ++i)
     {
-      struct Seed *s = opt->reg_seeds[i];
+      struct Seed *s = &opt->seeds[i];
       /* Using yylex to distinguish \X from escape backslash's */
       YY_BUFFER_STATE *buffer = yy_scan_string( argv[i] );
       for (int type=0; type != -1; type = yylex())
@@ -1447,40 +1438,40 @@ opt_getopt (int argc, char **argv, struct Opt *opt)
             if (!Strcmp (optarg, "-"))
               wseed_f = safe_fopen (optarg, "r");
 
-            wseed_file_uniappd (opt, opt->global_seeds, wseed_f);
+            wseed_file_uniappd (opt, opt->seeds, wseed_f);
             if (wseed_f != stdin)
               safe_fclose (wseed_f);
           }
           break;
 
         case 's': NORMAL_MODE_ONLY { /* seed configuration */
-            opt->using_default_seed = 0;
-            parse_seed_regex (opt, opt->global_seeds, optarg);
+            if (0 == opt->seeds_len)
+              {
+                struct Seed s0;
+                mk_seed (&s0, CSEED_MAXLEN, 1);
+                da_appd (opt->seeds, s0);
+              }
+            parse_seed_regex (opt, opt->seeds, optarg);
           }
           break;
 
         case '0': NORMAL_MODE_ONLY { /* raw seed */
-            opt->using_default_seed = 0;
             if (!opt->escape_disabled)
               UNESCAPE (optarg);
-            cseed_uniappd (opt->global_seeds, optarg, strlen (optarg));
+            cseed_uniappd (opt->seeds, optarg, strlen (optarg));
           }
           break;
 
         case '5': NORMAL_MODE_ONLY /* raw word seed */
-          wseed_uniappd (opt, opt->global_seeds, optarg);
+          wseed_uniappd (opt, opt->seeds, optarg);
           break;
 
           /* Regular mode enable */
         case 'r':
           {
-            opt->using_default_seed = 0;
             opt->mode = REGULAR_MODE;
-            if (opt->reg_seeds)
-              break;
-            opt->reg_seeds = mk_seed_arr (1);
-            opt_regular_getopt (argc - optind, argv + optind, opt);
-            opt->fmts = mk_fmt_arr (opt->reg_seeds_len);
+            opt_regular_getopt (argc - optind, &argv[optind], opt);
+            opt->fmts = mk_fmt_arr (opt->seeds_len);
           }
           break;
 
@@ -1506,11 +1497,11 @@ static void
 opt_init (struct Opt *opt)
 {
   int max_depth = 0;
-  struct Seed **current_seed = NULL;
+  struct Seed *current_seed = NULL;
   switch (opt->mode)
     {
     case REGULAR_MODE:
-      current_seed = opt->reg_seeds;
+      current_seed = opt->seeds;
       max_depth = da_sizeof (current_seed);
 
       if (opt->depth.min == 0 && opt->depth.max == 0)
@@ -1529,14 +1520,15 @@ opt_init (struct Opt *opt)
 
     case NORMAL_MODE:
       max_depth = 1;
-      current_seed = &opt->global_seeds;
-      if (opt->global_seeds->cseed_len == 0 && opt->using_default_seed)
+      current_seed = opt->seeds;
+      if (0 == opt->seeds_len)
         {
-          /* Default global_seeds */
-          cseed_uniappd (opt->global_seeds,
-                         charseed_az.c, charseed_az.len);
-          cseed_uniappd (opt->global_seeds,
-                         charseed_09.c, charseed_09.len);
+          /* Initializing the default configuration */
+          struct Seed s0;
+          mk_seed (&s0, CSEED_MAXLEN, 1);
+          cseed_uniappd (&s0, charseed_az.c, charseed_az.len);
+          cseed_uniappd (&s0, charseed_09.c, charseed_09.len);
+          da_appd (opt->seeds, s0);
         }
 
       if (opt->depth.min <= 0 && opt->depth.max <= 0)
@@ -1601,16 +1593,14 @@ free_seed (struct Seed *s)
     }
 }
 
-static inline struct Seed *
-mk_seed (int c_len, int w_len)
+static inline void
+mk_seed (struct Seed *dst, int c_len, int w_len)
 {
-  struct Seed *s = malloc (sizeof (struct Seed));
-  if (!s)
-    return NULL;
-  memset (s, 0, sizeof (struct Seed));
-  s->cseed = malloc (c_len);
-  s->wseed = da_newn (char *, w_len);
-  return s;
+  if (!dst)
+    return;
+  memset (dst, 0, sizeof (struct Seed));
+  dst->cseed = malloc (c_len);
+  dst->wseed = da_newn (char *, w_len);
 }
 
 static struct Opt *
@@ -1618,9 +1608,7 @@ mk_opt (void)
 {
   static struct Opt opt = {0};
 
-  opt.global_seeds = mk_seed (CSEED_MAXLEN, 1);
-  opt.using_default_seed = 1;
-
+  opt.seeds = mk_seed_arr (1);
   opt.seps = da_newn (char *, 1);
   da_appd (opt.seps, NULL);
 
@@ -1651,7 +1639,7 @@ main (int argc, char **argv)
   switch (opt->mode)
     {
     case REGULAR_MODE:
-      if (0 == opt->reg_seeds_len)
+      if (0 == opt->seeds_len)
         {
           warnln ("empty regular permutation");
           return EXIT_FAILURE;
@@ -1659,8 +1647,8 @@ main (int argc, char **argv)
       break;
 
     case NORMAL_MODE:
-      if (0 == opt->global_seeds->cseed_len &&
-          0 == da_sizeof (opt->global_seeds->wseed))
+      if (0 == opt->seeds->cseed_len &&
+          0 == da_sizeof (opt->seeds->wseed))
         {
           warnln ("empty permutation");
           return EXIT_FAILURE;
@@ -1935,7 +1923,7 @@ pparse_format_regex (struct Opt *opt,
 static void
 pparse_reference_regex (struct Opt *opt, int dst_idx, const char *token)
 {
-  struct Seed *dst = opt->reg_seeds[dst_idx];
+  struct Seed *dst = &opt->seeds[dst_idx];
   if ('*' != *token  &&  '\\' != *token)
     return; /* this token does not need reference parsing */
   if (!(token = strchr (token, '\\')))
@@ -1951,7 +1939,7 @@ pparse_reference_regex (struct Opt *opt, int dst_idx, const char *token)
             warnln ("regular mode specific shortcut \\%d was ignored", n+1);
           else if (n == dst_idx)
             warnln ("circular reference to seed #%d was ignored", n+1);
-          else if (n >= opt->reg_seeds_len)
+          else if (n >= opt->seeds_len)
             warnln ("seed index %d is out of bound", n+1);
           else if (n < 0)
             warnln ("invalid seed index");
@@ -1959,7 +1947,7 @@ pparse_reference_regex (struct Opt *opt, int dst_idx, const char *token)
             {
               if (IS_REF_SEED(dst))
                 { /* shallow seed */
-                  if (IS_REF_SEED (opt->reg_seeds[n]))
+                  if (IS_REF_SEED (&opt->seeds[n]))
                     {
                       warnln ("invalid reference, seed #%d itself is shallow", n+1);
                       dst->seed_type = NULL_REF_SEED;
@@ -1969,7 +1957,7 @@ pparse_reference_regex (struct Opt *opt, int dst_idx, const char *token)
                 }
               else
                 {
-                  struct Seed *src = opt->reg_seeds[n];
+                  struct Seed *src = &opt->seeds[n];
                   if (IS_REF_SEED (src))
                     {
                       warnln ("cannot append from shallow seed #%d", n+1);
