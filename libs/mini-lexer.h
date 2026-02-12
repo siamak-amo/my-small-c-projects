@@ -26,7 +26,7 @@
 
     This file includes a self-test program, and two other
     example programs, for further information see the
-    ML_EXAMPLE_ macros and the compilation section.
+    ML_EXAMPLE_N and ML_TEST_N macros and the compilation section.
 
     For adding new features or fixing bugs, it is recommended to
     use a debugger along with the provided self test program,
@@ -236,9 +236,9 @@
         ML_UNSET (ml->keywords);
       }
 
-     To manually change the language, the ML_MUTATE macro
-     should be used to mark the component, ensuring that
-     the next `ml_next` updates the necessary internals:
+    To manually change the language, the ML_MUTATE macro
+    should be used to mark the component, ensuring that
+    the next ml_next() call will update the necessary internals:
       {
         ml.puncs.exp[0].begin = "<";      // changing the language
         ML_MUTATE (&ml.puncs[0]);         // force update
@@ -330,7 +330,7 @@
     1. Unicode/UTF8 is NOT supported.
     2. Token fragmentation (token buffer overflows),
        breaks the logic of punctuation and expression detection.
-       It only happens for longer than one character expressions.
+       It may only happen for longer than one character expressions.
 
  -- Compilation -----------------------------------------------------
     The test program:
@@ -633,7 +633,7 @@ typedef struct
 #define TOKEN_MARK_COL(src, tk) \
   ((tk)->col = (src)->idx - (tk)->__line_idx)
 #define TOKEN_RESET_LINE(tk) ((tk)->line = 1, (tk)->__line_idx = 0)
-#define TOKEN_MARK_NEWLINE(src, tk)                \
+#define TOKEN_MARK_NEWLINE(src, tk)             \
   ((src)->__last_newline = 0, (tk)->line++,     \
    (tk)->__line_idx = (src)->idx)
 /* Reset the token @t, NO free */
@@ -896,7 +896,7 @@ __yyrealloc (void *ptr, size_t size, const char *src_name, int _line_)
  *
  *  The return valuse of this function is one of `TK_XXX`
  * Return:
- *   On the end of tokens:  0  (=TK_NOT_SET)
+ *   On the end of tokens:  -1
  *   Successful lex:   Milixer_Token->type
  */
 MLDEF int yylex (void);
