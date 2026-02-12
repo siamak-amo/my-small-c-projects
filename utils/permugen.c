@@ -101,8 +101,8 @@
       $ permugen -r "{A, AA, AAA}"  "{BBB, BBBB, B}" \
                 --format "|{:4} | {:-5}|"
 
-      - Note: Using the format along with depth (-d, --depth)
-        is Undefined, pass multiple format options instead.
+      - Note: Using the format option along with depth (-d, --depth)
+        is Undefined, use multiple format options instead.
 
     * Shallow Seeds (Seed Pointer):
       A shallow seed is a pointer to another seed or a null seed,
@@ -155,7 +155,7 @@
 #include <errno.h>
 
 #define PROGRAM_NAME "permugen"
-#define Version "2.24"
+#define Version "2.25"
 
 #define CLI_IMPLEMENTATION
 #include "clistd.h"
@@ -409,20 +409,20 @@ struct Opt
   int mode;
   int escape_disabled; /* to disable backslash interpretation */
   int getline_flags;
-  struct
-  {
+  struct {
     int min, max;
   } depth;
 
-  struct Fmt *fmts; /* Format array, length=reg_seeds_len */
+  /* Seed Configuration */
   int seeds_len;
   struct Seed *seeds; /* dynamic array */
+  struct Fmt *fmts; /* Format array, length=seeds_len */
 
   /* Output Configuration */
   FILE *outf;
+  char **formats; /* output format (dynamic array) */
+  char **seps; /* component separator(s) (dynamic array) */
   char *prefix, *suffix; /* by malloc */
-  char **seps; /* component separator(s) (Dynamic array) */
-  char **formats; /* output format (Dynamic array) */
 
   /* Output stream buffer */
 #ifdef _USE_BIO
@@ -525,20 +525,19 @@ cleanup (int code, void *__opt)
   if (!opt)
     return;
 
-  /* Free the mini-lexer internals */
-  yylex_destroy ();
   /* flush the output stream */
 #ifdef _USE_BIO
   bio_flush (opt->bio);
 #endif
-
   safe_fclose (opt->outf);
   /** Do *NOT* use stdout after this line! **/
 
-#ifndef _CLEANUP_NO_FREE
 
-  /* Free output stream buffers */
-#ifdef _USE_BIO
+#ifndef _CLEANUP_NO_FREE
+  /* Free the mini-lexer internals */
+  yylex_destroy ();
+
+#ifdef _USE_BIO /* Free output stream buffers */
   safe_free (opt->bio->buffer);
   safe_free (opt->bio);
 #else
@@ -972,7 +971,7 @@ __regular_perm (struct Opt *opt,
     current_seed = &reg_seeds[i];
     current_fmt = &opt->fmts[i];
     /* Only use @s to print seed contents, as
-       @current_seed may be a reference to another seed */
+       @current_seed may be a reference to another seed (shallow) */
     const struct Seed *s = current_seed;
     if (current_seed->seed_type > 0) /* reference handling */
       {
