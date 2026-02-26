@@ -153,12 +153,12 @@
       ```
 
     Test program compilation:
-      cc -x c -ggdb -Wall -Wextra -Werror \
+      cc -xc -ggdb -Wall -Wextra -Werror \
         -D DYNA_IMPLEMENTATION -D DYNA_TEST -D_DA_DEBUG \
-        -o dyna.out dyna.h
+        -o dyna.test dyna.h
  **/
-#ifndef DYNAMIC_ARRAY__H__
-#define DYNAMIC_ARRAY__H__
+#ifndef DYNA__H__
+#define DYNA__H__
 
 #include <string.h>
 #include <stdlib.h>
@@ -261,19 +261,18 @@ DYNADEF da_sidx __da_allocate (void **, int, int);
 
 
 /**
- *  If DA_FORCE_MEMCPY is defined, the da_xxx macros,
- *  do NOT accept literals (e.g. da_appd(arr, 5) causes error)
+ *  If DA_FORCE_MEMCPY is defined, none of the append macros,
+ *  will accept literals values, e.g. da_appd(arr, 5) will create a
+ *  compilation error, use  `int n=5; da_appd(arr, n);` instead.
  */
-#ifndef DA_FORCE_MEMCPY
-   /* compilers should optimize this, for large @rval */
+#ifndef DA_ASSIGN
+# ifndef DA_FORCE_MEMCPY
+    /* compilers should optimize this, for large @rval */
 #  define DA_ASSIGN(lptr, rval) (*(lptr) = (rval))
-#else
-#  define DA_ASSIGN(lptr, rval) do {                   \
-    if (sizeof (rval) <= sizeof (void *))              \
-      *(lptr) = rval;                                  \
-    else memcpy (lptr, &(rval), sizeof (rval));        \
-  } while (0)
-#endif
+# else
+#  define DA_ASSIGN(lptr, rval) memcpy (lptr, &(rval), sizeof (rval))
+# endif
+#endif /* DA_ASSIGN */
 
 /**
  **  External macros
@@ -532,12 +531,10 @@ __da_dup (void **arr)
 }
 
 #endif /* DYNA_IMPLEMENTATION */
+#endif /* DYNA__H__ */
+
 
 #ifdef DYNA_TEST
-
-#undef _DA_DEBUG
-#define _DA_DEBUG
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -588,6 +585,5 @@ main (void)
   da_free (opt.inputs);
   return 0;
 }
-#endif /* DYNA_TEST */
 
-#endif /* DYNAMIC_ARRAY__H__ */
+#endif /* DYNA_tassert */
