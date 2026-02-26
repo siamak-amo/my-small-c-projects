@@ -538,52 +538,95 @@ __da_dup (void **arr)
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct
-{
-  char **inputs;
-} Opt;
+#define LOG(fmt, ...) fprintf (stderr, fmt, ##__VA_ARGS__)
 
+/* Test assert macro, returns true if assertion success */
+#define tassert(expression, msg)                         \
+  ({                                                     \
+    LOG ("Test: %s...  ", msg);                          \
+    int exp_v = expression;                              \
+    if (! exp_v) {                                       \
+      LOG ("\n%s:%d:  '%s' failed.\n"                    \
+           "     assertion: `%s'  ",                     \
+           __FILE__, __LINE__, msg, #expression);        \
+      do { FAIL (); } while (0);                         \
+    } else PASS ();                                      \
+    (exp_v == true);  /* return value */                 \
+  })
 
-void
-get_user_input (Opt *opt)
-{
-  char *p = NULL;
-  size_t len;
-  puts ("- Reading until EOF");
-  while (1)
-    {
-      printf (">>> ");
-      ssize_t n = getline (&p, &len, stdin);
-      if (n < 0 || !p)
-        break;
-      if (n > 1)
-        {
-          p[n-1] = '\0';
-          da_appd (opt->inputs, strdup (p));
-        }
-    }
-  puts ("EOF.");
-  puts ("------------------------------");
-}
 
 int
 main (void)
 {
-  Opt opt = {0};
+#define STRCOLOR(code, cstr) "\033[" #code "m" cstr "\033[0m"
+#define PASS() LOG (STRCOLOR(32, "pass") ".\n")
+#define FAIL() LOG (STRCOLOR(41, "FAIL") ".\n"); return EXIT_FAILURE;
 
-  get_user_input (&opt);
+  puts (" * Elementary tests *");
+  {
+    char **strings = NULL;
 
-  da_foreach (opt.inputs, idx)
-    {
-      printf ("@index[%lu] ->\t`%s`\n",
-              idx,
-              opt.inputs[idx]);
-      free (opt.inputs[idx]);
-    }
+    char *s0 = "constant:s0";
+    da_appd (strings, s0);
+    tassert (strings != NULL  &&  da_sizeof(strings) == 1,
+          "append value to NULL array test");
 
-  puts ("------------------------------");
-  da_free (opt.inputs);
-  return 0;
+    const char *s1 = "malloc:s1";
+    da_appd (strings, strdup (s1));
+
+    tassert (strings[0] == s0 &&
+          strcmp (strings[1], s1) == 0,
+          "expected values in the array");
+    tassert (da_sizeof(strings) == 2, "size of array test");
+  }
+
+  puts ("\n * Longer struct array *");
+  {
+    struct data {int a,b,c,d;} tmp = {.a=0, .b=1, .c=2, .d=3};
+    struct data *data_array = NULL;
+
+    da_appd (data_array, tmp);
+    da_appd (data_array, tmp);
+    da_appd (data_array, tmp);
+
+    struct data d3 = data_array[2];
+    tassert (d3.a == 0  &&  d3.b == 1 &&
+             d3.c == 2  &&  d3.d == 3, "struct value test");
+  }
+
+  puts ("\n * Many append test *");
+  {
+    int *numbers = NULL;
+
+    int arr[] = {1, 2};
+    da_appd_arr (numbers, arr, 2);
+    tassert (numbers[0] == 1  && numbers[1] == 2,
+          "basic da_appd_arr test");
+
+    arr[0] = 10; arr[1] = 20;
+    da_appd_arr (numbers, arr, 2);
+    tassert (numbers[0] == 1  && numbers[1] == 2 &&
+          numbers[2] == 10 && numbers[3] == 20,
+          "after data source change");
+  }
+
+  puts ("\n * Advanced many append test *");
+  {
+    int *numbers = NULL;
+
+    /* array is empty, so da_allocate should return index 0 */
+    int idx = da_allocate (numbers, 3);
+    tassert (idx == 0 && da_capof (numbers) == 3,
+             "da_allocate for NULL array");
+
+    /* now, @numbers have 3 elements, so the next
+       da_allocate should start from index 3 */
+    idx = da_allocate (numbers, 4);
+    tassert (idx == 3, "da_allocate on a None NULL array");
+    tassert (da_sizeof(numbers) == 7, "sizeof array after allocate");
+  }
+
+  return EXIT_SUCCESS;
 }
 
 #endif /* DYNA_tassert */
