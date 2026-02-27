@@ -253,12 +253,11 @@ typedef struct
  *  and instead, they use provided macros for
  *  generic type purposes and safety
  */
-DYNADEF dyna_t * __mk_da (da_sidx, da_sidx);
 DYNADEF da_sidx __da_appd (void **);
 DYNADEF void * __da_aappd (void **, da_sidx);
+DYNADEF dyna_t * __mk_da (int n, int cell_bytes);
 DYNADEF void * __da_dup (void **);
-DYNADEF da_sidx __da_allocate (void **, int, int);
-
+DYNADEF da_sidx __da_allocate (void **, int n, int cell_bytes);
 
 /**
  *  If DA_FORCE_MEMCPY is defined, none of the append macros,
@@ -308,7 +307,7 @@ DYNADEF da_sidx __da_allocate (void **, int, int);
  */
 #define da_new(T) da_newn (T, DA_INICAP)
 #define da_newn(T, n) \
-  ((T *)( ( (dyna_t *) __mk_da (sizeof (T), n) )->arr ))
+  ((T *)( ( (dyna_t *) __mk_da (n, sizeof (T)) )->arr ))
 
 /**
  *  Duplicate a dynamic array
@@ -421,7 +420,7 @@ DYNADEF da_sidx __da_allocate (void **, int, int);
 #ifdef DYNA_IMPLEMENTATION
 
 dyna_t *
-__mk_da(da_sidx cell_size, da_sidx n)
+__mk_da (int n, int cell_size)
 {
   if (0 == n)
     n = 1; /* prevent 0 capacity initialization */
@@ -453,7 +452,7 @@ __da_allocate (void **arr, int n, int cell_bytes)
 
   if (! *arr)
     {
-      da = __mk_da (cell_bytes, n);
+      da = __mk_da (n, cell_bytes);
       *arr = da->arr;
     }
   else if (!(da = DA_CONTAINEROF (*arr)))
@@ -539,6 +538,9 @@ __da_dup (void **arr)
 #include <stdlib.h>
 
 #define LOG(fmt, ...) fprintf (stderr, fmt, ##__VA_ARGS__)
+#define STRCOLOR(code, cstr) "\033[" #code "m" cstr "\033[0m"
+#define STRGREEN(cstr) STRCOLOR (32, cstr) /* Green string */
+#define STRRED_B(cstr) STRCOLOR (41, cstr) /* Red background string */
 
 /* Test assert macro, returns true if assertion success */
 #define tassert(expression, msg)                         \
@@ -558,9 +560,8 @@ __da_dup (void **arr)
 int
 main (void)
 {
-#define STRCOLOR(code, cstr) "\033[" #code "m" cstr "\033[0m"
-#define PASS() LOG (STRCOLOR(32, "pass") ".\n")
-#define FAIL() LOG (STRCOLOR(41, "FAIL") ".\n"); return EXIT_FAILURE;
+#define PASS() LOG (STRGREEN("pass") ".\n")
+#define FAIL() LOG (STRRED_B("FAIL") ".\n"); return EXIT_FAILURE;
 
   puts (" * Elementary tests *");
   {
@@ -626,7 +627,9 @@ main (void)
     tassert (da_sizeof(numbers) == 7, "sizeof array after allocate");
   }
 
+
+  puts ("\n * "   STRGREEN("All tests passed")   " *");
   return EXIT_SUCCESS;
 }
 
-#endif /* DYNA_tassert */
+#endif /* DYNA_TEST */
