@@ -94,6 +94,7 @@
       // Using many append
       const char *source[] = {"a", "b", "c"};
       da_appd_arr (cstr, source, 3);
+      da_appd_aarr (cstr, source); // when the length is known
 
       // Append a dynamic array
       char **cstr2 = NULL;
@@ -350,6 +351,7 @@ DYNADEF da_sidx __da_allocate (void **, int n, int cell_bytes);
 
 /**
  *  Appends a C array to a dynamic array
+ *  Use da_appd_aarr when length of array is known at compile time
  *
  *  @dst_arr: destination dynamic array
  *  @src_arr: source array (normal C array)
@@ -361,6 +363,10 @@ DYNADEF da_sidx __da_allocate (void **, int n, int cell_bytes);
          __idx < __max_idx; __idx++) {              \
       da_appd (dst_arr, src_arr[__idx]);            \
     }} while (0)
+
+/* Append constant array */
+#define da_appd_aarr(dst_arr, src_arr) \
+  da_appd_arr (dst_arr, src_arr, sizeof(src_arr) / sizeof(*(src_arr)))
 
 /**
  *  Appenda one dynamic array to another
