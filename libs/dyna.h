@@ -100,6 +100,19 @@
       char **cstr2 = NULL;
       da_appd_da (cstr2, cstr);
 
+
+      // Pop from arrays / Delete by index
+      da_pop (cstr);
+      da_popn (cstr, 2); // pop last 2 elements
+
+      da_unordered_delete (arr, 1); // delete index 1
+      // after this call, @arr will contain the last element
+      // at the index 1, and it's length is decreased by one.
+      //
+      // before @arr:  | a, b, c, ..., y, z |
+      //                    ^-------------^ replace and pop
+      //  after @arr:  | a, z, c, ..., y |
+
       return 0;
     }
     ```
@@ -162,7 +175,7 @@
 #include <stdint.h>
 #include <assert.h>
 
-#define DynaVersion "2.1"
+#define DynaVersion "2.2"
 
 #ifndef DYNADEF
 # define DYNADEF static inline
@@ -196,6 +209,16 @@ typedef struct
 #endif
 
 } dyna_t;
+
+
+/* Aliases to Dyna macros */
+#define da_length            da_sizeof    /* occupied length of array */
+#define da_capacity          da_capof     /* total  capacity of array */
+#define da_push              da_appd      /* append  element to array */
+#define da_push_many         da_appd_arr  /* many append */
+#define da_pop               da_pop1      /* delete 1 element */
+#define da_pop_many          da_popn      /* many delete */
+
 
 #ifdef _DA_DEBUG
 # include <stdio.h>
