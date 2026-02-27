@@ -423,6 +423,20 @@ DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
 #define da_popn(arr, n) __da_popn (&(arr), n)
 #define da_pop1(arr) __da_popn (&(arr), 1)
 
+/**
+ *  Delete Unordered macros
+ *  To delete arbitrary index of array, when the order
+ *  of the array is not important.
+ */
+#define da_unordered_delete(arr, idx) do {      \
+    da_idx N = da_sizeof (arr);                 \
+    if (N > 0  &&  idx >= 0  &&  idx < N) {     \
+      if (idx < N-1)                            \
+        DA_ASSIGN ((arr) + idx, arr[N-1]);      \
+      da_pop1 (arr);                            \
+    }                                           \
+  } while (0)
+
 #ifdef DYNA_IMPLEMENTATION
 
 dyna_t *
@@ -705,6 +719,14 @@ main (void)
     tassert (strncmp (carr, "0123", 4) == 0,
              "check content of array after pop");
 
+    da_unordered_delete (carr, 1);
+    tassert (da_sizeof (carr) == 3, "delete unordered element");
+    tassert (strncmp (carr, "032", 3) == 0, "content after delete");
+
+    da_unordered_delete (carr, 0);
+    tassert (da_sizeof (carr) == 2, "delete unordered element");
+    tassert (strncmp (carr, "23", 2) == 0, "content after delete");
+
     /* Checking edge cases */
     da_popn (carr, 666);
     tassert (da_sizeof (carr) == 0, "popN all elements");
@@ -715,6 +737,11 @@ main (void)
     da_pop (carr);  da_pop (carr);
     tassert (da_sizeof (carr) == 0, "pop empty array");
 
+    da_appd (carr, '*');
+    da_unordered_delete (carr, 0);
+    tassert (da_sizeof (carr) == 0, "delete latest elements");
+    da_unordered_delete (carr, 0);  da_unordered_delete (carr, 0);
+    tassert (da_sizeof (carr) == 0, "delete from empty array");
   }
 
   puts ("\n * "   STRGREEN("All tests passed")   " *");
