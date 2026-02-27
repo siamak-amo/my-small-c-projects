@@ -100,10 +100,6 @@
       char **cstr2 = NULL;
       da_appd_da (cstr2, cstr);
 
-      // Using advanced many append
-      int i = da_allocate (cstr2, 3);
-      memcpy (&cstr2[i], source, sizeof source);
-
       return 0;
     }
     ```
@@ -355,14 +351,14 @@ DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
  *
  *  @dst_arr: destination dynamic array
  *  @src_arr: source array (normal C array)
- *  @len: length of @src_arr
- *    It will not be evaluated at each iteration
+ *  @count: length of @src_arr
  */
-#define da_appd_arr(dst_arr, src_arr, len) do {     \
-    for (da_idx __idx = 0, __max_idx = len;         \
-         __idx < __max_idx; __idx++) {              \
-      da_appd (dst_arr, src_arr[__idx]);            \
-    }} while (0)
+#define da_appd_arr(dst_arr, src_arr, count) do {           \
+    int cell_b = sizeof (*(src_arr));                       \
+    da_idx idx = __da_allocate (&(dst_arr), count, cell_b); \
+    if (-1 != idx)                                          \
+      memcpy (dst_arr + idx, src_arr, (count)*cell_b);      \
+  } while (0)
 
 /* Append constant array */
 #define da_appd_aarr(dst_arr, src_arr) \
