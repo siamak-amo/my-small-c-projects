@@ -335,16 +335,10 @@ DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
  *  @arr: pointer to the dynamic array
  *  @val: value of type T, to be appended to @arr
  */
-#define da_appd(arr, val) do {                          \
-    if (NULL == arr) arr = da_new (typeof (*(arr)));    \
-    _da_appd (arr, val);                                \
-  } while (0)
-
-/* _da_appd is not NULL safe */
-#define _da_appd(arr, val) do {                         \
-    da_sidx __da_idx__ = __da_appd ((void **)&(arr));   \
-    if (__da_idx__ != -1)                               \
-      DA_ASSIGN (arr + __da_idx__, val);                \
+#define da_appd(arr, val) do {                  \
+    da_sidx __da_idx__ = da_allocate1 (arr);    \
+    if (-1 != __da_idx__)                       \
+      DA_ASSIGN ((arr) + __da_idx__, val);      \
   } while (0)
 
 /**
@@ -408,16 +402,12 @@ DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
  *  @arr: pointer to the reference of the
  *        dynamic array (void *)
  */
-#define da_aappd(arr, val) do {                     \
-    if (NULL == *(void **)(arr))                    \
-      *(void **)(arr) = da_new (typeof (val) *);    \
-    _da_aappd (arr, val);                           \
-  } while (0)
-
-#define _da_aappd(arr, val) do {                                \
-    typeof (val) *__arr__;                                      \
-    if ((__arr__ = __da_aappd ((void **)(arr), sizeof (val))))  \
-      *__arr__ = (val);                                         \
+#define da_aappd(arr, val) do {                             \
+    da_idx i = __da_allocate1 (arr, sizeof (val));          \
+    if (i >= 0) {                                           \
+      char *__arr__ = *(char **)(arr) + i * sizeof (val);   \
+      DA_ASSIGN ((typeof (val) *)__arr__, val);             \
+    }                                                       \
   } while (0)
 
 
