@@ -594,20 +594,36 @@ main (void)
              d3.c == 2  &&  d3.d == 3, "struct value test");
   }
 
-  puts ("\n * Many append test *");
+  puts ("\n * Many append and duplicate test *");
   {
     int *numbers = NULL;
 
     int arr[] = {1, 2};
-    da_appd_arr (numbers, arr, 2);
+    da_appd_aarr (numbers, arr);
     tassert (numbers[0] == 1  && numbers[1] == 2,
-          "basic da_appd_arr test");
+          "basic da_appd_aarr test");
 
     arr[0] = 10; arr[1] = 20;
     da_appd_arr (numbers, arr, 2);
     tassert (numbers[0] == 1  && numbers[1] == 2 &&
           numbers[2] == 10 && numbers[3] == 20,
           "after data source change");
+
+    /* make a copy of @numbers, and append @numbers to itself */
+    int *numbers2 = da_dup (numbers);
+
+    da_appd_da (numbers, numbers);
+    tassert (da_sizeof (numbers) == 8,
+             "length check after da_append_da");
+    tassert (memcmp (numbers, &numbers[4], 4*sizeof(int)) == 0,
+             "value check after da_append_da");
+
+    /* Now, modify the primary array, @numbers2 must be preserved */
+    memset (numbers, 0, 4*sizeof(int));
+    tassert (da_sizeof (numbers2) == 4,
+             "length of duplicated array is intact");
+    tassert (memcmp (numbers2, &numbers[4], 4*sizeof(int)) == 0,
+             "contents of duplicated array is intact");
   }
 
   puts ("\n * Advanced many append test *");
@@ -626,6 +642,26 @@ main (void)
     tassert (da_sizeof(numbers) == 7, "sizeof array after allocate");
   }
 
+  int *numbers = NULL;
+  puts ("\n * Advanced append (different scope) test *");
+  {
+    /* simulate a function call:  `void fun(void *ptr) {...}` */
+    void *ptr = &numbers;
+
+    int v = 666;
+    da_aappd (ptr, v);
+    tassert (numbers != NULL, "initializing after da_aappd call");
+    tassert (da_sizeof (numbers) == 1  &&  numbers[0] == v,
+             "value correctly appended after da_aappd call");
+
+    v = 1;  da_aappd (ptr, v);
+    v = 2;  da_aappd (ptr, v);
+    tassert (da_sizeof (numbers) == 3,
+             "sizeof array after multiple da_aappd calls");
+    tassert (numbers[0] == 666 &&
+             numbers[1] == 1   &&  numbers[2] == 2,
+             "correct values on array after da_aappd calls");
+  }
 
   puts ("\n * "   STRGREEN("All tests passed")   " *");
   return EXIT_SUCCESS;
