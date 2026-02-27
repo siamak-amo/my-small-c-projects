@@ -257,8 +257,8 @@ typedef struct
 DYNADEF da_sidx __da_appd (void **);
 DYNADEF void * __da_aappd (void **, da_sidx);
 DYNADEF dyna_t * __mk_da (int n, int cell_bytes);
-DYNADEF void * __da_dup (void **);
-DYNADEF da_sidx __da_allocate (void **, int n, int cell_bytes);
+DYNADEF void * __da_dup (void *);
+DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
 
 /**
  *  If DA_FORCE_MEMCPY is defined, none of the append macros,
@@ -316,7 +316,7 @@ DYNADEF da_sidx __da_allocate (void **, int n, int cell_bytes);
  *  which is a duplicate of @arr
  *  this also must be freed via `da_free`
  */
-#define da_dup(arr) ((NULL != arr) ? __da_dup ((void **)&(arr)) : NULL)
+#define da_dup(arr) ((NULL != arr) ? __da_dup (&(arr)) : NULL)
 
 /**
  *  For each macro
@@ -389,8 +389,7 @@ DYNADEF da_sidx __da_allocate (void **, int n, int cell_bytes);
  *
  *  @n: to allocate n entries in @arr
  */
-#define da_allocate(arr, n) \
-  __da_allocate ((void **)&arr, n, sizeof (*(arr)))
+#define da_allocate(arr, n) __da_allocate (&arr, n, sizeof (*(arr)))
 
 /**
  *  Drops contents of a dynamic array
@@ -451,9 +450,10 @@ __mk_da (int n, int cell_size)
 }
 
 DYNADEF da_sidx
-__da_allocate (void **arr, int n, int cell_bytes)
+__da_allocate (void *__arr, int n, int cell_bytes)
 {
   dyna_t *da;
+  void **arr = (void **)__arr;
   size_t old_size, new_size;
 
   if (! *arr)
@@ -526,8 +526,9 @@ __da_aappd (void **arr, da_sidx cell_bytes)
 }
 
 DYNADEF void *
-__da_dup (void **arr)
+__da_dup (void *__arr)
 {
+  void **arr = (void **)__arr;
   dyna_t *da = DA_CONTAINEROF (*arr);
   size_t lenof_da = da->size * da->cell_bytes + sizeof (dyna_t);
   dyna_t *new_da = malloc (lenof_da);
