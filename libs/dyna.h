@@ -173,6 +173,10 @@
 # define da_sidx intptr_t
 #endif
 
+#ifndef _Nullable
+#define _Nullable
+#endif
+
 /**
  *  Internal struct
  *  Users do not need to interact with it directly
@@ -252,6 +256,7 @@ typedef struct
  */
 DYNADEF dyna_t * __mk_da (int n, int cell_bytes);
 DYNADEF void * __da_dup (void *);
+DYNADEF int __da_popn (void *, int n);
 DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
 #define __da_allocate1(ptr, cell_bytes) \
   __da_allocate (ptr, 1, cell_bytes)
@@ -408,6 +413,15 @@ DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
     }                                                       \
   } while (0)
 
+/**
+ *  Delete element (pop) macros
+ *  Only makes them reusable, does not free the memory
+ *
+ *  popn: deletes the last @n elements of array
+ *  pop1: deletes the latest element of array
+ */
+#define da_popn(arr, n) __da_popn (&(arr), n)
+#define da_pop1(arr) __da_popn (&(arr), 1)
 
 #ifdef DYNA_IMPLEMENTATION
 
@@ -526,6 +540,19 @@ __da_dup (void *__arr)
   dyna_t *new_da = malloc (lenof_da);
   memcpy (new_da, da, lenof_da);
   return &new_da->arr;
+}
+
+/* Returns how many elements have been deleted */
+DYNADEF int
+__da_popn (void *_Nullable __arr, int n)
+{
+  if (!__arr || n <= 0)
+    return 0;
+  dyna_t *da = DA_CONTAINEROF (*(void **)__arr);
+  if (da->size < n)
+    n = da->size;
+  da->size -= n;
+  return n;
 }
 
 #endif /* DYNA_IMPLEMENTATION */
@@ -661,6 +688,33 @@ main (void)
     tassert (numbers[0] == 666 &&
              numbers[1] == 1   &&  numbers[2] == 2,
              "correct values on array after da_aappd calls");
+  }
+
+  puts ("\n * Delete and Pop test *");
+  {
+    char *carr = NULL;
+    da_appd_arr (carr, "0123456789abcdef", 16); /* avoid \0 byte */
+
+    da_popn (carr, 10);
+    tassert (da_sizeof (carr) == 6,
+             "sizeof array after popN 6 elements");
+
+    da_pop(carr);  da_pop(carr);
+    tassert (da_sizeof (carr) == 4,
+             "sizeof array after 2 other pops");
+    tassert (strncmp (carr, "0123", 4) == 0,
+             "check content of array after pop");
+
+    /* Checking edge cases */
+    da_popn (carr, 666);
+    tassert (da_sizeof (carr) == 0, "popN all elements");
+
+    da_appd (carr, '*');
+    da_pop (carr);
+    tassert (da_sizeof (carr) == 0, "pop latest elements");
+    da_pop (carr);  da_pop (carr);
+    tassert (da_sizeof (carr) == 0, "pop empty array");
+
   }
 
   puts ("\n * "   STRGREEN("All tests passed")   " *");
