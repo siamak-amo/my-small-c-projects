@@ -250,8 +250,6 @@ typedef struct
  *  and instead, they use provided macros for
  *  generic type purposes and safety
  */
-DYNADEF da_sidx __da_appd (void **);
-DYNADEF void * __da_aappd (void **, da_sidx);
 DYNADEF dyna_t * __mk_da (int n, int cell_bytes);
 DYNADEF void * __da_dup (void *);
 DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
@@ -372,7 +370,7 @@ DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
   } while (0)
 
 /**
- *  Advanced many append
+ *  Allocate memory for arrays
  *  (NOT safe to call from different scope)
  *
  *  This allocates enough space in @arr, and
@@ -475,6 +473,9 @@ __da_allocate (void *__arr, int n, int cell_bytes)
   return old_size++;
 }
 
+/** DEPRECATED CODE SECTION **
+ ** Do not use these functions, use __da_allocate instead
+ **
 DYNADEF da_sidx
 __da_appd (void **arr)
 {
@@ -513,6 +514,8 @@ __da_aappd (void **arr, da_sidx cell_bytes)
 
   return *(char **)arr + cell_bytes * (idx2append);
 }
+**
+**/
 
 DYNADEF void *
 __da_dup (void *__arr)
