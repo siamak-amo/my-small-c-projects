@@ -255,6 +255,8 @@ DYNADEF void * __da_aappd (void **, da_sidx);
 DYNADEF dyna_t * __mk_da (int n, int cell_bytes);
 DYNADEF void * __da_dup (void *);
 DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
+#define __da_allocate1(ptr, cell_bytes) \
+  __da_allocate (ptr, 1, cell_bytes)
 
 /**
  *  If DA_FORCE_MEMCPY is defined, none of the append macros,
@@ -386,6 +388,7 @@ DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
  *  @n: to allocate n entries in @arr
  */
 #define da_allocate(arr, n) __da_allocate (&arr, n, sizeof (*(arr)))
+#define da_allocate1(arr) __da_allocate1 (&arr, sizeof (*(arr)))
 
 /**
  *  Drops contents of a dynamic array
