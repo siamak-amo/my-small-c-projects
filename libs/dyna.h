@@ -374,9 +374,9 @@ DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
  *  @dst_arr: destination  -  @src_arr: source
  *  It is safe to append an array to itself
  */
-#define da_appd_da(dst_arr, src_arr) do {           \
-    da_foreach (src_arr, __idx)                     \
-      da_appd (dst_arr, src_arr[__idx]);            \
+#define da_appd_da(dst_arr, src_arr) do {                   \
+    int count = da_sizeof (src_arr);                        \
+    if (count > 0) da_appd_arr (dst_arr, src_arr, count);   \
   } while (0)
 
 /**
