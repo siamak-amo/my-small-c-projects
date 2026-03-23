@@ -65,13 +65,13 @@
       static const char *SL_Comments[] = {  // single-line comments
         [COMM_SL_1] = "#",  ...
       };
-      static struct Milexer_exp_ Puncs[] = {
+      static struct Milexer_exp Puncs[] = {
         [PUNC_COMMA] = {","},  ...
       };
-      static struct Milexer_exp_ Expressions[] = {
+      static struct Milexer_exp Expressions[] = {
         [EXP_STR] = { "'", "'" },  ...
       };
-      static struct Milexer_exp_ ML_Comments[] = {  // multi-line
+      static struct Milexer_exp ML_Comments[] = {  // multi-line
         [ML_SL_COMM_1] = { "-(", ")-" },  ...
       };
       static const char *Delimiters = {  // delimiter ranges
@@ -227,7 +227,7 @@
     users can simply assign new item to the main struct:
       {
         // Reset the entire punctuation's of the language
-        static struct Milexer_exp_ NewPuncs[] = {
+        static struct Milexer_exp NewPuncs[] = {
            [xxx] = {"x"}, ...
         };
         ML_SET (ml->puncs, NewPuncs);
@@ -379,7 +379,7 @@
 #define ML_LENOF(arr) (sizeof (arr) / sizeof ((arr)[0]))
 #define ML_STRLEN(cstr) ((cstr) ? strlen (cstr) : 0)
 
-typedef struct Milexer_exp_
+typedef struct Milexer_exp
 {
   const char *begin;
   const char *end;
@@ -408,7 +408,7 @@ typedef struct
 typedef struct
 {
   int len;
-  struct Milexer_exp_ *exp;
+  struct Milexer_exp *exp;
   bool disabled;
   bool clean; /* Not dirty */
 } Milexer_AEXP;
@@ -1309,7 +1309,7 @@ MLDEF int
 ml_next (Milexer *ml, Milexer_Slice *src,
          Milexer_Token *tk, int flags)
 {
-  struct Milexer_exp_ *last_exp;
+  struct Milexer_exp *last_exp;
   if (tk->cstr == NULL || tk->cap <= 0 || tk->cstr == src->buffer)
     return NEXT_ERR;
 
@@ -2055,7 +2055,7 @@ static const char *Keywords[] = {
   [KEY_FI]         = "fi",
   [KEY_FILE]       = "file",
 };
-static struct Milexer_exp_ Puncs[] = {
+static struct Milexer_exp Puncs[] = {
   [PUNC_PLUS]       = {"+"},
   [PUNC_MINUS]      = {"-"},
   [PUNC_MULT]       = {"*"},
@@ -2064,7 +2064,7 @@ static struct Milexer_exp_ Puncs[] = {
   [PUNC_EQUAL]      = {"="}, /* you cannot have "==" */
   [PUNC_NEQUAL]     = {"!="}, /* also "!===" */
 };
-static struct Milexer_exp_ Expressions[] = {
+static struct Milexer_exp Expressions[] = {
   [EXP_PAREN]       = {"(", ")"},
   [EXP_CURLY]       = {"{", "}"},
   [EXP_STR]         = {"\"", "\""},
@@ -2075,7 +2075,7 @@ static const char *SL_Comments[] = {
   [COMM_S1]         = "#",
   [COMM_S2]         = "//",
 };
-static struct Milexer_exp_ ML_Comments[] = {
+static struct Milexer_exp ML_Comments[] = {
   [COMM_M1]         = {"/*", "*/"},
 };
 //-- Milexer main configuration --------//

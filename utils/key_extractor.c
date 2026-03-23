@@ -84,12 +84,12 @@ enum LANG
  *  Any string types enclosed
  *  within these delimiters will be ignored
  */
-static struct Milexer_exp_ Expressions[] = {
+static struct Milexer_exp Expressions[] = {
   [STR1]          = {"\"", "\""},
   [STR2]          = {"'", "'"},
   [STR3]          = {"`", "`"},
 };
-static struct Milexer_exp_ Expressions_JS[] = {
+static struct Milexer_exp Expressions_JS[] = {
   [JS_STR1]       = {"\"", "\""},
   [JS_STR2]       = {"'", "'"},
   [JS_STR3]       = {"/", "/"},

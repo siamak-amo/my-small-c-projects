@@ -374,18 +374,18 @@ enum LANG
     EXP_BRACKET,       /* [xxx] */
   };
 
-static struct Milexer_exp_ Puncs[] =
+static struct Milexer_exp Puncs[] =
   {
     [PUNC_COMMA]         = {.begin=",", .disabled=true},
   };
 
-static struct Milexer_exp_ Expressions[] =
+static struct Milexer_exp Expressions[] =
   {
     [EXP_CURLY]          = {.begin="{", .end="}"},
     [EXP_PAREN]          = {.begin="(", .end=")"},
     [EXP_BRACKET]        = {.begin="[", .end="]"},
   };
-static struct Milexer_exp_ FormatExpressions[] =
+static struct Milexer_exp FormatExpressions[] =
   {
     [EXP_CURLY]          = {.begin="{", .end="}"},
   };
