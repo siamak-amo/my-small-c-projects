@@ -35,10 +35,10 @@
       $ permugen -s "\d \u"                       # 0-9 and A-Z
       $ permugen -s "\d \u \l"                    # 0-9 and A-Z and a-z
 
-    * The set {XY, a,...,f}:
-      $ permugen -s "[XY] [a-f]" -d2              # depth=2 (strict)
-      $ permugen -s "[XYa-f]" -D4                 # depth range [1 to 4]
-      $ permugen -s "[XYa-f]" -d 3-5              # depth range [3 to 5]
+    * The set {XY, a,...,c}:
+      $ permugen -s "[XY] [a-c]" -d2              # depth=2 (strict)
+      $ permugen -s "[XYa-c]" -D4                 # depth range [1 to 4]
+      $ permugen -s "[XYa-c]" -d 2-3              # depth range [2 to 3]
 
     * To include words:
       $ permugen -s "{foo,bar}"
@@ -246,21 +246,21 @@ const int sp_padding_len = 32;
 #endif
 
 #ifdef _DEBUG /* debug macro */
-#  define dprintf(format, ...) \
+# define dprintf(format, ...) \
   fprintf (stderr, format, ##__VA_ARGS__)
 
 /**
  *  Debug macro to print arrays
  *  Ex. `int arr[7]`:  `printd_arr (arr, "%d", 7);`
  */
-#  define printd_arr(arr, fmt, len) do {                \
+# define printd_arr(arr, fmt, len) do {                 \
     if (len > 0 && arr) {                               \
       dprintf (CSTR (arr) "[.%d] = {", (int)(len));     \
       printd_arr__H (arr, fmt, len, ", ", "}\n");       \
     } else {                                            \
       dprintf (CSTR (arr) " is empty\n");               \
     }} while (0)
-#  define printd_arr__H(arr, fmt, len, sep, end)    \
+# define printd_arr__H(arr, fmt, len, sep, end)     \
   for (ssize_t __idx = 0; __idx < len; __idx++) {   \
     dprintf (fmt "%s", arr[__idx],                  \
              (__idx < len-1) ? sep : end);          \

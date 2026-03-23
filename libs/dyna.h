@@ -92,26 +92,24 @@
   
 
       // Using many append
+      char **arr = NULL;
       const char *source[] = {"a", "b", "c"};
-      da_appd_arr (cstr, source, 3);
-      da_appd_aarr (cstr, source); // when the length is known
+      da_appd_arr (arr, source, 3);
+      da_appd_aarr (arr, source); // when the length is known
 
-      // Append a dynamic array
-      char **cstr2 = NULL;
-      da_appd_da (cstr2, cstr);
-
+      // Append a dynamic array to another one
+      da_appd_da (cstr, arr);
 
       // Pop from arrays / Delete by index
-      da_pop (cstr);
-      da_popn (cstr, 2); // pop last 2 elements
 
-      da_unordered_delete (arr, 1); // delete index 1
-      // after this call, @arr will contain the last element
-      // at the index 1, and it's length is decreased by one.
-      //
-      // before @arr:  | a, b, c, ..., y, z |
-      //                    ^-------------^ replace and pop
-      //  after @arr:  | a, z, c, ..., y |
+      da_pop (arr);                     // pop the top element
+      da_popn (arr, 2);                 // pop the last 2 elements
+
+      // Delete element
+      da_unordered_delete (arr, 2);     // delete index 2
+      // before:  @arr = [a, b, c, a, b, c, x]
+      //                        ^-----------^ replace top and pop
+      //  after:  @arr = [a, b, x, a, b, c]
 
       return 0;
     }
@@ -120,7 +118,7 @@
     Options:
       `_DA_DEBUG`:  to print some debugging information
       `DA_INICAP`:  the default initial capacity of arrays
-      `DA_DO_GRO`:  to define how arrays grow
+      `DA_DO_GROW`: to define how arrays grow
       `DA_GFACT`:   growth factor (see the source code)
       `DA_FORCE_MEMCPY`:
                     to force using memcpy for assignments
@@ -256,12 +254,12 @@ typedef struct
 # define dyna_free(p) free (p)
 #endif
 
-/* The internal DA_OFFSETOF macro, gives offset of @member in dyna_t */
+/* Internal DYNA_OFFSETOF, gives offset of @member in dyna_t */
 #ifndef DYNA_NO_STDDEF
 # include <stddef.h>
-# define DA_OFFSETOF(member) offsetof (dyna_t, member)
+# define DYNA_OFFSETOF(member) offsetof (dyna_t, member)
 #else
-# define DA_OFFSETOF(member) ((size_t)((dyna_t *)(0))->member)
+# define DYNA_OFFSETOF(member) ((size_t)((dyna_t *)(0))->member)
 #endif /* DYNA_NO_STDDEF */
 
 /** The internal container_of macro
@@ -270,7 +268,7 @@ typedef struct
  *  struct of @arr the array pointer
  */
 # define DA_CONTAINEROF(da_ptr) \
-  ((dyna_t *)((char *)(da_ptr) - DA_OFFSETOF (arr)))
+  ((dyna_t *)((char *)(da_ptr) - DYNA_OFFSETOF (arr)))
 
 /**
  *  Users normally don't use these functions

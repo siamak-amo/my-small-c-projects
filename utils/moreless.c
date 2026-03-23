@@ -20,7 +20,8 @@
    More Less
    A simple tool to view standard output through the less program
 
-   ** This only works with the GNU C Library (glibc)
+
+   ** Currently Moreless only works with the GNU C Library (glibc).
       For other libc implementations, you need to override
       the equivalent `__libc_start_main` function **
 
@@ -31,19 +32,18 @@
        $ export LD_PRELOAD="/path/to/moreless.so"
        Then run your commands.
 
-     To exclude command(s) from moreless:
-
-       To append to the default excludes:
+     To exclude command(s) from being effected by Moreless:
+       - Append to the default excludes:
        $ export MORELESS_EXCLUDE=":ls:mpv"
-       To override the default excludes:
+       - Override the default excludes:
        $ export MORELESS_EXCLUDE="less:tmux:mpv"
 
-       See the default excludes in `DEFAULT_EXCLUDES`.
+       See the default excluded names in `DEFAULT_EXCLUDES`.
        Alternatively, set the environment variable `NO_LESS`
        to disable moreless.
 
 
-   Here is a simple bash function to toggle moreless:
+   Here is a simple bash function to toggle Moreless:
      ```{bash}
      function moreless ()
        {
@@ -59,7 +59,7 @@
          esac
        }
      ```
-     You might want to eliminate /path/to/moreless.so
+     You may want to eliminate /path/to/moreless.so
      from LD_PRELOAD instead of using `unset LD_PRELOAD`.
 
 
@@ -80,13 +80,14 @@
    - It does not work with the bash builtin functions (e.g., echo, pwd)
 
    - Programs can no longer read interactively from stdin
-     This happens because less calls freopen on /dev/tty (is this fixable?)
+     This happens as the less program, calls freopen() on "/dev/tty"
+     and handles the stdin itself (is there any solution?)
      A simple workaround is to use echo
 
    - Each iteration of for/while loops in Bash runs a separate instance
      of the less program.
 
-     A simple solution is using `bash -c`:
+     A simple solution is using `bash -c':
      $ ... | bash -c 'while read ln; do ls "$ln"; done'
 
      Another solution is to redirect the output to an another program:
@@ -95,9 +96,9 @@
    - Redirecting 2>&1 does not work (how to detect this redirection?)
 
    - Some programs may look different (e.g., without color).
-     Although we have overridden the isatty function, some programs
+     Although we have overridden the `isatty' function, some programs
      may have their own `isatty` implementation,
-     which our override will not affect (e.g., grep).
+     which is out of our reach (e.g., grep).
 
    - The ps command exits with an exit code of 1 (EXIT_FAILURE).
      (likely because of it's unwanted child)
@@ -267,12 +268,12 @@ alter_main (int, char **, char **)
 
   /**
    *  DO *NOT* DELETE ME
-   *  This prevents recursive moreless
+   *  This prevents recursive Moreless
    *  Without unsetenv, moreless will be injected again
    *  in the less command and will call itself recursively
    *
    *  TODO: We must only eliminate /path/to/moreless.so,
-   *        Not the whole of the environment variable.
+   *        Not the entire environment variable.
    */
   unsetenv ("LD_PRELOAD");
 
@@ -284,7 +285,7 @@ alter_main (int, char **, char **)
   int ret = execlp (less, LESS_OPTS, NULL);
   if (ret < 0)
     {
-      fprintf (stderr, LESS" itself failed.\n");
+      fprintf (stderr, LESS " itself failed.\n");
       return -ret;
     }
 
