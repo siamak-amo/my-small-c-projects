@@ -100,8 +100,10 @@
       // Append a dynamic array to another one
       da_appd_da (cstr, arr);
 
-      // Pop from arrays / Delete by index
-
+      // Push, Pop, Top
+      da_push (arr, "x");               // equivalent to append
+      const char *TOP = da_top (arr);   // TOP is equals to "x"
+                                        // or use `da_top_idx`
       da_pop (arr);                     // pop the top element
       da_popn (arr, 2);                 // pop the last 2 elements
 
@@ -742,14 +744,19 @@ main (void)
              "correct values on array after da_aappd calls");
   }
 
-  puts ("\n * Delete and Pop test *");
+  puts ("\n * Pop / Top / Delete test *");
   {
     char *carr = NULL;
+    tassert (da_top_idx (carr) == 0, "top index of empty array");
+
     da_appd_arr (carr, "0123456789abcdef", 16); /* avoid \0 byte */
+    tassert (da_top_idx (carr) == 15, "top index test");
+    tassert (da_top (carr) == 'f', "top value test");
 
     da_popn (carr, 10);
     tassert (da_sizeof (carr) == 6,
              "sizeof array after popN 6 elements");
+    tassert (da_top_idx (carr) == 5, "top index after popN");
 
     da_pop(carr);  da_pop(carr);
     tassert (da_sizeof (carr) == 4,
@@ -768,6 +775,7 @@ main (void)
     /* Checking edge cases */
     da_popn (carr, 666);
     tassert (da_sizeof (carr) == 0, "popN all elements");
+    tassert (da_top_idx (carr) == 0, "top index of empty array");
 
     da_appd (carr, '*');
     da_pop (carr);
