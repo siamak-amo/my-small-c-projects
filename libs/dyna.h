@@ -214,6 +214,7 @@ typedef struct
 #define da_capacity          da_capof     /* total  capacity of array */
 #define da_push              da_appd      /* append  element to array */
 #define da_push_many         da_appd_arr  /* many append */
+#define da_top               da_last      /* get trailing element */
 #define da_pop               da_pop1      /* delete 1 element */
 #define da_pop_many          da_popn      /* many delete */
 
@@ -443,6 +444,9 @@ DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
 #define da_popn(arr, n) __da_popn (&(arr), n)
 #define da_pop1(arr) __da_popn (&(arr), 1)
 
+/* Get the trailing element of @arr */
+#define da_last(arr) arr[da_top_idx (arr)]
+
 /**
  *  Delete Unordered macros
  *  To delete arbitrary index of array, when the order
@@ -456,6 +460,9 @@ DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
       da_pop1 (arr);                            \
     }                                           \
   } while (0)
+
+/* Index of the last element of @arr */
+DYNADEF int da_top_idx (void *_Nullable arr);
 
 #ifdef DYNA_IMPLEMENTATION
 
@@ -587,6 +594,17 @@ __da_popn (void *_Nullable __arr, int n)
     n = da->size;
   da->size -= n;
   return n;
+}
+
+DYNADEF int
+da_top_idx (void *_Nullable __arr)
+{
+  if (! __arr)
+    return 0;
+  dyna_t *da = DA_CONTAINEROF (__arr);
+  if (da->size)
+    return da->size - 1;
+  return 0;
 }
 
 #endif /* DYNA_IMPLEMENTATION */
