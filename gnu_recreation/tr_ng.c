@@ -28,26 +28,10 @@
     Compilation:
       replace `-I../` with path to `buffered_io.h` file:
         cc -ggdb -O3 -Wall -Wextra -Werror \
-           -D_USE_BIO -I../ \
            -o tr tr_ng.c
-      or remove `-D_USE_BIO` to compile without buffered_io
-  
  **/
 #include <unistd.h>
 
-/**
- *  using buffered_io.h for better performance
- *  this file is available in my_small_c_projects repository
- */
-#ifdef _USE_BIO
-/* we define max buffer size = page_size / 4 */
-#  ifndef _BMAX
-#    define _BMAX (sysconf (_SC_PAGESIZE) / 4)
-#  endif
-#  include <stdlib.h>
-#  define BIO_IMPLEMENTATION
-#  include "buffered_io.h"
-#endif
 
 #define CHAR_S 256
 static char ASCII_table[CHAR_S] = {
@@ -68,7 +52,7 @@ static char ASCII_table[CHAR_S] = {
 #define IS_HEX(x) (('0' <= (x) && '9' >= (x)) ||        \
                    ('a' <= (x) && 'f' >= (x)) ||        \
                    ('A' <= (x) && 'F' >= (x)))
-/* @x MUST be in one of: [0-9] [a-f] [A-F] */
+/* Convert hex character (IS_HEX range) to number */
 #define HEX2NUM(x) ((x <= '9') ? (x - '0') :            \
                     (x <= 'F') ? (x - 'A' + 0x0A) :     \
                     (x <= 'f') ? (x - 'a' + 0x0a) : 0)
@@ -122,49 +106,39 @@ parse_param (int argc, char **argv)
   return 0;
 }
 
+static inline void
+tr (int read_fd, int write_fd)
+{
+#define BUF_CAP 256
+  static char buf[BUF_CAP];
+  int tty = isatty (read_fd);
+
+ tr_loop:
+  ssize_t rw = read (read_fd, buf, BUF_CAP);
+  if (0 == rw) /* EOF */
+    return;
+  else if (rw > 0)
+    {
+      for (ssize_t i=0; i < rw; ++i)
+        { /* replace characters by ASCII_table */
+          char c = buf[i]; 
+          if (c > 0)
+            buf[i] = ASCII_table[(int) c];
+        }
+
+      write (write_fd, buf, rw);
+      if (BUF_CAP == rw  ||  tty) /* read the rest */
+        goto tr_loop;
+    }
+#undef BUF_CAP
+}
+
 int
 main (int argc, char **argv)
 {
-#ifdef _USE_BIO
-  int cap = _BMAX;
-  BIO_t bio = bio_new (cap, malloc (cap), 1);
-#  define putc_H(c) bio_putc (&bio, c)
-#else
-#  define putc_H(c) write (1, &c, 1)
-#endif
-
-#define tr_putc(c) if (c > 0x7F) {              \
-    putc_H (c);                                 \
-  } else {                                      \
-    char to_write = ASCII_table[c];             \
-    if (c != 0 && to_write == 0) continue;      \
-    putc_H (to_write);                          \
-  }
-
-  int c = 1;
   /* updates the ASCII_table */
   parse_param (argc, argv);
 
-  if (!isatty (0))
-    {
-      while (read (0, &c, 1) > 0)
-        {
-          tr_putc (c);
-        }
-    }
-  else
-    {
-      while (c != 0 && read (0, &c, 1) == 1)
-        {
-          tr_putc (c);
-        }
-    }
-
-
-#ifdef _USE_BIO
-  bio_flush (&bio);
-  free (bio.buffer);
-#endif
-  
+  (void) tr (STDIN_FILENO, STDOUT_FILENO);
   return 0;
 }
