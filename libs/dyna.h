@@ -30,8 +30,8 @@
   
     // Optionally, you can define these macros to determine
     // how the dynamic array grows.
-    // In this example, capacity increases by DA_GFACT at each overflow
-    // By default, it grows exponentially by a factor of 2
+    // In this example, capacity increases linearly by DA_GFACT.
+    // By default, it grows exponentially by a factor of 1.5.
     #define DA_GFACT 8
     #define DA_DO_GROW(cap) ((cap) += DA_GFACT)
   
@@ -233,19 +233,18 @@ typedef struct
 # define DA_INICAP 2
 #endif
 
-/* Growth factor */
-#ifndef DA_GFACT
-# define DA_GFACT 2
-#endif
 #ifndef DA_DO_GROW
 /**
- *  By default, it doubles the capacity;
- *  you may want to increase the capacity
- *  linearly like: `cap += DA_GFACT`
+ *  Capacity grow at overflow macro
  */
+# ifndef DA_GFACT
+#  define DA_GFACT 1.5  /* Growth factor */
+# endif
 # define DA_DO_GROW(cap) ((cap) *= DA_GFACT)
-// #define DA_DO_GROW(cap) ((cap) += DA_GFACT)
-// #define DA_DO_GROW(cap) ((cap) = 1 + (cap) * 3 / 2)
+/**
+ *  Linear grow example:
+ *  #define DA_DO_GROW(current_cap) ((current_cap) += 8)
+ */
 #endif
 
 #ifndef dyna_alloc
