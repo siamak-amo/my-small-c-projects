@@ -89,6 +89,13 @@
         .a_comment     = GEN_MLCFG (ML_Comments),
         .delim_ranges  = GEN_MLCFG (Delimiters),
       };
+
+      // To change the default string compare of MIlexer keywords,
+      // users can define and use custom compare functions:
+      int custom_strcmp(const char *s1, const char *s2);
+      ml.keyword_strcmp = custom_strcmp;
+      // Or maybe case-insensitive function from string.h:
+      ml.keyword_strcmp = strcasecmp;
   
       const int flg = PFLAG_DEFAULT;
       Milexer_Slice src = {.lazy = true};
@@ -695,6 +702,11 @@ typedef struct
 #define __get_last_punc(ml, src) \
   ((ml)->puncs.exp + (src)->__last_punc_idx)
 
+#ifndef ML_DEFAULT_STRCMP
+#define ML_DEFAULT_STRCMP strcmp /* from <string.h> */
+#endif
+typedef int (*ml_strcmp_t) (const char *s1, const char *s2);
+
 typedef struct Milexer_t
 {
   /* Configurations */
@@ -715,6 +727,8 @@ typedef struct Milexer_t
    */
   Milexer_BEXP delim_ranges;
 
+  /* string compare function used for Keyword ID lookup */
+  ml_strcmp_t keyword_strcmp;
 } Milexer;
 
 /**
@@ -1280,7 +1294,7 @@ ml_set_keyword_id (const Milexer *ml, Milexer_Token *res)
       for (int i=0; i < ml->keywords.len; ++i)
         {
           const char *p = ml->keywords.exp[i];
-          if (strcmp (p, res->cstr) == 0)
+          if (ml->keyword_strcmp (p, res->cstr) == 0)
             {
               res->id = i;
               return 0;
@@ -1364,6 +1378,9 @@ ml_next (Milexer *ml, Milexer_Slice *src,
 
     case SYN_DUMMY:
     case SYN_DONE:
+      if (! ml->keyword_strcmp)
+        ml->keyword_strcmp = ML_DEFAULT_STRCMP;
+
       TOKEN_MARK_COL (src, tk);
       if (src->__last_newline)
         TOKEN_MARK_NEWLINE (src, tk);
