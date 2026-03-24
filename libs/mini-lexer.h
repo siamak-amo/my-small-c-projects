@@ -518,7 +518,7 @@ const char *milexer_next_cstr[] =
   };
 
 #define HAS_FLAG(n, flag) (n & (flag))
-enum milexer_parsing_flag_t
+enum ml_parsing_flag_t
   {
     /* Default behavior */
     PFLAG_DEFAULT = 0,
@@ -778,8 +778,9 @@ typedef struct Milexer_t
  *  the user of this library
  *  @src and @tk buffers *MUST* be distinct
  */
-MLDEF int ml_next (Milexer *ml, Milexer_Slice *src,
-             Milexer_Token *tk, int flg);
+MLDEF int ml_next (Milexer *ml,
+                   Milexer_Slice *src, Milexer_Token *tk,
+                   enum ml_parsing_flag_t flg);
 
 
 #ifdef ML_FLEX
@@ -1420,8 +1421,9 @@ __ml_pre_next (Milexer *ml, Milexer_Slice *src,
 }
 
 MLDEF int
-ml_next (Milexer *ml, Milexer_Slice *src,
-         Milexer_Token *tk, int flags)
+ml_next (Milexer *ml,
+         Milexer_Slice *src, Milexer_Token *tk,
+         enum ml_parsing_flag_t flags)
 {
   int ret = __ml_pre_next (ml, src, tk, flags);
   if (NEXT_NO_RET != ret)
