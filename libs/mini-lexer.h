@@ -493,6 +493,13 @@ enum milexer_next_t
     
     NEXT_END, /* nothing to do, end of parsing */
     NEXT_ERR, /* error */
+
+
+    /**
+     *  Used internally by Milexer (__ml_pre_next())
+     *  Users neither get nor handle this code
+     */
+    NEXT_NO_RET = -1
   };
 
 #define NEXT_SHOULD_END(ret) \
@@ -1319,15 +1326,15 @@ tk_set_defaults (const Milexer *ml, Milexer_Token *tk)
   return false;
 }
 
-MLDEF int
-ml_next (Milexer *ml, Milexer_Slice *src,
-         Milexer_Token *tk, int flags)
+static inline int
+__ml_pre_next (Milexer *ml, Milexer_Slice *src,
+               Milexer_Token *tk, int flags)
 {
   struct Milexer_exp *last_exp;
+
   if (tk->cstr == NULL || tk->cap <= 0 || tk->cstr == src->buffer)
     return NEXT_ERR;
 
-  /* pre parsing */
   tk->type = TK_NOT_SET;
   switch (src->state)
     {
@@ -1352,7 +1359,6 @@ ml_next (Milexer *ml, Milexer_Slice *src,
       last_exp = __get_last_punc (ml, src);
       memcpy (tk->cstr, last_exp->begin, last_exp->len.begin);
       LD_STATE (src);
-      /* just to make to null-terminated */
       tk->__idx = last_exp->len.begin;
       tk->type = TK_PUNCS;
       tk->id = src->__last_punc_idx;
@@ -1409,6 +1415,17 @@ ml_next (Milexer *ml, Milexer_Slice *src,
         return NEXT_END;
       return NEXT_NEED_LOAD;
     }
+
+  return NEXT_NO_RET;
+}
+
+MLDEF int
+ml_next (Milexer *ml, Milexer_Slice *src,
+         Milexer_Token *tk, int flags)
+{
+  int ret = __ml_pre_next (ml, src, tk, flags);
+  if (NEXT_NO_RET != ret)
+    return ret;
 
   /**
    *  The main loop
