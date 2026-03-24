@@ -1420,6 +1420,54 @@ __ml_pre_next (Milexer *ml, Milexer_Slice *src,
   return NEXT_NO_RET;
 }
 
+static inline int
+__ml_handle_chunks (Milexer *ml, char *dst,
+                    Milexer_Slice *src, Milexer_Token *tk,
+                    enum ml_parsing_flag_t flags)
+{
+  if ((src->state != SYN_COMM && src->state != SYN_ML_COMM)
+      || HAS_FLAG (flags, PFLAG_INCOMMENT))
+    {
+      if (tk->type == TK_NOT_SET ||
+          src->state == SYN_DUMMY || src->state == SYN_DONE)
+        {
+          /**
+           *  we assume your keywords are smaller than
+           *  the length of tk->cstr buffer
+           */
+          tk->id = -1;
+          if (src->state == SYN_COMM || src->state == SYN_ML_COMM)
+            {
+              tk->type = TK_COMMENT;
+            }
+          else
+            {
+              tk->type = TK_KEYWORD;
+              ml_set_keyword_id (ml, tk);
+            }
+        }
+      /**
+       *  max token len reached, this will be
+       *  the next chunk unless this is end of src
+       */
+      TOKEN_FINISH (tk);
+      if (src->idx == src->cap)
+        {
+          *dst = '\0';
+          ST_STATE (src, SYN_DUMMY);
+          return NEXT_MATCH;
+        }
+      else
+        {
+          ST_STATE (src, SYN_CHUNK);
+          return NEXT_CHUNK;
+        }
+    }
+  else
+    TOKEN_FINISH (tk);
+  return NEXT_NO_RET;
+}
+
 MLDEF int
 ml_next (Milexer *ml,
          Milexer_Slice *src, Milexer_Token *tk,
@@ -1442,51 +1490,15 @@ ml_next (Milexer *ml,
       dst = tk->cstr + (tk->__idx++);
       *dst = *p;
       
-      //-- detect & reset chunks -------//
+      /* detect & reset the chunks */
       if (tk->__idx == tk->cap)
         {
-          if ((src->state != SYN_COMM && src->state != SYN_ML_COMM)
-              || HAS_FLAG (flags, PFLAG_INCOMMENT))
-            {
-              if (tk->type == TK_NOT_SET ||
-                  src->state == SYN_DUMMY || src->state == SYN_DONE)
-                {
-                  /**
-                   *  we assume your keywords are smaller than
-                   *  the length of tk->cstr buffer
-                   */
-                  tk->id = -1;
-                  if (src->state == SYN_COMM || src->state == SYN_ML_COMM)
-                    {
-                      tk->type = TK_COMMENT;
-                    }
-                  else
-                    {
-                      tk->type = TK_KEYWORD;
-                      ml_set_keyword_id (ml, tk);
-                    }
-                }
-              /**
-               *  max token len reached, this will be
-               *  the next chunk unless this is end of src
-               */
-              TOKEN_FINISH (tk);
-              if (src->idx == src->cap)
-                {
-                  *dst = '\0';
-                  ST_STATE (src, SYN_DUMMY);
-                  return NEXT_MATCH;
-                }
-              else
-                {
-                  ST_STATE (src, SYN_CHUNK);
-                  return NEXT_CHUNK;
-                }
-            }
-          else
-            TOKEN_FINISH (tk);
+          ret = __ml_handle_chunks (ml, dst, src, tk, flags);
+          if (NEXT_NO_RET != ret)
+            return ret;
         }
-      //--------------------------------//
+
+      /* Detect & Handle the new state */
       int c;
       char *__ptr;
       /* logf ("'%c' - %s, %s", *p,
