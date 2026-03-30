@@ -33,13 +33,13 @@
     as this is how the library was originally developed!
 
 
- -- Usage Example ---------------------------------------------------
+ -- Initializing Milexer --------------------------------------------
     ```{c}
       #include <stlib.h>
       #define ML_IMPLEMENTATION
       #include "mini-lexer.h"
   
-      //-- Defining the language -------//
+      //-- Language Definition ---------//
       enum LANG
         {
           // keywords
@@ -97,65 +97,75 @@
       // Or maybe case-insensitive function from string.h:
       ml.keyword_strcmp = strcasecmp;
   
-      const int flg = PFLAG_DEFAULT;
-      Milexer_Slice src = {.lazy = true};
+      // Allocating token buffer with malloc (ml_malloc):
+      Milexer_Token tk = TK_ALLOC (32);
+      TK_FREE (&tk); // free it at the end
 
       // To allocate tokens on stack use the TK_DECLARE macro:
-      // Ex:  TK_DECLARE(tmp, sizeof(tmp) - 1);
-      // but here we use TK_ALLOC which works with malloc:
-      Milexer_Token tk = TK_ALLOC (32);
-  
-      //-- Actual Parsing --------------//
-      for (int ret = 0; !NEXT_SHOULD_END (ret); )
-        {
-          ret = ml_next (&ml, &src, &tk, flg);
-          switch (ret)
-            {
-            case NEXT_NEED_LOAD:
-              // Load the data to parse
-              if ( has_more_data )
-                SET_ML_SLICE (&src, buffer, buffer_length);
-              // If your input data is completed
-              if ( end_of_data )
-                END_ML_SLICE (&src);
-              break; 
-  
-            case NEXT_MATCH:   // match
-            case NEXT_CHUNK:   // you are receiving a chunk of the result
-            case NEXT_ZTERM:   // the parser has encountered a null-byte
-              {
-                // If the token is recognized correctly, Milexer_Token->id
-                // is set to the index of the token within the corresponding
-                // language entry, for example:
-                if ( tk.type == TK_KEYWORD  &&  tk.id == KEY_IF ) {
-                    puts ("[IF keyword]");
-                } else if ( tk.type == TK_PUNCS  &&  tk.id == PUNC_COMMA ) {
-                    puts ("[Comma]");
-                }
-                ...
-                else if ( tk.id == TK_NOT_SET ) {
-                    printf ("token: `%s` of type %s at line %d, column %d\n",
-                            tk.cstr,
-                            milexer_token_type_cstr[tk.type]
-                            tk.line, tk.col);
-                }
-              }
-              break;
-            }
-        }
-      TK_FREE (&tk);
+      char tmp[ MAX_TOKEN_CAPACITY ];
+      Milexer_Token tk = TK_DECLARE (tmp, sizeof (tmp));
+
+      // Initialize input data source:
+      Milexer_Slice src = {.lazy = true};
+      SET_ML_SLICE (&src, buffer, buffer_length);
       ```
 
- -- Lexer in Lexer --------------------------------------------------
-      Tokenizing contents of a token again; for instance, lexing an
-      expression token to get it's comma separated values.
-      For a complete example, see: ML_EXAMPLE_1
-      To use a higher level API, see the Flex API section.
+ -- Manual example --------------------------------------------------
+    ```{c}
+    for (int ret = 0; !NEXT_SHOULD_END (ret); )
+    {
+        // Call the next token function with the default flags
+        ret = ml_next (&ml, &src, &tk, PFLAG_DEFAULT);
 
-      ```{c}
-      // You *MUST* pass the INEXP flag to the parser; Otherwise,
+        switch (ret) {
+        case NEXT_NEED_LOAD:
+            if ( you_have_more_data ) {  // Load the rest of data
+                SET_ML_SLICE (&src, extra_data, length);
+            } else if ( end_of_data ) {  // if done
+                END_ML_SLICE (&src);
+            }
+            break;
+        case NEXT_MATCH:     // a token is received
+        case NEXT_CHUNK:     // the actual token is bugger than the
+                             // capacity of @tk, so it's fragmented
+        case NEXT_ZTERM:     // lexer has encountered a null-byte
+            // If the token is recognized correctly, @tk->id
+            // is set to the index of the appropriate language
+            // component (from enum LANG):
+            switch (tk.type) {
+            case TK_PUNCS:
+                if (tk.id == PUNC_COMMA)  puts ("[Comma]");
+                else if ...
+                break;
+            case TK_KEYWORD:
+                if (tk.id == KEY_IF)  puts ("IF");
+                else if ...
+                break;
+            case TK_NOT_SET:
+                printf ("[%s]: `%s`,  at (line:%d, col:%d)\n",
+                        milexer_token_type_cstr[tk.type],
+                        tk.cstr,
+                        tk.line, tk.col);
+                break;
+            }
+        }
+    }
+    ```
+
+ -- Lexer in Lexer --------------------------------------------------
+    For parsing contents of a retrieved token again, it's required
+    to call the lex function, in the middle of the main lexer loop,
+    with a different configuration, for instance consider:
+        parsing  {x, y, z}  which consist of an outer expression {}
+        and inner comma separated values.
+    ml_next() supports nested calls with the following conditions;
+    see: ML_EXAMPLE_1 for a complete example.
+    To use a higher level API, see the Flex API section.
+
+    ```{c}
+      // You *MUST* pass the INEXP flag to the lexer; Otherwise,
       // the result will contain the expression prefix and suffix,
-      // which may potentially cause an infinite loop
+      // which causes infinite loop
       ret = ml_next (&ml, &src, &tk, PFLAG_INEXP);
 
       if (tk.type == TK_EXPRESSION)
@@ -164,16 +174,14 @@
         Milexer_Slice new_src = {0};
         SET_ML_SLICE (&new_src, tk.cstr, strlen (tk.cstr));
 
-        // As we are using @tk.cstr in new_src, we cannot also
-        // store the result data into the @tk itself, so
-        // you *MUST* also allocate a new token, @new_token
+        // As we are using @tk.cstr in new_src, we cannot store
+        // the result data back into the @tk itself, so
+        // we *MUST* allocate a new token buffer, @new_token
         Milexer_Token new_token = TK_ALLOC (32);
   
         do {
-          // Indicates to the parser when it should stop
-          new_src.eof_lazy = (ret != NEXT_CHUNK);
-
           // Prepare the new parsing data source, @new_src
+          new_src.eof_lazy = (ret != NEXT_CHUNK);
           SET_ML_SLICE (&new_src, tk.cstr, strlen (tk.cstr));
   
           for (int _ret = 0; !NEXT_SHOULD_END (_ret); )
@@ -191,13 +199,19 @@
           ret = ml_next (&ml, &src, &tk, PFLAG_INEXP);
   
         } while (!NEXT_SHOULD_LOAD (ret));
-      ```
+    ```
 
  -- Extending chunked tokens ----------------------------------------
-    If Milexer_Token->cstr is allocated via malloc, for example:
-    TK_ALLOC macro is used, it can be extended to receive
-    the actual intended data when it's chunked.
-    The TK_EXTEND macro can be used to extend the capacity:
+    When ml_next() returns NEXT_CHUNK, it indicates that the @tk
+    structure, does not have enough capacity to hold the full token,
+    so you've received a chunk of token, and the rest will be
+    provided in subsequent calls to ml_next().
+
+    If Milexer_Token->cstr is allocated using malloc (e.g., via
+    the TK_ALLOC macro), it can be extended to accommodate the
+    full data when the token is chunked.
+
+    The TK_EXTEND macro can be used to increase the capacity:
     ```{c}
       while (ret == NEXT_CHUNK)
         {
@@ -210,7 +224,7 @@
     ```
 
  -- Toggle language rules -------------------------------------------
-    As your parser proceeds, it might be useful to disable/enable
+    As your parser proceeds, it may be useful to disable or enable
     some rules of the language dynamically; for instance,
     comma is a separator in lists, but it should be treated as a
     normal character in file paths, therefore comma should be
@@ -255,9 +269,9 @@
     (while getting NEXT_CHUNK), may lead to Undefined behavior.
 
  -- Flex compatibility ----------------------------------------------
-    Although Milixer provides low-level access to it's internal
-    tokens and configurations, some users may prefer to use
-    a higher level API like Flex.
+    Although Milixer provides low-level access to it's data source
+    and destination buffer, using a higher level API, like Flex
+    would be more convenient for complicated languages.
     see the Example_2 for a quick example.
 
     Milixer implements a subset of Flex API which can be enabled
@@ -267,14 +281,14 @@
       #define ML_IMPLEMENTATION
       #include "mini-lexer.h"
     ```
-    With ML_FLEX macro defined, these global variables are provided:
-      yyin:     the current input FILE pointer
+    With the ML_FLEX macro defined:
+      yyin:     points to the current input FILE pointer
       yytext:   string of the current token
       yyleng:   strlen of yytext
       yyline:   line number of the current token
       yycolumn: column number of the current token
-      yyid:     equivalent to Milexer_Token->id      (Not standard)
-      yyml:     to set the global Milexer language   (Not standard)
+      yyid:     field @id of the current token         (Not standard)
+      yyml:     the global Milexer language            (Not standard)
 
     Example:
     ```{c}
@@ -292,7 +306,7 @@
              printf( "token:'%s'\n", yytext );
 
              // maybe disable/enable some features here, or
-             // create another lexer with a different behavior
+             // create a nested lexer with a different behavior
            }
          yy_delete_buffer( buffer );
          yylex_destroy(); // global destroy
@@ -353,11 +367,11 @@
 #ifndef MINI_LEXER__H
 #define MINI_LEXER__H
 
+#include <assert.h>
 #include <string.h>
 #include <stdbool.h>
-#include <assert.h>
 
-#define MILEXER_VERSION "2.4"
+#define MILEXER_VERSION "2.5"
 
 #ifdef _ML_DEBUG
 #  include <stdio.h>
@@ -480,14 +494,14 @@ enum milexer_next_t
     
     /**
      *  The parser has encountered a zero-byte
-     *  You might want to terminate parsing
+     *  You may terminate the parsing
      */
     NEXT_ZTERM,
     
     /**
      *  Only in lazy loading:
      *  Parsing the current slice source is done
-     *  You need to load the remaining of data
+     *  You may load the remaining data
      */
     NEXT_NEED_LOAD,
     
@@ -496,7 +510,7 @@ enum milexer_next_t
 
 
     /**
-     *  Used internally by Milexer (__ml_pre_next())
+     *  Used internally by Milexer
      *  Users neither get nor handle this code
      */
     NEXT_NO_RET = -1
@@ -607,11 +621,8 @@ typedef struct
 #define TK_STRLEN(tk)         TOKEN_STRLEN (tk)
 #define TK_FREE_SPACE(tk)     TOKEN_FREE_SPCAE (tk)
 #define TK_IS_KNOWN(tk)       TOKEN_IS_KNOWN (tk)
-/**
- *  Token declaration
- *  Capacity of @mem *MUST* be @len+1 (an extra byte for null-termination)
- */
-#define TK_DECLARE(mem, len) TOKEN_DECLARE (mem, len)
+#define TK_DECLARE(mem, len)  TOKEN_DECLARE (mem, len-1) /* allocate on stack */
+
 /**
  *  Extends a token when it runs out of memory
  *  Use this macros if ml_next call returns NEXT_CHUNK,
@@ -624,14 +635,18 @@ typedef struct
  */
 #define TK_EXTEND2(tk, new_mem, delta_size) TOKEN_EXTEND2(tk, new_mem, delta_size)
 
-/** Internal token macros, users do not normally use these macros **/
+/**
+ *  Internal macros
+ *  Users do not `normally' use these macros
+ */
 #define TOKEN_FREE(tk) ml_free ((tk)->cstr)
 #define TOKEN_STRLEN(tk) ((tk)->size)
 #define TOKEN_IS_KNOWN(tk) ((tk)->id >= 0)
 #define TOKEN_FREE_SPCAE(tk) ((tk)->cap - ((tk)->size))
 
+/* @mem MUST have capacity of @len+1 to store trailing null-byte */
 #define TOKEN_DECLARE(mem, len) (Milexer_Token){.cstr=mem, .cap=len}
-#define TOKEN_ALLOC(cap) TOKEN_DECLARE (ml_malloc(cap+1), cap)
+#define TOKEN_ALLOC(cap) TOKEN_DECLARE( ml_malloc(cap + 1), cap )
 
 #define TOKEN_EXTEND2(tk, new_mem, delta_size)  \
   ((tk)->__idx = (tk)->size,                    \
@@ -709,6 +724,7 @@ typedef struct
 #define __get_last_punc(ml, src) \
   ((ml)->puncs.exp + (src)->__last_punc_idx)
 
+
 #ifndef ML_DEFAULT_STRCMP
 #define ML_DEFAULT_STRCMP strcmp /* from <string.h> */
 #endif
@@ -717,11 +733,10 @@ typedef int (*ml_strcmp_t) (const char *s1, const char *s2);
 typedef struct Milexer_t
 {
   /* Configurations */
-  Milexer_BEXP escape;    // Not implemented
-  /* puncs only uses begin from _exp_t, end is empty string */
-  Milexer_AEXP puncs;
   Milexer_BEXP keywords;
   Milexer_AEXP expression;
+  /* puncs only uses begin from _exp_t, end is empty string */
+  Milexer_AEXP puncs;
   Milexer_BEXP b_comment;
   Milexer_AEXP a_comment;
   /**
