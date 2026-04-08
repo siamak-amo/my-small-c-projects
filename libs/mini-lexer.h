@@ -614,6 +614,7 @@ typedef struct
 } Milexer_Token;
 
 /** Token macros, to work with tokens **/
+#define TK_ID_NOT_SET         (-1) /* only used for Milexer_Token->id */
 #define TK_ALLOC(cap)         TOKEN_ALLOC (cap)         /* needs stdlib malloc */
 #define TK_FREE(tk)           TOKEN_FREE (tk)           /* needs stdlib free */
 #define TK_REALLOC(tk, cap)   TOKEN_REALLOC (tk, cap)   /* needs stdlib realloc */
@@ -1321,7 +1322,7 @@ ml_set_keyword_id (const Milexer *ml, Milexer_Token *res)
               return 0;
             }
         }
-      res->id = -1;
+      res->id = TK_ID_NOT_SET;
     }
   return -1;
 }
@@ -1448,7 +1449,7 @@ __ml_handle_chunks (Milexer *ml, char *dst,
            *  we assume your keywords are smaller than
            *  the length of tk->cstr buffer
            */
-          tk->id = -1;
+          tk->id = TK_ID_NOT_SET;
           if (src->state == SYN_COMM || src->state == SYN_ML_COMM)
             {
               tk->type = TK_COMMENT;
@@ -1870,7 +1871,7 @@ yy_set_global (YY_BUFFER_STATE *b)
     {
       yyin = NULL, yytext = NULL;
       yyleng = 0;
-      yyid = TK_NOT_SET;
+      yyid = TK_ID_NOT_SET;
       yyline = 1, yycolumn = 0;
       return;
     }
