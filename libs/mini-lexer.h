@@ -349,7 +349,7 @@
 
  -- Known Issues ----------------------------------------------------
     1. Unicode/UTF8 is NOT supported.
-    2. Token fragmentation (token buffer overflows),
+    2. Token fragmentation (token buffer overflow),
        breaks the logic of punctuation and expression detection.
        It may only happen for longer than one character expressions.
 
@@ -409,7 +409,6 @@ typedef struct Milexer_exp
     int begin, end;
   } len;
 
-  // int __tag; // internal nesting
   bool disabled;
 } _exp_t;
 
@@ -564,7 +563,7 @@ enum ml_parsing_flag_t
     PFLAG_INCOMMENT = 1 << 3,
   };
 
-enum milexer_token_t
+enum __milexer_token_type
   { 
     TK_NOT_SET = 0,
     TK_COMMENT, /* commented */
@@ -587,12 +586,12 @@ const char *milexer_token_type_cstr[] =
 
 typedef struct
 {
-  enum milexer_token_t type;
+  enum __milexer_token_type type;
 
   /**
    *  Index of the token in the corresponding
    *  Milexer configuration field, punc/keyword/...
-   *  -1 means the token is not recognized
+   *  TK_ID_NOT_SET means the token is not recognized
    */
   int id;
 
@@ -624,9 +623,8 @@ typedef struct
 #define TK_DECLARE(mem, len)  TOKEN_DECLARE (mem, len-1) /* allocate on stack */
 
 /**
- *  Extends a token when it runs out of memory
- *  Use this macros if ml_next call returns NEXT_CHUNK,
- *  and use it until ml_next returns NEXT_CHUNK.
+ *  Extends the token @tk when it runs out of memory
+ *  Use this macros when ml_next() call returns NEXT_CHUNK.
  */
 #define TK_EXTEND(tk, grow_bytes) TOKEN_EXTEND(tk, grow_bytes) /* needs stdlib realloc */
 /**
@@ -637,7 +635,7 @@ typedef struct
 
 /**
  *  Internal macros
- *  Users do not `normally' use these macros
+ *  Users do not 'normally' use these macros
  */
 #define TOKEN_FREE(tk) ml_free ((tk)->cstr)
 #define TOKEN_STRLEN(tk) ((tk)->size)
@@ -1505,7 +1503,7 @@ ml_next (Milexer *ml,
       dst = tk->cstr + (tk->__idx++);
       *dst = *p;
       
-      /* detect & reset the chunks */
+      /* detect & reset chunks */
       if (tk->__idx == tk->cap)
         {
           ret = __ml_handle_chunks (ml, dst, src, tk, flags);
@@ -2547,7 +2545,7 @@ main (int argc, char **argv)
     DO_TEST (&t, "space delimiter");
     
     /* this test does not have a tailing delimiter
-       and the parser must continue reading */
+       and the lexer must continue reading */
     t = (test_t) {
       .parsing_flags = PFLAG_DEFAULT,
       .input = "ccc",
@@ -2616,8 +2614,8 @@ main (int argc, char **argv)
       }};
     DO_TEST (&t, "adjacent puncs & expressions");
 
-    /* the previous test didn't have tailing delimiter,
-       but as it was an expression, the parser must
+    /* the previous test does not have tailing delimiter,
+       but as it was an expression, the lexer must
        treat this one as a separate token */
     t = (test_t) {
       .parsing_flags = PFLAG_DEFAULT,
@@ -2674,7 +2672,7 @@ main (int argc, char **argv)
 
   puts ("-- partially disabled features --");
   {
-    ML_DISABLE (&ml.puncs); /* disbale punctuation's */
+    ML_DISABLE (&ml.puncs); /* disabled punctuation's */
     t = (test_t) {
       .parsing_flags = PFLAG_DEFAULT,
       .input = "AAA +BBB (te st) ",
