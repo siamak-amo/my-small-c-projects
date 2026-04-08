@@ -2471,6 +2471,11 @@ do_test__H (test_t *t, Milexer_Slice *src,
                   milexer_token_type_cstr[tk.type],
                   milexer_token_type_cstr[tcase->type]);
         }
+      if (tk.id != TK_ID_NOT_SET && tcase->id != tk.id)
+        {
+          Return (counter, "token ID %d != expected %d",
+                  tk.id, tcase->id);
+        }
       if (tcase->line && tcase->line != tk.line)
         {
           Return (counter, "token line number %ld != expected %ld",
@@ -2595,9 +2600,9 @@ main (int argc, char **argv)
       .input = "AAA + BBB (te st) ",
       .etk = (Milexer_Token []){
         {.type = TK_KEYWORD,    .cstr = "AAA",      .col=0},
-        {.type = TK_PUNCS,      .cstr = "+",        .col=4},
+        {.type = TK_PUNCS,      .cstr = "+",        .col=4,   .id=PUNC_PLUS},
         {.type = TK_KEYWORD,    .cstr = "BBB",      .col=6},
-        {.type = TK_EXPRESSION, .cstr = "(te st)",  .col=10},
+        {.type = TK_EXPRESSION, .cstr = "(te st)",  .col=10,  .id=EXP_PAREN},
         {0}
       }};
     DO_TEST (&t, "basic puncs & expressions");
@@ -2606,11 +2611,11 @@ main (int argc, char **argv)
       .parsing_flags = PFLAG_DEFAULT,
       .input = "()AAA+{a string . }(t e s t)",
       .etk = (Milexer_Token []){
-        {.type = TK_EXPRESSION, .cstr = "()",             .col=0},
+        {.type = TK_EXPRESSION, .cstr = "()",             .col=0,  .id=EXP_PAREN},
         {.type = TK_KEYWORD,    .cstr = "AAA",            .col=2},
-        {.type = TK_PUNCS,      .cstr = "+",              .col=5},
-        {.type = TK_EXPRESSION, .cstr = "{a string . }",  .col=6},
-        {.type = TK_EXPRESSION, .cstr = "(t e s t)",      .col=19},
+        {.type = TK_PUNCS,      .cstr = "+",              .col=5,  .id=PUNC_PLUS},
+        {.type = TK_EXPRESSION, .cstr = "{a string . }",  .col=6,  .id=EXP_CURLY},
+        {.type = TK_EXPRESSION, .cstr = "(t e s t)",      .col=19, .id=EXP_PAREN},
         {0}
       }};
     DO_TEST (&t, "adjacent puncs & expressions");
@@ -2623,11 +2628,11 @@ main (int argc, char **argv)
       .input = "AA!=BB!= CC !=DD",
       .etk = (Milexer_Token []){
         {.type = TK_KEYWORD,      .cstr = "AA", .col=0},
-        {.type = TK_PUNCS,        .cstr = "!=", .col=2},
+        {.type = TK_PUNCS,        .cstr = "!=", .col=2,  .id=PUNC_NEQUAL},
         {.type = TK_KEYWORD,      .cstr = "BB", .col=4},
-        {.type = TK_PUNCS,        .cstr = "!=", .col=6},
+        {.type = TK_PUNCS,        .cstr = "!=", .col=6,  .id=PUNC_NEQUAL},
         {.type = TK_KEYWORD,      .cstr = "CC", .col=9},
-        {.type = TK_PUNCS,        .cstr = "!=", .col=12},
+        {.type = TK_PUNCS,        .cstr = "!=", .col=12, .id=PUNC_NEQUAL},
         {.type = TK_KEYWORD,      .cstr = "DD", .col=14},
         {0}
       }};
@@ -2638,7 +2643,7 @@ main (int argc, char **argv)
       .input = "!= EEE ",
       .etk = (Milexer_Token []){
         {.type = TK_KEYWORD,      .cstr = "DD"},
-        {.type = TK_PUNCS,        .cstr = "!=",  .col=0},
+        {.type = TK_PUNCS,        .cstr = "!=",  .col=0,  .id=PUNC_NEQUAL},
         {.type = TK_KEYWORD,      .cstr = "EEE", .col=3},
         {0}
       }};
@@ -2650,10 +2655,10 @@ main (int argc, char **argv)
       .input = "aa<<e x>>+<< AA>> <<BB >>",
       .etk = (Milexer_Token []){
         {.type = TK_KEYWORD,       .cstr = "aa",        .col=0},
-        {.type = TK_EXPRESSION,    .cstr = "<<e x>>",   .col=2},
-        {.type = TK_PUNCS,         .cstr = "+",         .col=9},
-        {.type = TK_EXPRESSION,    .cstr = "<< AA>>",   .col=10},
-        {.type = TK_EXPRESSION,    .cstr = "<<BB >>",   .col=18},
+        {.type = TK_EXPRESSION,    .cstr = "<<e x>>",   .col=2,   .id=EXP_LONG},
+        {.type = TK_PUNCS,         .cstr = "+",         .col=9,   .id=PUNC_PLUS},
+        {.type = TK_EXPRESSION,    .cstr = "<< AA>>",   .col=10,  .id=EXP_LONG},
+        {.type = TK_EXPRESSION,    .cstr = "<<BB >>",   .col=18,  .id=EXP_LONG},
         {0}
       }};
     DO_TEST (&t, "expressions with long prefix & suffix");
@@ -2663,9 +2668,9 @@ main (int argc, char **argv)
       .parsing_flags = PFLAG_DEFAULT,
       .input = "<<0123456789a b c d e f>><<>>",
       .etk = (Milexer_Token []){
-        {.type = TK_EXPRESSION,    .cstr = "<<0123456789a b "},
-        {.type = TK_EXPRESSION,    .cstr = "c d e f>>"},
-        {.type = TK_EXPRESSION,    .cstr = "<<>>"},
+        {.type = TK_EXPRESSION,    .cstr = "<<0123456789a b ",   .id=EXP_LONG},
+        {.type = TK_EXPRESSION,    .cstr = "c d e f>>",          .id=EXP_LONG},
+        {.type = TK_EXPRESSION,    .cstr = "<<>>",               .id=EXP_LONG},
         {0}
       }};
     DO_TEST (&t, "inner long expressions");
@@ -2680,7 +2685,7 @@ main (int argc, char **argv)
       .etk = (Milexer_Token []){
         {.type = TK_KEYWORD,    .cstr = "AAA",     .col=0},
         {.type = TK_KEYWORD,    .cstr = "+BBB",    .col=4},
-        {.type = TK_EXPRESSION, .cstr = "(te st)", .col=9},
+        {.type = TK_EXPRESSION, .cstr = "(te st)", .col=9,   .id=EXP_PAREN},
         {0}
       }};
     DO_TEST (&t, "disable all punctuation's");
@@ -2692,9 +2697,9 @@ main (int argc, char **argv)
       .input = "AAA+-BBB+",
       .etk = (Milexer_Token []){
         {.type = TK_KEYWORD,    .cstr = "AAA",    .col=0},
-        {.type = TK_PUNCS,      .cstr = "+",      .col=3},
+        {.type = TK_PUNCS,      .cstr = "+",      .col=3,   .id=PUNC_PLUS},
         {.type = TK_KEYWORD,    .cstr = "-BBB",   .col=4},
-        {.type = TK_PUNCS,      .cstr = "+",      .col=8},
+        {.type = TK_PUNCS,      .cstr = "+",      .col=8,   .id=PUNC_PLUS},
         {0}
       }};
     DO_TEST (&t, "disable a single punctuation");
@@ -2705,13 +2710,13 @@ main (int argc, char **argv)
       .parsing_flags = PFLAG_DEFAULT,
       .input = "()AAA+{XXX YYY }(t e s t)",
       .etk = (Milexer_Token []){
-        {.type = TK_EXPRESSION, .cstr = "()",          .col=0},
+        {.type = TK_EXPRESSION, .cstr = "()",          .col=0,   .id=EXP_PAREN},
         {.type = TK_KEYWORD,    .cstr = "AAA",         .col=2},
-        {.type = TK_PUNCS,      .cstr = "+",           .col=5},
+        {.type = TK_PUNCS,      .cstr = "+",           .col=5,   .id=PUNC_PLUS},
         {.type = TK_KEYWORD,    .cstr = "{XXX",        .col=6},
         {.type = TK_KEYWORD,    .cstr = "YYY",         .col=11},
         {.type = TK_KEYWORD,    .cstr = "}",           .col=15},
-        {.type = TK_EXPRESSION, .cstr = "(t e s t)",   .col=16},
+        {.type = TK_EXPRESSION, .cstr = "(t e s t)",   .col=16,  .id=EXP_PAREN},
         {0}
       }};
     DO_TEST (&t, "disable only a single expression");
@@ -2723,7 +2728,7 @@ main (int argc, char **argv)
       .input = "AAA+{XXX }( test) ",
       .etk = (Milexer_Token []){
         {.type = TK_KEYWORD,    .cstr = "AAA",      .col=0},
-        {.type = TK_PUNCS,      .cstr = "+",        .col=3},
+        {.type = TK_PUNCS,      .cstr = "+",        .col=3,   .id=PUNC_PLUS},
         {.type = TK_KEYWORD,    .cstr = "{XXX",     .col=4},
         {.type = TK_KEYWORD,    .cstr = "}(",       .col=9},
         {.type = TK_KEYWORD,    .cstr = "test)",    .col=12},
@@ -2740,7 +2745,7 @@ main (int argc, char **argv)
       .input = "a b c (x y z)  de f\n",
       .etk = (Milexer_Token []){
         {.type = TK_KEYWORD,       .cstr = "a b c ",   .col=0},
-        {.type = TK_EXPRESSION,    .cstr = "(x y z)",  .col=6},
+        {.type = TK_EXPRESSION,    .cstr = "(x y z)",  .col=6,     .id=EXP_PAREN},
         {.type = TK_KEYWORD,       .cstr = "  de f",   .col=13},
         {0}
       }};
@@ -2751,9 +2756,9 @@ main (int argc, char **argv)
       .input = "AA'++'{ x y z}(test 2 . )",
       .etk = (Milexer_Token []){
         {.type = TK_KEYWORD,       .cstr = "AA",         .col=0},
-        {.type = TK_EXPRESSION,    .cstr = "++",         .col=3},
-        {.type = TK_EXPRESSION,    .cstr = " x y z",     .col=7},
-        {.type = TK_EXPRESSION,    .cstr = "test 2 . ",  .col=15},
+        {.type = TK_EXPRESSION,    .cstr = "++",         .col=3,   .id=EXP_STR2},
+        {.type = TK_EXPRESSION,    .cstr = " x y z",     .col=7,   .id=EXP_CURLY},
+        {.type = TK_EXPRESSION,    .cstr = "test 2 . ",  .col=15,  .id=EXP_PAREN},
         {0}
       }};
     DO_TEST (&t, "inner expression flag");
@@ -2762,10 +2767,10 @@ main (int argc, char **argv)
       .parsing_flags = PFLAG_INEXP,
       .input = "<<o n e>><<t w o>> <<x y z >><<>>",
       .etk = (Milexer_Token []){
-        {.type = TK_EXPRESSION,    .cstr = "o n e",   .col=2},
-        {.type = TK_EXPRESSION,    .cstr = "t w o",   .col=11},
-        {.type = TK_EXPRESSION,    .cstr = "x y z ",  .col=21},
-        {.type = TK_EXPRESSION,    .cstr = ""},
+        {.type = TK_EXPRESSION,    .cstr = "o n e",   .col=2,      .id=EXP_LONG},
+        {.type = TK_EXPRESSION,    .cstr = "t w o",   .col=11,     .id=EXP_LONG},
+        {.type = TK_EXPRESSION,    .cstr = "x y z ",  .col=21,     .id=EXP_LONG},
+        {.type = TK_EXPRESSION,    .cstr = "",        .col=31,     .id=EXP_LONG},
         {0}
       }};
     DO_TEST (&t, "inner long expressions");
@@ -2823,7 +2828,7 @@ main (int argc, char **argv)
       .parsing_flags = PFLAG_DEFAULT,
       .input = "(xx\\))(aa\\)bb \\)cc\\) dd \\) )",
       .etk = (Milexer_Token []){
-        {.type = TK_EXPRESSION,    .cstr = "(xx\\))"},
+        {.type = TK_EXPRESSION,    .cstr = "(xx\\))",   .id=EXP_PAREN},
         {.type = TK_EXPRESSION,    .cstr = "(aa\\)bb \\)cc\\) d"},
         {.type = TK_EXPRESSION,    .cstr = "d \\) )"},
         {0}
@@ -2868,7 +2873,7 @@ main (int argc, char **argv)
       .input = "AAA+#0123456789abcdef\n",
       .etk = (Milexer_Token []){
         {.type = TK_KEYWORD,    .cstr = "AAA",    .col=0},
-        {.type = TK_PUNCS,      .cstr = "+",      .col=3},
+        {.type = TK_PUNCS,      .cstr = "+",      .col=3,   .id=PUNC_PLUS},
         {.type = TK_NOT_SET,    .cstr = ""}, // dry out
         {0}
       }};
@@ -2879,7 +2884,7 @@ main (int argc, char **argv)
       .input = "AAA(e x p)#0123456789abcdef\n",
       .etk = (Milexer_Token []){
         {.type = TK_KEYWORD,       .cstr = "AAA",      .col=0},
-        {.type = TK_EXPRESSION,    .cstr = "(e x p)",  .col=3},
+        {.type = TK_EXPRESSION,    .cstr = "(e x p)",  .col=3,   .id=EXP_PAREN},
         {.type = TK_NOT_SET,       .cstr = ""}, // dry out
         {0}
       }};
@@ -2890,7 +2895,7 @@ main (int argc, char **argv)
       .input = "AAA(e x p)#0123456789abcdefghi\n",
       .etk = (Milexer_Token []){
         {.type = TK_KEYWORD,       .cstr = "AAA",               .col=0},
-        {.type = TK_EXPRESSION,    .cstr = "(e x p)",           .col=3},
+        {.type = TK_EXPRESSION,    .cstr = "(e x p)",           .col=3,   .id=EXP_PAREN},
         {.type = TK_COMMENT,       .cstr = "#0123456789abcde",  .col=10},
         {.type = TK_COMMENT,       .cstr = "fghi"},
         {.type = TK_NOT_SET,       .cstr = ""}, // dry out
@@ -2907,8 +2912,8 @@ main (int argc, char **argv)
       .etk = (Milexer_Token []){
         {.type = TK_KEYWORD, .cstr = "XXX", .col=7,  .line=2},
         {.type = TK_KEYWORD, .cstr = "num", .col=11, .line=2},
-        {.type = TK_PUNCS,   .cstr = "/",   .col=14, .line=2},
-        {.type = TK_PUNCS,   .cstr = "/",   .col=16, .line=2},
+        {.type = TK_PUNCS,   .cstr = "/",   .col=14, .line=2,  .id=PUNC_DIV},
+        {.type = TK_PUNCS,   .cstr = "/",   .col=16, .line=2,  .id=PUNC_DIV},
         {.type = TK_KEYWORD, .cstr = "666", .col=17, .line=2},
         {.type = TK_KEYWORD, .cstr = "YYY", .col=6,  .line=3},
         {0}
@@ -2950,14 +2955,14 @@ main (int argc, char **argv)
       .parsing_flags = PFLAG_DEFAULT,
       .input = "  +AA (AA) \n+BB\n -CC\n \n(DD)\n",
       .etk = (Milexer_Token []){
-        {.type = TK_PUNCS,      .cstr = "+",     .line=1, .col=2},
+        {.type = TK_PUNCS,      .cstr = "+",     .line=1, .col=2,  .id=PUNC_PLUS},
         {.type = TK_KEYWORD,    .cstr = "AA",    .line=1, .col=3},
-        {.type = TK_EXPRESSION, .cstr = "(AA)",  .line=1, .col=6},
+        {.type = TK_EXPRESSION, .cstr = "(AA)",  .line=1, .col=6,  .id=EXP_PAREN},
         {.type = TK_PUNCS,      .cstr = "+",     .line=2, .col=0},
         {.type = TK_KEYWORD,    .cstr = "BB",    .line=2, .col=1},
-        {.type = TK_PUNCS,      .cstr = "-",     .line=3, .col=1},
+        {.type = TK_PUNCS,      .cstr = "-",     .line=3, .col=1,  .id=PUNC_MINUS},
         {.type = TK_KEYWORD,    .cstr = "CC",    .line=3, .col=2},
-        {.type = TK_EXPRESSION, .cstr = "(DD)",  .line=5, .col=0},
+        {.type = TK_EXPRESSION, .cstr = "(DD)",  .line=5, .col=0,  .id=EXP_PAREN},
         {0}
       }};
     DO_TEST (&t, "multi-line number with exp and punc");
