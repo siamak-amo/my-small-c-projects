@@ -450,6 +450,12 @@ DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
 #define da_last(arr) arr[da_top_idx (arr)]
 
 /**
+ *  retrieve pointer to array @da at index @idx
+ *  when type of @da is not known at compile time
+ */
+#define da_at(da, idx) ((da)->arr + (idx)*(da)->cell_bytes)
+
+/**
  *  Delete Unordered macros
  *  To delete arbitrary index of array, when the order
  *  of the array is not important.
