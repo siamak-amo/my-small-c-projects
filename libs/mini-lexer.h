@@ -28,9 +28,9 @@
     example programs, for further information see the
     ML_EXAMPLE_N and ML_TEST_N macros and the compilation section.
 
-    For adding new features or fixing bugs, it is recommended to
-    use a debugger along with the provided self test program,
-    as this is how the library was originally developed!
+    Recommendation: To add a new feature or fix a bug,
+    use a debugger along with the provided self test program;
+    this is how the library was originally developed!
 
 
  -- Initializing Milexer --------------------------------------------
@@ -258,8 +258,8 @@
       }
 
     To manually change the language, the ML_MUTATE macro
-    should be used to mark the component, ensuring that
-    the next ml_next() call will update the necessary internals:
+    should be used to mark the component, ensuring that the
+    next ml_next() call will update the necessary internal fields:
       {
         ml.puncs.exp[0].begin = "<";      // changing the language
         ML_MUTATE (&ml.puncs[0]);         // force update
@@ -326,7 +326,7 @@
         yy_delete_buffer( b );
         fclose (f);
       }
-    yylex_destroy call is required to free the internal stack.
+    yylex_destroy() call is required to free the internal stack.
 
     The yylex() function uses the internal getline function
     `yy_getline` to read interactively from yyin.
@@ -343,7 +343,7 @@
         // @buffer must have a newline character at the end
         //     ==> store at most @size-1 bytes into @buffer
 
-        // maybe pint a prompt, and newline on Ctrl-D
+        // maybe pint a prompt, and newline on Ctrl-D break
       }
     ```
 
@@ -358,11 +358,14 @@
       cc -x c -O0 -ggdb -Wall -Wextra -Werror \
           -D ML_IMPLEMENTATION -D ML_TEST_1 \
           mini-lexer.h -o test.out
-    The example program:
-      pass `-D ML_EXAMPLE_1` instead of `ML_TEST_1`
-  
+
     Compilation Options:
-      Debug Info:  define `-D_ML_DEBUG`
+    - With extra debugging info logging:
+        pass `-D_ML_DEBUG'.
+    - Compile the Example 1 and 2 programs:
+        pass `-D ML_EXAMPLE_1' and `-D ML_EXAMPLE_2' respectively,
+        instead of `ML_TEST_1'.
+        for Example_2, define YY_CUSTOM_GETLINE to use readline.
  **/
 #ifndef MINI_LEXER__H
 #define MINI_LEXER__H
