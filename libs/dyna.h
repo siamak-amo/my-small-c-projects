@@ -459,15 +459,9 @@ DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
  *  Delete Unordered macros
  *  To delete arbitrary index of array, when the order
  *  of the array is not important.
+ *  returns -1 on failure, @index on success
  */
-#define da_unordered_delete(arr, idx) do {      \
-    da_idx N = da_sizeof (arr);                 \
-    if (N > 0  &&  idx >= 0  &&  idx < N) {     \
-      if (idx < N-1)                            \
-        DA_ASSIGN ((arr) + idx, arr[N-1]);      \
-      da_pop1 (arr);                            \
-    }                                           \
-  } while (0)
+DYNADEF int da_unordered_delete (void *_Nullable arr, int index);
 
 /* Index of the last element of @arr */
 DYNADEF int da_top_idx (void *_Nullable arr);
@@ -613,6 +607,23 @@ da_top_idx (void *_Nullable __arr)
   if (da->size)
     return da->size - 1;
   return 0;
+}
+
+DYNADEF int
+da_unordered_delete (void *_Nullable arr, int idx)
+{
+  if (! arr)
+    return -1;
+  dyna_t *da = DA_CONTAINEROF (arr);
+  da_idx N = da->size;
+  if (N > 0  &&  idx >= 0  &&  idx < N)
+    {
+      if (idx < N-1)
+        memcpy (da_at(da, idx), da_at(da, N-1), da->cell_bytes);
+      da_pop1 (arr);
+      return idx;
+    }
+  return -1;
 }
 
 #endif /* DYNA_IMPLEMENTATION */
