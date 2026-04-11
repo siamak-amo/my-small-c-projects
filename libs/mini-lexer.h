@@ -2406,6 +2406,10 @@ outside of these expressions.\n\n\
 #include <stdarg.h>
 #include "clistd.h"
 
+#define STRCOLOR(code, cstr) "\033[" #code "m" cstr "\033[0m"
+#define GREENSTR(cstr) STRCOLOR (32, cstr) /* Green string */
+#define REDSTR(cstr)   STRCOLOR (41, cstr) /* Red background string */
+
 typedef struct
 {
   int parsing_flags;
@@ -2426,7 +2430,7 @@ test_vlogf (int n, int _line_, int test_number,
     {
       va_list ap;
       va_start (ap, format);
-      printf ("fail!\n%s:%d:#%d:  ", __FILE__, _line_, n);
+      printf (REDSTR("fail!") "\n%s:%d:#%d:  ", __FILE__, _line_, n);
       vprintf (format, ap);
       printf ("\n--> run it with a debugger, \
 and pass the first argument `%d:%d` for further inspection.\n",
@@ -2434,7 +2438,7 @@ and pass the first argument `%d:%d` for further inspection.\n",
       va_end (ap);
     }
   else
-    puts ("pass.");
+    puts (GREENSTR ("pass."));
 }
 
 int
@@ -2991,7 +2995,7 @@ main (int argc, char **argv)
     DO_TEST (&t, "end of lazy loading");
   }
 
-  printf ("\n ***  All tests passed  ***\n");
+  printf ("\n ***  " GREENSTR("All tests passed") "  ***\n");
  eof_main:
   TK_FREE (&tk);
   return ret;
