@@ -610,6 +610,7 @@ da_top_idx (void *_Nullable __arr)
 }
 
 #endif /* DYNA_IMPLEMENTATION */
+#undef _Nullable
 #endif /* DYNA__H__ */
 
 
