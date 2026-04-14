@@ -841,21 +841,6 @@ typedef struct yy_buffer_state
 
 } YY_BUFFER_STATE;
 
-/**
- *  Stack of input buffers (Internal)
- *  Must be allocated and freed using `yyensure_buffer_stack`
- */
-static YY_BUFFER_STATE **yy_buffer_stack = NULL;   /* Stack as an array  */
-static size_t            yy_buffer_stack_top = 0;  /* index of top of stack */
-static size_t            yy_buffer_stack_max = 0;  /* capacity of stack */
-
-/* To retrieve the top of the stack */
-#define YY_CURRENT_BUFFER \
-  ((yy_buffer_stack) ? *YY_CURRENT_BUFFER_LVALUE : NULL)
-/* Top of the stack without NULL check */
-#define YY_CURRENT_BUFFER_LVALUE \
-  ((YY_BUFFER_STATE **)(yy_buffer_stack + yy_buffer_stack_top))
-
 #ifndef YY_BUFFER_CAP
 #define YY_BUFFER_CAP 4096  /* disk pgae size, to read from disk */
 #endif
@@ -868,66 +853,6 @@ static size_t            yy_buffer_stack_max = 0;  /* capacity of stack */
 #ifndef EXTEND_GUARD
 #define EXTEND_GUARD 66666  /* maximum allowed token extend calls */
 #endif
-
-#ifdef ML_DEBUG
-# define ml_dprintf(format, ...) \
-  fprintf (stderr, format, ##__VA_ARGS__)
-#else
-#define ml_dprintf(...)
-#endif /* ML_DEBUG */
-
-#ifndef ML_DEBUG
-# ifndef yy_free
-#   define yy_free free
-# endif
-# ifndef yy_malloc
-#   define yy_malloc malloc
-# endif
-# ifndef yy_realloc
-#   define yy_realloc realloc
-# endif
-#else /* ML_DEBUG */
-# ifndef yy_free
-# define yy_free(ptr) __yyfree (ptr, __FILE__, __LINE__)
-MLDEF void
-__yyfree (void *ptr, const char *src_name, int _line_)
-{
-  ml_dprintf ("%s:%d:  free(%p)\n", src_name, _line_, ptr);
-  free (ptr);
-}
-# endif /* yy_free */
-# ifndef yy_malloc
-# define yy_malloc(n) __yymalloc (n, __FILE__, __LINE__)
-MLDEF void *
-__yymalloc (size_t size, const char *src_name, int _line_)
-{
-  void *ptr = malloc (size);
-  ml_dprintf ("%s:%d:  malloc(%ld) -> %p\n",
-              src_name, _line_, size, ptr);
-  return ptr;
-}
-# endif /* yy_alloc */
-# ifndef yy_realloc
-# define yy_realloc(ptr, n) __yyrealloc (ptr, n, __FILE__, __LINE__)
-MLDEF void *
-__yyrealloc (void *ptr, size_t size, const char *src_name, int _line_)
-{
-  intptr_t __ptr = (intptr_t) ptr; // just to shut up the compiler
-  void *res = realloc (ptr, size);
-  ml_dprintf ("%s:%d:  realloc(0x%lx, %ld) -> %p\n",
-              src_name, _line_, __ptr, size, res);
-  return res;
-}
-# endif /* yy_realloc */
-
-#undef ml_malloc
-#define ml_malloc yy_malloc
-#undef ml_realloc
-#define ml_realloc yy_realloc
-#undef ml_free
-#define ml_free yy_free
-
-#endif /* ML_DEBUG */
 
 /**
  *  The main  lex  function, to retrieve the next token
@@ -1767,6 +1692,81 @@ ml_next (Milexer *ml,
 
 /* Milexer's flex API implementation */
 #ifdef ML_FLEX
+/**
+ *  Stack of input buffers (Internal)
+ *  Must be allocated and freed using `yyensure_buffer_stack`
+ */
+static YY_BUFFER_STATE **yy_buffer_stack;         /* Stack as an array  */
+static size_t            yy_buffer_stack_top;  /* Index of top of stack */
+static size_t            yy_buffer_stack_max;      /* Capacity of stack */
+
+/* To retrieve the top of the stack */
+#define YY_CURRENT_BUFFER \
+  ((yy_buffer_stack) ? *YY_CURRENT_BUFFER_LVALUE : NULL)
+/* Top of the stack without NULL check */
+#define YY_CURRENT_BUFFER_LVALUE \
+  ((YY_BUFFER_STATE **)(yy_buffer_stack + yy_buffer_stack_top))
+
+#ifdef ML_DEBUG
+# define ml_dprintf(format, ...) \
+  fprintf (stderr, format, ##__VA_ARGS__)
+#else
+#define ml_dprintf(...)
+#endif /* ML_DEBUG */
+
+#ifndef ML_DEBUG
+# ifndef yy_free
+#   define yy_free free
+# endif
+# ifndef yy_malloc
+#   define yy_malloc malloc
+# endif
+# ifndef yy_realloc
+#   define yy_realloc realloc
+# endif
+#else /* ML_DEBUG */
+# ifndef yy_free
+# define yy_free(ptr) __yyfree (ptr, __FILE__, __LINE__)
+MLDEF void
+__yyfree (void *ptr, const char *src_name, int _line_)
+{
+  ml_dprintf ("%s:%d:  free(%p)\n", src_name, _line_, ptr);
+  free (ptr);
+}
+# endif /* yy_free */
+# ifndef yy_malloc
+# define yy_malloc(n) __yymalloc (n, __FILE__, __LINE__)
+MLDEF void *
+__yymalloc (size_t size, const char *src_name, int _line_)
+{
+  void *ptr = malloc (size);
+  ml_dprintf ("%s:%d:  malloc(%ld) -> %p\n",
+              src_name, _line_, size, ptr);
+  return ptr;
+}
+# endif /* yy_alloc */
+# ifndef yy_realloc
+# define yy_realloc(ptr, n) __yyrealloc (ptr, n, __FILE__, __LINE__)
+MLDEF void *
+__yyrealloc (void *ptr, size_t size, const char *src_name, int _line_)
+{
+  intptr_t __ptr = (intptr_t) ptr; // just to shut up the compiler
+  void *res = realloc (ptr, size);
+  ml_dprintf ("%s:%d:  realloc(0x%lx, %ld) -> %p\n",
+              src_name, _line_, __ptr, size, res);
+  return res;
+}
+# endif /* yy_realloc */
+
+#undef ml_malloc
+#define ml_malloc yy_malloc
+#undef ml_realloc
+#define ml_realloc yy_realloc
+#undef ml_free
+#define ml_free yy_free
+
+#endif /* ML_DEBUG */
+
 /**
  *  Allocates the stack if it does not exist.
  *  Guarantees space for at least one push.
