@@ -28,26 +28,30 @@ Data structure and Memory management
 
 
 ## Libs
+### clistd.h
+Command line helper library.
+
+
+### Milexer - mini-lexer.h
+A minimal, chunk based, language independent lexer.
+
+
 ### dyna.h
 Generic dynamic array implementation
+
+
+### unescape.h
+Interpreters backslash characters in the given input, both in-place and out-of-place
 
 
 ### leven.h
 Levenshtein Distance  
 
 
-### mini-lexer.h
-A minimal, chunk based, language independent lexer.
-
-
 ### buffered_io.h
 It helps to buffer IO-required calls such as `putc` and `puts` to reduce the number of `write` syscalls, resulting in better performance.
 
 Additionally, it's python C extension, `buffered_io_py.c` is available.
-
-
-### unescape.h
-Interpreters backslash characters in the given input, both in-place and out-of-place
 
 
 
@@ -57,11 +61,8 @@ Permutation Generator
 generates word lists for fuzzing based on some given seeds
 
 
-### key_extractor.c
-Text Tokenizer  
-It helps to extract keywords (tokens) from input text (based on mini-lexer.h)
-
-It can be used together with permugen to generate customized word lists
+### ffuc.c  
+FFuf program written in C.
 
 
 ### moreless.c
@@ -70,19 +71,20 @@ Automatically runs less command
 It displays the stdout of all programs within a `less` process.
 
 
+### key_extractor.c
+Text Tokenizer  
+It helps to extract keywords (tokens) from input text (based on mini-lexer.h)
+
+It can be used together with permugen to generate customized word lists
+
+
 ### xor_encrypt.c
-performs a bitwise XOR operation on the entire given file with a fixed value
+Performs a bitwise XOR operation on the entire given file with a fixed value.
 
 
 ---
-### codeM
-Common Iranian ID number (code-e-melli)
-also includes:
-1. a shell program
-2. python C extension module (to use codeM through python)
-
 
 ## Others
 
 ### graphics
-some graphical programs
+Some graphical programs.
