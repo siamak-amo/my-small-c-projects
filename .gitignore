@@ -8,6 +8,7 @@ bin
 build
 **/a.out
 **/*.out
+**/*.test
 **/*.so
 **/*.a
 **/*.o
