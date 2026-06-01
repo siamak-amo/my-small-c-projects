@@ -1660,12 +1660,12 @@ main (int argc, char **argv)
     {
     case REGULAR_MODE:
       {
-        size_t len = da_sizeof (opt->reg_seeds);
+        size_t len = opt->seeds_len;
         dprintf ("* regular mode\n");
-        dprintf ("* %s[.%lu] = {\n", CSTR (opt->reg_seeds), (size_t)len);
+        dprintf ("* %s[.%lu] = {\n", CSTR (opt->seeds), (size_t)len);
         for (size_t i=0; i < len; ++i)
           {
-            struct Seed *s = opt->reg_seeds[i];
+            struct Seed *s = &opt->seeds[i];
             dprintf ("    [%lu] = {\n      ", i);
             printd_arr (s->cseed, "`%c`", s->cseed_len);
             dprintf ("      ");
@@ -1684,24 +1684,24 @@ main (int argc, char **argv)
       {
         dprintf ("* normal mode\n");
         dprintf ("    ");
-        printd_arr (opt->global_seeds->cseed, "`%c`",
-                    opt->global_seeds->cseed_len);
+        printd_arr (opt->seeds[0].cseed, "`%c`",
+                    opt->seeds[0].cseed_len);
         dprintf ("    ");
-        printd_arr (opt->global_seeds->wseed, "`%s`",
-                    da_sizeof (opt->global_seeds->wseed));
-        if (opt->depth.min != opt->depth.max)
-          dprintf ("* depth range: [%d to %d]\n",
-                   opt->depth.min, opt->depth.max);
-        else
-          dprintf ("* depth: %d\n", opt->depth.min);
+        printd_arr (opt->seeds[0].wseed, "`%s`",
+                    da_sizeof (opt->seeds[0].wseed));
       }
       break;
     }
+  if (opt->depth.min != opt->depth.max)
+    dprintf ("* depth range: [%d to %d]\n",
+             opt->depth.min, opt->depth.max);
+  else
+    dprintf ("* depth: %d\n", opt->depth.min);
   if (opt->escape_disabled)
     dprintf ("- backslash interpretation is disabled\n");
   if (opt->seps[0])
     {
-      dprintf ("* delimiters: ");
+      dprintf ("* separators: ");
       printd_arr (opt->seps, "`%s`", da_sizeof (opt->seps));
     }
   dprintf ("* permutations:\n");
