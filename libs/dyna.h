@@ -129,11 +129,11 @@
      The append macros should NOT be used to append to
      pointers from a different scope (e.g. in a function)
      as the reallocation of that pointer, will not update
-     the primary pointer (so make it dangling pointer).
+     the primary pointer (makes it dangling pointer).
 
      Solutions:
-      * Using a wrapper struct
-      ```c
+      + Using a wrapper struct
+      ```{c}
       struct my_data {
         char **array;  // dynamic array
       };
@@ -144,8 +144,8 @@
       }
       ```
 
-      * Using `da_aappd` macro:
-      ```c
+      + Using `da_aappd` macro:
+      ```{c}
       char **array = NULL;  // The primary dynamic array
 
       // For pointers

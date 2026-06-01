@@ -63,6 +63,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #ifndef FUZZ_SQLITE_INCLIB
 #  include <sqlite3ext.h>
