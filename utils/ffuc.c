@@ -383,11 +383,11 @@ struct req_stat_t
   uint duration; /* total time to response */
   CURLcode ccode;
 };
-#define STAT_RESET(r_stat)                               \
-  (*(r_stat) = (struct req_stat_t){                      \
-    .wcount=1,   .lcount=1,  .size_bytes=0,              \
-    .code=0,   .duration=0,       .ccode=0,              \
-  })
+
+/* Always reset the zero initialized request stat type,
+   we assume word count and line count start from 1 */
+#define STAT_RESET(r_stat) \
+  (*(r_stat) = (struct req_stat_t){.wcount=1, .lcount=1})
 
 typedef struct progress_t
 {
@@ -986,7 +986,7 @@ print_stats_fuzz (RequestContext *ctx)
   if (1 >= opt.words_len)
     {
       int m, n, margin;
-#ifndef __ANDROID__ /* Android has disabled %n in printf */
+#ifndef __ANDROID__ /* Android's printf does not support %n */
       #define __FMT__ "%n%s%n"
       #define __ARG__ &m, ctx->FUZZ[0], &n
 #else
