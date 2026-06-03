@@ -1631,6 +1631,7 @@ init_opt ()
   opt.Rqueue.ctxs = ffuc_calloc (opt.Rqueue.len, sizeof (RequestContext));
   for (size_t i = 0; i < opt.Rqueue.len; i++)
     {
+      STAT_RESET (&opt.Rqueue.ctxs[i].stat);
       opt.Rqueue.ctxs[i].easy_handle = curl_easy_init();
       int cap_bytes = (n + 1) * sizeof (char *);
       opt.Rqueue.ctxs[i].FUZZ = ffuc_malloc (cap_bytes);
