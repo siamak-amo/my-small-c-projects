@@ -94,6 +94,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdint.h>
 #include <assert.h>
 #include <termios.h>
 
@@ -379,7 +380,7 @@ struct req_stat_t
   uint lcount; /* count of lines */
   uint size_bytes;
 
-  int code; /* HTTP response code */
+  int64_t code; /* HTTP response code */
   uint duration; /* total time to response */
   CURLcode ccode;
 };
@@ -1036,7 +1037,7 @@ print_stats_context (RequestContext *ctx)
   print_stats_fuzz (ctx);
   fprintf (opt.streamout, "\
 [Status: %-3d,  Size: %d,  Words: %d,  Lines: %d,  Duration: %dms]\n",
-           ctx->stat.code,
+           (int) ctx->stat.code,
            ctx->stat.size_bytes,
            ctx->stat.wcount,
            ctx->stat.lcount,
@@ -1222,16 +1223,12 @@ filter_pass (struct req_stat_t *stat, struct res_filter_t *filters)
 static void
 handle_response_context (RequestContext *ctx)
 {
-  long result = 0;
   double duration;
   struct req_stat_t *stat = &ctx->stat;
   struct progress_t *prog = &opt.progress;
 
   if (CURLE_OK == ctx->stat.ccode)
-    {
-      curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &result);
-      stat->code = (int) result;
-    }
+    curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &ctx->stat.code);
   else
     prog->err_count++;
 
