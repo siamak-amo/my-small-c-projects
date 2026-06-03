@@ -1025,8 +1025,12 @@ print_stats_fuzz (RequestContext *ctx)
 static inline void
 print_stats_context (RequestContext *ctx)
 {
+  static CURLcode prev_stat_error_code = 0;
   if (CURLE_OK != ctx->stat.ccode)
     {
+      if (!opt.verbose && prev_stat_error_code == ctx->stat.ccode)
+        return; /* prevent too much printing error */
+      prev_stat_error_code = ctx->stat.ccode;
       print_stats_fuzz (ctx);
       fprintf (opt.streamout, "[Error: %s, Duration: %dms]\n",
                curl_easy_strerror (ctx->stat.ccode),
