@@ -1356,6 +1356,25 @@ rt_req_rate (Progress *prog)
   return RT_REQ_RATE (prog);
 }
 
+/* Always use macro: req_stat_find_common
+   Ex:  req_stat_find_common(stats, N, wcount); */
+int
+__req_stat_find_common (struct req_stat_t *stat, int len, int foff)
+{
+#define S(x, offset) *(int *)((char *)(&(x)) + offset)
+  int common = S(stat[0], foff);
+  for (int i=1; i < len; ++i)
+    {
+      if (S(stat[i], foff) != common)
+        return -1;
+    }
+  return common;
+#undef S
+}
+
+#define req_stat_find_common(arr, len, name) \
+  __req_stat_find_common (arr, len, offsetof(struct req_stat_t, name))
+
 static void
 __update_progress_bar (const Progress *prog)
 {
@@ -1459,20 +1478,6 @@ fuzz_snprintf (char *restrict dst, size_t dst_cap,
   return fuzz_used;
 }
 
-int
-common_val (int *arr, int len)
-{
-  if (len <= 0)
-    return 0;
-  int common = arr[0];
-  for (int i=1; i<len; ++i)
-    {
-      if (arr[i] != common)
-        return -1;
-    }
-  return common;
-}
-
 static int
 da_strstr (char **haystack, const char *needle)
 {
@@ -1543,6 +1548,7 @@ opt_filter (int type, int start, int end)
   };
   da_appd (opt.filters, fl);
 }
+#define opt_filter_val(typ, v) opt_filter (typ, v, v)
 
 static inline void
 opt_append_filter (int type, const char *range)
@@ -2114,8 +2120,6 @@ int __attribute__((optimize("O0")))
 do_filter_discovery (void)
 {
 #define N DISCOVERY_REQ_COUNT
-  int codes[N], words[N], sizes[N], ret;
-  {
     for (int i=0; i<N; ++i)
       {
         RequestContext *ctx = opt.Rqueue.ctxs;
@@ -2128,23 +2132,31 @@ do_filter_discovery (void)
             context_reset (ctx);
             return 1;
           }
-        curl_easy_getinfo (ctx->easy_handle,
-                           CURLINFO_HTTP_CODE, &codes[i]);
-        words[i] = ctx->stat.wcount;
-        sizes[i] = ctx->stat.size_bytes;
+        curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &ctx->stat.code);
+        disc_stat[i] = ctx->stat;
+        if (opt.verbose)
+          {
+            warnln ("probe #%d | W: %-4d | L: %-4d | S: %-5d | C: %-3d |", i+1,
+                    ctx->stat.wcount,
+                    ctx->stat.lcount,
+                    ctx->stat.size_bytes,
+                    (int) ctx->stat.code);
+          }
         context_reset (ctx);
       }
+  }
 
     int common;
-    if ((common = common_val (words, N)) != -1)
-      opt_filter (FILTER_WCOUNT, common, common);
-    else if ((common = common_val (codes, N)) != -1)
-      opt_filter (FILTER_CODE, common, common);
-    else if ((common = common_val (sizes, N)) != -1)
-      opt_filter (FILTER_SIZE, common, common);
+         if ((common = req_stat_find_common (disc_stat, N,  wcount))      != -1)
+      opt_filter_val (FILTER_WCOUNT,  common);  /* filter by word count */
+    else if ((common = req_stat_find_common (disc_stat, N,  lcount))      != -1)
+      opt_filter_val (FILTER_LCOUNT,  common);  /* filter by line count */
+    else if ((common = req_stat_find_common (disc_stat, N,  size_bytes))  != -1)
+      opt_filter_val (FILTER_SIZE,    common);  /* filter by response length */
+    else if ((common = req_stat_find_common (disc_stat, N,  code))        != -1)
+      opt_filter_val (FILTER_CODE,    common);  /* filter by HTTP code */
     else
       warnln ("auto-filter failed - endpoint is not stable");
-  }
   return 0;
 #undef N
 }
