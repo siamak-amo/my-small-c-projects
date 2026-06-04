@@ -17,40 +17,39 @@
 /** file: ffuc.c
     created on: 7 May 2025
 
-    FFuc  -  ffuf program written in C
+  FFuc  -  ffuf program written in C
 
-    Usage:
-      Provide HTTP request options followed by the word-list file paths,
-      corresponding to the FUZZ keywords for the HTTP options:
-      $ ffuc  [OPTIONS]  [[HTTP OPTION] [-w /path/to/wordlist]...]...
+  Usage:
+    $ ffuc  [OPTIONS]  [ [HTTP OPTION] [-w /path/to/wordlist]... ]...
+      Provide HTTP request options and word-list file paths.
+      Each file path, maps to a corresponding FUZZ keyword.
 
-    Recommendation:  using the `--auto-filter` option
-      The `--auto-filter` option (AI mode!) detects a proper response
-      filtering by sending a few discovery requests.
+  Examples of using FUZZ keywords and word-lists:
+    $ ffuc -u https://x.com/FUZZ.FUZZ -w /tmp/wl1 -w /tmp/wl2
+    - the first FUZZ uses: '/tmp/wl1'  and  the second FUZZ uses '/tmp/wl2')
 
-      Some endpoints, respond with unexpected HTTP error codes when encountering
-      any unexpcted or absent parameter in the requests; As a result,
-      users using the default setup of FFuc, might *miss* some valid URLs.
-      (the default setup only shows responses with:  200 <= status codes < 400)
+    $ ffuc -u http://x.com/FUZZ -w /tmp/wl1  -H 'X-test: FUZZ' -w /tmp/wl2
+    - using '/tmp/wl1' for URL  and  '/tmp/wl2' for the X-test header)
 
-      The auto-filter mode can be reproduced manually as follows:
-        1. Use '-A' to ignore all filters, with a small word-list.
-        2. Identify a common response hook to filter (or match).
-           FFuc starts by, at first, common word count, then status code
-           and then response size, and otherwise returns failure.
+    $ ffux -XPOST -u https://x.com  -d 'username=FUZZ' -w /tmp/usernames \
+                                    -d 'password=FUZZ' -w /tmp/rockyou.txt
 
-    Examples of using FUZZ keywords and word-lists:
-      $ ffuc -u https://x.com/FUZZ.FUZZ -w /tmp/wl1 -w /tmp/wl2
-      (the first FUZZ uses: /tmp/wl1  and  the second FUZZ uses /tmp/wl2)
+  Recommendation:  using the `--auto-filter` option
+    The `--auto-filter` option (also known as AI mode!) automatically
+    detects a proper response filtering by sending a few discovery requests.
 
-      $ ffuc -u http://x.com/FUZZ -w /tmp/wl1  -H 'X-test: FUZZ' -w /tmp/wl2
-      (using /tmp/wl1 for URL  and  /tmp/wl2 for the X-test header)
+    Some endpoints, respond with unexpected HTTP error codes when encountering
+    any unexpcted or absent parameter in the requests; As a result, the
+    default setup of FFuc (HTTP code filter) might *miss* some valid results.
 
-      $ ffux -XPOST -u https://x.com  -d 'username=FUZZ' -w /tmp/usernames \
-                                      -d 'password=FUZZ' -w /tmp/rockyou.txt
+    The auto-filter mode can be reproduced manually as follows:
+      1. Use '--all' to ignore all filters, with a small word-list.
+      2. Identify a common response hook to filter (or match).
+         FFuc starts by, at first, common word count, then line count,
+         then response size, then HTTP code, and otherwise returns failure.
 
-    Filter & Match:
-      To filter responses (to excluding if satisfied):
+  Filter & Match:
+    To filter responses (to excluding if satisfied):
           --fs (filter size),        --fc (filter status code)
           --fw (filter word count),  --fl (filter line count)
 
@@ -58,7 +57,7 @@
                filters out responses with a size of 1024,
                AND those with status codes in the range of [400 to 500]
 
-      To match responses (to include only if satisfied):
+    To match responses (to include only if satisfied):
           --ms (match size),         --mc (match status code)
           --mw (match word count),   --ml (match line count)
 
@@ -75,8 +74,7 @@
       See the usage help for more details.
 
     Compilation:
-      cc -ggdb -O3 -Wall -Wextra -Werror \
-         -I ../libs/ \
+      cc -O2 -Wall -Wextra -Werror -I ../libs/ \
          ffuc.c -o ffuc -lcurl
 
     Options:
@@ -112,18 +110,23 @@
 #include <pthread.h>
 #include <signal.h>
 
+/** From local libs **/
 #define DYNA_IMPLEMENTATION
-#include "dyna.h"
+#include "dyna.h" /* dynamic array */
 
 #define UNESCAPE_IMPLEMENTATION
-#include "unescape.h"
+#include "unescape.h" /* for URL decoding */
 
 #define CLI_IMPLEMENTATION
 #include "clistd.h"
 #include <getopt.h>
 
 #define PROG_NAME "FFuc"
-#define PROG_VERSION "2.5"
+#define PROG_VERSION "2.6"
+
+#ifndef FUZZ_STR
+#  define FUZZ_STR "FUZZ"
+#endif
 
 #ifndef TMP_CAP
 #  define TMP_CAP 1024 /* bytes */
@@ -165,7 +168,7 @@ static char tmp[TMP_CAP];
 #ifndef PRINT_MARGIN
 # ifndef __ANDROID__
 #   define PRINT_MARGIN 25
-# else /* smaller screen width in Android */
+# else /* smaller screen width on Android */
 #   define PRINT_MARGIN 4
 # endif
 #endif
@@ -177,10 +180,11 @@ static char tmp[TMP_CAP];
 #define MAX_RETRY_DISCOVERY 3
 #endif
 
-#define NOP ((void) NULL)
+#define NOP() ((void) NULL)
 #define UNUSED(x) (void)(x)
 #define MIN(a,b) ((a < b) ? (a) : (b))
 #define MAX(a,b) ((a > b) ? (a) : (b))
+#define lstrlen(lstr) (sizeof (lstr) - 1) /* only for string literals */
 
 #define FLG_SET(dst, flg) (dst |= flg)
 #define HAS_FLAG(val, flg) (val & flg)
@@ -497,7 +501,8 @@ typedef struct
 } Fword;
 
 const Fword dummy_fword = {
-  .str="FUZZ\n", .len=4, .total_count=1, .__str_bytes=5
+  .str=(FUZZ_STR "\n"),  .len = lstrlen (FUZZ_STR),
+  .total_count=1,  .__str_bytes = sizeof(FUZZ_STR)
 };
 
 /* Fword printf format and arguments */
@@ -672,8 +677,8 @@ set_template_wlist (FuzzTemplate *t, enum template_op op, void *param);
 # define ffuc_free(x) free (x)
 # define ffuc_munmap(ptr, len) munmap (ptr, len)
 #else
-# define ffuc_free NOP
-# define ffuc_munmap NOP
+# define ffuc_free(...) NOP()
+# define ffuc_munmap(...) NOP()
 #endif /* SKIP_FREE */
 
 #define safe_free(ptr) \
@@ -723,8 +728,8 @@ void * strrealloc (void *malloced, const char *src);
 # define printd(format, ...) \
   fprintd ("%s:%d: " format, __FILE__, __LINE__, ##__VA_ARGS__);
 #else
-# define fprintd(...) NOP
-# define printd(...) NOP
+# define fprintd(...) NOP()
+# define printd(...) NOP()
 #endif /* _DEBUG */
 
 
@@ -760,7 +765,7 @@ struct Opt
   {
     RequestContext *ctxs; /* Static array */
     size_t len; /* Length of @ctxs */
-    size_t waiting; /* number of used elements */
+    size_t waiting; /* number of in-use contexts */
     useconds_t delay_us[2]; /* delay range, microseconds */
   } Rqueue;
 
@@ -969,29 +974,20 @@ log_current_config (void)
 }
 
 static inline void
-url_decode_arr (char **arr, int len)
-{
-  for (int i=0; i<len; ++i)
-    {
-      if (arr)
-        url_unescape (arr[i]);
-    }
-}
-
-static inline void
 print_stats_fuzz (RequestContext *ctx)
 {
   /* Wiping the line out of the progress-bar stuff */
   if (opt.Printf.lineclear)
     fprintf (opt.streamout, CLEAN_LINE ());
   /* Undo URL encoding */
-  url_decode_arr (ctx->FUZZ, opt.words_len);
+  for (int i=0; i < opt.words_len; ++i)
+    if (ctx->FUZZ[i]) url_unescape (ctx->FUZZ[i]);
 
   if (1 >= opt.words_len)
     {
       int m, n, margin;
 #ifndef __ANDROID__ /* Android's printf does not support %n */
-      #define __FMT__ "%n%s%n"
+      #define __FMT__ "%n" "%s" "%n"
       #define __ARG__ &m, ctx->FUZZ[0], &n
 #else
       #define __FMT__ "%s"
@@ -1016,8 +1012,8 @@ print_stats_fuzz (RequestContext *ctx)
   else /* Multiple FUZZ keywords provided */
     {
       if (opt.Printf.color)
-        fprintf (opt.streamout, "\n " COLOR_FMT("* FUZZ") " = [",
-                 COLOR_ARG(colorof_ctx (ctx)));
+        fprintf (opt.streamout, "\n " COLOR_FMT( "* FUZZ" ) " = [",
+                 COLOR_ARG( colorof_ctx (ctx) ));
       else
         fprintf (opt.streamout, "\n * FUZZ = [");
       Fprintarr (opt.streamout, "'%s'", ctx->FUZZ, opt.words_len);
@@ -1238,10 +1234,8 @@ handle_response_context (RequestContext *ctx)
     curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &ctx->stat.code);
   else
     prog->err_count++;
-
   curl_easy_getinfo (ctx->easy_handle, CURLINFO_TOTAL_TIME, &duration);
   stat->duration = (uint) (duration * 1000.f);
-
   /* Print stats and progress-bar if necessary */
   if (CURLE_OK != ctx->stat.ccode || filter_pass (stat, opt.filters))
     {
@@ -1427,10 +1421,10 @@ goto_raw_mode (struct termios *original)
   struct termios raw;
   tcgetattr (STDIN_FILENO, original);
   raw = *original;
-
-  raw.c_lflag &= ~(ICANON | ECHO); /* Disable canonical mode and echo */
-  raw.c_iflag &= ~(IXON);          /* Disable software flow control */
-
+  {
+    raw.c_lflag &= ~(ICANON | ECHO); /* Disable canonical mode and echo */
+    raw.c_iflag &= ~(IXON);          /* Disable software flow control */
+  }
   tcsetattr (STDIN_FILENO, TCSANOW, &raw);
 }
 
@@ -1456,7 +1450,7 @@ fuzz_snprintf (char *restrict dst, size_t dst_cap,
   for (const char *end = start, *__dst = dst;
        NULL != end && (size_t)(dst - __dst) < dst_cap; )
     {
-      if ((end = strstr (start, "FUZZ")))
+      if ((end = strstr (start, FUZZ_STR)))
         {
           if (end != start)
             dst = mempcpy (dst, start, (size_t)(end - start));
@@ -1470,7 +1464,7 @@ fuzz_snprintf (char *restrict dst, size_t dst_cap,
               FUZZ++, fuzz_used++;
             }
           else
-            dst = stpcpy (dst, "FUZZ");
+            dst = stpcpy (dst, FUZZ_STR);
         }
     }
 
@@ -1537,8 +1531,8 @@ fuzz_count (const char *s)
   size_t n = 0;
   if (!s)
     return 0;
-  while ((s = strstr (s, "FUZZ")))
-    n++, s += 4;
+  while ((s = strstr (s, FUZZ_STR)))
+    n++, s += lstrlen (FUZZ_STR);
   return n;
 }
 
@@ -2119,7 +2113,7 @@ no FUZZ keyword found, fuzzing tail of URL (with %s).", last_wlist);
 }
 
 /* Sets filters automatically based on endpoint's behavior */
-int __attribute__((optimize("O0")))
+int __attribute__ ((optimize ("O0")))
 do_filter_discovery (void)
 {
 #define N DISCOVERY_REQ_COUNT
@@ -2135,7 +2129,8 @@ do_filter_discovery (void)
         RequestContext *ctx = opt.Rqueue.ctxs;
         __next_fuzz_rand (ctx); /* loading a random FUZZ string */
       retry:
-        if (CURLE_OK != (ret = register_context (ctx, true))) /* blocking */
+        ret = register_context (ctx, true);
+        if (CURLE_OK != ret) /* blocking */
           {
             bool should_retry =
               (retry_c++ < MAX_RETRY_DISCOVERY) & /* max retry */
