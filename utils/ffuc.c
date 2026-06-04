@@ -173,6 +173,9 @@ static char tmp[TMP_CAP];
 #ifndef DISCOVERY_REQ_COUNT
 #define DISCOVERY_REQ_COUNT 4
 #endif
+#ifndef MAX_RETRY_DISCOVERY
+#define MAX_RETRY_DISCOVERY 3
+#endif
 
 #define NOP ((void) NULL)
 #define UNUSED(x) (void)(x)
@@ -2120,16 +2123,29 @@ int __attribute__((optimize("O0")))
 do_filter_discovery (void)
 {
 #define N DISCOVERY_REQ_COUNT
+#if N <= 0
+# error "DISCOVERY_REQ_COUNT Must be grater than zero."
+#endif
+  int ret;
+  struct req_stat_t disc_stat[N];
+  { /* Sending discovery (probe) requests */
     for (int i=0; i<N; ++i)
       {
+        int retry_c = 0;
         RequestContext *ctx = opt.Rqueue.ctxs;
         __next_fuzz_rand (ctx); /* loading a random FUZZ string */
-        ret = register_context (ctx, true); /* blocking */
-        if (ret != CURLE_OK)
+      retry:
+        if (CURLE_OK != (ret = register_context (ctx, true))) /* blocking */
           {
-            warnln ("discovery request failed, %s",
-                    curl_easy_strerror(ret));
+            bool should_retry =
+              (retry_c++ < MAX_RETRY_DISCOVERY) & /* max retry */
+              (ret > CURLE_COULDNT_CONNECT); /* avoid pointless retry */
+            warnln ("discovery request failed  --  %s%s",
+                    curl_easy_strerror (ret),
+                    (should_retry) ? "  (retrying)" : "");
             context_reset (ctx);
+            if (should_retry)
+              goto retry;
             return 1;
           }
         curl_easy_getinfo (ctx->easy_handle, CURLINFO_HTTP_CODE, &ctx->stat.code);
