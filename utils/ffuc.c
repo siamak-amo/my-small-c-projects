@@ -1894,7 +1894,7 @@ help ()
 {
   fprintf (stdout, "\
 %s v%s - ffuf written in C\n\
-Usage:  ffuc [OPTIONS] [HTTP_OPTION [WORDLIST]...]...\n\
+Usage:  ffuc [OPTIONS] [ HTTP_OPTION [WORDLIST]... ]...\n\
 \n\
 HTTP_OPTIONS:\n\
   -u, --url         URL (mandatory)\n\
@@ -1919,14 +1919,14 @@ OPTIONS:\n\
     -v, --verbose   verbose\n\
 \n\
 MODE:\n\
-  -m, --mode        when more than one FUZZ keyword is provided\n\
-     Clusterbomb (default):\n\
-       All combinations of word-lists\n\
-     Pitchfork:\n\
-       Picks up words from word-lists one by one, until longest one ends\n\
-     Singular:\n\
-       Accepts only one word-list and uses it for all FUZZ keywords\n\
-       It's equivalent to clusterbomb for only one FUZZ keyword\n\
+    -m, --mode        when more than one FUZZ keyword is provided\n\
+   Clusterbomb (default):\n\
+     All combinations of word-lists\n\
+   Pitchfork:\n\
+     Picks up words from word-lists one by one, until longest one ends\n\
+   Singular:\n\
+     Accepts only one word-list and uses it for all FUZZ keywords\n\
+     It's equivalent to clusterbomb for only one FUZZ keyword\n\
 ", PROG_NAME, PROG_VERSION);
 }
 
