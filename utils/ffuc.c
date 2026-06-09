@@ -26,7 +26,7 @@
 
   Examples of using FUZZ keywords and word-lists:
     $ ffuc -u https://x.com/FUZZ.FUZZ -w /tmp/wl1 -w /tmp/wl2
-    - the first FUZZ uses: '/tmp/wl1'  and  the second FUZZ uses '/tmp/wl2')
+    - the first FUZZ uses: '/tmp/wl1' and the second FUZZ uses: '/tmp/wl2')
 
     $ ffuc -u http://x.com/FUZZ -w /tmp/wl1  -H 'X-test: FUZZ' -w /tmp/wl2
     - using '/tmp/wl1' for URL  and  '/tmp/wl2' for the X-test header)
@@ -38,17 +38,19 @@
     The `--auto-filter` option (also known as AI mode!) automatically
     detects a proper response filtering by sending a few discovery requests.
 
-    Some endpoints, respond with unexpected HTTP error codes when encountering
-    any unexpcted or absent parameter in the requests; As a result, the
-    default setup of FFuc (HTTP code filter) might *miss* some valid results.
+    Some endpoints, respond with unexpected HTTP error code on encountering
+    any unexpcted or absent parameter in requests; As a result, the default
+    setup of FFuc (HTTP code filtering) might  *miss*  some valid results.
 
     The auto-filter mode can be reproduced manually as follows:
       1. Use '--all' to ignore all filters, with a small word-list.
       2. Identify a common response hook to filter (or match).
          FFuc starts by, at first, common word count, then line count,
-         then response size, then HTTP code, and otherwise returns failure.
+         then response size, then HTTP code, and otherwise if it couldn't
+         find a common pattern to filter, returns error.
 
-  Filter & Match:
+
+  Filter & Match (--fX, --mX):
     To filter responses (to excluding if satisfied):
           --fs (filter size),        --fc (filter status code)
           --fw (filter word count),  --fl (filter line count)
@@ -66,26 +68,29 @@
                first excludes all responses of zero length,
                then only shows those with a status code of 300.
 
-    Modes:
-      FFuc implements three different methods:
-        Cluster-bomb (default):  cartesian product of all word-lists
-        Pitchfork:  pick one by one until the longest one ends
-        Singular:  one word-list for all FUZZ keywords
-      See the usage help for more details.
+
+  Mode (-m, --mode):
+    FFuc implements three different methods to work with word-lists,
+    see the usage help for more details.
+
+     - Cluster-bomb (default):  all combinations of all word-lists
+           O( len(word-list #1) x ... x len(word-list #N) )
+
+     - Pitchfork:  cycling through all word-lists simultaneously
+           O( MAX( len(word-list #1), ..., len(word-list #N) ) )
+
+     - Singular:  one word-list for all FUZZ keywords
+           O( len(word-list #1) )
+
 
     Compilation:
       cc -O2 -Wall -Wextra -Werror -I ../libs/ \
          ffuc.c -o ffuc -lcurl
 
     Options:
-      -D_DEBUG:
-        Print debug information
-      -D SKIP_FREE:
-        Skip freeing heap memory in cleanup function
-      -D DO_NOT_FIX_NO_FUZZ:
-        Disables handing no FUZZ keyword provided scenarios
-      -D NO_DEFAULT_COLOR:
-        Disables output colors by default
+      -D_DEBUG:  print debug information
+      -D SKIP_FREE:  skip freeing heap memory in cleanup function
+      -D NO_DEFAULT_COLOR:  disable output colors
  **/
 #undef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -115,21 +120,21 @@
 #include "dyna.h" /* dynamic array */
 
 #define UNESCAPE_IMPLEMENTATION
-#include "unescape.h" /* for URL decoding */
+#include "unescape.h" /* used for URL decoding */
 
 #define CLI_IMPLEMENTATION
 #include "clistd.h"
 #include <getopt.h>
 
 #define PROG_NAME "FFuc"
-#define PROG_VERSION "2.6"
+#define PROG_VERSION "2.7"
 
 #ifndef FUZZ_STR
-#  define FUZZ_STR "FUZZ"
+# define FUZZ_STR "FUZZ"
 #endif
 
 #ifndef TMP_CAP
-#  define TMP_CAP 1024 /* bytes */
+# define TMP_CAP 1024 /* bytes */
 #endif
 static char tmp[TMP_CAP];
 
@@ -179,10 +184,10 @@ static char tmp[TMP_CAP];
 #endif
 
 #ifndef DISCOVERY_REQ_COUNT
-#define DISCOVERY_REQ_COUNT 4
+# define DISCOVERY_REQ_COUNT 4
 #endif
 #ifndef MAX_RETRY_DISCOVERY
-#define MAX_RETRY_DISCOVERY 3
+# define MAX_RETRY_DISCOVERY 3
 #endif
 
 #define NOP() ((void) NULL)
@@ -700,7 +705,7 @@ set_template_wlist (FuzzTemplate *t, enum template_op op, void *param);
  *  Returns a malloc pointer which contains @src
  *  If @malloced is not null, uses realloc instead
  */
-void * strrealloc (void *malloced, const char *src);
+static inline void * strrealloc (void *malloced, const char *src);
 
 /**
  *  After running these macros, @dst will contain a copy
@@ -728,6 +733,8 @@ void * strrealloc (void *malloced, const char *src);
   if (NULL != dst) { memcpy (dst, src, len); }
 #define Strcmp(s1, s2) \
   ((s1 == NULL || s2 == NULL) ? 1 : (0 == strcmp (s1, s2)))
+#define url_unescape_safe(cstr) \
+  if (NULL != cstr) { url_unescape (cstr); }
 
 #ifdef _DEBUG
 # define fprintd(format, ...) \
@@ -938,9 +945,9 @@ log_filter (const struct res_filter_t *fl)
            FILTER_T_CSTR (fl->type),
            FILTER_CSTR (fl->type));
   if (fl->range.start != fl->range.end)
-    fprintf (opt.streamout, "%d-%d\n", fl->range.start, fl->range.end);
+    fprintf (opt.streamout, "range [%d-%d]\n", fl->range.start, fl->range.end);
   else
-    fprintf (opt.streamout, "%d\n", fl->range.start);
+    fprintf (opt.streamout, "== %d\n", fl->range.start);
 }
 
 void
@@ -981,7 +988,7 @@ print_stats_fuzz (RequestContext *ctx)
     fprintf (opt.streamout, CLEAN_LINE ());
   /* Undo URL encoding */
   for (int i=0; i < opt.words_len; ++i)
-    if (ctx->FUZZ[i]) url_unescape (ctx->FUZZ[i]);
+    url_unescape_safe (ctx->FUZZ[i]);
 
   if (1 >= opt.words_len)
     {
@@ -1441,16 +1448,14 @@ goto_raw_mode (struct termios *original)
   tcsetattr (STDIN_FILENO, TCSANOW, &raw);
 }
 
-void *
+static inline void *
 strrealloc (void *malloced, const char *src)
 {
-  void *res;
+  void * res;
   size_t n = strlen (src);
-  if (! malloced)
-    res = malloc (n+1);
-  else
-    res = realloc (malloced, n+1);
-  return memcpy (res, src, n+1);
+  res = realloc (malloced, n+1);
+  memcpy (res, src, n+1);
+  return res;
 }
 
 int
@@ -1588,7 +1593,7 @@ make_fw_from_path (const char *path)
   fd = open (path, O_RDONLY);
   if (fd < 0)
     {
-      warnln ("could not open file (%s) -- %s.", path, strerror (errno));
+      warnln ("could not open file '%s' -- %s.", path, strerror (errno));
       return NULL;
     }
 
@@ -1596,7 +1601,7 @@ make_fw_from_path (const char *path)
     return fw_dup (&tmp);
   else
     {
-      warnln ("could not mmap file (%s).", path);
+      warnln ("could not mmap file '%s'.", path);
       close (fd);
       return NULL;
     }
@@ -1833,15 +1838,15 @@ set_template (FuzzTemplate *t, enum template_op op, void *_param)
               register_wlist (param);
             else
               {
-                warnln ("word-list (%s) was ignored -- "
-                        "singular mode, only accepts one word-list", param);
+                warnln ("word-list '%s' was ignored  --  \
+singular mode only accepts one word-list", param);
                 return -1;
               }
           }
         else
           {
             if (local_fuzz_count <= 0)
-              warnln ("unexpected word-list (%s) was ignored.", param);
+              warnln ("unexpected word-list '%s' was ignored.", param);
             else
               {
                 /* prev_op indicates the latest modified HTTP option */
@@ -1934,7 +1939,7 @@ OPTIONS:\n\
 MODE:\n\
     -m, --mode        when more than one FUZZ keyword is provided\n\
    Clusterbomb (default):\n\
-     All combinations of word-lists\n\
+     All combinations of all word-lists\n\
    Pitchfork:\n\
      Picks up words from word-lists one by one, until longest one ends\n\
    Singular:\n\
@@ -2100,8 +2105,7 @@ parse_args (int argc, char **argv)
       warnln ("no URL provided (use -u <URL>).");
       return EXIT_FAILURE;
     }
-#ifndef DO_NOT_FIX_NO_FUZZ
-  /* No FUZZ keyword */
+#ifndef DO_NOT_FIX_NO_FUZZ /* no FUZZ keyword is provided handling */
   if (! HAS_FLAG (opt.fuzz_flag, URL_HASFUZZ) &&
       ! HAS_FLAG (opt.fuzz_flag, BODY_HASFUZZ) &&
       ! HAS_FLAG (opt.fuzz_flag, HEADER_HASFUZZ))
@@ -2119,7 +2123,7 @@ No FUZZ keyword found, assuming to use '%s' with the given URL.", last_wlist);
         }
       else
         {
-          warnln ("nothing to do, exiting.");
+          warnln ("nothing to do  --  exiting.");
           return SHOULD_EXIT;
         }
     }
@@ -2133,7 +2137,7 @@ do_filter_discovery (void)
 {
 #define N DISCOVERY_REQ_COUNT
 #if N <= 0
-# error "DISCOVERY_REQ_COUNT Must be grater than zero."
+# error "DISCOVERY_REQ_COUNT must be grater than zero."
 #endif
   int ret;
   struct req_stat_t disc_stat[N];
