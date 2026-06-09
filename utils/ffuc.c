@@ -924,53 +924,46 @@ fw_next (Fword *fw)
 }
 
 //-- Logger functions --//
-void
+static inline void
 log_filter (const struct res_filter_t *fl)
 {
-  fprintf (stderr, "- %s: %s ",
+  fprintf (opt.streamout, "- %s: %s ",
            FILTER_T_CSTR (fl->type),
            FILTER_CSTR (fl->type));
   if (fl->range.start != fl->range.end)
-    fprintf (stderr, "%d-%d\n", fl->range.start, fl->range.end);
+    fprintf (opt.streamout, "%d-%d\n", fl->range.start, fl->range.end);
   else
-    fprintf (stderr, "%d\n", fl->range.start);
+    fprintf (opt.streamout, "%d\n", fl->range.start);
 }
 
 void
-log_current_config (void)
+log_current_config ()
 {
-  if (! isatty (fileno (stderr)))
-    return;
-  fprintf (stderr, "------------ FFUC Configuration ------------\n");
-  {
-    fprintf (stderr, "- URL: %s\n", opt.fuzz_template.URL);
-    if (opt.fuzz_template.body)
-      fprintf (stderr, "- Body: %s\n", opt.fuzz_template.body);
-    curl_slist_foreach (opt.fuzz_template.headers, header)
-      fprintf (stderr, "- Header: [%s]\n", header->data);
-
-    if (opt.max_rate != MAX_REQ_RATE)
-      fprintf (stderr, "- Request rate: %d req/sec\n", opt.max_rate);
-    fprintf (stderr, "- Concurrency: %ld req\n", opt.Rqueue.len);
-    if (opt.Rqueue.delay_us[0])
-      {
-        fprintf (stderr, "- Delay: ");
-        if (opt.Rqueue.delay_us[0] != opt.Rqueue.delay_us[1])
-          fprintf (stderr, "%d-%d (ms)\n",
-                   opt.Rqueue.delay_us[0] / 1000,
-                   opt.Rqueue.delay_us[1] / 1000);
-        else
-          fprintf (stderr, "%d (ms)\n", opt.Rqueue.delay_us[0]/1000);
-      }
-    if (opt.filters)
-      {
-        da_foreach (opt.filters, i)
-          {
-            log_filter (&opt.filters[i]);
-          }
-      }
+  fprintf (opt.streamout, "------------ FFUC Configuration ------------\n");
+  fprintf (opt.streamout, "- URL: %s\n", opt.fuzz_template.URL);
+  if (opt.fuzz_template.body)
+    fprintf (opt.streamout, "- Body: %s\n", opt.fuzz_template.body);
+  curl_slist_foreach (opt.fuzz_template.headers, header) {
+    fprintf (opt.streamout, "- Header: [%s]\n", header->data);
   }
-  fprintf (stderr, "--------------------------------------------\n\n");
+  if (opt.max_rate != MAX_REQ_RATE)
+    fprintf (opt.streamout, "- Request rate: %d req/sec\n", opt.max_rate);
+  fprintf (opt.streamout, "- Concurrency: %ld req\n", opt.Rqueue.len);
+  if (opt.Rqueue.delay_us[0])
+    {
+      fprintf (opt.streamout, "- Delay: ");
+      if (opt.Rqueue.delay_us[0] != opt.Rqueue.delay_us[1])
+        fprintf (opt.streamout, "%d-%d (ms)\n",
+                 opt.Rqueue.delay_us[0] / 1000,
+                 opt.Rqueue.delay_us[1] / 1000);
+      else
+        fprintf (opt.streamout, "%d (ms)\n", opt.Rqueue.delay_us[0]/1000);
+    }
+  da_foreach (opt.filters, i) {
+    log_filter (&opt.filters[i]); /* log: Filter / Match */
+  }
+  fprintf (opt.streamout, "--------------------------------------------\n\n");
+  fflush (opt.streamout);
 }
 
 static inline void
@@ -2223,6 +2216,8 @@ main (int argc, char **argv)
 #endif /* NO_DEFAULT_COLOR */
   };
 
+  /* Print on stdout if it's not a tty (user's creating log file) */
+  opt.streamout = (! isatty (fileno (stdout))) ? stdout : stderr;
   /* Parse cmdline arguments & Initialize opt */
   if ((ret = parse_args (argc, argv)))
     Return (ret);
