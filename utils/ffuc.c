@@ -185,6 +185,8 @@ static char tmp[TMP_CAP];
 #define MIN(a,b) ((a < b) ? (a) : (b))
 #define MAX(a,b) ((a > b) ? (a) : (b))
 #define lstrlen(lstr) (sizeof (lstr) - 1) /* only for string literals */
+#define lastcharof(cstr) \
+  cstr[ (cstr[0]=='\0') ? 0 : strlen(cstr)-1 ] /* last character of string */
 
 #define FLG_SET(dst, flg) (dst |= flg)
 #define HAS_FLAG(val, flg) (val & flg)
@@ -2086,12 +2088,14 @@ parse_args (int argc, char **argv)
       ! HAS_FLAG (opt.fuzz_flag, BODY_HASFUZZ) &&
       ! HAS_FLAG (opt.fuzz_flag, HEADER_HASFUZZ))
     {
-      if (last_wlist)
+      const char *url = opt.fuzz_template.URL;
+      if (last_wlist && url)
         {
-          warnln ("\
-no FUZZ keyword found, fuzzing tail of URL (with %s).", last_wlist);
-          /* TODO: prevent double slash in URL before FUZZ */
-          snprintf (tmp, TMP_CAP, "%s/FUZZ", opt.fuzz_template.URL);
+          if (opt.verbose)
+            warnln ("\
+No FUZZ keyword found, assuming to use '%s' with the given URL.", last_wlist);
+          snprintf (tmp, TMP_CAP, "%s%sFUZZ", url,
+                    (lastcharof (url) == '/') ? "" : "/");
           set_template (&opt.fuzz_template, URL_TEMPLATE, tmp);
           set_template (&opt.fuzz_template, WLIST_TEMPLATE, last_wlist);
         }
