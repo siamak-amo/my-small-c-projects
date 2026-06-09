@@ -1385,7 +1385,8 @@ init_progress (Progress *prog)
   prog->req_sent = 0;
   /* This makes progress-bar refresh at every 1% of progress */
   prog->progbar_refrate = MAX(1, prog->req_total / 100);
-  update_progress_bar (prog);
+  if (opt.Printf.lineclear) /* makes it dirty with pipes */
+    update_progress_bar (prog);
 }
 
 static void
