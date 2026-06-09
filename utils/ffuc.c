@@ -165,6 +165,11 @@ static char tmp[TMP_CAP];
 # define POLL_TTL_MS 1000
 #endif
 
+/* Maximim number of errors to print */
+#ifndef MAX_ERROR_REPS
+#define MAX_ERROR_REPS 16
+#endif
+
 #ifndef PRINT_MARGIN
 # ifndef __ANDROID__
 #   define PRINT_MARGIN 25
@@ -1019,18 +1024,30 @@ print_stats_fuzz (RequestContext *ctx)
 static inline void
 print_stats_context (RequestContext *ctx)
 {
-  static CURLcode prev_stat_error_code = 0;
+  static int prev_error_count = 0;
+  static CURLcode prev_error_code = 0;
   if (CURLE_OK != ctx->stat.ccode)
     {
-      if (!opt.verbose && prev_stat_error_code == ctx->stat.ccode)
-        return; /* prevent too much printing error */
-      prev_stat_error_code = ctx->stat.ccode;
+      if (! opt.verbose)
+        { /* prevent printing of similar error */
+          if (prev_error_code != ctx->stat.ccode)
+            { /* got a new error, resetting the counter */
+              prev_error_code = ctx->stat.ccode;
+              prev_error_count = 0;
+            }
+          else if (++prev_error_count > MAX_ERROR_REPS)
+            return;
+          else if (prev_error_count  == MAX_ERROR_REPS)
+            Strrealloc (ctx->FUZZ[0], "too many errors...");
+        }
       print_stats_fuzz (ctx);
       fprintf (opt.streamout, "[Error: %s, Duration: %dms]\n",
                curl_easy_strerror (ctx->stat.ccode),
                ctx->stat.duration);
       return;
     }
+  else /* reset the error counting */
+    prev_error_code = prev_error_count = 0;
 
   print_stats_fuzz (ctx);
   fprintf (opt.streamout, "\
