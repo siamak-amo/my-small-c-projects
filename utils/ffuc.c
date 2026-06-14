@@ -761,7 +761,6 @@ struct Opt
   bool interactive;
   uint max_rate; /* Max request rate (req/sec) */
   char *verb; /* HTTP verb */
-  FILE *streamout;
   char *proxy;
   FuzzTemplate fuzz_template;
   struct res_filter_t *filters; /* Dynamic array */
@@ -785,6 +784,8 @@ struct Opt
 
   struct printf_t
   {
+    FILE *streamout;
+    bool isatty;
     bool lineclear; /* Should clear terminal */
     bool color; /* Color enabled */
   } Printf;
@@ -939,45 +940,49 @@ fw_next (Fword *fw)
 
 //-- Logger functions --//
 static inline void
-log_filter (const struct res_filter_t *fl)
+log_filter (FILE *stream, const struct res_filter_t *fl)
 {
-  fprintf (opt.streamout, "- %s: %s ",
            FILTER_T_CSTR (fl->type),
            FILTER_CSTR (fl->type));
+  fprintf (stream, "- %s: %s ",
   if (fl->range.start != fl->range.end)
-    fprintf (opt.streamout, "range [%d-%d]\n", fl->range.start, fl->range.end);
+    fprintf (stream, "range [%d-%d]\n", fl->range.start, fl->range.end);
   else
-    fprintf (opt.streamout, "== %d\n", fl->range.start);
+    fprintf (stream, "== %d\n", fl->range.start);
 }
 
 void
 log_current_config ()
 {
-  fprintf (opt.streamout, "------------ FFUC Configuration ------------\n");
-  fprintf (opt.streamout, "- URL: %s\n", opt.fuzz_template.URL);
+  FILE *stream = opt.Printf.streamout;
+  fprintf (stream, "\
+---------------------------\n\
+- FFUC v%3s Configuration -\n\
+---------------------------\n", PROG_VERSION);
+  fprintf (stream, "- URL: %s\n", opt.fuzz_template.URL);
   if (opt.fuzz_template.body)
-    fprintf (opt.streamout, "- Body: %s\n", opt.fuzz_template.body);
+    fprintf (stream, "- Body: %s\n", opt.fuzz_template.body);
   curl_slist_foreach (opt.fuzz_template.headers, header) {
-    fprintf (opt.streamout, "- Header: [%s]\n", header->data);
+    fprintf (stream, "- Header: [%s]\n", header->data);
   }
   if (opt.max_rate != MAX_REQ_RATE)
-    fprintf (opt.streamout, "- Request rate: %d req/sec\n", opt.max_rate);
-  fprintf (opt.streamout, "- Concurrency: %ld req\n", opt.Rqueue.len);
+    fprintf (stream, "- Request rate: %d req/sec\n", opt.max_rate);
+  fprintf (stream, "- Concurrency: %ld req\n", opt.Rqueue.len);
   if (opt.Rqueue.delay_us[0])
     {
-      fprintf (opt.streamout, "- Delay: ");
+      fprintf (stream, "- Delay: ");
       if (opt.Rqueue.delay_us[0] != opt.Rqueue.delay_us[1])
-        fprintf (opt.streamout, "%d-%d (ms)\n",
+        fprintf (stream, "%d-%d (ms)\n",
                  opt.Rqueue.delay_us[0] / 1000,
                  opt.Rqueue.delay_us[1] / 1000);
       else
-        fprintf (opt.streamout, "%d (ms)\n", opt.Rqueue.delay_us[0]/1000);
+        fprintf (stream, "%d (ms)\n", opt.Rqueue.delay_us[0]/1000);
     }
   da_foreach (opt.filters, i) {
-    log_filter (&opt.filters[i]); /* log: Filter / Match */
+    log_filter (stream, &opt.filters[i]); /* log: Filter / Match */
   }
-  fprintf (opt.streamout, "--------------------------------------------\n\n");
-  fflush (opt.streamout);
+  fprintf (stream, "---------------------------\n\n");
+  fflush (stream);
 }
 
 static inline void
@@ -985,46 +990,47 @@ print_stats_fuzz (RequestContext *ctx)
 {
   /* Wiping the line out of the progress-bar stuff */
   if (opt.Printf.lineclear)
-    fprintf (opt.streamout, CLEAN_LINE ());
+    fprintf (opt.Printf.streamout, CLEAN_LINE ());
   /* Undo URL encoding */
   for (int i=0; i < opt.words_len; ++i)
     url_unescape_safe (ctx->FUZZ[i]);
 
+  FILE *stream = opt.Printf.streamout;
   if (1 >= opt.words_len)
     {
       int m, n, margin;
-#ifndef __ANDROID__ /* Android's printf does not support %n */
+#ifndef __ANDROID__
       #define __FMT__ "%n" "%s" "%n"
       #define __ARG__ &m, ctx->FUZZ[0], &n
-#else
+#else /* on Android, printf does not support %n */
       #define __FMT__ "%s"
       #define __ARG__ ctx->FUZZ[0]
       m = 0, n = PRINT_MARGIN; /* forces newline */
 #endif /* __ANDROID__ */
 
       if (opt.Printf.color)
-        fprintf (opt.streamout,
+        fprintf (stream,
                  COLOR_FMT( __FMT__ ),
                  COLOR_ARG( colorof_ctx(ctx), __ARG__ ));
       else
-        fprintf ( opt.streamout, __FMT__, __ARG__ );
+        fprintf ( stream, __FMT__, __ARG__ );
 
 #undef __FMT__
 #undef __ARG__
       if ((margin = PRINT_MARGIN - n + m) > 0)
-        fprintf (opt.streamout, "%*s", margin, "");
+        fprintf (stream, "%*s", margin, "");
       else
-        fprintf (opt.streamout, "\n%*s", PRINT_MARGIN, "");
+        fprintf (stream, "\n%*s", PRINT_MARGIN, "");
     }
   else /* Multiple FUZZ keywords provided */
     {
       if (opt.Printf.color)
-        fprintf (opt.streamout, "\n " COLOR_FMT( "* FUZZ" ) " = [",
+        fprintf (stream, "\n " COLOR_FMT( "* FUZZ" ) " = [",
                  COLOR_ARG( colorof_ctx (ctx) ));
       else
-        fprintf (opt.streamout, "\n * FUZZ = [");
-      Fprintarr (opt.streamout, "'%s'", ctx->FUZZ, opt.words_len);
-      fprintf (opt.streamout, "]:\n");
+        fprintf (stream, "\n * FUZZ = [");
+      Fprintarr (stream, "'%s'", ctx->FUZZ, opt.words_len);
+      fprintf (stream, "]:\n");
     }
 }
 
@@ -1048,7 +1054,7 @@ print_stats_context (RequestContext *ctx)
             Strrealloc (ctx->FUZZ[0], "too many errors...");
         }
       print_stats_fuzz (ctx);
-      fprintf (opt.streamout, "[Error: %s, Duration: %dms]\n",
+      fprintf (opt.Printf.streamout, "[Error: %s, Duration: %dms]\n",
                curl_easy_strerror (ctx->stat.ccode),
                ctx->stat.duration);
       return;
@@ -1057,7 +1063,7 @@ print_stats_context (RequestContext *ctx)
     prev_error_code = prev_error_count = 0;
 
   print_stats_fuzz (ctx);
-  fprintf (opt.streamout, "\
+  fprintf (opt.Printf.streamout, "\
 [Status: %-3d,  Size: %d,  Words: %d,  Lines: %d,  Duration: %dms]\n",
            (int) ctx->stat.code,
            ctx->stat.size_bytes,
@@ -1409,7 +1415,7 @@ init_progress (Progress *prog)
   prog->req_sent = 0;
   /* This makes progress-bar refresh at every 1% of progress */
   prog->progbar_refrate = MAX(1, prog->req_total / 100);
-  if (opt.Printf.lineclear) /* makes it dirty with pipes */
+  if (opt.Printf.isatty) /* makes it dirty with pipes */
     update_progress_bar (prog);
 }
 
@@ -1707,7 +1713,8 @@ init_opt ()
 
   if (! isatty (fileno (stderr)))
     opt.progress.progbar_enabled = false;
-  if (! isatty (fileno (opt.streamout)))
+  opt.Printf.isatty = isatty (fileno (opt.Printf.streamout));
+  if (! opt.Printf.isatty)
     {
       opt.Printf.color = false;
       opt.Printf.lineclear = false;
@@ -2234,7 +2241,7 @@ main (int argc, char **argv)
     .mode = MODE_DEFAULT,
     .Rqueue.len = DEFAULT_REQ_COUNT,
     .max_rate = MAX_REQ_RATE,
-    .streamout = stdout,
+    .Printf = { .streamout = stdout },
     .words = da_new (Fword *),
     .progress.progbar_enabled = true,
 #ifndef NO_DEFAULT_COLOR
@@ -2243,7 +2250,7 @@ main (int argc, char **argv)
   };
 
   /* Print on stdout if it's not a tty (user's creating log file) */
-  opt.streamout = (! isatty (fileno (stdout))) ? stdout : stderr;
+  opt.Printf.streamout = (! isatty (fileno (stdout))) ? stdout : stderr;
   /* Parse cmdline arguments & Initialize opt */
   if ((ret = parse_args (argc, argv)))
     Return (ret);
@@ -2311,6 +2318,8 @@ main (int argc, char **argv)
   while (still_running > 0 || !opt.eofuzz);
 
   end_progress_bar (&opt.progress);
+  if (! opt.Printf.lineclear)
+    fprintf (opt.Printf.streamout, "\n");
   if (opt.verbose)
     {
       warnln ("Total requests: %d, Errors: %d, at ~%zu req/sec.",
