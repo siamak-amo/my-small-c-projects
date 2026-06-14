@@ -1072,13 +1072,26 @@ print_stats_context (RequestContext *ctx)
 static void
 __next_fuzz_rand (RequestContext *ctx)
 {
-  char randstr[] = "aaaaaaaaaaaa";
+#define N 13
+  char randstr[N];
+  randstr[N-1] = '\0';
   for (ssize_t i = 0; i < opt.words_len; ++i)
     {
-      for (size_t j=0; j < sizeof (randstr) - 1; ++j)
-        randstr[j] = (rand () % 26) + 'a';
+      for (size_t j=0, rnd; j < N-1; ++j)
+        {
+          switch ((rnd = rand ()) % 3)
+            {
+            case 0:
+              randstr[j] = (rnd % 26) + 'a';  break;
+            case 1:
+              randstr[j] = (rnd % 26) + 'A';  break;
+            case 2:
+              randstr[j] = (rnd % 10) + '0';  break;
+            }
+        }
       Strrealloc (ctx->FUZZ[i], randstr);
     }
+#undef N
 }
 
 static void
