@@ -290,15 +290,11 @@ enum ffuc_flag_t
      *
      * Singular:
      *   Using only one wordlist for all FUZZ keywords
-     *
      * Pitchfork:
      *   Each FUZZ, uses it's own word-list
      *   word-lists are not necessarily the same size
-     *     O( Max( len(wlist #1), ..., len(wlist #N) ) )
-     *
      * Clusterbomb:
      *   All combinations of word-list(s)
-     *     O( len(wlist #1) x ... x len(wlist #N) )
      */
     MODE_CLUSTERBOMB  = 0,
     MODE_PITCHFORK    = 1,
@@ -822,13 +818,13 @@ const char *HttpPallet[] =
 static inline const char *http_pallet_of (int resp_code);
 #define colorof_ctx(ctx) http_pallet_of ((ctx)->stat.code)
 
-/** @optr: The corresponding request context, passed by libcurl **/
+/** @ptr: The corresponding request context, passed by libcurl **/
 size_t
-curl_fwrite (void *ptr, size_t size, size_t nmemb, void *optr)
+curl_fwrite (void *ptr, size_t size, size_t nmemb, void *__req_ctx)
 {
   size_t len = (size_t)(size * nmemb);
   unsigned char *data = (unsigned char *) ptr;
-  RequestContext *ctx = (RequestContext *) optr;
+  RequestContext *ctx = (RequestContext *) __req_ctx;
 
   ctx->stat.size_bytes += len; /* Update size */
   for (size_t i=0; i<len; ++i)
@@ -942,9 +938,8 @@ fw_next (Fword *fw)
 static inline void
 log_filter (FILE *stream, const struct res_filter_t *fl)
 {
-           FILTER_T_CSTR (fl->type),
-           FILTER_CSTR (fl->type));
   fprintf (stream, "- %s: %s ",
+           FILTER_T_CSTR (fl->type), FILTER_CSTR (fl->type));
   if (fl->range.start != fl->range.end)
     fprintf (stream, "range [%d-%d]\n", fl->range.start, fl->range.end);
   else
