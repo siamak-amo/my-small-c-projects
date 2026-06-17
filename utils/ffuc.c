@@ -2050,21 +2050,30 @@ cleanup (int c, void *p)
         {
           RequestContext *ctx = &opt.Rqueue.ctxs[i];
           curl_easy_cleanup (ctx->easy_handle);
+          safe_free (ctx->request.URL);
           safe_free (ctx->request.body);
           curl_slist_free_all (ctx->request.headers);
           safe_free (ctx->matches);
+          for (int j = 0; j < opt.words_len; j++)
+            safe_free (ctx->FUZZ[j]);
+          safe_free (ctx->FUZZ);
         }
     }
   curl_multi_cleanup (opt.multi_handle);
   curl_global_cleanup ();
   /* Opt cleanup */
   safe_free (opt.Rqueue.ctxs);
+  da_foreach (opt.filters, i) {
+    free_filter (&opt.filters[i]);
+  }
   da_free (opt.filters);
-  da_foreach (opt.words, i)
-    {
-      fw_free (opt.words[i]);
-    }
+  da_foreach (opt.words, i) {
+    fw_free (opt.words[i]);
+  }
+  da_free (opt.words);
   /* Template cleanup */
+  safe_free (opt.fuzz_template.URL);
+  safe_free (opt.fuzz_template.body);
   da_free (opt.fuzz_template.wlists);
 #endif /* SKIP_FREE */
 }
@@ -2403,7 +2412,6 @@ main (int argc, char **argv)
     .Rqueue.len = DEFAULT_REQ_COUNT,
     .max_rate = MAX_REQ_RATE,
     .Printf = { .streamout = stdout },
-    .words = da_new (Fword *),
     .progress.progbar_enabled = true,
 #ifndef NO_DEFAULT_COLOR
     .color_enabled = true,
