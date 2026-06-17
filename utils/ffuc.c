@@ -475,6 +475,17 @@ struct request_t
   struct curl_slist *headers;
 };
 
+struct ffuc_regex /* only supports string matching! */
+{
+  int match;
+  int __idx; // internal
+  const struct res_filter_t *fl;
+};
+/* match a regex, character by character */
+static inline int
+regex_match_c (struct ffuc_regex *rx, u_char c);
+#define REGEX_RESET(freg) ((freg)->match = false, (freg)->__idx = 0)
+
 typedef struct
 {
   int flag;
@@ -483,6 +494,7 @@ typedef struct
   /* Statistics of the request */
   struct req_stat_t stat;
   struct request_t request;
+  struct ffuc_regex *matches;
   
   /**
    *  All 'FUZZ' keywords within @opt.fuzz_template
@@ -784,6 +796,8 @@ struct Opt
   char *verb; /* HTTP verb */
   char *proxy;
   FuzzTemplate fuzz_template;
+
+  int regex_count; /* count of regex filters */
   struct res_filter_t *filters; /* Dynamic array */
 
   /* Internals */
@@ -860,6 +874,12 @@ curl_fwrite (void *ptr, size_t size, size_t nmemb, void *__req_ctx)
         ctx->stat.wcount++;
       else if (c < ' ')
         ctx->stat.lcount++;
+
+      for (int i=0; i < opt.regex_count; ++i)
+        {
+          if (! ctx->matches[i].match)
+            regex_match_c (&ctx->matches[i], c);
+        }
     }
   return len; 
 }
@@ -1294,8 +1314,20 @@ filter_pass (RequestContext *ctx, struct res_filter_t *filters)
           break;
         }
     }
+
+  for (int i=0; i < opt.regex_count; ++i)
+    {
+      switch (ctx->matches[i].fl->type)
+        {
+        case MATCH_REGEX:
+          EXCLUDE (ctx->matches[i].match == 0);
+        case FILTER_REGEX:
+          EXCLUDE (ctx->matches[i].match != 0);
+        default:
+          assert (0 && "Expecting only regex filter");
         }
     }
+
   return true;
 #undef EXCLUDE
 #undef RANGE
@@ -1413,7 +1445,7 @@ register_context (RequestContext *ctx, bool sync)
   return 0;
 }
 
-//-- Progress statistics functions --//
+//-- Progress statistics & Regex functions --//
 static inline size_t
 update_req_rate (Progress *prog)
 {
@@ -1429,6 +1461,28 @@ rt_req_rate (Progress *prog)
   if (prog->dt_us < MIN_DT_US)
     return prog->rate;
   return RT_REQ_RATE (prog);
+}
+
+static inline int
+regex_match_c (struct ffuc_regex *rx, unsigned char c)
+{
+  const char *patt = rx->fl->filter.regex.pattern;
+  if ('\0' == c)
+    return rx->match ? true : false;
+
+  unsigned char _c = patt[rx->__idx];
+  if ('\0' == _c)
+    goto found;
+  if (_c != c)
+    return (rx->match = rx->__idx = 0);
+  else if ('\0' == patt[++rx->__idx])
+    goto found;
+
+  return (rx->match = 0);
+ found:
+  rx->match = rx->__idx;
+  rx->__idx = 0;
+  return true;
 }
 
 /* Always use macro: req_stat_find_common
@@ -1999,6 +2053,7 @@ cleanup (int c, void *p)
           curl_easy_cleanup (ctx->easy_handle);
           safe_free (ctx->request.body);
           curl_slist_free_all (ctx->request.headers);
+          safe_free (ctx->matches);
         }
     }
   curl_multi_cleanup (opt.multi_handle);
