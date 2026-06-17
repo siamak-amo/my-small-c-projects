@@ -1786,6 +1786,11 @@ init_opt ()
     }
   opt.words_len = n;
 
+  /* Set the default filters if not disabled */
+  if (NO_FILTER == opt.filters)
+    opt.filters = NULL;
+  else if (NULL == opt.filters && !opt.AI)
+    da_appd (opt.filters, default_filter);
 
   struct ffuc_regex *tmp_regs = NULL;
   opt.regex_count = 0;
@@ -1826,12 +1831,6 @@ init_opt ()
   /* Initialize libcurl & context of requests */
   curl_global_init (CURL_GLOBAL_DEFAULT);
   opt.multi_handle = curl_multi_init ();
-
-  /* Set the default filters if not disabled */
-  if (NO_FILTER == opt.filters)
-    opt.filters = NULL;
-  else if (NULL == opt.filters && !opt.AI)
-    da_appd (opt.filters, default_filter);
 
   if (!opt.verb || Strcmp (opt.verb, "GET"))
      {
