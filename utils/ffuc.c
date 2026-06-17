@@ -31,7 +31,7 @@
     $ ffuc -u http://x.com/FUZZ -w /tmp/wl1  -H 'X-test: FUZZ' -w /tmp/wl2
     - using '/tmp/wl1' for URL  and  '/tmp/wl2' for the X-test header)
 
-    $ ffux -XPOST -u https://x.com  -d 'username=FUZZ' -w /tmp/usernames \
+    $ ffuc -XPOST -u https://x.com  -d 'username=FUZZ' -w /tmp/usernames \
                                     -d 'password=FUZZ' -w /tmp/rockyou.txt
 
   Recommendation:  using the `--auto-filter` option
@@ -68,12 +68,12 @@
                first excludes all responses of zero length,
                then only shows those with a status code of 300.
 
-    Filter responses by content (--filter-regex, --match-regex):
+    Filter by content (--filter-regex, --match-regex):
         FFuc provides a minimal regex matching, which currently only
         supports simple expressions.
         Ex.
-            --fr "xxx"   Exclude responses that contain "xxx"
-            --mr "yyy"   Include only responses that contain "yyy"
+          --fr "xxx"   Exclude responses that contain "xxx" in their body
+          --mr "yyy"   Include only responses that contain "yyy"
 
 
   Mode (-m, --mode):
@@ -134,7 +134,7 @@
 #include <getopt.h>
 
 #define PROG_NAME "FFuc"
-#define PROG_VERSION "2.7"
+#define PROG_VERSION "3.0"
 
 #ifndef FUZZ_STR
 # define FUZZ_STR "FUZZ"
@@ -479,7 +479,7 @@ struct ffuc_regex /* only supports string matching! */
 {
   int match;
   int __idx; // internal
-  const struct res_filter_t *fl;
+  const struct res_filter_t *fl; // length = opt.regex_count
 };
 /* match a regex, character by character */
 static inline int
@@ -1007,9 +1007,9 @@ log_current_config ()
 {
   FILE *stream = opt.Printf.streamout;
   fprintf (stream, "\
----------------------------\n\
-- FFUC v%3s Configuration -\n\
----------------------------\n", PROG_VERSION);
+-----------------------------\n\
+-  FFUC v%3s Configuration  -\n\
+-----------------------------\n", PROG_VERSION);
   fprintf (stream, "- URL: %s\n", opt.fuzz_template.URL);
   if (opt.fuzz_template.body)
     fprintf (stream, "- Body: %s\n", opt.fuzz_template.body);
@@ -1017,7 +1017,7 @@ log_current_config ()
     fprintf (stream, "- Header: [%s]\n", header->data);
   }
   if (opt.max_rate != MAX_REQ_RATE)
-    fprintf (stream, "- Request rate: %d req/sec\n", opt.max_rate);
+    fprintf (stream, "- Request rate < %d req/sec\n", opt.max_rate);
   fprintf (stream, "- Concurrency: %ld req\n", opt.Rqueue.len);
   if (opt.Rqueue.delay_us[0])
     {
@@ -1032,7 +1032,7 @@ log_current_config ()
   da_foreach (opt.filters, i) {
     log_filter (stream, &opt.filters[i]); /* log: Filter / Match */
   }
-  fprintf (stream, "---------------------------\n\n");
+  fprintf (stream, "-----------------------------\n\n");
   fflush (stream);
 }
 
@@ -1049,14 +1049,14 @@ print_stats_fuzz (RequestContext *ctx)
   FILE *stream = opt.Printf.streamout;
   if (1 >= opt.words_len)
     {
-      int m, n, margin;
+      int ss, to, margin;
 #ifndef __ANDROID__
       #define __FMT__ "%n" "%s" "%n"
-      #define __ARG__ &m, ctx->FUZZ[0], &n
+      #define __ARG__ &ss, ctx->FUZZ[0], &to
 #else /* on Android, printf does not support %n */
       #define __FMT__ "%s"
       #define __ARG__ ctx->FUZZ[0]
-      m = 0, n = PRINT_MARGIN; /* forces newline */
+      ss = 0, to = PRINT_MARGIN; /* forces newline */
 #endif /* __ANDROID__ */
 
       if (opt.Printf.color)
@@ -1068,7 +1068,7 @@ print_stats_fuzz (RequestContext *ctx)
 
 #undef __FMT__
 #undef __ARG__
-      if ((margin = PRINT_MARGIN - n + m) > 0)
+      if ((margin = PRINT_MARGIN - ss + to) > 0)
         fprintf (stream, "%*s", margin, "");
       else
         fprintf (stream, "\n%*s", PRINT_MARGIN, "");
@@ -1466,6 +1466,10 @@ rt_req_rate (Progress *prog)
 static inline int
 regex_match_c (struct ffuc_regex *rx, unsigned char c)
 {
+#ifdef _DEBUG
+  assert ((rx->fl->type == FILTER_REGEX ||
+           rx->fl->type == MATCH_REGEX) && "Not a regex filter.");
+#endif
   const char *patt = rx->fl->filter.regex.pattern;
   if ('\0' == c)
     return rx->match ? true : false;
@@ -1485,7 +1489,7 @@ regex_match_c (struct ffuc_regex *rx, unsigned char c)
   return true;
 }
 
-/* Always use macro: req_stat_find_common
+/* find common value at offset @foff in @stat array
    Ex:  req_stat_find_common(stats, N, wcount); */
 int
 __req_stat_find_common (struct req_stat_t *stat, int len, int foff)
@@ -1776,15 +1780,13 @@ init_opt ()
 {
   /* Finalizing the HTTP request template */
   set_template (&opt.fuzz_template, FINISH_TEMPLATE, NULL);
-
-  da_idx n = da_sizeof (opt.words);
-  if (n == 0)
+  opt.words_len = da_sizeof (opt.words);
+  if (opt.words_len == 0)
     {
       opt.eofuzz = true;
       warnln ("cannot continue with no word-list.");
       return EXIT_FAILURE;
     }
-  opt.words_len = n;
 
   /* Set the default filters if not disabled */
   if (NO_FILTER == opt.filters)
@@ -1792,6 +1794,7 @@ init_opt ()
   else if (NULL == opt.filters && !opt.AI)
     da_appd (opt.filters, default_filter);
 
+  /* find regex filters, and give each request context a copy of them */
   struct ffuc_regex *tmp_regs = NULL;
   opt.regex_count = 0;
   da_foreach (opt.filters, i) {
@@ -1812,11 +1815,14 @@ init_opt ()
   opt.Rqueue.ctxs = ffuc_calloc (opt.Rqueue.len, sizeof (RequestContext));
   for (size_t i = 0; i < opt.Rqueue.len; i++)
     {
-      STAT_RESET (&opt.Rqueue.ctxs[i].stat);
-      opt.Rqueue.ctxs[i].easy_handle = curl_easy_init();
-      int cap_bytes = (n + 1) * sizeof (char *);
-      opt.Rqueue.ctxs[i].FUZZ = ffuc_malloc (cap_bytes);
-      Memzero (opt.Rqueue.ctxs[i].FUZZ, cap_bytes);
+      int cap_bytes;
+      RequestContext *ctx = &opt.Rqueue.ctxs[i];
+      STAT_RESET (&ctx->stat);
+      ctx->easy_handle = curl_easy_init();
+      /* init FUZZ array */
+      cap_bytes = (opt.words_len + 1) * sizeof (char *);
+      ctx->FUZZ = ffuc_malloc (cap_bytes);
+      Memzero (ctx->FUZZ, cap_bytes);
       /* init regex match array */
       if (opt.regex_count)
         {
@@ -1846,7 +1852,7 @@ init_opt ()
     {
     case MODE_PITCHFORK:
       opt.progress.req_total = 0;
-      for (da_idx i=0; i < n; ++i)
+      for (da_idx i=0; i < opt.words_len; ++i)
         if (opt.words[i]->total_count > opt.progress.req_total)
           opt.progress.req_total = opt.words[i]->total_count;
       opt.load_next_fuzz = __next_fuzz_pitchfork;
@@ -1859,7 +1865,7 @@ init_opt ()
 
     case MODE_CLUSTERBOMB:
       opt.progress.req_total = 1;
-      for (da_idx i=0; i < n; ++i)
+      for (da_idx i=0; i < opt.words_len; ++i)
         opt.progress.req_total *= opt.words[i]->total_count;
       opt.load_next_fuzz = __next_fuzz_clusterbomb;
       break;
@@ -2227,37 +2233,23 @@ parse_args (int argc, char **argv)
 #define AddFilter(ftype)                                    \
           if (NO_FILTER != opt.filters)                     \
             opt_append_filter (ftype, optarg);              \
-          else warnln ("filter and match is disabled.");
-        case '0':
-          AddFilter (FILTER_CODE);
+          else warnln ("filter and match is disabled.");    \
           break;
-        case '1':
-          AddFilter (FILTER_SIZE);
-          break;
-        case '2':
-          AddFilter (FILTER_WCOUNT);
-          break;
-        case '3':
-          AddFilter (FILTER_LCOUNT);
-          break;
-        case '4':
-          AddFilter (FILTER_REGEX);
-          break;
-        case '9':
-          AddFilter (MATCH_CODE);
-          break;
-        case '8':
-          AddFilter (MATCH_SIZE);
-          break;
-        case '7':
-          AddFilter (MATCH_WCOUNT);
-          break;
-        case '6':
-          AddFilter (MATCH_LCOUNT);
-          break;
-        case '5':
-          AddFilter (MATCH_REGEX);
-          break;
+
+        case '0': AddFilter (FILTER_CODE);
+        case '1': AddFilter (FILTER_SIZE);
+        case '2': AddFilter (FILTER_WCOUNT);
+        case '3': AddFilter (FILTER_LCOUNT);
+        case '4': AddFilter (FILTER_REGEX);
+
+        case '9': AddFilter (MATCH_CODE);
+        case '8': AddFilter (MATCH_SIZE);
+        case '7': AddFilter (MATCH_WCOUNT);
+        case '6': AddFilter (MATCH_LCOUNT);
+        case '5': AddFilter (MATCH_REGEX);
+
+#undef AddFilter
+
         case '*':
           opt.AI = true;
           break;
@@ -2270,7 +2262,6 @@ parse_args (int argc, char **argv)
           else
             opt.filters = NO_FILTER;
           break;
-#undef AddFilter
 
         default:
           break;
