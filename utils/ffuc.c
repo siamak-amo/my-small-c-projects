@@ -68,6 +68,13 @@
                first excludes all responses of zero length,
                then only shows those with a status code of 300.
 
+    Filter responses by content (--filter-regex, --match-regex):
+        FFuc provides a minimal regex matching, which currently only
+        supports simple expressions.
+        Ex.
+            --fr "xxx"   Exclude responses that contain "xxx"
+            --mr "yyy"   Include only responses that contain "yyy"
+
 
   Mode (-m, --mode):
     FFuc implements three different methods to work with word-lists,
@@ -240,6 +247,9 @@ const struct option lopts[] =
     {"fl",                  required_argument, NULL, '3'},
     {"fline",               required_argument, NULL, '3'},
     {"filter-line",         required_argument, NULL, '3'},
+    {"fr",                  required_argument, NULL, '4'},
+    {"fregex",              required_argument, NULL, '4'},
+    {"filter-regex",        required_argument, NULL, '4'},
     /* Match options */
     {"mc",                  required_argument, NULL, '9'},
     {"mcode",               required_argument, NULL, '9'},
@@ -253,6 +263,9 @@ const struct option lopts[] =
     {"ml",                  required_argument, NULL, '6'},
     {"mline",               required_argument, NULL, '6'},
     {"match-line",          required_argument, NULL, '6'},
+    {"mr",                  required_argument, NULL, '5'},
+    {"mregex",              required_argument, NULL, '5'},
+    {"match-regex",         required_argument, NULL, '5'},
     /* Filter and Match disabled */
     {"all",                 no_argument,       NULL, 'A'},
     {"no-filter",           no_argument,       NULL, 'A'},
@@ -330,12 +343,14 @@ enum filter_flag_t
     FILTER_LCOUNT     = 3,
     FILTER_SIZE       = 4,
     FILTER_TIME       = 5,
+    FILTER_REGEX      = 6,
 
     MATCH_CODE        = 255,
     MATCH_WCOUNT      = 254,
     MATCH_LCOUNT      = 253,
     MATCH_SIZE        = 252,
     MATCH_TIME        = 251,
+    MATCH_REGEX       = 250,
   };
 #define IS_FILTER(fft) ((char)(fft) > 0)
 #define IS_MATCH(fft) (! IS_FILTER (fft))
@@ -350,6 +365,7 @@ const char *__filter_cstr[] =
     [FILTER_LCOUNT]   = "line count",
     [FILTER_SIZE]     = "size",
     [FILTER_TIME]     = "time",
+    [FILTER_REGEX]    = "regex",
   };
 
 
@@ -432,14 +448,23 @@ typedef struct progress_t
 struct res_filter_t
 {
   enum filter_flag_t type; /* FILTER_XXX  or  MATCH_XXX */
-  struct
-  {
-    int start, end;
-  } range;
+  union {
+    struct /* for numeric filters */
+    {
+      int start, end;
+    } range;
+    struct /* for regex filters */
+    {
+      char *pattern;
+    } regex;
+  } filter;
 };
 
-/* The default filter to match success status codes */
-const struct res_filter_t default_filter = {MATCH_CODE, {200, 399}};
+const struct res_filter_t default_filter =
+  { /* The default filter to match only success HTTP codes */
+    .type = MATCH_CODE,
+    .filter.range = {200, 399}
+  };
 /* To disable the default filter */
 #define NO_FILTER ((void *) -1)
 
@@ -938,12 +963,23 @@ fw_next (Fword *fw)
 static inline void
 log_filter (FILE *stream, const struct res_filter_t *fl)
 {
-  fprintf (stream, "- %s: %s ",
+  fprintf (stream, "- %s: %s",
            FILTER_T_CSTR (fl->type), FILTER_CSTR (fl->type));
-  if (fl->range.start != fl->range.end)
-    fprintf (stream, "range [%d-%d]\n", fl->range.start, fl->range.end);
-  else
-    fprintf (stream, "== %d\n", fl->range.start);
+  switch (fl->type)
+    {
+    case FILTER_REGEX:
+    case MATCH_REGEX:
+      fprintf (stream, "('%s')\n", fl->filter.regex.pattern);
+      break;
+
+    default:
+      if (fl->filter.range.start != fl->filter.range.end)
+        fprintf (stream, " range [%d-%d]\n",
+                 fl->filter.range.start, fl->filter.range.end);
+      else
+        fprintf (stream, " == %d\n", fl->filter.range.start);
+      break;
+    }
 }
 
 void
@@ -1206,6 +1242,8 @@ context_reset (RequestContext *ctx)
   ctx->flag = CTX_FREE;
   curl_multi_remove_handle (opt.multi_handle, ctx->easy_handle);
   STAT_RESET (&ctx->stat);
+  for (int i=0; i < opt.regex_count; ++i)
+    REGEX_RESET (&ctx->matches[i]);
 }
 
 static inline const char *
@@ -1219,36 +1257,43 @@ http_pallet_of (int resp_code)
 }
 
 static inline bool
-filter_pass (struct req_stat_t *stat, struct res_filter_t *filters)
+filter_pass (RequestContext *ctx, struct res_filter_t *filters)
 {
+  struct req_stat_t *stat = &ctx->stat;
 #define RANGE(x, rng) ((rng).start <= (int)(x) && (int)(x) <= (rng).end)
 #define EXCLUDE(cond) if (cond) return false; break;
+
   da_foreach (filters, i)
     {
-      struct res_filter_t *filter = &filters[i];
-      switch (filter->type)
+      struct res_filter_t *fl = &filters[i];
+      switch (fl->type)
         {
         case FILTER_CODE:
-          EXCLUDE (RANGE (stat->code, filter->range));
+          EXCLUDE (RANGE (stat->code, fl->filter.range));
         case FILTER_WCOUNT:
-          EXCLUDE (RANGE (stat->wcount, filter->range));
+          EXCLUDE (RANGE (stat->wcount, fl->filter.range));
         case FILTER_LCOUNT:
-          EXCLUDE (RANGE (stat->lcount, filter->range));
+          EXCLUDE (RANGE (stat->lcount, fl->filter.range));
         case FILTER_SIZE:
-          EXCLUDE (RANGE (stat->size_bytes, filter->range));
+          EXCLUDE (RANGE (stat->size_bytes, fl->filter.range));
         case FILTER_TIME:
-          EXCLUDE (RANGE (stat->duration, filter->range));
+          EXCLUDE (RANGE (stat->duration, fl->filter.range));
 
         case MATCH_CODE:
-          EXCLUDE (! RANGE (stat->code, filter->range));
+          EXCLUDE (! RANGE (stat->code, fl->filter.range));
         case MATCH_WCOUNT:
-          EXCLUDE (! RANGE (stat->wcount, filter->range));
+          EXCLUDE (! RANGE (stat->wcount, fl->filter.range));
         case MATCH_LCOUNT:
-          EXCLUDE (! RANGE (stat->lcount, filter->range));
+          EXCLUDE (! RANGE (stat->lcount, fl->filter.range));
         case MATCH_SIZE:
-          EXCLUDE (! RANGE (stat->size_bytes, filter->range));
+          EXCLUDE (! RANGE (stat->size_bytes, fl->filter.range));
         case MATCH_TIME:
-          EXCLUDE (! RANGE (stat->duration, filter->range));
+          EXCLUDE (! RANGE (stat->duration, fl->filter.range));
+
+        default:
+          break;
+        }
+    }
         }
     }
   return true;
@@ -1270,7 +1315,7 @@ handle_response_context (RequestContext *ctx)
   curl_easy_getinfo (ctx->easy_handle, CURLINFO_TOTAL_TIME, &duration);
   stat->duration = (uint) (duration * 1000.f);
   /* Print stats and progress-bar if necessary */
-  if (CURLE_OK != ctx->stat.ccode || filter_pass (stat, opt.filters))
+  if (CURLE_OK != ctx->stat.ccode || filter_pass (ctx, opt.filters))
     {
       print_stats_context (ctx);
       update_progress_bar (prog);
@@ -1568,32 +1613,55 @@ fuzz_count (const char *s)
   return n;
 }
 
+/* Only for numeric filters */
 static inline void
 opt_filter (int type, int start, int end)
 {
   struct res_filter_t fl = {
     .type  = type,
-    .range = {start, end},
+    .filter.range = {start, end},
   };
   da_appd (opt.filters, fl);
 }
 #define opt_filter_val(typ, v) opt_filter (typ, v, v)
 
 static inline void
-opt_append_filter (int type, const char *range)
+opt_append_filter (int typ, const char *patt)
 {
-  struct res_filter_t fl;
-  const char *p = range;
+  struct res_filter_t fl = { .type = typ };
 
-  fl.type = type;
-  fl.range.start = atoi (p);
-  p = strchr (p, '-');
-  if (p)
-    fl.range.end = atoi (p + 1);
-  else
-    fl.range.end = fl.range.start;
+  switch (typ)
+    {
+    case FILTER_REGEX:
+    case MATCH_REGEX:
+      fl.filter.regex.pattern = strdup (patt);
+      break;
+
+    default: /* numeric filtering */
+      const char *p = patt;
+      fl.filter.range.start = atoi (p);
+      p = strchr (p, '-');
+      if (p)
+        fl.filter.range.end = atoi (p + 1);
+      else
+        fl.filter.range.end = fl.filter.range.start;
+    }
 
   da_appd (opt.filters, fl);
+}
+
+static inline void
+free_filter (struct res_filter_t *fl)
+{
+  switch (fl->type)
+    {
+    case FILTER_REGEX:
+    case MATCH_REGEX:
+      safe_free (fl->filter.regex.pattern);
+      break;
+    default:
+      break;
+    }
 }
 
 static Fword *
@@ -1664,6 +1732,21 @@ init_opt ()
     }
   opt.words_len = n;
 
+
+  struct ffuc_regex *tmp_regs = NULL;
+  opt.regex_count = 0;
+  da_foreach (opt.filters, i) {
+    switch (opt.filters[i].type)
+      {
+      case FILTER_REGEX:
+      case MATCH_REGEX:
+        da_appd (tmp_regs, (struct ffuc_regex){.fl = &opt.filters[i]});
+        opt.regex_count++;
+        break;
+      default:
+        break;
+      }
+  }
   /* Initializing request contexts */
   if (opt.Rqueue.len > opt.max_rate) /* prevent exceeding max rate */
     opt.Rqueue.len = MAX (opt.max_rate, 1);
@@ -1675,7 +1758,17 @@ init_opt ()
       int cap_bytes = (n + 1) * sizeof (char *);
       opt.Rqueue.ctxs[i].FUZZ = ffuc_malloc (cap_bytes);
       Memzero (opt.Rqueue.ctxs[i].FUZZ, cap_bytes);
+      /* init regex match array */
+      if (opt.regex_count)
+        {
+          cap_bytes = opt.regex_count * sizeof(struct ffuc_regex);
+          ctx->matches = ffuc_malloc (cap_bytes);
+          Memcpy (ctx->matches, tmp_regs, cap_bytes);
+        }
+      else ctx->matches = NULL;
     }
+  da_free (tmp_regs);
+
   /* Initialize libcurl & context of requests */
   curl_global_init (CURL_GLOBAL_DEFAULT);
   opt.multi_handle = curl_multi_init ();
@@ -2084,6 +2177,9 @@ parse_args (int argc, char **argv)
         case '3':
           AddFilter (FILTER_LCOUNT);
           break;
+        case '4':
+          AddFilter (FILTER_REGEX);
+          break;
         case '9':
           AddFilter (MATCH_CODE);
           break;
@@ -2095,6 +2191,9 @@ parse_args (int argc, char **argv)
           break;
         case '6':
           AddFilter (MATCH_LCOUNT);
+          break;
+        case '5':
+          AddFilter (MATCH_REGEX);
           break;
         case '*':
           opt.AI = true;
