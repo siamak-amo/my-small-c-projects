@@ -35,7 +35,7 @@
       $ permugen -s "\d \u"                       # 0-9 and A-Z
       $ permugen -s "\d \u \l"                    # 0-9 and A-Z and a-z
 
-    * The set {XY, a,...,c}:
+    * The set {X,Y, a,...,c}:
       $ permugen -s "[XY] [a-c]" -d2              # depth=2 (strict)
       $ permugen -s "[XYa-c]" -D4                 # depth range [1 to 4]
       $ permugen -s "[XYa-c]" -d 2-3              # depth range [2 to 3]
@@ -65,16 +65,16 @@
     {INPUT_SEED_1}x{INPUT_SEED_2}x...x{INPUT_SEED_N}
 
     * Basic Examples:
-      - Cartesian product of {0,1,2}x{AA,BB}
+      - Cartesian product: {0,1,2}x{AA,BB}
       $ permugen -r  "[0-2]"  "{AA,BB}"
 
-      - {dev,prod}x{admin,<wordlist.txt>}
+      - {dev,prod} x {admin,<wordlist.txt>}
       $ permugen -r  "{dev,prod}"  "{admin} /path/to/wordlist.txt"
 
       - To reuse previously provided seeds (\N starting from 1)
-        {dev,prod}x{www,dev,prod}
+        {dev, prod} x {www,dev,prod}
       $ permugen -p. -r  "{dev,prod}"  "{www} \1"
-        {dev,prod}x{2,3}x{2,3}
+        {dev, prod} x {2,3} x {2,3}
       $ permugen -r  "{dev,prod}"  "[2-3]"  "\2"
 
     * Depth in regular mode (count of output components)
