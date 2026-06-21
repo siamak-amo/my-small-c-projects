@@ -13,3 +13,4 @@ build
 **/*.a
 **/*.o
 **/TAGS
+**/vgcore.*
