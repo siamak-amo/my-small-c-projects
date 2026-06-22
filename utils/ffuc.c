@@ -46,8 +46,8 @@
       1. Use '--all' to ignore all filters, with a small word-list.
       2. Identify a common response hook to filter (or match).
          FFuc starts by, at first, common word count, then line count,
-         then response size, then HTTP code, and otherwise if it couldn't
-         find a common pattern to filter, returns error.
+         then response size, then HTTP status code, and otherwise,
+         returns Error as it could not find a common pattern to filter.
 
 
   Filter & Match (--fX, --mX):
@@ -1439,7 +1439,7 @@ register_context (RequestContext *ctx, bool sync)
   __register_context (ctx);
 
   if (sync) /* blocking */
-      return curl_easy_perform (curl);
+    return curl_easy_perform (curl);
   else /* none blocking */
     curl_multi_add_handle (opt.multi_handle, curl);
   return 0;
@@ -2316,8 +2316,8 @@ do_filter_discovery (void)
         RequestContext *ctx = opt.Rqueue.ctxs;
         __next_fuzz_rand (ctx); /* loading a random FUZZ string */
       retry:
-        ret = register_context (ctx, true);
-        if (CURLE_OK != ret) /* blocking */
+        ret = register_context (ctx, true); /* blocking */
+        if (CURLE_OK != ret)
           {
             bool should_retry =
               (retry_c++ < MAX_RETRY_DISCOVERY) & /* max retry */

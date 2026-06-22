@@ -509,14 +509,15 @@ enum milexer_next_t
     
     NEXT_END, /* nothing to do, end of parsing */
     NEXT_ERR, /* error */
-
-
-    /**
-     *  Used internally by Milexer
-     *  Users neither get nor handle this code
-     */
-    NEXT_NO_RET = -1
   };
+
+/**
+ *  Used internally by Milexer
+ *  Users neither get nor handle this code
+ */
+#define NEXT_NO_RET (-1)
+/* @Milexer_Token->id when token is not recognized */
+#define TK_ID_NOT_SET (-1)
 
 #define NEXT_SHOULD_END(ret) \
   (ret == NEXT_END || ret == NEXT_ERR)
@@ -617,7 +618,6 @@ typedef struct
 } Milexer_Token;
 
 /** Token macros, to work with tokens **/
-#define TK_ID_NOT_SET         (-1) /* only used for Milexer_Token->id */
 #define TK_ALLOC(cap)         TOKEN_ALLOC (cap)         /* needs stdlib malloc */
 #define TK_FREE(tk)           TOKEN_FREE (tk)           /* needs stdlib free */
 #define TK_REALLOC(tk, cap)   TOKEN_REALLOC (tk, cap)   /* needs stdlib realloc */
