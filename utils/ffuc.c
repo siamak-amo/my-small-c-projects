@@ -138,6 +138,13 @@
 
 #ifndef FUZZ_STR
 # define FUZZ_STR "FUZZ"
+# define FUZZ_STR_LEN 4
+#endif
+
+/* every FUZZ tag should be in this format */
+#ifndef TAG_FUZZ_STR
+# define TAG_FUZZ_STR "FUZZ_X"
+# define TAG_FUZZ_STR_LEN 6
 #endif
 
 #ifndef TMP_CAP
@@ -511,7 +518,7 @@ typedef struct
   char *body;
   struct curl_slist *headers;
 
-  char **wlists; /* word-list(s) file path */
+  int local_fuzz_count; // internal
 } FuzzTemplate;
 
 /**
@@ -543,6 +550,9 @@ typedef struct
   /* Internal */
   uint __offset; /* Offset of the current word in @str */
   size_t __str_bytes; /* length of @str in bytes */
+
+  const char *path; /* path to filename, or NULL if not using file */
+  const char *tag; /* NULL means the default FUZZ_STR */
 } Fword;
 
 const Fword dummy_fword = {
@@ -604,7 +614,8 @@ char *fw_next (Fword *fw);
  *  @FUZZ must have enough element(s).
  */
 int fuzz_snprintf (char *restrict dst, size_t dst_cap,
-               const char *restrict format, char **FUZZ);
+                   const char *restrict format,
+                   char **FUZZ, Fword ** meta_fw);
 
 /**
  *  Strline and StrlineNull Functions
@@ -693,8 +704,8 @@ static inline void range_usleep (useconds_t range[2]);
  *   To manually append wordlist file path
  */
 int set_template (FuzzTemplate *t, enum template_op op, void *param);
-static inline int
-set_template_wlist (FuzzTemplate *t, enum template_op op, void *param);
+int set_template_wlist (FuzzTemplate *t, enum template_op op,
+                        Fword **dst, void *param);
 
 /* curl helper macros */
 #define curl_setopt(...) curl_easy_setopt (__VA_ARGS__)
@@ -1356,60 +1367,65 @@ handle_response_context (RequestContext *ctx)
     update_progress_bar (prog);
 }
 
-static inline void
+void
 __register_context (RequestContext *dst)
 {
+  int offset = 0;
+  Fword **fw = opt.words;
   char **FUZZ = dst->FUZZ;
-  FuzzTemplate template = opt.fuzz_template;
+  FuzzTemplate *template = &opt.fuzz_template;
   struct request_t *req = &dst->request;
 
   /**
    *  Generating URL
-   *  based on opt.fuzz_template.URL
+   *  based on opt.fuzz_template->URL
    */
   if (opt.fuzz_flag & URL_HASFUZZ)
     {
-      FUZZ += fuzz_snprintf (tmp, TMP_CAP, template.URL, FUZZ);
+      offset = fuzz_snprintf (tmp, TMP_CAP, template->URL, FUZZ, fw);
+      FUZZ += offset, fw += offset;
       Strrealloc (req->URL, tmp);
     }
   else if (! dst->request.URL)
-    Strrealloc (req->URL, template.URL);
+    Strrealloc (req->URL, template->URL);
   curl_setopt (dst->easy_handle, CURLOPT_URL, req->URL);
 
   /**
    *  Generating POST body
-   *  based on opt.fuzz_template.body
+   *  based on opt.fuzz_template->body
    */
-  if (template.body)
+  if (template->body)
     {
       if (opt.fuzz_flag & BODY_HASFUZZ)
         {
-          FUZZ += fuzz_snprintf (tmp, TMP_CAP, template.body, FUZZ);
+          offset = fuzz_snprintf (tmp, TMP_CAP, template->body, FUZZ, fw);
+          FUZZ += offset, fw += offset;
           Strrealloc (req->body, tmp);
         }
       else if (! req->body)
-        Strrealloc (req->body, template.body);
+        Strrealloc (req->body, template->body);
       curl_setopt (dst->easy_handle, CURLOPT_POSTFIELDS, req->body);
     }
 
   /**
    *  Generating HTTP headers
-   *  based on opt.fuzz_template.headers
+   *  based on opt.fuzz_template->headers
    */
-  if (template.headers)
+  if (template->headers)
     {
       if (opt.fuzz_flag & HEADER_HASFUZZ)
         {
           curl_slist_safe_free (req->headers);
-          curl_slist_foreach (template.headers, h)
+          curl_slist_foreach (template->headers, h)
             {
-              FUZZ += fuzz_snprintf (tmp, TMP_CAP, h->data, FUZZ);
+              offset = fuzz_snprintf (tmp, TMP_CAP, h->data, FUZZ, fw);
+              FUZZ += offset, fw += offset;
               curl_slist_appd (req->headers, tmp);
             }
           curl_setopt (dst->easy_handle, CURLOPT_HTTPHEADER, req->headers);
         }
       else
-        curl_setopt (dst->easy_handle, CURLOPT_HTTPHEADER, template.headers);
+        curl_setopt (dst->easy_handle, CURLOPT_HTTPHEADER, template->headers);
     }
 }
 
@@ -1575,28 +1591,37 @@ strrealloc (void *malloced, const char *src)
   return res;
 }
 
+
+/* we need to know each found FUZZ keywords is tagged or not
+   Although it could have done more efficiently by checking FUZZ_X pattern,
+   this approach will easily make false positive results. */
 int
 fuzz_snprintf (char *restrict dst, size_t dst_cap,
-              const char *restrict format, char **FUZZ)
+               const char *restrict format,
+               char **FUZZ, Fword **meta_fw)
 {
   int fuzz_used = 0;
   const char *start = format;
-
-  for (const char *end = start, *__dst = dst;
-       NULL != end && (size_t)(dst - __dst) < dst_cap; )
+  int patt_len;
+  const char *patt;
+  for (const char *end = start; end && dst_cap && '\0' != *start;)
     {
-      if ((end = strstr (start, FUZZ_STR)))
+      if (! *(meta_fw)  ||  !(patt = (*meta_fw)->tag)) /* no tag. */
+        patt = FUZZ_STR, patt_len = FUZZ_STR_LEN;
+      else patt_len = TAG_FUZZ_STR_LEN; /* tag length is constant */
+
+      if ((end = strstr (start, patt)))
         {
           if (end != start)
             dst = mempcpy (dst, start, (size_t)(end - start));
-          start = end + 4;
+          start = end + patt_len;
 
           if (opt.mode == MODE_SINGULAR)
             dst = stpcpy (dst, *FUZZ); // replacing all FUZZs with FUZZ[0]
           else if (*FUZZ)
             {
               dst = stpcpy (dst, *FUZZ);
-              FUZZ++, fuzz_used++;
+              FUZZ++, fuzz_used++, meta_fw++;
             }
           else
             dst = stpcpy (dst, FUZZ_STR);
@@ -1611,37 +1636,38 @@ fuzz_snprintf (char *restrict dst, size_t dst_cap,
 }
 
 static int
-da_strstr (char **haystack, const char *needle)
+da_fw_lookup (Fword **haystack, const char *needle)
 {
   if (! needle)
     return -1;
   da_foreach (haystack, i)
     {
-      if (Strcmp (haystack[i], needle))
+      if (! haystack[i] || !haystack[i]->path)
+        continue;
+      if (0 == strcmp (haystack[i]->path, needle))
         return i;
     }
   return -1;
 }
 
-static int
-register_wlist (const char *path)
+static Fword *
+register_wlist (FuzzTemplate *t, const char *path, const char *tag)
 {
   Fword *fw;
-  int idx = da_strstr (opt.fuzz_template.wlists, path);
+  (void) t;
+  int idx = da_fw_lookup (opt.words, path);
   if (-1 == idx) /* New file */
     {
       fw = make_fw_from_path (path);
-      if (! fw)
+      if (! fw) /* could not use file, use dummy wordlist */
         fw = fw_dup (&dummy_fword);
-      da_appd (opt.words, fw);
     }
   else /* We have already opened this file */
     {
       fw = fw_dup (opt.words[idx]);
-      da_appd (opt.words, fw);
     }
-
-  return 0;
+  fw->tag = tag;
+  return fw;
 }
 
 static void
@@ -1738,7 +1764,10 @@ make_fw_from_path (const char *path)
     }
 
   if (0 == fw_map (&tmp, fd))
-    return fw_dup (&tmp);
+    {
+      tmp.path = path;
+      return fw_dup (&tmp);
+    }
   else
     {
       warnln ("could not mmap file '%s'.", path);
@@ -1890,23 +1919,76 @@ init_opt ()
   return EXIT_SUCCESS;
 }
 
-static inline int
-set_template_wlist (FuzzTemplate *t, enum template_op op, void *param)
+int
+set_template_wlist (FuzzTemplate *t, enum template_op op,
+                    Fword **dst, void *param)
 {
-  char *path = (char *) param;
+  const char *tag = NULL;
+  char *path = (char *) param, *p = path;
+  if (path  &&  (p = strchr (path, ':')))
+    {
+      *p++ = '\0';
+      if (0 == strncmp (p, TAG_FUZZ_STR, TAG_FUZZ_STR_LEN - 1) &&
+          0 == p[TAG_FUZZ_STR_LEN])
+        tag = p;
+      else
+        warnln ("Only tags with "TAG_FUZZ_STR" format are acceptable.");
+    }
+
+  if (! tag  ||  opt.mode == MODE_SINGULAR)
+    { /* just find a free cell */
+    no_tag:
+      for (int i=0; t->local_fuzz_count > 0; ++i) {
+        if (NULL == dst[i]) {
+          t->local_fuzz_count--;
+          break;
+              dst[i] = register_wlist (t, path, NULL);
+        }
+      }
+      return 0;
+    }
+
+  char *tag_candidate = NULL;
   switch (op)
     {
     case URL_TEMPLATE:
+      tag_candidate = t->URL;
+      break;
     case BODY_TEMPLATE:
+      tag_candidate = t->body;
+      break;
     case HEADER_TEMPLATE:
-      register_wlist (path);
-      da_appd (t->wlists, param);
-      return 0;
+      struct curl_slist *last_header = t->headers;
+      for (; last_header->next; last_header = last_header->next);
+      tag_candidate = last_header->data;
+      break;
 
     default:
       break;
     }
-  return 1;
+
+  int resolved = 0;
+  for (int i=0; t->local_fuzz_count > 0; ++i)
+    {
+      tag_candidate = strstr (tag_candidate, FUZZ_STR);
+      if (! tag_candidate)
+        break;
+      if (0 == strncmp (tag_candidate, tag, strlen(tag)))
+        {
+          dst[i] = register_wlist (t, path, tag);
+          t->local_fuzz_count--, resolved++;
+        }
+      tag_candidate++;
+    }
+  if (0 == t->local_fuzz_count)
+    return 0;
+  if (0 == resolved)
+    {
+      warnln ("could not find tag: '%s', retrying without tag.", tag);
+      tag = NULL;
+      goto no_tag;
+    }
+  return 0;
 }
 
 /* While this may sound like OOP, it simplifies the
@@ -1919,7 +2001,7 @@ set_template (FuzzTemplate *t, enum template_op op, void *_param)
 {
   char *param = (char *) _param;
   static int prev_op = -1;
-  static int local_fuzz_count = -1;
+  static int dst_offset = 0;
 
   switch (prev_op)
     {
@@ -1928,18 +2010,18 @@ set_template (FuzzTemplate *t, enum template_op op, void *_param)
     case HEADER_TEMPLATE:
       if (opt.mode == MODE_SINGULAR)
         break;
-      if (WLIST_TEMPLATE != op && 0 != local_fuzz_count)
+      if (WLIST_TEMPLATE != op  &&  0 < t->local_fuzz_count)
         {
           /* We are not adding a new word-list and the latest
              modified HTTP template doesn't have enough word-lists */
           warnln ("not enough worlists provided for the "
-                  "HTTP option '%s', ignoring %d FUZZ keyword%c.",
+                  "HTTP option '%s', ignoring %d FUZZ keyword%s",
                   template_name[prev_op],
-                  local_fuzz_count,
-                  (local_fuzz_count == 1) ? 0 : 's');
+                  t->local_fuzz_count,
+                  (t->local_fuzz_count == 1) ? "." : "s.");
           /* Fill the previous template with dummy word-list */
-          for (int i=0; i < local_fuzz_count; ++i)
-            set_template_wlist (&opt.fuzz_template, prev_op, NULL);
+          for (int i=0; 0 != t->local_fuzz_count; ++i)
+            set_template_wlist (t, prev_op, opt.words+dst_offset, NULL);
         }
       break;
 
@@ -1953,21 +2035,27 @@ set_template (FuzzTemplate *t, enum template_op op, void *_param)
       {
         prev_op = URL_TEMPLATE;
         Strrealloc (t->URL, param);
-        local_fuzz_count = fuzz_count (t->URL);
-        if (local_fuzz_count)
-          FLG_SET (opt.fuzz_flag, URL_HASFUZZ);
+        t->local_fuzz_count = fuzz_count (t->URL);
+        if (t->local_fuzz_count > 0)
+          {
+            FLG_SET (opt.fuzz_flag, URL_HASFUZZ);
+            dst_offset = da_zallocate (opt.words, t->local_fuzz_count);
+          }
       }
-      return local_fuzz_count;
+      return t->local_fuzz_count;
 
     case HEADER_TEMPLATE:
       {
         prev_op = HEADER_TEMPLATE;
         curl_slist_appd (t->headers, param);
-        local_fuzz_count = fuzz_count (param);
-        if (local_fuzz_count)
-          FLG_SET (opt.fuzz_flag, HEADER_HASFUZZ);
+        t->local_fuzz_count = fuzz_count (param);
+        if (t->local_fuzz_count > 0)
+          {
+            FLG_SET (opt.fuzz_flag, HEADER_HASFUZZ);
+            dst_offset = da_zallocate (opt.words, t->local_fuzz_count);
+          }
       }
-      return local_fuzz_count;
+      return t->local_fuzz_count;
 
     case BODY_TEMPLATE:
       {
@@ -1991,18 +2079,22 @@ set_template (FuzzTemplate *t, enum template_op op, void *_param)
                 strcpy (t->body + len , param);
               }
           }
-        local_fuzz_count = fuzz_count (param);
-        if (local_fuzz_count)
-          FLG_SET (opt.fuzz_flag, BODY_HASFUZZ);
+        t->local_fuzz_count = fuzz_count (param);
+        if (t->local_fuzz_count > 0)
+          {
+            FLG_SET (opt.fuzz_flag, BODY_HASFUZZ);
+            dst_offset = da_zallocate (opt.words, t->local_fuzz_count);
+          }
       }
-      return local_fuzz_count;
+      return t->local_fuzz_count;
 
     case WLIST_TEMPLATE:
       {
         if (opt.mode == MODE_SINGULAR)
           {
-            if (0 == da_sizeof (opt.words))
-              register_wlist (param);
+            static int single = 0;
+            if (0 == single++) /* the very only singular mode word-list */
+              set_template_wlist (t, -1, opt.words, param);
             else
               {
                 warnln ("word-list '%s' was ignored  --  \
@@ -2012,20 +2104,16 @@ singular mode only accepts one word-list", param);
           }
         else
           {
-            if (local_fuzz_count <= 0)
+            if (t->local_fuzz_count <= 0)
               warnln ("unexpected word-list '%s' was ignored.", param);
-            else
-              {
-                /* prev_op indicates the latest modified HTTP option */
-                set_template_wlist (&opt.fuzz_template, prev_op, param);
-                local_fuzz_count--;
-              }
+            else /* prev_op indicates the latest modified HTTP option */
+              set_template_wlist (t, prev_op, opt.words+dst_offset, param);
           }
       }
       return 0;
 
     case FINISH_TEMPLATE:
-      if (0 != local_fuzz_count)
+      if (0 != t->local_fuzz_count)
         return 1;
       return 0;
     }
@@ -2060,8 +2148,10 @@ cleanup (int c, void *p)
           safe_free (ctx->request.body);
           curl_slist_free_all (ctx->request.headers);
           safe_free (ctx->matches);
-          for (int j = 0; j < opt.words_len; j++)
+          for (int j = 0; j < opt.words_len; j++) {
             safe_free (ctx->FUZZ[j]);
+            if (opt.mode == MODE_SINGULAR) break;
+          }
           safe_free (ctx->FUZZ);
         }
     }
@@ -2075,12 +2165,12 @@ cleanup (int c, void *p)
   da_free (opt.filters);
   da_foreach (opt.words, i) {
     fw_free (opt.words[i]);
+    if (opt.mode == MODE_SINGULAR) break;
   }
   da_free (opt.words);
   /* Template cleanup */
   safe_free (opt.fuzz_template.URL);
   safe_free (opt.fuzz_template.body);
-  da_free (opt.fuzz_template.wlists);
 #endif /* SKIP_FREE */
 }
 
