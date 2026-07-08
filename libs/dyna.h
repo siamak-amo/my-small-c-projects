@@ -100,6 +100,17 @@
       // Append a dynamic array to another one
       da_appd_da (cstr, arr);
 
+
+      // Alternative way to append many elements
+      // allocate the elements first and then copy the data
+      // use da_zallocate to zero initialize the allocated elements
+
+      // this will increase sizeof array (and capacity if necessary)
+      int idx = da_allocate (arr, 3);
+      // now copy the data  *after*  the returned index
+      memcpy (arr + idx, source, 3*sizeof(char *));
+
+
       // Push, Pop, Top
       da_push (arr, "x");               // equivalent to append
       const char *TOP = da_top (arr);   // TOP is equals to "x"
@@ -174,6 +185,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #define DynaVersion "2.2"
 
@@ -280,9 +292,9 @@ typedef struct
 DYNADEF dyna_t * __mk_da (int n, int cell_bytes);
 DYNADEF void * __da_dup (void *);
 DYNADEF int __da_popn (void *, int n);
-DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
-#define __da_allocate1(ptr, cell_bytes) \
-  __da_allocate (ptr, 1, cell_bytes)
+DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes, int zero);
+#define __da_allocate1(ptr, cell_bytes, zero) \
+  __da_allocate (ptr, 1, cell_bytes, zero)
 
 /**
  *  If DA_FORCE_MEMCPY is defined, none of the append macros,
@@ -375,11 +387,11 @@ DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
  *  @src_arr: source array (normal C array)
  *  @count: length of @src_arr
  */
-#define da_appd_arr(dst_arr, src_arr, count) do {           \
-    int cell_b = sizeof (*(src_arr));                       \
-    da_idx idx = __da_allocate (&(dst_arr), count, cell_b); \
-    if (-1 != idx)                                          \
-      memcpy (dst_arr + idx, src_arr, (count)*cell_b);      \
+#define da_appd_arr(dst_arr, src_arr, count) do {                   \
+    int cell_b = sizeof (*(src_arr));                               \
+    da_idx idx = __da_allocate (&(dst_arr), count, cell_b, false);  \
+    if (-1 != idx)                                                  \
+      memcpy (dst_arr + idx, src_arr, (count)*cell_b);              \
   } while (0)
 
 /* Append constant array */
@@ -400,6 +412,7 @@ DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
 /**
  *  Allocate memory for arrays
  *  (NOT safe to call from different scope)
+ *  Zallocate versions, also zero initialize the allocated memory
  *
  *  This allocates enough space in @arr, and
  *  returns the appropriate index which can be used
@@ -407,8 +420,10 @@ DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
  *
  *  @n: to allocate n entries in @arr
  */
-#define da_allocate(arr, n) __da_allocate (&arr, n, sizeof (*(arr)))
-#define da_allocate1(arr) __da_allocate1 (&arr, sizeof (*(arr)))
+#define da_allocate(arr, n) __da_allocate (&arr, n, sizeof (*(arr)), false)
+#define da_allocate1(arr) __da_allocate1 (&arr, sizeof (*(arr)), false)
+#define da_zallocate(arr, n) __da_allocate (&arr, n, sizeof (*(arr)), true)
+#define da_zallocate1(arr) __da_allocate1 (&arr, sizeof (*(arr)), true)
 
 /**
  *  Drops contents of a dynamic array
@@ -429,7 +444,7 @@ DYNADEF da_sidx __da_allocate (void *, int n, int cell_bytes);
  *        dynamic array (void *)
  */
 #define da_aappd(arr, val) do {                             \
-    da_idx i = __da_allocate1 (arr, sizeof (val));          \
+    da_idx i = __da_allocate1 (arr, sizeof (val), false);   \
     if (i >= 0) {                                           \
       char *__arr__ = *(char **)(arr) + i * sizeof (val);   \
       DA_ASSIGN ((typeof (val) *)__arr__, val);             \
@@ -494,7 +509,7 @@ __mk_da (int n, int cell_size)
 }
 
 DYNADEF da_sidx
-__da_allocate (void *__arr, int n, int cell_bytes)
+__da_allocate (void *__arr, int n, int cell_bytes, int zero_init)
 {
   dyna_t *da;
   void **arr = (void **)__arr;
@@ -525,6 +540,8 @@ __da_allocate (void *__arr, int n, int cell_bytes)
       }
       da_dprintf ("Reallocated, new capacity: %lu\n",
                   (size_t) da->cap);
+      if (zero_init)
+        memset (da->arr + (old_size * da->cell_bytes), 0, n * da->cell_bytes);
     }
 
   return old_size++;
@@ -739,6 +756,19 @@ main (void)
     idx = da_allocate (numbers, 4);
     tassert (idx == 3, "da_allocate on a None NULL array");
     tassert (da_sizeof(numbers) == 7, "sizeof array after allocate");
+
+    numbers[5] = 666; numbers[6] = 777;
+    numbers[7] = -1; // junk to test da_zallocate()
+    /*
+     * now, @numbers have 7 elements, so the next
+     * da_allocate should start from index 7. */
+    idx = da_zallocate (numbers, 5);
+    tassert (idx == 7, "da_zallocate on a existing array index");
+    tassert (da_sizeof(numbers) == 7+5, "da_zallocate update array size");
+
+    tassert (numbers[7] == 0, "correctly zero initialized");
+    tassert (numbers[5] == 666 && numbers[6] == 777,
+             "previous valises preserved after da_zallocate");
   }
 
   int *numbers = NULL;
