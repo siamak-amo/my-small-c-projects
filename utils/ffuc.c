@@ -512,12 +512,26 @@ typedef struct
   char **FUZZ;
 } RequestContext;
 
+/* used by fuzz_snprintf(), generate by gen_fuzz_cache(). */
+struct template_cache
+{
+  /**
+   *  To determine the type of cache
+   *  'u' for URL, 'b' for body, 'h','H' for headers periodically
+   */
+  int flag;
+  int stridx; /* index of FUZZ keywords */
+  int widx; /* corresponding opt.words index */
+  int taglen; /* strlen of tag */
+};
+
 typedef struct
 {
   char *URL;
   char *body;
   struct curl_slist *headers;
 
+  struct template_cache *cache;
   int local_fuzz_count; // internal
 } FuzzTemplate;
 
@@ -1367,14 +1381,66 @@ handle_response_context (RequestContext *ctx)
     update_progress_bar (prog);
 }
 
+static inline int
+__do_fuzz_cache (Fword **fw, int fw_len, struct template_cache *cache,
+                 const char *start, int flg)
+{
+#define GET_TAG(fw) ( ((fw) && (fw)->tag) ? (fw)->tag : FUZZ_STR )
+  static int i = 0;
+  const char *tag;
+
+  for (const char *p = start, *end = start; end && i < fw_len; )
+    {
+      tag = GET_TAG (*fw);
+      if ((end = strstr (p, tag)))
+        {
+          int _taglen = strlen (tag);
+          cache[i] = (struct template_cache) {
+            .widx = i,  .flag = flg,  .taglen = _taglen,
+            .stridx = (int) (end - start),
+          };
+          ++i, ++fw, p = end + _taglen;
+        }
+    }
+  return i;
+#undef GET_TAG
+}
+
+
+static void
+gen_fuzz_cache (FuzzTemplate *template)
+{
+  Fword **fw = opt.words;
+  int fw_len = opt.words_len, off = 0;
+  template->cache = calloc (fw_len, sizeof (struct template_cache));
+
+  const char *start;
+  if ((start = template->URL)  &&  (opt.fuzz_flag & URL_HASFUZZ))
+    off = __do_fuzz_cache (fw+off, fw_len, template->cache, start,'u');
+  if ((start = template->body)  &&  (opt.fuzz_flag & BODY_HASFUZZ))
+    off = __do_fuzz_cache (fw+off, fw_len, template->cache, start, 'b');
+  if (template->headers  &&  (opt.fuzz_flag & HEADER_HASFUZZ))
+    {
+      int i = 0;
+      curl_slist_foreach (template->headers, h) {
+        start = h->data;
+        off =
+          __do_fuzz_cache (fw+off, fw_len, template->cache, start, (i++ % 2)?'H':'h');
+      }
+    }
+  assert (off == fw_len && "len(opt.words) != #FUZZ, broken logic.");
+}
+
 void
 __register_context (RequestContext *dst)
 {
-  int offset = 0;
-  Fword **fw = opt.words;
+  int off = 0;
   char **FUZZ = dst->FUZZ;
   FuzzTemplate *template = &opt.fuzz_template;
   struct request_t *req = &dst->request;
+
+  if (! template->cache)
+    gen_fuzz_cache (template);
 
   /**
    *  Generating URL
