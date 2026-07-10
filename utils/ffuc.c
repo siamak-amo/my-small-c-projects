@@ -1,4 +1,5 @@
 /* This file is part of my-small-c-projects <https://gitlab.com/SI.AMO/>
+   Copyright 2025-2026 Ahmad <edu.siamak@gmail.com>
 
   FFuc is free software: you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by
@@ -17,7 +18,8 @@
 /** file: ffuc.c
     created on: 7 May 2025
 
-  FFuc  -  ffuf program written in C
+  FFuc (read it: EF-Fuc)  -  ffuf program written in C.
+  Single thread and Non-concurrent HTTP fuzzer.
 
   Usage:
     $ ffuc  [OPTIONS]  [ [HTTP OPTION] [-w /path/to/wordlist]... ]...
@@ -33,6 +35,19 @@
 
     $ ffuc -XPOST -u https://x.com  -d 'username=FUZZ' -w /tmp/usernames \
                                     -d 'password=FUZZ' -w /tmp/rockyou.txt
+
+  Advanced FUZZ tags:
+    FFuc accepts tag in word-list file paths, with the 'FUZZ_X' format.
+    These tags later can be used in HTTP component in plase of FUZZ keyword:
+
+    $ ffuc -u http://x.com/FUZZ_1/FUZZ_1  -w /tmp/wl:FUZZ_1
+    - this is equivalent to passing two `-w /tmp/wl` options.
+
+    $ ffuc -u http://x.com/FUZZ_1/FUZZ_2  -w /tmp/wl2:FUZZ_2 \
+                                          -w /tmp/wl1:FUZZ_1
+    - Although /tmp/wl2 is given first, the first FUZZ, will use
+      /tmp/wl1, and the second FUZZ, /tmp/wl2.
+
 
   Recommendation:  using the `--auto-filter` option
     The `--auto-filter` option (also known as AI mode!) automatically
@@ -98,6 +113,7 @@
       -D_DEBUG:  print debug information
       -D SKIP_FREE:  skip freeing heap memory in cleanup function
       -D NO_DEFAULT_COLOR:  disable output colors
+      -D MAX_REQ_RATE:  maximum allowed req/sec (default is 1000)
  **/
 #undef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -134,7 +150,7 @@
 #include <getopt.h>
 
 #define PROG_NAME "FFuc"
-#define PROG_VERSION "3.0"
+#define PROG_VERSION "3.1"
 
 #ifndef FUZZ_STR
 # define FUZZ_STR "FUZZ"
@@ -374,7 +390,12 @@ const char *__filter_cstr[] =
     [FILTER_TIME]     = "time",
     [FILTER_REGEX]    = "regex",
   };
-
+const char *mode_name_cstr[] =
+  {
+    [MODE_CLUSTERBOMB]  = "Clusterbomb",
+    [MODE_PITCHFORK]    = "Pitchfork",
+    [MODE_SINGULAR]     = "Singular",
+  };
 
 enum template_op
   {
@@ -1005,10 +1026,12 @@ fw_next (Fword *fw)
 }
 
 //-- Logger functions --//
+#define KEY_FMT "%-26s"
+
 static inline void
 log_filter (FILE *stream, const struct res_filter_t *fl)
 {
-  fprintf (stream, "- %s: %s",
+  fprintf (stream, ": "KEY_FMT" : %s",
            FILTER_T_CSTR (fl->type), FILTER_CSTR (fl->type));
   switch (fl->type)
     {
@@ -1032,21 +1055,22 @@ log_current_config ()
 {
   FILE *stream = opt.Printf.streamout;
   fprintf (stream, "\
------------------------------\n\
--  FFUC v%3s Configuration  -\n\
------------------------------\n", PROG_VERSION);
-  fprintf (stream, "- URL: %s\n", opt.fuzz_template.URL);
+------------------------------\n\
+-  FFUC v%-4s Configuration  -\n\
+------------------------------\n", PROG_VERSION);
+  fprintf (stream, ": "KEY_FMT" : %s\n", "URL", opt.fuzz_template.URL);
   if (opt.fuzz_template.body)
-    fprintf (stream, "- Body: %s\n", opt.fuzz_template.body);
+    fprintf (stream, ": "KEY_FMT" : %s\n", "Body", opt.fuzz_template.body);
   curl_slist_foreach (opt.fuzz_template.headers, header) {
-    fprintf (stream, "- Header: [%s]\n", header->data);
+    fprintf (stream, ": "KEY_FMT" : [%s]\n", "Header", header->data);
   }
+  fprintf (stream, ": "KEY_FMT" : %s\n", "Fuzz mode", mode_name_cstr[opt.mode]);
   if (opt.max_rate != MAX_REQ_RATE)
-    fprintf (stream, "- Request rate < %d req/sec\n", opt.max_rate);
-  fprintf (stream, "- Concurrency: %ld req\n", opt.Rqueue.len);
+    fprintf (stream, ": "KEY_FMT" : %d req/sec\n", "Maximum request rate", opt.max_rate);
+  fprintf (stream, ": "KEY_FMT" : %ld req\n", "Concurrency", opt.Rqueue.len);
   if (opt.Rqueue.delay_us[0])
     {
-      fprintf (stream, "- Delay: ");
+      fprintf (stream, ": "KEY_FMT" : ", "Delay");
       if (opt.Rqueue.delay_us[0] != opt.Rqueue.delay_us[1])
         fprintf (stream, "%d-%d (ms)\n",
                  opt.Rqueue.delay_us[0] / 1000,
@@ -1057,9 +1081,10 @@ log_current_config ()
   da_foreach (opt.filters, i) {
     log_filter (stream, &opt.filters[i]); /* log: Filter / Match */
   }
-  fprintf (stream, "-----------------------------\n\n");
+  fprintf (stream, "------------------------------\n\n");
   fflush (stream);
 }
+#undef KEY_FMT
 
 static inline void
 print_stats_fuzz (RequestContext *ctx)
@@ -1988,13 +2013,15 @@ set_template_wlist (FuzzTemplate *t, enum template_op op,
   if (! tag  ||  opt.mode == MODE_SINGULAR)
     { /* just find a free cell */
     no_tag:
-      for (int i=0; t->local_fuzz_count > 0; ++i) {
-        if (NULL == dst[i]) {
-          t->local_fuzz_count--;
-          break;
+      for (int i=0; t->local_fuzz_count > 0; ++i)
+        {
+          if (NULL == dst[i])
+            {
               dst[i] = register_wlist (t, path, NULL);
+              t->local_fuzz_count--;
+              break;
+            }
         }
-      }
       return 0;
     }
 
