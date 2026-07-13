@@ -163,10 +163,19 @@
 # define TAG_FUZZ_STR_LEN 6
 #endif
 
-#ifndef TMP_CAP
-# define TMP_CAP 1024 /* bytes */
+#ifndef SV_MAX_CAP
+# define SV_MAX_CAP (4 * 1024)
 #endif
-static char tmp[TMP_CAP];
+#ifndef SV_MIN_CAP
+#define SV_MIN_CAP 8
+#endif
+
+struct strv /* string view */
+{
+  char *buff;
+  int len, cap;
+};
+static struct strv tmp = {0};
 
 /* Default concurrent requests count */
 #ifndef DEFAULT_REQ_COUNT
@@ -627,6 +636,7 @@ Fword *fw_dup (const Fword *src);
 char *fw_next (Fword *fw);
 /* Returns the current word of the word-list */
 #define fw_get(fw) ((fw)->str + (fw)->__offset)
+#define fw_len(fw) ((fw)->len)
 
 /* Fword end of file & beginning of file */
 #define fw_eof(fw) ((fw)->index + 1 == (fw)->total_count)
@@ -641,6 +651,30 @@ Fword *fw_dup (const Fword *src);
 char *fw_next (Fword *fw);
 
 /**
+ *  String View functions.
+ *  sv_appd_str:  append a null-terminated string.
+ *    after this call, string view will contain @str and a tailing null-byte.
+ *
+ *  sv_appd_buf:  append character buffer
+ *    is @nullterm is true, it will append a tailing null-byte, if the @buf
+ *    is already null-terminated, do *not* set this parameter true.
+ *    sv_appd_str(v, buf)  :equivalent:  sv_appd_buf(v, buf, sizeof(buf), true)
+ *
+ *  sv_drop:  makes the string view fresh. just sets the length to 0, no free.
+ */
+#ifndef SV_DEF
+#define SV_DEF static inline
+#endif
+SV_DEF int sv_appd_str (struct strv *, const char *str);
+SV_DEF int sv_appd_buf (struct strv *, const void *buf, int size_bytes, bool nullterm);
+SV_DEF void sv_free (struct strv *);
+#define sv_drop(v) do {                         \
+    (v)->len = 0;                               \
+    if ((v)->buff) *(v)->buff = '\0';           \
+  } while (0)
+#define sv_get(v) ((v)->buff)
+
+/**
  *  FUZZ sprintf function
  *  substitutes the FUZZ keyword of @format
  *  with the appropriate value from the @FUZZ array.
@@ -648,9 +682,8 @@ char *fw_next (Fword *fw);
  *  The number of elements consumed from @FUZZ.
  *  @FUZZ must have enough element(s).
  */
-int fuzz_snprintf (char *restrict dst, int dst_cap,
-                   const char *restrict format, char **src,
-                   const struct template_cache *cache);
+int fuzz_snprintf (struct strv *dst, const char *format,
+                   char **src, const struct template_cache *cache);
 
 /**
  *  Strline and StrlineNull Functions
@@ -952,6 +985,54 @@ StrlineNull (const char *cstr)
     }
 }
 
+//-- string view functions --//
+static inline void
+__extend_cap (struct strv *view)
+{
+  int newcap = view->len + SV_MIN_CAP;
+  assert (newcap < SV_MAX_CAP && "maximum string view capacity");
+  if (newcap <= view->cap)
+    return;
+  view->cap = newcap;
+  view->buff = realloc (view->buff, newcap);
+}
+
+SV_DEF int
+sv_appd_str (struct strv *view, const char *str)
+{
+  int strl = Strlen (str);
+
+  int strbl = strl + 1; /* null-termination */
+  if (view->len + strbl >= view->cap)
+    __extend_cap (view);
+
+  memcpy (view->buff + view->len, (str) ? str : "", strbl);
+  view->len += strl;
+  return view->len;
+}
+
+SV_DEF int
+sv_appd_buf (struct strv *view, const void *_src, int _len, bool nullterm)
+{
+  const char *buf = (const char *) _src;
+  int len = (nullterm) ? _len+1 : _len;
+  if (view->len + len >= view->cap)
+    __extend_cap (view);
+  memcpy (view->buff + view->len, buf, _len);
+  view->len += _len;
+  if (nullterm)
+    view->buff[view->len] = '\0';
+  return view->len;
+}
+
+SV_DEF void
+sv_free (struct strv *view)
+{
+  view->cap = view->len = 0;
+  free (view->buff);
+  view->buff = NULL;
+}
+
 //-- Fword functions --//
 void
 fw_init (Fword *fw, char *cstr, size_t cstr_len)
@@ -1023,6 +1104,14 @@ fw_next (Fword *fw)
   if (fw->index == fw->total_count)
     fw->index = 0;
   return p;
+}
+
+void
+fw_export (char **dst, const Fword *src)
+{
+  sv_drop (&tmp);
+  sv_appd_buf (&tmp, fw_get(src), fw_len(src), true);
+  Estrrealloc (*dst, sv_get(&tmp));
 }
 
 //-- Logger functions --//
@@ -1204,8 +1293,7 @@ static void
 __next_fuzz_singular (RequestContext *ctx)
 {
   Fword *fw = opt.words[0];
-  snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
-  Estrrealloc (ctx->FUZZ[0], tmp);
+  fw_export (ctx->FUZZ, fw);
 
   da_idx i=1, N = opt.words_len;
   for (; i < N; ++i)
@@ -1241,8 +1329,7 @@ __next_fuzz_pitchfork (RequestContext *ctx)
   for (size_t i = 0; i < N; ++i)
     {
       fw = opt.words[i];
-      snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
-      Estrrealloc (ctx->FUZZ[i], tmp);
+      fw_export (ctx->FUZZ+i, fw);
       fprintd ("[%d]->`%s`\t", fw->index, tmp);
       fw_next (fw);
     }
@@ -1264,8 +1351,7 @@ __next_fuzz_clusterbomb (RequestContext *ctx)
   for (size_t i=0; i < N; ++i)
     {
       fw = opt.words[i];
-      snprintf (tmp, TMP_CAP, FW_FORMAT, FW_ARG (fw));
-      Estrrealloc (ctx->FUZZ[i], tmp);
+      fw_export (ctx->FUZZ+i, fw);
       fprintd ("[%d]->`%s`\t", fw->index, tmp);
 
       if (go_next)
@@ -1473,8 +1559,9 @@ __register_context (RequestContext *dst)
    */
   if (opt.fuzz_flag & URL_HASFUZZ)
     {
-      off += fuzz_snprintf (tmp, TMP_CAP, template->URL, FUZZ+off, template->cache+off);
-      Strrealloc (req->URL, tmp);
+      sv_drop (&tmp);
+      off += fuzz_snprintf (&tmp, template->URL, FUZZ+off, template->cache+off);
+      Strrealloc (req->URL, sv_get(&tmp));
     }
   else if (! dst->request.URL)
     Strrealloc (req->URL, template->URL);
@@ -1488,8 +1575,9 @@ __register_context (RequestContext *dst)
     {
       if (opt.fuzz_flag & BODY_HASFUZZ)
         {
-          off = fuzz_snprintf (tmp, TMP_CAP, template->body, FUZZ+off, template->cache+off);
-          Strrealloc (req->body, tmp);
+          sv_drop (&tmp);
+          off = fuzz_snprintf (&tmp, template->body, FUZZ+off, template->cache+off);
+          Strrealloc (req->body, sv_get(&tmp));
         }
       else if (! req->body)
         Strrealloc (req->body, template->body);
@@ -1507,8 +1595,9 @@ __register_context (RequestContext *dst)
           curl_slist_safe_free (req->headers);
           curl_slist_foreach (template->headers, h)
             {
-              off = fuzz_snprintf (tmp, TMP_CAP, h->data, FUZZ+off, template->cache+off);
-              curl_slist_appd (req->headers, tmp);
+              sv_drop (&tmp);
+              off = fuzz_snprintf (&tmp, h->data, FUZZ+off, template->cache+off);
+              curl_slist_appd (req->headers, sv_get(&tmp));
             }
           curl_setopt (dst->easy_handle, CURLOPT_HTTPHEADER, req->headers);
         }
@@ -1680,32 +1769,29 @@ strrealloc (void *malloced, const char *src)
 }
 
 int
-fuzz_snprintf (char *restrict dst, int dst_cap,
-               const char *restrict format, char **src,
-               const struct template_cache *cache)
+fuzz_snprintf (struct strv *dst, const char *format,
+               char **src, const struct template_cache *cache)
 {
   int fuzz_used = 0;
   int ss = 0, to = 0;
   for (int i=0, rw = 0, flg = 0; i < opt.words_len;)
     {
-      char *p;
       to = cache->stridx;
       flg = cache->flag;
       rw = to - ss;
-      if ((dst_cap -= rw) <= 0)
-        break;
-      p = dst = mempcpy (dst, format + ss, rw);
-      dst = stpcpy (dst, *src);
-      if ((dst_cap -= (int)(dst - p)) <= 0)
-        break; // TODO: this is it not safe!, as we may already have been
-               // corrupted memory in the stpcpy(). but this is faster.
+      sv_appd_buf (dst, format + ss, rw, false);
+      sv_appd_buf (dst, *src, Strlen (*src), false);
+
       ss = to + cache->taglen;
       ++i, ++fuzz_used, ++src, ++cache;
       if (flg != cache->flag)
         break; // END.
     }
   if (format[ss])
-    strcpy (dst, format+ss);
+    sv_appd_str (dst, format+ss);
+  else
+    sv_appd_buf (dst, "", 0, true); /* just to null-terminate */
+
   fprintd ("fuzz_snprintf:  output->'%s'\n", tmp);
   return fuzz_used;
 }
@@ -2452,9 +2538,10 @@ parse_args (int argc, char **argv)
           if (opt.verbose)
             warnln ("\
 No FUZZ keyword found, assuming to use '%s' with the given URL.", last_wlist);
-          snprintf (tmp, TMP_CAP, "%s%sFUZZ", url,
-                    (lastcharof (url) == '/') ? "" : "/");
-          set_template (&opt.fuzz_template, URL_TEMPLATE, tmp);
+          sv_drop (&tmp);
+          sv_appd_str (&tmp, url);
+          sv_appd_str (&tmp, ('/' == lastcharof (url)) ? "FUZZ" : "/FUZZ");
+          set_template (&opt.fuzz_template, URL_TEMPLATE, sv_get(&tmp));
           set_template (&opt.fuzz_template, WLIST_TEMPLATE, last_wlist);
         }
       else
