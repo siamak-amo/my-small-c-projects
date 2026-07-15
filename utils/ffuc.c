@@ -37,7 +37,8 @@
                                     -d 'password=FUZZ' -w /tmp/rockyou.txt
 
   Advanced FUZZ tags:
-    FFuc accepts tag in word-list file paths, with the 'FUZZ_X' format.
+    FFuc accepts tagged word-list file paths e.g., '/path/to/file:FUZZ_XXX'.
+    only tags with FUZZ_XXX format are acceptable.
     These tags later can be used in HTTP component in plase of FUZZ keyword:
 
     $ ffuc -u http://x.com/FUZZ_1/FUZZ_1  -w /tmp/wl:FUZZ_1
@@ -155,12 +156,6 @@
 #ifndef FUZZ_STR
 # define FUZZ_STR "FUZZ"
 # define FUZZ_STR_LEN 4
-#endif
-
-/* every FUZZ tag should be in this format */
-#ifndef TAG_FUZZ_STR
-# define TAG_FUZZ_STR "FUZZ_X"
-# define TAG_FUZZ_STR_LEN 6
 #endif
 
 #ifndef SV_MAX_CAP
@@ -2087,13 +2082,9 @@ set_template_wlist (FuzzTemplate *t, enum template_op op,
   const char *tag = NULL;
   char *path = (char *) param, *p = path;
   if (path  &&  (p = strchr (path, ':')))
-    {
+    { /* has tag */
       *p++ = '\0';
-      if (0 == strncmp (p, TAG_FUZZ_STR, TAG_FUZZ_STR_LEN - 1) &&
-          0 == p[TAG_FUZZ_STR_LEN])
-        tag = p;
-      else
-        warnln ("Only tags with "TAG_FUZZ_STR" format are acceptable.");
+      tag = p;
     }
 
   if (! tag  ||  opt.mode == MODE_SINGULAR)
@@ -2133,7 +2124,7 @@ set_template_wlist (FuzzTemplate *t, enum template_op op,
   int resolved = 0;
   for (int i=0; t->local_fuzz_count > 0; ++i)
     {
-      tag_candidate = strstr (tag_candidate, FUZZ_STR);
+      tag_candidate = strstr (tag_candidate, tag);
       if (! tag_candidate)
         break;
       if (0 == strncmp (tag_candidate, tag, strlen(tag)))
