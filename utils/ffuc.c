@@ -592,6 +592,7 @@ typedef struct
 
   const char *path; /* path to filename, or NULL if not using file */
   const char *tag; /* NULL means the default FUZZ_STR */
+  int type; /* which HTTP component in which is bind to */
 } Fword;
 
 const Fword dummy_fword = {
@@ -1502,7 +1503,7 @@ __do_fuzz_cache (Fword **fw, int fw_len, struct template_cache *cache,
         {
           int _taglen = strlen (tag);
           cache[i] = (struct template_cache) {
-            .widx = i,  .flag = flg,  .taglen = _taglen,
+            .widx = ss,  .flag = flg,  .taglen = _taglen,
             .stridx = (int) (end - start),
           };
           ++i, ++fw, p = end + _taglen;
@@ -1512,26 +1513,49 @@ __do_fuzz_cache (Fword **fw, int fw_len, struct template_cache *cache,
 #undef GET_TAG
 }
 
+static int
+lookup_fw_idx (Fword **haystack, int ss, int to, int needle_type)
+{
+  for (int i = ss; i < to; ++i)
+    {
+      if (haystack[i]->type == needle_type)
+        return i;
+    }
+  return -1;
+}
 
 static void
 gen_fuzz_cache (FuzzTemplate *template)
 {
   Fword **fw = opt.words;
   int fw_len = opt.words_len, off = 0;
+  int __off = 0;
   template->cache = ffuc_calloc (fw_len, sizeof (struct template_cache));
 
   const char *start;
   if ((start = template->URL)  &&  (opt.fuzz_flag & URL_HASFUZZ))
-    off = __do_fuzz_cache (fw+off, fw_len, template->cache, start, 'u');
+    {
+      __off = lookup_fw_idx (fw, 0, fw_len, URL_TEMPLATE);
+      assert (-1 != __off && "URL with no Fword");
+      off = __do_fuzz_cache (fw, __off, fw_len, template->cache, start, 'u');
+    }
   if ((start = template->body)  &&  (opt.fuzz_flag & BODY_HASFUZZ))
-    off = __do_fuzz_cache (fw+off, fw_len, template->cache, start, 'b');
+    {
+      __off = lookup_fw_idx (fw, 0, fw_len, BODY_TEMPLATE);
+      assert (-1 != __off && "body with no Fword");
+      off = __do_fuzz_cache (fw, __off, fw_len, template->cache, start, 'b');
+    }
   if (template->headers  &&  (opt.fuzz_flag & HEADER_HASFUZZ))
     {
       int i = 0;
       curl_slist_foreach (template->headers, h) {
         start = h->data;
+        __off = lookup_fw_idx (fw, i, fw_len, HEADER_TEMPLATE);
+        assert (-1 != __off && "header with no Fword");
         off =
-          __do_fuzz_cache (fw+off, fw_len, template->cache, start, (i++ % 2)?'H':'h');
+          __do_fuzz_cache (fw, __off, fw_len, template->cache, start,
+                           (i % 2) ? 'H' : 'h');
+        ++i;
       }
     }
   assert (off == fw_len && "len(opt.words) != #FUZZ, broken logic.");
@@ -2124,12 +2148,29 @@ set_template_wlist (FuzzTemplate *t, enum template_op op,
   int resolved = 0;
   for (int i=0; t->local_fuzz_count > 0; ++i)
     {
-      tag_candidate = strstr (tag_candidate, tag);
+      tag_candidate = strstr (tag_candidate, FUZZ_STR);
       if (! tag_candidate)
         break;
-      if (0 == strncmp (tag_candidate, tag, strlen(tag)))
+      if (0 == strncmp (tag_candidate, tag, strlen (tag)))
         {
+          if (NULL != dst[i])
+            { /* we reached here, only because in the previous call,
+                 we didn't know a tagged word-list will come later */
+              for (int j=0; j < t->local_cap; ++j)
+                { /* so fix it by swapping. it MUST success. */
+                  if (NULL == dst[j])
+                    {
+                      dst[j] = dst[i];
+                      if (dst[j]->tag)
+                        dst[j]->tag = NULL;
+                      dst[i] = NULL;
+                      break;
+                    }
+                }
+              assert (NULL == dst[i] && "tag swapping must success");
+            }
           dst[i] = register_wlist (t, path, tag);
+          dst[i]->type = op;
           t->local_fuzz_count--, resolved++;
         }
       tag_candidate++;
