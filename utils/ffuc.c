@@ -557,7 +557,10 @@ typedef struct
   struct curl_slist *headers;
 
   struct template_cache *cache;
-  int local_fuzz_count; // internal
+
+  /* internal. */
+  int local_fuzz_count;
+  int local_off, local_cap; // offset of opt.words
 } FuzzTemplate;
 
 /**
@@ -678,8 +681,8 @@ SV_DEF void sv_free (struct strv *);
  *  The number of elements consumed from @FUZZ.
  *  @FUZZ must have enough element(s).
  */
-int fuzz_snprintf (struct strv *dst, const char *format,
-                   char **src, const struct template_cache *cache);
+void fuzz_snprintf (struct strv *dst, const char *format, char **src,
+                    const struct template_cache *cache, int *cache_ss);
 
 /**
  *  Strline and StrlineNull Functions
@@ -1489,13 +1492,15 @@ handle_response_context (RequestContext *ctx)
 }
 
 static inline int
-__do_fuzz_cache (Fword **fw, int fw_len, struct template_cache *cache,
+__do_fuzz_cache (Fword **fw, int ss, int fw_len,
+                 struct template_cache *cache,
                  const char *start, int flg)
 {
 #define GET_TAG(fw) ( ((fw) && (fw)->tag) ? (fw)->tag : FUZZ_STR )
   static int i = 0;
   const char *tag;
 
+  fw += ss; /* apply @fw start offset */
   for (const char *p = start, *end = start; end && i < fw_len; )
     {
       tag = GET_TAG (*fw);
@@ -1564,13 +1569,13 @@ gen_fuzz_cache (FuzzTemplate *template)
 void
 __register_context (RequestContext *dst)
 {
-  int off = 0;
   char **FUZZ = dst->FUZZ;
   FuzzTemplate *template = &opt.fuzz_template;
   struct request_t *req = &dst->request;
 
   if (! template->cache)
     gen_fuzz_cache (template);
+  int ss = 0; /* appropriate cache index */
 
   /**
    *  Generating URL
@@ -1579,7 +1584,7 @@ __register_context (RequestContext *dst)
   if (opt.fuzz_flag & URL_HASFUZZ)
     {
       sv_drop (&tmp);
-      off += fuzz_snprintf (&tmp, template->URL, FUZZ+off, template->cache+off);
+      fuzz_snprintf (&tmp, template->URL, FUZZ, template->cache, &ss);
       Strrealloc (req->URL, sv_get(&tmp));
     }
   else if (! dst->request.URL)
@@ -1595,7 +1600,7 @@ __register_context (RequestContext *dst)
       if (opt.fuzz_flag & BODY_HASFUZZ)
         {
           sv_drop (&tmp);
-          off = fuzz_snprintf (&tmp, template->body, FUZZ+off, template->cache+off);
+          fuzz_snprintf (&tmp, template->body, FUZZ, template->cache, &ss);
           Strrealloc (req->body, sv_get(&tmp));
         }
       else if (! req->body)
@@ -1615,7 +1620,7 @@ __register_context (RequestContext *dst)
           curl_slist_foreach (template->headers, h)
             {
               sv_drop (&tmp);
-              off = fuzz_snprintf (&tmp, h->data, FUZZ+off, template->cache+off);
+              fuzz_snprintf (&tmp, h->data, FUZZ, template->cache, &ss);
               curl_slist_appd (req->headers, sv_get(&tmp));
             }
           curl_setopt (dst->easy_handle, CURLOPT_HTTPHEADER, req->headers);
@@ -1787,22 +1792,24 @@ strrealloc (void *malloced, const char *src)
   return res;
 }
 
-int
-fuzz_snprintf (struct strv *dst, const char *format,
-               char **src, const struct template_cache *cache)
+void
+fuzz_snprintf (struct strv *dst, const char *format, char **src,
+               const struct template_cache *cache, int *cache_ss)
 {
-  int fuzz_used = 0;
   int ss = 0, to = 0;
-  for (int i=0, rw = 0, flg = 0; i < opt.words_len;)
+  cache += *cache_ss; /* apply cache start offset */
+
+  for (int i=0, flg = 0; i < opt.words_len;)
     {
+      const char *key = format + ss;
+      const char *val = src[cache->widx];
       to = cache->stridx;
       flg = cache->flag;
-      rw = to - ss;
-      sv_appd_buf (dst, format + ss, rw, false);
-      sv_appd_buf (dst, *src, Strlen (*src), false);
+      sv_appd_buf (dst, key, to - ss, false);
+      sv_appd_buf (dst, val, Strlen (val), false);
 
       ss = to + cache->taglen;
-      ++i, ++fuzz_used, ++src, ++cache;
+      ++i, ++(*cache_ss), ++src, ++cache;
       if (flg != cache->flag)
         break; // END.
     }
@@ -1812,7 +1819,6 @@ fuzz_snprintf (struct strv *dst, const char *format,
     sv_appd_buf (dst, "", 0, true); /* just to null-terminate */
 
   fprintd ("fuzz_snprintf:  output->'%s'\n", tmp);
-  return fuzz_used;
 }
 
 static int
@@ -2111,14 +2117,16 @@ set_template_wlist (FuzzTemplate *t, enum template_op op,
       tag = p;
     }
 
+  dst += t->local_off; /* apply start offset */
   if (! tag  ||  opt.mode == MODE_SINGULAR)
     { /* just find a free cell */
     no_tag:
-      for (int i=0; t->local_fuzz_count > 0; ++i)
+      for (int i=0; i < t->local_cap; ++i)
         {
           if (NULL == dst[i])
             {
               dst[i] = register_wlist (t, path, NULL);
+              dst[i]->type = op;
               t->local_fuzz_count--;
               break;
             }
@@ -2196,7 +2204,6 @@ set_template (FuzzTemplate *t, enum template_op op, void *_param)
 {
   char *param = (char *) _param;
   static int prev_op = -1;
-  static int dst_offset = 0;
 
   switch (prev_op)
     {
@@ -2216,7 +2223,7 @@ set_template (FuzzTemplate *t, enum template_op op, void *_param)
                   (t->local_fuzz_count == 1) ? "." : "s.");
           /* Fill the previous template with dummy word-list */
           for (int i=0; 0 != t->local_fuzz_count; ++i)
-            set_template_wlist (t, prev_op, opt.words+dst_offset, NULL);
+            set_template_wlist (t, prev_op, opt.words, NULL);
         }
       break;
 
@@ -2234,7 +2241,8 @@ set_template (FuzzTemplate *t, enum template_op op, void *_param)
         if (t->local_fuzz_count > 0)
           {
             FLG_SET (opt.fuzz_flag, URL_HASFUZZ);
-            dst_offset = da_zallocate (opt.words, t->local_fuzz_count);
+            t->local_off = da_zallocate (opt.words, t->local_fuzz_count);
+            t->local_cap = t->local_fuzz_count;
           }
       }
       return t->local_fuzz_count;
@@ -2247,7 +2255,8 @@ set_template (FuzzTemplate *t, enum template_op op, void *_param)
         if (t->local_fuzz_count > 0)
           {
             FLG_SET (opt.fuzz_flag, HEADER_HASFUZZ);
-            dst_offset = da_zallocate (opt.words, t->local_fuzz_count);
+            t->local_off = da_zallocate (opt.words, t->local_fuzz_count);
+            t->local_cap = t->local_fuzz_count;
           }
       }
       return t->local_fuzz_count;
@@ -2278,7 +2287,8 @@ set_template (FuzzTemplate *t, enum template_op op, void *_param)
         if (t->local_fuzz_count > 0)
           {
             FLG_SET (opt.fuzz_flag, BODY_HASFUZZ);
-            dst_offset = da_zallocate (opt.words, t->local_fuzz_count);
+            t->local_off = da_zallocate (opt.words, t->local_fuzz_count);
+            t->local_cap = t->local_fuzz_count;
           }
       }
       return t->local_fuzz_count;
@@ -2302,7 +2312,7 @@ singular mode only accepts one word-list", param);
             if (t->local_fuzz_count <= 0)
               warnln ("unexpected word-list '%s' was ignored.", param);
             else /* prev_op indicates the latest modified HTTP option */
-              set_template_wlist (t, prev_op, opt.words+dst_offset, param);
+              set_template_wlist (t, prev_op, opt.words, param);
           }
       }
       return 0;
