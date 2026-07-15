@@ -1501,7 +1501,8 @@ __do_fuzz_cache (Fword **fw, int ss, int fw_len,
   const char *tag;
 
   fw += ss; /* apply @fw start offset */
-  for (const char *p = start, *end = start; end && i < fw_len; )
+  int count = 0;
+  for (const char *p = start, *end = start; end && count+ss < fw_len; ++count)
     {
       tag = GET_TAG (*fw);
       if ((end = strstr (p, tag)))
