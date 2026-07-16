@@ -211,7 +211,7 @@ static struct strv tmp = {0};
 
 #ifndef PRINT_MARGIN
 # ifndef __ANDROID__
-#   define PRINT_MARGIN 25
+#   define PRINT_MARGIN 31
 # else /* smaller screen width on Android */
 #   define PRINT_MARGIN 4
 # endif
@@ -226,6 +226,8 @@ static struct strv tmp = {0};
 
 #define NOP() ((void) NULL)
 #define UNUSED(x) (void)(x)
+#define __TO_STR(x) #x
+#define STR(x) __TO_STR(x)
 #define MIN(a,b) ((a < b) ? (a) : (b))
 #define MAX(a,b) ((a > b) ? (a) : (b))
 #define lstrlen(lstr) (sizeof (lstr) - 1) /* only for string literals */
@@ -1114,7 +1116,8 @@ fw_export (char **dst, const Fword *src)
 }
 
 //-- Logger functions --//
-#define KEY_FMT "%-26s"
+#define KEY_MARGIN 26 // for alignment, set it: (PRINT_MARGIN - 5)
+#define KEY_FMT "%-" STR(KEY_MARGIN) "s"
 
 static inline void
 log_filter (FILE *stream, const struct res_filter_t *fl)
@@ -1173,8 +1176,9 @@ log_current_config ()
   fflush (stream);
 }
 #undef KEY_FMT
+#undef KEY_MARGIN
 
-static inline void
+void
 print_stats_fuzz (RequestContext *ctx)
 {
   /* Wiping the line out of the progress-bar stuff */
@@ -1206,7 +1210,7 @@ print_stats_fuzz (RequestContext *ctx)
 
 #undef __FMT__
 #undef __ARG__
-      if ((margin = PRINT_MARGIN - ss + to) > 0)
+      if ((margin = PRINT_MARGIN + ss - to) > 0)
         fprintf (stream, "%*s", margin, "");
       else
         fprintf (stream, "\n%*s", PRINT_MARGIN, "");
