@@ -2116,7 +2116,10 @@ set_template_wlist (FuzzTemplate *t, enum template_op op,
   if (path  &&  (p = strchr (path, ':')))
     { /* has tag */
       *p++ = '\0';
-      tag = p;
+      if (0 == strncmp (p, FUZZ_STR, FUZZ_STR_LEN))
+        tag = p;
+      else
+        warnln ("tag '%s' was ignored, only FUZZ_XXX pattern is acceptable", p);
     }
 
   dst += t->local_off; /* apply start offset */
