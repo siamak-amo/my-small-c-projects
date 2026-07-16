@@ -1575,12 +1575,9 @@ void
 __register_context (RequestContext *dst)
 {
   char **FUZZ = dst->FUZZ;
+  int ss = 0; /* appropriate cache index */
   FuzzTemplate *template = &opt.fuzz_template;
   struct request_t *req = &dst->request;
-
-  if (! template->cache)
-    gen_fuzz_cache (template);
-  int ss = 0; /* appropriate cache index */
 
   /**
    *  Generating URL
@@ -2734,6 +2731,7 @@ main (int argc, char **argv)
     }
   log_current_config ();
   init_progress (&opt.progress);
+  gen_fuzz_cache (&opt.fuzz_template);
 
   /**
    *  The main Loop
