@@ -740,7 +740,7 @@ static void __update_progress_bar (const Progress *prog);
 #define update_progress_bar(prog) \
   if ((prog)->progbar_enabled) __update_progress_bar (prog)
 #define end_progress_bar(prog) \
-  if ((prog)->progbar_enabled) fprintf (stderr, "\n");
+  if ((prog)->progbar_enabled) fprintf (stderr, CLEAN_LINE("\n"));
 
 /**
  *  Interactive mode functions
