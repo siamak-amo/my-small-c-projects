@@ -49,7 +49,7 @@
           // punctuations
           PUNC_COMMA = 0,
           ...
-          // expressions
+          // expressions (support nesting)
           EXP_STR = 0,
           ...
           // single-line & multi-line comment
@@ -158,6 +158,9 @@
     with a different configuration, for instance consider:
         parsing  {x, y, z}  which consist of an outer expression {}
         and inner comma separated values.
+     Or in the nested expression e.g., `{x + {2 * 3}}` as the first
+        ml_next() will give `x + {2 * 3}`, but the inner expression
+        `{2 * 3}` still needs to be parsed.
     ml_next() supports nested calls with the following conditions;
     see: ML_EXAMPLE_1 for a complete example.
     To use a higher level API, see the Flex API section.
@@ -691,6 +694,7 @@ typedef struct
 
   /* Internal */
   int __last_exp_idx;
+  int nestc; // nested expression counter
   int __last_punc_idx;
   int __last_newline;
   const char *__last_comm;
@@ -1120,8 +1124,13 @@ __is_expression_suff (const Milexer *ml,
 
   if (strncmp (p, e->end, len) == 0)
     {
-      tk->id = src->__last_exp_idx;
+      if (--src->nestc != 0)
+        return NULL;
       return p;
+    }
+  else if (strncmp (p, e->begin, len) == 0)
+    { /* nested */
+      ++src->nestc;
     }
   return NULL;
 }
@@ -1228,6 +1237,8 @@ __is_expression_pref (const Milexer *ml,
       if ((p = strstr (__cstr, e->begin)))
         {
           src->__last_exp_idx = i;
+          tk->id = src->__last_exp_idx;
+          ++src->nestc;
           return p;
         }
     }
@@ -1278,7 +1289,8 @@ __ml_pre_next (Milexer *ml, Milexer_Slice *src,
   if (tk->cstr == NULL || tk->cap <= 0 || tk->cstr == src->buffer)
     return NEXT_ERR;
 
-  tk->type = TK_NOT_SET;
+  if (SYN_CHUNK != src->state)
+    tk->type = TK_NOT_SET;
   switch (src->state)
     {
     case SYN_NO_DUMMY__:
