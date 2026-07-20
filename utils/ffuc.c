@@ -111,7 +111,8 @@
          ffuc.c -o ffuc -lcurl
 
     Options:
-      -D_DEBUG:  print debug information
+      -D_DEBUG:  print low level FUZZ substitution logs
+      -D_DEBUG2: HTTP level debug, show requests instead of sending them
       -D SKIP_FREE:  skip freeing heap memory in cleanup function
       -D NO_DEFAULT_COLOR:  disable output colors
       -D MAX_REQ_RATE:  maximum allowed req/sec (default is 1000)
@@ -790,6 +791,13 @@ int set_template_wlist (FuzzTemplate *t, enum template_op op,
 #define curl_slist_safe_free(ptr)                               \
   if (NULL != ptr) { curl_slist_free_all (ptr);  ptr = NULL; }
 
+#ifndef _DEBUG2
+# define curl_setopt(...) curl_easy_setopt (__VA_ARGS__)
+#else
+# define curl_setopt(...) MOCK_curl_setopt(__VA_ARGS__)
+CURLcode MOCK_curl_setopt (CURL *curl, CURLoption option, ...);
+#endif /* _DEBUG2 */
+
 #ifndef ffuc_malloc
 #define ffuc_malloc(len) malloc (len)
 #endif
@@ -967,6 +975,70 @@ curl_fwrite (void *ptr, size_t size, size_t nmemb, void *__req_ctx)
     }
   return len; 
 }
+
+//-- Debug related functions --//
+#ifdef _DEBUG2
+CURLcode
+MOCK_curl_setopt (CURL *__curl, CURLoption option, ...)
+{
+  static void *curl = NULL;
+  va_list arg;
+  va_start (arg, option);
+  if (curl != __curl)
+    {
+      fprintf (stderr, CLEAN_LINE("%s"),
+               (! curl) ? "\n" : "  --------------------------------\n");
+      curl = __curl;
+      fprintf (stderr, "\n .--CURL-(@0x%lx)--\n",
+               ((uintptr_t) curl) & 0xFFFF);
+    }
+  switch (option)
+    {
+    case CURLOPT_CUSTOMREQUEST:
+      fprintf (stderr, " |  %s", va_arg(arg, const char *));
+      break;
+    case CURLOPT_URL: {
+      char *URL = va_arg(arg, char *), *url = URL, *host;
+      if (0 != strncmp (url, "http", 4))
+        {
+        unknown_url:
+          fprintf (stderr, " %s\n", URL);
+          break;
+        }
+      else
+        {
+          url += 4; // skip http
+          if ('s' == *url) ++url; // skip s of https
+          if (':' == *url) ++url;
+          if (url[0] != '/' || url[1] != '/')
+            goto unknown_url;
+          host = url + 2; // this is where the user@host:port begins
+          url = strchr (host, '/');
+          fprintf (stderr, " %s HTTP/1.1\n", (url) ? url : "/");
+          if (url)
+            *url = '\0';
+          fprintf (stderr, " |  Host: %s\n", host);
+        }
+      break;
+    }
+    case CURLOPT_HTTPHEADER: {
+      struct curl_slist *hdr = va_arg(arg, struct curl_slist *);
+      curl_slist_foreach (hdr, h) {
+        fprintf (stderr, " |  %s\n", h->data);
+      }
+      break;
+    }
+    case CURLOPT_POSTFIELDS: {
+      fprintf (stderr, " |\n |  %s\n", va_arg(arg, const char *));
+      break;
+    }
+    default:
+      break;
+    }
+  va_end (arg);
+  return CURLE_OK;
+}
+#endif /* _DEBUG2 */
 
 //-- Strline and StrlineNull functions --//
 static inline char *
@@ -1310,7 +1382,7 @@ __next_fuzz_singular (RequestContext *ctx)
   if (fw_eof (fw))
     opt.eofuzz = true;
 
-  fprintd ("singular:  [%ld-%ld]->`%s`\n", i, N, tmp);
+  fprintd ("singular:  [%ld-%ld]->`%s`\n", i, N, sv_get(&tmp));
   fw_next (fw);
 }
 
@@ -1337,7 +1409,7 @@ __next_fuzz_pitchfork (RequestContext *ctx)
     {
       fw = opt.words[i];
       fw_export (ctx->FUZZ+i, fw);
-      fprintd ("[%d]->`%s`\t", fw->index, tmp);
+      fprintd ("[%d]->`%s`\t", fw->index, sv_get(&tmp));
       fw_next (fw);
     }
   fprintd ("\n");
@@ -1359,7 +1431,7 @@ __next_fuzz_clusterbomb (RequestContext *ctx)
     {
       fw = opt.words[i];
       fw_export (ctx->FUZZ+i, fw);
-      fprintd ("[%d]->`%s`\t", fw->index, tmp);
+      fprintd ("[%d]->`%s`\t", fw->index, sv_get(&tmp));
 
       if (go_next)
         {
@@ -1668,8 +1740,7 @@ register_context (RequestContext *ctx, bool sync)
   {
     FLG_SET (ctx->flag, CTX_INUSE);
     /* HTTP verb */
-    if (opt.verb)
-      curl_setopt (curl, CURLOPT_CUSTOMREQUEST, opt.verb);
+    curl_setopt (curl, CURLOPT_CUSTOMREQUEST, opt.verb);
     /* Ignore certification check */
     curl_setopt (curl, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_setopt (curl, CURLOPT_SSL_VERIFYHOST, 0L);
@@ -1684,7 +1755,9 @@ register_context (RequestContext *ctx, bool sync)
       curl_setopt (curl, CURLOPT_PROXY, opt.proxy);
   }
   __register_context (ctx);
-
+#ifdef _DEBUG2
+  return 0;
+#endif
   if (sync) /* blocking */
     return curl_easy_perform (curl);
   else /* none blocking */
@@ -1848,7 +1921,7 @@ fuzz_snprintf (struct strv *dst, const char *format, char **src,
   else
     sv_appd_buf (dst, "", 0, true); /* just to null-terminate */
 
-  fprintd ("fuzz_snprintf:  output->'%s'\n", tmp);
+  fprintd ("fuzz_snprintf:  output->'%s'\n", sv_get(&tmp));
 }
 
 static int
@@ -2024,6 +2097,8 @@ static int
 init_opt ()
 {
   /* Finalizing the HTTP request template */
+  if (! opt.verb)
+    opt.verb = "GET";
   set_template (&opt.fuzz_template, FINISH_TEMPLATE, NULL);
   opt.words_len = da_sizeof (opt.words);
   if (opt.words_len == 0)
@@ -2793,6 +2868,22 @@ main (int argc, char **argv)
   log_current_config ();
   init_progress (&opt.progress);
   gen_fuzz_cache (&opt.fuzz_template);
+#ifdef _DEBUG2
+  fprintf (stderr, CLEAN_LINE(""));
+  struct template_cache *cache = opt.fuzz_template.cache;
+  for (int i=0; i < opt.words_len; ++i)
+    {
+      Fword *w = opt.words[cache[i].widx];
+      fprintf (stderr,
+               "\ncache @%-2d  [word: %-2d ~ tag: %-10s]  "
+               "{start: %-3d, len: %d}",
+               i,
+               cache[i].widx,
+               (w->tag) ? w->tag : "",
+               cache[i].stridx, cache[i].taglen);
+    }
+  fprintf (stderr, "\n");
+#endif /* _DEBUG2 */
 
   /**
    *  The main Loop
