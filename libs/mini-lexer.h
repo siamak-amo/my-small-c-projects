@@ -2693,6 +2693,31 @@ main (int argc, char **argv)
         {0}
       }};
     DO_TEST (&t, "inner long expressions");
+
+    /* nested expressions */
+    t = (test_t) {
+      .parsing_flags = PFLAG_DEFAULT,
+      .input = "{(..nest.1..){..nest.2..}{{nest.3..}}}{{(nest4)n5}}",
+      .etk = (Milexer_Token []){
+        {.type = TK_EXPRESSION,  .cstr = "{(..nest.1..){..",  .id=EXP_CURLY},
+        {.type = TK_EXPRESSION,  .cstr = "nest.2..}{{nest.",  .id=EXP_CURLY},
+        {.type = TK_EXPRESSION,  .cstr = "3..}}}",            .id=EXP_CURLY},
+        {.type = TK_EXPRESSION,  .cstr = "{{(nest4)n5}}",     .id=EXP_CURLY},
+        {0}
+      }};
+    DO_TEST (&t, "nested expressions, with INEXP flag");
+    t = (test_t) {
+      .parsing_flags = PFLAG_INEXP,
+      .input = "{nested {1+2} {{ expressions }}}{{are}}{f+ {u} +{{n}}}{{{.}}}",
+      .etk = (Milexer_Token []){
+        {.type = TK_EXPRESSION,  .cstr = "nested {1+2} {{ ",  .id=EXP_CURLY},
+        {.type = TK_EXPRESSION,  .cstr = "expressions }}",    .id=EXP_CURLY},
+        {.type = TK_EXPRESSION,  .cstr = "{are}",             .id=EXP_CURLY},
+        {.type = TK_EXPRESSION,  .cstr = "f+ {u} +{{n}}",     .id=EXP_CURLY},
+        {.type = TK_EXPRESSION,  .cstr = "{{.}}",             .id=EXP_CURLY},
+        {0}
+      }};
+    DO_TEST (&t, "nested expressions, with INEXP flag");
   }
 
   puts ("-- partially disabled features --");
