@@ -519,6 +519,8 @@ __da_allocate (void *__arr, int n, int cell_bytes, int zero_init)
     {
       da = __mk_da (n, cell_bytes);
       *arr = da->arr;
+      if (zero_init)
+        memset (da->arr, 0, n * da->cell_bytes);
     }
   else if (!(da = DA_CONTAINEROF (*arr)))
     return -1;
@@ -769,6 +771,11 @@ main (void)
     tassert (numbers[7] == 0, "correctly zero initialized");
     tassert (numbers[5] == 666 && numbers[6] == 777,
              "previous valises preserved after da_zallocate");
+
+    numbers = NULL;
+    idx = da_zallocate (numbers, 32);
+    for (int i=0; i<32; ++i)
+      tassert (numbers[i] == 0, "correctly zero initialized");
   }
 
   int *numbers = NULL;
