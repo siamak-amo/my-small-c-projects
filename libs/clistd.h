@@ -156,7 +156,7 @@ set_program_name (const char *argv0)
       abort ();
     }
   /* get the latest slash */
-  char *__p = strrchr (argv0, '/');
+  const char *__p = strrchr (argv0, '/');
   /**
    *  The GNU libc also checks for '/.libs/'
    *  But is it necessary for us??
