@@ -1082,26 +1082,30 @@ __extend_cap (struct strv *view)
 SV_DEF int
 sv_appd_str (struct strv *view, const char *str)
 {
+  int ss = view->len;
   int strl = Strlen (str);
-
   int strbl = strl + 1; /* null-termination */
+
+  view->len += strl;
   if (view->len + strbl >= view->cap)
     __extend_cap (view);
 
-  memcpy (view->buff + view->len, (str) ? str : "", strbl);
-  view->len += strl;
+  memcpy ((char *)view->buff + ss, (str) ? str : "", strbl);
   return view->len;
 }
 
 SV_DEF int
 sv_appd_buf (struct strv *view, const void *_src, int _len, bool nullterm)
 {
+  int ss = view->len;
   const char *buf = (const char *) _src;
   int len = (nullterm) ? _len+1 : _len;
+
+  view->len += _len;
   if (view->len + len >= view->cap)
     __extend_cap (view);
-  memcpy (view->buff + view->len, buf, _len);
-  view->len += _len;
+
+  memcpy ((char *)view->buff + ss, buf, _len);
   if (nullterm)
     view->buff[view->len] = '\0';
   return view->len;
