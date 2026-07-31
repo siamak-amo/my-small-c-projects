@@ -2861,6 +2861,7 @@ main (int argc, char **argv)
     Return (ret);
   if ((ret = init_opt ()))
     Return (ret);
+  gen_fuzz_cache (&opt.fuzz_template);
 
   if (opt.AI)
     {
@@ -2877,7 +2878,7 @@ main (int argc, char **argv)
     }
   log_current_config ();
   init_progress (&opt.progress);
-  gen_fuzz_cache (&opt.fuzz_template);
+
 #ifdef _DEBUG2
   fprintf (stderr, CLEAN_LINE(""));
   struct template_cache *cache = opt.fuzz_template.cache;
